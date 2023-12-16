@@ -27,10 +27,11 @@ const colorParams: GenerateColorRampArgument = {
   lEasing: (x) => -(Math.cos(Math.PI * x) - 1) / 2,
 };
 
-const debug = true;
+const debug = false;
 const PARAMS = {
-  count: 50, //175,
-  cycles: 3, //10,
+  count: 175,
+  cycles: 10,
+  a: 40,
 };
 
 export const sketch = ({ wrap, context, width, height }: SketchProps) => {
@@ -49,13 +50,12 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     hStart: hStartB,
   }).map((color) => colorToCSS(color, 'oklch'));
 
-  const bgOpts = generateColorRamp({
-    total: 5,
+  const bg = generateColorRamp({
+    total: 1,
     hStart: hStartBG,
     ...colorParams,
-    lRange: [0.1, 0.3],
-  }).map((color) => colorToCSS(color, 'oklch'));
-  const bg = bgOpts[0];
+    lRange: [0.1, 0.2],
+  }).map((color) => colorToCSS(color, 'oklch'))[0];
 
   const size = Math.min(width, height);
   const margin = width * 0.1;
@@ -65,7 +65,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     dimensions: 2,
     padding: 0.0025,
     minRadius: 0.03125,
-    maxRadius: 0.75,
+    maxRadius: 0.5,
   });
 
   const circles = shapes.map((shape: any) => ({
@@ -81,6 +81,19 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   const spirals: Spiral[] = [];
 
   circles.forEach((c: any) => {
+    let idx = 0;
+    // let r = 0;
+    let points: Point[] = [];
+
+    // while (r < c.r) {
+    //   idx++;
+    //   r = fermat(c.r, ((idx + 1) / PARAMS.count) * 2 * Math.PI * PARAMS.cycles);
+    //   points.push({
+    //     x: Math.cos(idx) * r,
+    //     y: Math.sin(idx) * r,
+    //   });
+    // }
+
     const spiral1 = {
       points: angles.map((angle) => {
         const r = fermat(c.r * 0.15, angle);
@@ -121,7 +134,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     context.stroke();
   };
 
-  wrap.render = ({ width, height, playhead }: SketchProps) => {
+  wrap.render = ({ width, height, frame, playhead, time }: SketchProps) => {
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
 
@@ -129,10 +142,10 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     context.translate(width / 2, height / 2);
 
     if (debug) {
-      context.strokeStyle = bgOpts.at(-1)!;
       circles.forEach((c: any) => {
         context.beginPath();
         context.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+        context.strokeStyle = 'red';
         context.stroke();
       });
     }
@@ -140,8 +153,8 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     context.lineCap = 'round';
     context.lineJoin = 'round';
     context.setLineDash([5, 15]);
-    spirals.forEach((spiral: Spiral, idx) => {
-      context.lineDashOffset = (idx % 2 === 0 ? 1 : -1) * playhead * 20;
+    context.lineDashOffset = -playhead * 20;
+    spirals.forEach((spiral: Spiral) => {
       stitch(spiral);
     });
 
@@ -158,7 +171,7 @@ export const settings: SketchSettings = {
   dimensions: [800, 800],
   pixelRatio: window.devicePixelRatio,
   animate: true,
-  duration: 2_000,
+  duration: 1_000,
   playFps: 60,
   exportFps: 60,
   framesFormat: ['mp4'],
