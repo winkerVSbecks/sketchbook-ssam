@@ -7,7 +7,7 @@ import {
   GenerateColorRampArgument,
 } from 'rampensau';
 import Random from 'canvas-sketch-util/random';
-import { lerpFrames, mapRange } from 'canvas-sketch-util/math';
+import { lerp, lerpFrames, mapRange } from 'canvas-sketch-util/math';
 import { Pane } from 'tweakpane';
 import eases from 'eases';
 
@@ -15,7 +15,7 @@ const PARAMS = {
   count: 175,
   cycles: 10,
   a: 40,
-  r: 4,
+  r: 6,
 };
 
 const pane = new Pane() as any;
@@ -63,11 +63,17 @@ export const sketch = ({ wrap, context, duration }: SketchProps) => {
     lRange: [0.1, 0.2],
   }).map((color) => colorToCSS(color, 'oklch'))[0];
 
-  const drawCircle = ({ x, y, r, color }: Circle) => {
-    context.strokeStyle = color;
+  const drawCircle = ({ x, y, r, color }: Circle, style: 'fill' | 'stroke') => {
     context.beginPath();
     context.arc(x, y, r, 0, 2 * Math.PI);
-    context.stroke();
+
+    if (style === 'fill') {
+      context.fillStyle = color;
+      context.fill();
+    } else {
+      context.strokeStyle = color;
+      context.stroke();
+    }
   };
 
   const angles = Array.from({ length: 125 }, (_, i) => {
@@ -107,8 +113,6 @@ export const sketch = ({ wrap, context, duration }: SketchProps) => {
     context.save();
     context.translate(width / 2, height / 2);
 
-    // circles.forEach(drawCircle);
-    // const t = playhead; //eases.quadInOut(playhead);
     const delay = 0.25;
     const t = mapRange(playhead, 0, 1 - delay, 0, 1);
 
@@ -129,43 +133,34 @@ export const sketch = ({ wrap, context, duration }: SketchProps) => {
     };
 
     angles.forEach((angle, idx) => {
-      const t = Math.abs(Math.sin(angle / PARAMS.cycles + playhead * Math.PI));
-      // @ts-ignore-next-line
-      // const a = lerpFrames([1, 0.9375, 1.0625, 1], t) * PARAMS.a;
-      const a = PARAMS.a;
-
-      const r =
-        // @ts-ignore-next-line
-        lerpFrames([0, 1, 0], t) * PARAMS.r;
+      const t = Math.abs(
+        // Math.sin(
+        //   (playhead * Math.PI) / 2 + (-(idx / angles.length) * Math.PI) / 2
+        // )
+        Math.sin(-(angle * 0.4) / PARAMS.cycles + playhead * Math.PI)
+        // Math.sin((-(idx / angles.length) * Math.PI) / 2 + playhead * Math.PI)
+      );
+      const a = lerp(1, 0.8, t) * PARAMS.a;
 
       const c1 = makeCircle(a, angle, 1, colorsA[idx]);
       const c2 = makeCircle(a, angle, -1, colorsA[idx]);
 
-      drawCircle({ ...c1, r });
-      drawCircle({ ...c2, r });
+      // const d = mapRange(
+      //   Math.hypot(c1.x, c1.y),
+      //   0,
+      //   maxDistance,
+      //   0,
+      //   Math.PI * 0.6
+      // );
+      // const t = Math.abs(Math.sin(d + playhead * Math.PI));
+
+      const r = lerp(0, 1, t) * PARAMS.r;
+
+      drawCircle({ ...c1, r }, idx % 2 === 0 ? 'fill' : 'stroke');
+      drawCircle({ ...c2, r }, idx % 2 === 0 ? 'fill' : 'stroke');
     });
 
-    // circles.forEach((circle, idx) => {
-    //   const c = circle as unknown as Circle;
-    //   const d = Math.hypot(c.x, c.y);
-    //   const offset = mapRange(d, 0, maxDistance, 0, 1) * Math.PI * 0.0625;
-    //   const ta = t - offset;
-
-    //   const r =
-    //     // @ts-ignore-next-line
-    //     lerpFrames([0, 1, 0], ta) * PARAMS.r;
-
-    //   drawCircle({
-    //     ...circle,
-    //     r,
-    //   });
-    // });
-
     context.restore();
-  };
-
-  wrap.resize = () => {
-    //
   };
 };
 
@@ -182,7 +177,6 @@ export const settings: SketchSettings = {
   playFps: 60,
   exportFps: 60,
   framesFormat: ['mp4'],
-  // numLoops: 1,
 };
 
 ssam(sketch as Sketch, settings);

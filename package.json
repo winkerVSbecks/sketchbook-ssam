@@ -31,6 +31,7 @@
     "canvas-sketch-util-types": "^0.5.1",
     "eases": "^1.0.8",
     "motion": "^10.16.4",
+    "pack-spheres": "^1.0.4",
     "rampensau": "^0.10.2",
     "ssam": "^0.12.0",
     "tweakpane": "^4.0.1"
