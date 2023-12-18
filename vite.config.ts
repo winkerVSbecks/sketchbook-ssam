@@ -7,7 +7,7 @@ import { ssamGit } from 'vite-plugin-ssam-git';
 export default defineConfig({
   base: './',
   plugins: [
-    ssamExport(),
+    ssamExport({ outDir: 'color-quanta' }),
     ssamGit(),
     ssamFfmpeg(),
     // ssamTimelapse(),
@@ -18,5 +18,10 @@ export default defineConfig({
     rollupOptions: {
       //
     },
+  },
+  define: {
+    // By default, Vite doesn't include shims for NodeJS/
+    // necessary for segment analytics lib to work
+    global: {},
   },
 });
