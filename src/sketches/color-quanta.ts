@@ -3,15 +3,11 @@ import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import {
   generateColorRamp,
   colorToCSS,
-  colorHarmonies,
   GenerateColorRampArgument,
 } from 'rampensau';
 import Random from 'canvas-sketch-util/random';
-import { mapRange } from 'canvas-sketch-util/math';
 import Ticker from 'tween-ticker';
-import Tweenr from 'tweenr';
 
-const tweenr = Tweenr();
 const ticker = Ticker();
 const loops = 10;
 

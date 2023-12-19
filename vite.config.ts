@@ -7,7 +7,7 @@ import { ssamGit } from 'vite-plugin-ssam-git';
 export default defineConfig({
   base: './',
   plugins: [
-    ssamExport({ outDir: 'color-quanta' }),
+    ssamExport(),
     ssamGit(),
     ssamFfmpeg(),
     // ssamTimelapse(),
