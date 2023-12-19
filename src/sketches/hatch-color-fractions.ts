@@ -2,19 +2,22 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import { generateColorRamp, colorToCSS } from 'rampensau';
 import Random from 'canvas-sketch-util/random';
+import {
+  createHatchLines,
+  clipPolylinesToBox,
+} from 'canvas-sketch-util/geometry';
+
+type Hatch = [number, number][];
 
 type Block = {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  hatch: Hatch;
   color: string;
-  row: number;
-  col: number;
+  bbox: number[];
 };
 
-const FRACTIONS = 8;
+const FRACTIONS = 4; // Random.pick([2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 24]);
 const MIRROR = false;
+const SPACING = 6; // Math.max(4, FRACTIONS / 4);
 
 export const sketch = ({ wrap, context, height }: SketchProps) => {
   if (import.meta.hot) {
@@ -40,15 +43,25 @@ export const sketch = ({ wrap, context, height }: SketchProps) => {
         const y = _y * size;
         const flip = _x % 2 !== 0;
 
+        const minX = flip ? _x * size : x;
+        const minY = flip ? _y * size + slice * sliceSize : y;
+        const maxX = minX + (flip ? size : sliceSize);
+        const maxY = minY + (flip ? sliceSize : size);
+        const bbox = [minX, minY, maxX, maxY];
+
+        const hatch = createHatchLines(
+          bbox,
+          (_x + slice) % 2 === 0 ? Math.PI / 4 : -Math.PI / 4,
+          SPACING,
+          null
+        );
+
         row.push({
-          x: flip ? _x * size : x,
-          y: flip ? _y * size + slice * sliceSize : y,
-          width: flip ? size : sliceSize,
-          height: flip ? sliceSize : size,
-          color: color,
-          col: colorIdx,
-          row: _y,
+          hatch: clipPolylinesToBox(hatch, bbox, false, false),
+          color,
+          bbox,
         });
+
         colorIdx++;
       }
     }
@@ -76,20 +89,41 @@ export const sketch = ({ wrap, context, height }: SketchProps) => {
   let blocks: Block[] = [];
 
   let hStart = Random.rangeFloor(0, 360);
+  let colors: string[];
 
   wrap.render = ({ width, height, frame, totalFrames }: SketchProps) => {
-    context.fillStyle = '#000';
-    context.fillRect(0, 0, width, height);
-
     if (frame % 5 === 0) {
       const step = 360 / (totalFrames / 5);
-      const colors = generateColors((hStart += step));
+      colors = generateColors((hStart += step));
       blocks = generateBlocks(colors);
     }
 
+    // const gradient = context.createLinearGradient(0, 0, width, height);
+    // colors.forEach((color, idx) => {
+    //   gradient.addColorStop(1 - idx / colors.length, color);
+    // });
+
+    context.fillStyle = '#000';
+    context.fillRect(0, 0, width, height);
+
     blocks.forEach((block) => {
-      context.fillStyle = block.color;
-      context.fillRect(block.x, block.y, block.width, block.height);
+      context.strokeStyle = block.color;
+      context.lineWidth = SPACING / 3;
+
+      block.hatch.forEach((line: any) => {
+        context.beginPath();
+        context.moveTo(line[0][0], line[0][1]);
+        context.lineTo(line[1][0], line[1][1]);
+        context.stroke();
+      });
+
+      // const bbox = block.bbox;
+      // context.strokeRect(
+      //   bbox[0],
+      //   bbox[1],
+      //   bbox[2] - bbox[0],
+      //   bbox[3] - bbox[1]
+      // );
     });
   };
 };
