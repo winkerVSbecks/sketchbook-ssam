@@ -15,9 +15,10 @@ type Block = {
   bbox: number[];
 };
 
-const FRACTIONS = 4; // Random.pick([2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 24]);
+const FRACTIONS = 8; //4; // Random.pick([2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 24]);
 const MIRROR = false;
-const SPACING = 6; // Math.max(4, FRACTIONS / 4);
+const SPACING = 4; //6; // Math.max(4, FRACTIONS / 4);
+const DOUBLE_HATCH = false;
 
 export const sketch = ({ wrap, context, height }: SketchProps) => {
   if (import.meta.hot) {
@@ -54,6 +55,15 @@ export const sketch = ({ wrap, context, height }: SketchProps) => {
           (_x + slice) % 2 === 0 ? Math.PI / 4 : -Math.PI / 4,
           SPACING,
           null
+        ).concat(
+          DOUBLE_HATCH
+            ? createHatchLines(
+                bbox,
+                (_x + slice) % 2 !== 0 ? Math.PI / 4 : -Math.PI / 4,
+                SPACING,
+                null
+              )
+            : []
         );
 
         row.push({
