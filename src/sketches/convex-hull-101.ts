@@ -1,5 +1,6 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
+import { generateColorRamp, colorToCSS } from 'rampensau';
 import Random from 'canvas-sketch-util/random';
 import clustering from 'density-clustering';
 import convexHull from 'convex-hull';
@@ -13,18 +14,6 @@ interface Polygon {
   color: string;
 }
 
-const randomEase = () => Random.pick(Object.values(eases));
-
-const config = {
-  bg: 'oklch(93.08% 0.02 90)',
-  animate: false,
-  pointCount: 50000,
-  clusterCount: 6,
-  hStart: Random.range(0, 360),
-  hCycles: Random.range(1 / 3, 1), // 1 / 3;
-  hEasing: randomEase(),
-};
-
 export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => wrap.dispose());
@@ -32,12 +21,13 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   }
 
   // A large point count will produce more defined results
-  const pointCount = config.pointCount;
+  const pointCount = 50000;
   let points: Point[] = Array.from(new Array(pointCount)).map(() => {
-    const margin = width * 0.1;
-    const r = width * 0.5 - margin;
-    const h = (3 / 2) * r;
-    return randomPointInEquilateralTriangle(r, [width / 2, height / 2 + h / 6]);
+    const margin = width * 0.2;
+    return [
+      Random.range(margin, width - margin),
+      Random.range(margin, height - margin),
+    ];
   });
 
   // We will add to this over time
@@ -45,7 +35,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
 
   // The N value for k-means clustering
   // Lower values will produce bigger chunks
-  const clusterCount = config.clusterCount;
+  const clusterCount = 3;
 
   function integrate() {
     // Not enough points in our data set
@@ -55,17 +45,17 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     const scan = new clustering.KMEANS();
     const clusters = scan
       .run(points, clusterCount)
-      .filter((c: any[]) => c.length >= 3);
+      .filter((c) => c.length >= 3);
 
     // Ensure we resulted in some clusters
     if (clusters.length === 0) return false;
 
     // Sort clusters by density
-    clusters.sort((a: any[], b: any[]) => a.length - b.length);
+    clusters.sort((a, b) => a.length - b.length);
 
     // Select the least dense cluster
     const cluster = clusters[0];
-    const positions = cluster.map((i: number) => points[i]);
+    const positions = cluster.map((i) => points[i]);
 
     // Find the hull of the cluster
     const edges = convexHull(positions);
@@ -74,7 +64,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     if (edges.length <= 2) return false;
 
     // Create a closed polyline from the hull
-    let path = edges.map((c: any[]) => positions[c[0]]);
+    let path = edges.map((c) => positions[c[0]]);
     path.push(path[0]);
 
     // Add to total list of polylines
@@ -93,45 +83,20 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   }
 
   const count = lines.length;
-  const bg = config.bg;
+  const colors = generateColors(Random.range(0, 360), count).reverse();
+  const bg = colors.shift()!;
 
-  const polygonDefs = lines.map((path) => {
-    const ys = path.map((p) => p[1]);
-    return {
-      points: path,
-      ys,
-      yMin: Math.min(...ys),
-      yMax: Math.max(...ys),
-    };
-  });
+  const polygons: Polygon[] = lines.map((path, idx) => ({
+    points: path,
+    color: colors[idx],
+  }));
 
-  const yRange = [
-    Math.min(...polygonDefs.map((p) => p.ys).flat()),
-    Math.max(...polygonDefs.map((p) => p.ys).flat()),
-  ];
-
-  const polygons: Polygon[] = polygonDefs
-    .map((p) => {
-      const t = 1 - mapRange(p.yMax, yRange[1], yRange[0], 0, 1);
-      const hue =
-        (360 +
-          config.hStart +
-          (1 - config.hEasing(t)) * (360 * config.hCycles)) %
-        360;
-
-      return {
-        ...p,
-        color: `oklch(60% 0.6 ${hue})`,
-      };
-    })
-    .sort((a, b) => b.yMax - a.yMax);
-
-  wrap.render = ({ width, height, playhead }: SketchProps) => {
+  wrap.render = ({ width, height, playhead, frame }: SketchProps) => {
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
 
-    const t = mapRange(playhead, 0.0, 0.5, 0, 1, true);
-    const visibleLimit = config.animate ? Math.floor(t * count) : count;
+    const t = mapRange(playhead, 0.25, 0.75, 0, 1, true);
+    const visibleLimit = Math.floor(t * count);
 
     polygons.forEach(({ points, color }, idx) => {
       if (idx < visibleLimit) {
@@ -139,9 +104,6 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
         points.forEach((p) => context.lineTo(p[0], p[1]));
         context.fillStyle = color;
         context.fill();
-        context.strokeStyle = bg;
-        context.lineWidth = 1;
-        context.stroke();
       }
     });
 
@@ -161,8 +123,8 @@ export const settings: SketchSettings = {
   mode: '2d',
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
-  animate: config.animate,
-  duration: 3_000,
+  animate: true,
+  duration: 4_000,
   playFps: 60,
   exportFps: 60,
   framesFormat: ['mp4'],
@@ -170,29 +132,22 @@ export const settings: SketchSettings = {
 
 ssam(sketch as Sketch, settings);
 
-function randomPointInEquilateralTriangle(
-  r: number,
-  [cx, cy]: Point = [0, 0]
-): Point {
-  // Vertices of the equilateral triangle
-  let A = [0, -r];
-  let B = [r * Math.sin(Math.PI / 3), r * Math.cos(Math.PI / 3)];
-  let C = [-r * Math.sin(Math.PI / 3), r * Math.cos(Math.PI / 3)];
+// Colors
+function generateColors(hStart: number, count: number = 8) {
+  const s = 0.6; // 0.2, 0.4, 0.6, 0.8
+  const l = 0.6; // 0.2, 0.4, 0.6, 0.8
 
-  // Generate three random numbers
-  let t1 = Math.random();
-  let t2 = Math.random();
-  let t3 = Math.random();
+  const colors = generateColorRamp({
+    total: count,
+    hStart,
+    hEasing: (x) => x,
+    hCycles: 1,
+    sRange: [0.4, 0.8],
+    lRange: [0.1, 0.8], // [0.2, 0.6],
+    lEasing: eases.quadOut,
+  })
+    .reverse()
+    .map((color) => colorToCSS(color, 'oklch'));
 
-  // Normalize so that t1 + t2 + t3 = 1
-  let sum = t1 + t2 + t3;
-  t1 /= sum;
-  t2 /= sum;
-  t3 /= sum;
-
-  // Calculate the random point
-  let x = t1 * A[0] + t2 * B[0] + t3 * C[0];
-  let y = t1 * A[1] + t2 * B[1] + t3 * C[1];
-
-  return [cx + x, cy + y];
+  return colors;
 }
