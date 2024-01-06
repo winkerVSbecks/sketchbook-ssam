@@ -28,9 +28,10 @@ export const sketch = ({ wrap, context, width }: SketchProps) => {
   }
 
   let blocks: Block[] = [];
-  // let hStart = Random.rangeFloor(0, 360);
-  // const colors = generateColors2(hStart);
-  const colors = generateColors();
+  let hStart = Random.rangeFloor(0, 360);
+  const colors = Random.chance(0.5)
+    ? generateColors()
+    : generateColors2(hStart);
 
   const w = 100;
   const s = width / w;
