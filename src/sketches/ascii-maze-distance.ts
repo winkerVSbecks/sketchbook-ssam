@@ -2,8 +2,8 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import { generateColorRamp, colorToCSS } from 'rampensau';
 import Random from 'canvas-sketch-util/random';
-import { drawFillText, drawPath } from '@daeinc/draw';
 import { mapRange } from 'canvas-sketch-util/math';
+import eases from 'eases';
 
 const size = 64;
 const corners = Random.shuffle([
@@ -18,16 +18,36 @@ const config = {
   start: corners.pop()! as Point,
   end: corners.pop()! as Point,
   colorCount: 6,
+  margin: 2,
+  duration: 0.02,
 };
 
-const chars = ['@', '#', '£', '$', '%', '^', '&', '*', '+'];
+// prettier-ignore
+const CHARS = Random.shuffle(['!', '§', '$', '%', '&', '/', '(', ')', '=', '?', '_',
+  '<', '>', '^', '*', '#', '-', ':', ';', '~', '.']);
+
+// prettier-ignore
+const SHUFFLE_CHARS = ['!', '§', '$', '%', '&', '/', '(', ')', '=', '?', '_',
+  '<', '>', '^', '*', '#', '-', ':', ';', '~', '.'];
+
+function letterShuffler(letter: string, t: number, start = 0, end = 1) {
+  if (t <= start) return '';
+  if (t > end) return letter;
+
+  return end - t < Number.EPSILON ? letter : Random.pick(SHUFFLE_CHARS);
+}
 
 interface DGCell {
-  path: Line;
   distance: number;
   row: number;
   col: number;
-  stuff?: any;
+  color?: string;
+  char?: string;
+}
+
+interface CharCell extends DGCell {
+  color: string;
+  char: string;
 }
 
 interface DistanceGroup {
@@ -35,18 +55,16 @@ interface DistanceGroup {
   color: string;
 }
 
-// Based on:
-// https://observablehq.com/@jwolondon/mazes
-// https://observablehq.com/@jwolondon/mazes-traversing
 export const sketch = ({ wrap, context, width }: SketchProps) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => wrap.dispose());
     import.meta.hot.accept(() => wrap.hotReload());
   }
 
-  const colors = generateColors(config.colorCount + 1);
+  const colors = generateColors(config.colorCount + 2);
 
   const bg = colors.pop()!;
+  const base = colors.pop()!;
 
   const maze = sidewinder(new Maze(config.size, config.size)).setStartAndEnd(
     config.start,
@@ -64,44 +82,18 @@ export const sketch = ({ wrap, context, width }: SketchProps) => {
 
   const size = width / config.size;
 
-  function scale([x, y]: Point): Point {
-    return [x * size, y * size];
-  }
-
-  function scalePath(pts: Line): Line {
-    return pts.map(scale);
-  }
-
   const groups: { [key: string]: DistanceGroup } = Object.fromEntries(
     colors.map((c) => [c, { color: c, cells: [] as DGCell[] }])
   );
 
-  // Draw coloured background cells first
   for (const c of maze.eachCell()) {
-    const [x1, y1, x2, y2] = [c.col, c.row, c.col + 1, c.row + 1];
-
-    const path = scalePath([
-      [x1, y1],
-      [x2, y1],
-      [x2, y2],
-      [x1, y2],
-    ]) as Line;
-
     const d = distances[c.row][c.col];
     const color = distanceToColor(d);
 
     groups[color].cells.push({
-      path,
       distance: d,
       row: c.row,
       col: c.col,
-      stuff: {
-        size: Math.abs(path[2][1] - path[0][1]),
-        p: path[1],
-        chars: Array.from({ length: 6 })
-          .map(() => Random.shuffle(chars))
-          .flat(),
-      },
     });
   }
 
@@ -109,87 +101,52 @@ export const sketch = ({ wrap, context, width }: SketchProps) => {
     g.cells.sort((a, b) => a.distance - b.distance);
   }
 
-  const boundaries: Line[] = [];
-  for (const c of maze.eachCell()) {
-    const [x1, y1, x2, y2] = [c.col, c.row, c.col + 1, c.row + 1];
+  const cells: CharCell[] = [];
 
-    for (const c1 of c.adjacent.filter(Boolean)) {
-      if (c1.col > c.col && !c.isLinked(c1)) {
-        // Consider cell to east
-        boundaries.push(
-          scalePath([
-            [x2, y1],
-            [x2, y2],
-          ])
-        );
-      } else if (c1.row > c.row && !c.isLinked(c1)) {
-        // Consider cell to south
-        boundaries.push([scale([x1, y2]), scale([x2, y2])]);
+  Object.values(groups).forEach((group, gIdx) => {
+    group.cells.forEach((c) => {
+      if (
+        c.col < config.margin ||
+        c.row < config.margin ||
+        c.col > config.size - config.margin - 1 ||
+        c.row > config.size - config.margin - 1
+      ) {
+        return;
       }
-    }
-  }
+
+      cells.push({ ...c, color: group.color, char: CHARS[gIdx] });
+    });
+  });
 
   wrap.render = ({ width, height, playhead }: SketchProps) => {
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
 
     const t = mapRange(playhead, 0, 0.8, 0, 1, true);
-    const activeGroup = Math.floor(t * config.colorCount);
 
-    const cycleT = (t * config.colorCount) % 1;
+    context.font = `bold ${size}px monospace`;
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
 
-    Object.values(groups).forEach(({ color, cells }, gIdx) => {
-      if (gIdx > activeGroup) return;
+    cells.forEach((cell, cIdx) => {
+      const x = cell.col * size;
+      const y = cell.row * size;
 
-      const limit = Math.ceil(cells.length * cycleT);
+      const start = mapRange(
+        cIdx,
+        0,
+        cells.length,
+        0,
+        1 - config.duration,
+        true
+      );
+      const cT = mapRange(t, start, start + config.duration, 0, 1, true);
+      const char = cT === 0 ? '·' : letterShuffler(cell.char, cT);
+      const color = cT === 0 ? base : cell.color;
 
-      cells.forEach((cell, cIdx) => {
-        context.font = `bold ${cell.stuff.size}px monospace`;
-        context.textAlign = 'center';
-        context.textBaseline = 'middle';
-        const char = chars[gIdx];
-        if (
-          cell.stuff.chars[0] !== char ||
-          cell.stuff.chars.length > chars.length
-        ) {
-          cell.stuff.chars.shift();
-        }
-
-        if (gIdx === activeGroup) {
-          if (cIdx < limit) {
-            context.fillStyle = color;
-            drawPath(context, cell.path);
-            context.fill();
-
-            context.fillStyle = bg;
-            drawFillText(context, cell.stuff.chars[0], [
-              cell.path[0][0] + cell.stuff.size / 2,
-              cell.path[0][1] + cell.stuff.size / 2,
-            ]);
-            // context.fill();
-          }
-        } else {
-          context.fillStyle = color;
-          drawPath(context, cell.path);
-          context.fill();
-
-          context.fillStyle = bg;
-          drawFillText(context, cell.stuff.chars[0], [
-            cell.path[0][0] + cell.stuff.size / 2,
-            cell.path[0][1] + cell.stuff.size / 2,
-          ]);
-        }
-      });
+      context.fillStyle = color;
+      context.fillText(char, x + size / 2, y + size / 2);
     });
-
-    context.strokeStyle = bg;
-    context.lineWidth = 2;
-    context.strokeRect(1, 1, width - 2, height - 2);
-
-    // boundaries.forEach((b) => {
-    //   drawPath(context, b);
-    //   context.stroke();
-    // });
   };
 };
 
@@ -406,9 +363,10 @@ function generateColors(count: number) {
     total: count,
     hStart,
     hEasing: (x) => x,
-    hCycles: 1, // / 3,
+    hCycles: 1,
     sRange: [0.2, 0.8],
     lRange: [0.2, 0.8],
+    lEasing: eases.quartOut,
   })
     .reverse()
     .map((color) => colorToCSS(color, 'hsl'));
@@ -421,7 +379,7 @@ export const settings: SketchSettings = {
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
   animate: true,
-  duration: 2_000 * config.colorCount,
+  duration: 20_000,
   playFps: 60,
   exportFps: 60,
   framesFormat: ['mp4'],
