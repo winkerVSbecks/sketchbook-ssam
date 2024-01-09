@@ -20,6 +20,9 @@
     "vite-plugin-ssam-timelapse": "^0.1.2"
   },
   "dependencies": {
+    "@daeinc/draw": "^0.4.0",
+    "@daeinc/geom": "^0.10.3",
+    "@daeinc/math": "^0.6.0",
     "@daeinc/timeline": "^0.5.2",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@thi.ng/arrays": "^2.7.8",

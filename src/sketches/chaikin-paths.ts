@@ -3,9 +3,29 @@ import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import { generateColorRamp, colorToCSS } from 'rampensau';
 import Random from 'canvas-sketch-util/random';
 import { generateColors } from '../subtractive-color';
-import { clamp, lerp, lerpFrames } from 'canvas-sketch-util/math';
+import { clamp, lerp, lerpFrames, mapRange } from 'canvas-sketch-util/math';
 import smooth from 'chaikin-smooth';
 import eases from 'eases';
+
+const generateConfig = () => {
+  const ordered = Random.chance(0.5);
+  return {
+    cycles: 4,
+    pathCount: 50,
+    ordered,
+    uniform: Random.chance(0.5),
+    colorPalette: ordered ? false : Random.chance(0.5),
+  };
+};
+
+let config = generateConfig();
+
+interface Path {
+  points: Line;
+  color: string;
+  length: number;
+  thickness: number;
+}
 
 export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   if (import.meta.hot) {
@@ -13,39 +33,66 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     import.meta.hot.accept(() => wrap.hotReload());
   }
 
-  let hStart = Random.rangeFloor(0, 360);
-  const colors = false //Random.chance(0.5)
-    ? generateColors()
-    : generateColors2(hStart);
+  let colors: string[];
 
-  const bg = colors.pop()!;
-  const margin = 20;
+  let bg: string;
+  const margin = 150;
 
-  const paths = Array.from({ length: 50 }).map(() => {
-    const yMin = Random.range(0, height);
-    const yMax = clamp(Random.range(0, yMin + 0.4 * height), 0, height);
+  let paths: Path[] = [];
 
-    const points = generatePath([-margin, width + margin], [yMin, yMax], 50);
-    return {
-      points,
-      color: Random.pick(colors),
-      length: getLength(points),
-      thickness: 40, //Random.pick([20, 40, 60]),
-    };
-  });
-
-  wrap.render = ({ width, height, playhead }: SketchProps) => {
+  wrap.render = ({
+    width,
+    height,
+    playhead,
+    frame,
+    totalFrames,
+  }: SketchProps) => {
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
     context.lineCap = 'butt';
     context.lineJoin = 'round';
 
-    const t = eases.quadInOut(playhead);
+    if (frame % (totalFrames / config.cycles) === 0) {
+      config = generateConfig();
+
+      colors = config.colorPalette
+        ? generateColors()
+        : generateColorsFromRampensau(config.pathCount + 1);
+      bg = colors.pop()!;
+
+      paths = Array.from({ length: config.pathCount }).map((_, idx) => {
+        const yMin = config.ordered
+          ? mapRange((idx + 1) / config.pathCount, 0, 1, 0, height)
+          : Random.range(0, height);
+        const yMax = clamp(Random.range(0, yMin + 0.4 * height), 0, height);
+
+        const points = generatePath(
+          [-margin, width + margin],
+          [yMin, yMax],
+          10
+        );
+
+        return {
+          points,
+          color: config.ordered ? colors[idx] : Random.pick(colors),
+          length: getLength(points),
+          thickness: config.uniform ? 40 : Random.pick([40, 60, 80, 120, 180]),
+        };
+      });
+    }
+
+    const cyclePlayhead = (playhead * config.cycles) % 1;
+
+    const t = lerpFrames(
+      [0, 1, 0],
+      eases.quadInOut(cyclePlayhead),
+      []
+    ) as unknown as number;
 
     paths.forEach(({ points, color, length, thickness }) => {
       const [start, ...rest] = points;
       context.lineWidth = thickness;
-      context.setLineDash([length, length]);
+      context.setLineDash([length]);
 
       context.beginPath();
       context.moveTo(...start);
@@ -53,7 +100,8 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
         context.lineTo(x, y);
       });
       context.strokeStyle = color;
-      context.lineDashOffset = (1 - t) * length * 2;
+      context.lineDashOffset =
+        cyclePlayhead <= 0.5 ? length * (1 - t) : length + length * t;
       context.stroke();
     });
   };
@@ -64,7 +112,7 @@ export const settings: SketchSettings = {
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
   animate: true,
-  duration: 6_000,
+  duration: 6_000 * config.cycles,
   playFps: 60,
   exportFps: 60,
   framesFormat: ['mp4'],
@@ -108,12 +156,11 @@ function generatePath(
 }
 
 // Colors
-function generateColors2(hStart: number) {
-  const s = 0.6; // 0.2, 0.4, 0.6, 0.8
-  const l = 0.6; // 0.2, 0.4, 0.6, 0.8
+function generateColorsFromRampensau(count: number) {
+  const hStart = Random.rangeFloor(0, 360);
 
   const colors = generateColorRamp({
-    total: 24,
+    total: count,
     hStart,
     hEasing: (x) => x,
     hCycles: 1 / 3,
