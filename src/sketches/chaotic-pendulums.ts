@@ -23,6 +23,7 @@ interface Pendulum {
 
 const config = {
   pendulumCount: 25,
+  bothArms: false,
 };
 
 export const sketch = ({ wrap, context }: SketchProps) => {
@@ -34,11 +35,15 @@ export const sketch = ({ wrap, context }: SketchProps) => {
   const colors = generateColors(config.pendulumCount + 2);
 
   const bg = colors.pop()!;
+  const base = colors.pop()!;
 
   let pendulums: Pendulum[] = [];
 
   wrap.render = ({ width, height, frame }: SketchProps) => {
-    context.fillStyle = bg;
+    context.fillStyle = `hsla(${bg
+      .replace('hsl(', '')
+      .replace(')', '')} / 0.5)`;
+
     context.fillRect(0, 0, width, height);
 
     if (frame === 0) {
@@ -64,16 +69,23 @@ export const sketch = ({ wrap, context }: SketchProps) => {
       });
     }
 
+    context.save();
+    context.translate(width / 2, 0);
+
     pendulums.forEach((pendulum) => {
       const [location1, location2] = updateLocations(pendulum);
 
-      context.save();
-      context.translate(width / 2, 0);
-      drawPendulum(context, pendulum, [location1, location2], false);
-      context.restore();
+      // const r = Math.hypot(...location2);
+      // context.strokeStyle = base;
+      // context.lineWidth = 8;
+      // context.beginPath();
+      // context.ellipse(0, 0, r, r, 0, 0, Math.PI * 2);
+      // context.stroke();
 
+      drawPendulum(context, pendulum, [location1, location2], false);
       updateAccAndVel(pendulum, true);
     });
+    context.restore();
   };
 };
 
@@ -100,7 +112,6 @@ function drawPendulum(
   debug?: boolean
 ) {
   if (debug) {
-    // Draw Pendulum
     context.strokeStyle = '#fff';
     drawLine(context, [0, 0], location1);
     context.stroke();
@@ -128,10 +139,12 @@ function drawPendulum(
 
   context.lineWidth = 8;
   context.lineCap = 'round';
-  // Motion path of top rod
-  context.strokeStyle = pendulum.color1;
-  drawPath(context, pendulum.trail1);
-  context.stroke();
+  if (config.bothArms) {
+    // Motion path of top rod
+    context.strokeStyle = pendulum.color1;
+    drawPath(context, pendulum.trail1);
+    context.stroke();
+  }
   // Motion path of bottom rod
   context.strokeStyle = pendulum.color2;
   drawPath(context, pendulum.trail2);
