@@ -41,6 +41,7 @@
     "motion": "^10.16.4",
     "pack-spheres": "^1.0.4",
     "rampensau": "^0.10.2",
+    "socket.io-client": "^4.7.3",
     "ssam": "^0.12.0",
     "tweakpane": "^4.0.1",
     "tween-ticker": "^3.3.2",
