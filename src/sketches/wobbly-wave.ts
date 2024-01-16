@@ -1,12 +1,17 @@
 import { ssam } from 'ssam';
+import Random from 'canvas-sketch-util/random';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import { samples, interpolate, formatHex } from 'culori';
 import { generateColors } from '../subtractive-color';
 
 const colors = generateColors();
 
+const direction = Random.pick(['horizontal', 'vertical']);
+const a = Random.rangeFloor(0, 4);
+const b = 6 - a;
+
 function wobbly(x: number, t: number) {
-  return Math.sin(2 * x + 3 * t + 5) + Math.sin(3 * x + 2 * t + 4);
+  return Math.sin(a * x + b * t + 5) + Math.sin(b * x + a * t + 4);
 }
 
 export const sketch = ({ wrap, context, width, height }: SketchProps) => {
@@ -29,9 +34,15 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     for (let x = 0; x < width; x++) {
       const y =
         height * (0.5 + 0.125 * wobbly((x / width) * TAU, playhead * TAU));
-      context.fillStyle = colorSamples[Math.floor(x)]!;
+
       context.beginPath();
-      context.arc(x, y, r, 0, 2 * Math.PI);
+      if (direction === 'vertical') {
+        context.fillStyle = colorSamples[Math.floor(y)]!;
+        context.arc(y, x, r, 0, 2 * Math.PI);
+      } else {
+        context.fillStyle = colorSamples[Math.floor(x)]!;
+        context.arc(x, y, r, 0, 2 * Math.PI);
+      }
       context.fill();
     }
   };
