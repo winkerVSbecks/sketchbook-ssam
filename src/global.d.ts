@@ -8,6 +8,7 @@ declare module 'canvas-sketch-util/math';
 declare module 'canvas-sketch-util/random';
 declare module 'canvas-sketch-util/color';
 declare module 'canvas-sketch-util/geometry';
+declare module 'webfontloader';
 
 type Point = [number, number];
 type Line = Point[];
