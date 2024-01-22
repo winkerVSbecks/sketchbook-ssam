@@ -9,6 +9,7 @@ declare module 'canvas-sketch-util/random';
 declare module 'canvas-sketch-util/color';
 declare module 'canvas-sketch-util/geometry';
 declare module 'webfontloader';
+declare module 'polyline-normals';
 
 type Point = [number, number];
 type Line = Point[];
