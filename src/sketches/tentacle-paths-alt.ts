@@ -4,7 +4,6 @@ import Random from 'canvas-sketch-util/random';
 import { generateColors } from '../subtractive-color';
 import { clamp, lerp, lerpFrames, mapRange } from 'canvas-sketch-util/math';
 import smooth from 'chaikin-smooth';
-import eases from 'eases';
 import getNormals from 'polyline-normals';
 import { drawPath } from '@daeinc/draw';
 
