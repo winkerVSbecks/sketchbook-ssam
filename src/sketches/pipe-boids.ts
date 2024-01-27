@@ -2,7 +2,7 @@ import Random from 'canvas-sketch-util/random';
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import { mapRange } from 'canvas-sketch-util/math';
-import { interpolate, formatHex, parse, formatCss, Color } from 'culori';
+import { interpolate, parse, formatCss, Color } from 'culori';
 import { Vector } from 'p5';
 import { drawPath } from '@daeinc/draw';
 import { generateColors } from '../subtractive-color';
