@@ -7,24 +7,42 @@ import {
   easingSmoothstep,
 } from 'culori';
 import { generateColorRamp } from 'rampensau';
+import Random from 'canvas-sketch-util/random';
 
 const newOptions = () => ({
   total: 6,
-  hStart: Math.random() * 360,
-  hCycles: Math.random() < 0.5 ? -1.25 + Math.random() : 1.25 + Math.random(),
-  sRange:
-    Math.random() < 0.7
-      ? [0.2 + Math.random() * 0.2, 0.25 + Math.random() * 0.3]
-      : [1, Math.random()],
+  hStart: Random.range(0, 360),
+  hCycles: Random.chance()
+    ? Random.range(-1.25, -0.25)
+    : Random.range(1.25, 2.25),
+  sRange: Random.chance(0.7)
+    ? [Random.range(0.2, 1.2), Random.range(0.25, 1.3)]
+    : [1, Random.value()],
   sEasing: (x: number) => Math.pow(x, 2),
   lRange: [
-    Math.random() < 0.5 // half of the palettes will become pretty bright
-      ? 0.55 + Math.random() * 0.3
-      : 0.88 + Math.random() * 0.12,
-    Math.random() * 0.4,
+    Random.chance() ? Random.range(0.55, 1.3) : Random.range(0.88, 1.12),
+    Random.range(0, 0.4),
   ],
-  lEasing: (x: number) => Math.pow(x, 1.1), // x => -(Math.cos(Math.PI * x)),
+  lEasing: (x: number) => Math.pow(x, 1.1),
 });
+
+// const newOptions = () => ({
+//   total: 6,
+//   hStart: Math.random() * 360,
+//   hCycles: Math.random() < 0.5 ? -1.25 + Math.random() : 1.25 + Math.random(),
+//   sRange:
+//     Math.random() < 0.7
+//       ? [0.2 + Math.random() * 0.2, 0.25 + Math.random() * 0.3]
+//       : [1, Math.random()],
+//   sEasing: (x: number) => Math.pow(x, 2),
+//   lRange: [
+//     Math.random() < 0.5 // half of the palettes will become pretty bright
+//       ? 0.55 + Math.random() * 0.3
+//       : 0.88 + Math.random() * 0.12,
+//     Math.random() * 0.4,
+//   ],
+//   lEasing: (x: number) => Math.pow(x, 1.1), // x => -(Math.cos(Math.PI * x)),
+// });
 
 const rgb = converter('rgb');
 

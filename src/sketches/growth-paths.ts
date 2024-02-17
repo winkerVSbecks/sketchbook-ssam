@@ -162,7 +162,7 @@ export const settings: SketchSettings = {
   },
 };
 
-ssam(sketch as Sketch, settings);
+ssam(sketch as Sketch<'2d'>, settings);
 
 function gradientSteps(from: Node, to: Node, count: number = 6) {
   const colorSale = interpolate([from.color, to.color]);

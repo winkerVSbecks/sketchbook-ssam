@@ -78,7 +78,7 @@ export const settings: SketchSettings = {
   framesFormat: ['mp4'],
 };
 
-ssam(sketch as Sketch, settings);
+ssam(sketch as Sketch<'2d'>, settings);
 
 function step(cells: Cell[]) {
   let nextGen: Cell[] = cells.slice();
