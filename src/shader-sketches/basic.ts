@@ -53,7 +53,22 @@ const sketch: Sketch<'webgl2'> = ({
   const gl = renderer.gl;
   gl.clearColor(1, 1, 1, 1);
 
+  // Rather than using a plane (two triangles) to cover the viewport here is a
+  // triangle that includes -1 to 1 range for 'position', and 0 to 1 range for 'uv'.
+  // Excess will be out of the viewport.
+
+  //         position                uv
+  //      (-1, 3)                  (0, 2)
+  //         |\                      |\
+  //         |__\(1, 1)              |__\(1, 1)
+  //         |__|_\                  |__|_\
+  //   (-1, -1)   (3, -1)        (0, 0)   (2, 0)
+
   const geometry = new Triangle(gl);
+  // const geometry = new Geometry(gl, {
+  //   position: { size: 2, data: new Float32Array([-1, -1, 3, -1, -1, 3]) },
+  //   uv: { size: 2, data: new Float32Array([0, 0, 2, 0, 0, 2]) },
+  // });
   const program = new Program(gl, {
     vertex: baseVert,
     fragment: baseFrag,
