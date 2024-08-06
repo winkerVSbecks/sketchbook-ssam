@@ -1,7 +1,7 @@
 import Random from 'canvas-sketch-util/random';
 import { xyToIndex, inBounds } from './utils';
 import { makeWalker } from './walker';
-import { Node, Walker } from './types';
+import { Node, Walker, Coord } from './types';
 
 interface State {
   grid: Node[];
@@ -43,18 +43,18 @@ function getStart() {
   return Random.pick(options);
 }
 
-export function isOccupied({ x, y }: Node) {
-  const idx = xyToIndex(x, y);
+export function isOccupied({ x, y }: Coord) {
+  const idx = xyToIndex(state.grid, x, y);
   return state.grid[idx].occupied;
 }
 
-export function setOccupied({ x, y }: Node) {
-  const idx = xyToIndex(x, y);
+export function setOccupied({ x, y }: Coord) {
+  const idx = xyToIndex(state.grid, x, y);
   if (idx >= 0) {
     state.grid[idx].occupied = true;
   }
 }
 
-export function validOption(option: Node) {
-  return inBounds(option) && !isOccupied(option);
+export function validOption(option: Coord) {
+  return inBounds(state.grid, option) && !isOccupied(option);
 }

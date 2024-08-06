@@ -3,10 +3,8 @@ import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 import { state, spawnWalker } from './state';
 import { config } from './config';
-import { makeGrid, drawGrid } from './grid';
+import { makeAsymmetricGrid } from './grid';
 import { step, drawWalker } from './walker';
-
-Random.setSeed('nalee');
 
 const colors = [
   '#FFDE73',
@@ -26,7 +24,7 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
     import.meta.hot.accept(() => wrap.hotReload());
   }
 
-  state.grid = makeGrid();
+  state.grid = makeAsymmetricGrid();
   // bunch of random walkers
   new Array(config.walkerCount).fill(null).forEach(() => spawnWalker(colors));
 
@@ -73,7 +71,7 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
       drawWalker(context, walker, width, height, playhead, bg);
     });
 
-    // drawGrid(context, state.grid, width, height, config);
+    // drawGrid(context, state.grid, width, height, '#FFF5E0');
   };
 };
 

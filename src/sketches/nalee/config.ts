@@ -1,6 +1,6 @@
 import Random from 'canvas-sketch-util/random';
 
-const size = 8;
+const size = 12;
 
 export const config = {
   resolution: Math.floor(1080 / size),
@@ -8,6 +8,7 @@ export const config = {
   sizeStep: 4,
   walkerCount: 30,
   flat: true,
+  padding: 0.03125, // 1 / 32
   uniformPathStyle: true,
   globalPathStyle: 'solidStyle',
 

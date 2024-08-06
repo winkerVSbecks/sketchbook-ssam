@@ -29,3 +29,8 @@ declare module 'polybooljs' {
   const value: any;
   export default value;
 }
+
+declare module 'robust-point-in-polygon' {
+  const value: (polygon: Point[], point: Point) => number;
+  export default value;
+}

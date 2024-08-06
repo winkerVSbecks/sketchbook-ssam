@@ -134,14 +134,17 @@ export function drawWalker(
   const time = Math.sin(playhead * Math.PI);
   const t = eases.quadInOut(time);
 
-  const paths = walker.path.reduce<Node[][]>((acc, { x, y, moveTo }) => {
-    if (moveTo) {
-      acc.push([{ x, y }]);
-    } else {
-      acc[acc.length - 1].push({ x, y });
-    }
-    return acc;
-  }, []);
+  const paths = walker.path.reduce<{ x: number; y: number }[][]>(
+    (acc, { x, y, moveTo }) => {
+      if (moveTo) {
+        acc.push([{ x, y }]);
+      } else {
+        acc[acc.length - 1].push({ x, y });
+      }
+      return acc;
+    },
+    []
+  );
 
   const [l1, l2] = walker.lengths;
 

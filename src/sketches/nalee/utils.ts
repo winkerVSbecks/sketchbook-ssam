@@ -1,16 +1,22 @@
 import { mapRange } from 'canvas-sketch-util/math';
 import { config } from './config';
+import { Node, Coord } from './types';
 
 /**
  * Utils
  */
-// i = x + width*y;
-export function xyToIndex(x: number, y: number) {
-  return x + (config.resolution + 1) * y;
+export function xyToIndex(nodes: Node[], x: number, y: number) {
+  const id = xyToId(x, y);
+  return nodes.findIndex((node) => node.id === id);
 }
 
-export function inBounds({ x, y }: { x: number; y: number }) {
-  return x >= 0 && x <= config.resolution && y >= 0 && y <= config.resolution;
+export function xyToId(x: number, y: number) {
+  return `${x}-${y}`;
+}
+
+export function inBounds(nodes: Node[], { x, y }: Coord) {
+  const id = xyToId(x, y);
+  return nodes.some((node) => node.id === id);
 }
 
 export function xyToCoords(
@@ -20,8 +26,8 @@ export function xyToCoords(
   height: number
 ): Point {
   return [
-    toWorld(x, width, config.resolution, width * 0.03125),
-    toWorld(y, height, config.resolution, width * 0.03125),
+    toWorld(x, width, config.resolution, width * config.padding),
+    toWorld(y, height, config.resolution, width * config.padding),
   ];
 }
 
@@ -31,8 +37,6 @@ export function toWorld(
   resolution: number,
   padding: number
 ) {
-  // const s = 0.95 * size;
-  // const padding = 0.025 * size;
   const s = size - 2 * padding;
   return padding + mapRange(v, 0, resolution, 0, s);
 }

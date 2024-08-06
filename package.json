@@ -51,6 +51,7 @@
     "polyline-normals": "^2.0.2",
     "rampensau": "^0.10.2",
     "resolve-lygia": "^1.0.4",
+    "robust-point-in-polygon": "^1.0.3",
     "roughjs": "^4.6.6",
     "socket.io-client": "^4.7.3",
     "ssam": "^0.18.1",

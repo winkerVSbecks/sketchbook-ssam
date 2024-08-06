@@ -1,6 +1,10 @@
-export interface Node {
+export interface Coord {
   x: number;
   y: number;
+}
+
+export interface Node extends Coord {
+  id: string;
   occupied?: boolean;
   moveTo?: boolean;
 }
