@@ -1,5 +1,5 @@
 import { mapRange } from 'canvas-sketch-util/math';
-import { config } from './config';
+// import { config } from './nalee-system-manager';
 import { Node, Coord } from './types';
 
 /**
@@ -19,17 +19,17 @@ export function inBounds(nodes: Node[], { x, y }: Coord) {
   return nodes.some((node) => node.id === id);
 }
 
-export function xyToCoords(
-  x: number,
-  y: number,
-  width: number,
-  height: number
-): Point {
-  return [
-    toWorld(x, width, config.resolution, width * config.padding),
-    toWorld(y, height, config.resolution, width * config.padding),
-  ];
-}
+// export function xyToCoords(
+//   x: number,
+//   y: number,
+//   width: number,
+//   height: number
+// ): Point {
+//   return [
+//     toWorld(x, width, config.resolution, width * config.padding),
+//     toWorld(y, height, config.resolution, width * config.padding),
+//   ];
+// }
 
 export function toWorld(
   v: number,

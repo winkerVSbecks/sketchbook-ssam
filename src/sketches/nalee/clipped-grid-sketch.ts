@@ -1,8 +1,8 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-import { state, spawnWalker } from './state';
-import { config } from './config';
+import { state, spawnWalker } from './state-factory';
+import { config } from './config-factory';
 import { drawGrid, makeGrid, clipGrid } from './grid';
 import { step, drawWalker } from './walker';
 
@@ -38,7 +38,6 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
     [40, 30],
     [30, 30],
   ]);
-  // state.grid = makeAsymmetricGrid();
   // bunch of random walkers
   new Array(config.walkerCount).fill(null).forEach(() => spawnWalker(colors));
 
