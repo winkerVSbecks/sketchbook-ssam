@@ -1,88 +1,90 @@
 import Random from 'canvas-sketch-util/random';
-import { mapRange } from 'canvas-sketch-util/math';
-import eases from 'eases';
 import type { Node, Walker, Coord, PathStyle } from './types';
 
 /**
  * Walker
  */
 
-const walkerTypes = [
-  // Prefer to move horizontally
-  (validOption: (node: Coord) => boolean) => {
-    let preferredOption = Random.pick([0, 1]);
+const walkerTypes = (flat?: boolean) =>
+  Random.pick(
+    [
+      // Prefer to move horizontally
+      (validOption: (node: Coord) => boolean) => {
+        let preferredOption = Random.pick([0, 1]);
 
-    return ({ x, y }: Node) => {
-      const options = [
-        { x: x + 1, y: y },
-        { x: x - 1, y: y },
-        { x: x, y: y + 1 },
-        { x: x, y: y - 1 },
-      ];
-      let preferred = options[preferredOption];
+        return ({ x, y }: Node) => {
+          const options = [
+            { x: x + 1, y: y },
+            { x: x - 1, y: y },
+            { x: x, y: y + 1 },
+            { x: x, y: y - 1 },
+          ];
+          let preferred = options[preferredOption];
 
-      // Try bouncing once
-      if (!validOption(preferred)) {
-        preferredOption = preferredOption === 0 ? 1 : 0;
-        preferred = options[preferredOption];
-      }
+          // Try bouncing once
+          if (!validOption(preferred)) {
+            preferredOption = preferredOption === 0 ? 1 : 0;
+            preferred = options[preferredOption];
+          }
 
-      if (validOption(preferred)) {
-        return preferred;
-      }
+          if (validOption(preferred)) {
+            return preferred;
+          }
 
-      return Random.pick(options.filter((s) => validOption(s)));
-    };
-  },
-  // Prefer to move vertically
-  (validOption: (node: Coord) => boolean) => {
-    let preferredOption = Random.pick([2, 3]);
+          return Random.pick(options.filter((s) => validOption(s)));
+        };
+      },
+      // Prefer to move vertically
+      (validOption: (node: Coord) => boolean) => {
+        let preferredOption = Random.pick([2, 3]);
 
-    return ({ x, y }: Node) => {
-      const options = [
-        { x: x + 1, y: y },
-        { x: x - 1, y: y },
-        { x: x, y: y + 1 },
-        { x: x, y: y - 1 },
-      ];
-      let preferred = options[preferredOption];
+        return ({ x, y }: Node) => {
+          const options = [
+            { x: x + 1, y: y },
+            { x: x - 1, y: y },
+            { x: x, y: y + 1 },
+            { x: x, y: y - 1 },
+          ];
+          let preferred = options[preferredOption];
 
-      // Try bouncing once
-      if (!validOption(preferred)) {
-        preferredOption = preferredOption === 2 ? 3 : 2;
-        preferred = options[preferredOption];
-      }
+          // Try bouncing once
+          if (!validOption(preferred)) {
+            preferredOption = preferredOption === 2 ? 3 : 2;
+            preferred = options[preferredOption];
+          }
 
-      if (validOption(preferred)) {
-        return preferred;
-      }
+          if (validOption(preferred)) {
+            return preferred;
+          }
 
-      return Random.pick(options.filter((s) => validOption(s)));
-    };
-  },
-]; /* .concat(
-  walker.flat
-    ? []
-    : [
-        () =>
-          // Makes the walker squiggly
-          ({ x, y }: Node) =>
-            Random.pick(
-              [
-                { x: x + 1, y: y },
-                { x: x - 1, y: y },
-                { x: x, y: y + 1 },
-                { x: x, y: y - 1 },
-              ].filter((s) => validOption(s))
-            ),
-      ]
-) */
+          return Random.pick(options.filter((s) => validOption(s)));
+        };
+      },
+    ].concat(
+      flat
+        ? []
+        : [
+            (validOption) =>
+              // Makes the walker squiggly
+              ({ x, y }: Node) =>
+                Random.pick(
+                  [
+                    { x: x + 1, y: y },
+                    { x: x - 1, y: y },
+                    { x: x, y: y + 1 },
+                    { x: x, y: y - 1 },
+                  ].filter((s) => validOption(s))
+                ),
+          ]
+    )
+  );
 
 export function makeWalker(
   start: Node,
   color: string,
   highlightColor: string,
   pathStyle: PathStyle,
+  flat: boolean, // Turn on or off squiggly walks
   size: number,
   stepSize: number,
   validOption: (node: Coord) => boolean
@@ -95,7 +97,7 @@ export function makeWalker(
     color,
     highlightColor,
     state: 'alive',
-    nextStep: Random.pick(walkerTypes)(validOption),
+    nextStep: walkerTypes(flat)(validOption),
     pathStyle,
     size,
     stepSize,

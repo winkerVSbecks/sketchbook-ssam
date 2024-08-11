@@ -4,12 +4,14 @@ export type PathStyle =
   | 'distressedStyle'
   | 'highlightStyle';
 
+export type DomainToWorld = (x: number, y: number) => Point;
+
 export interface Config {
   resolution: number;
   size: number;
   stepSize: number;
   walkerCount: number;
-  flat?: boolean;
+  flat: boolean;
   padding: number;
   pathStyle: PathStyle;
 }
@@ -23,6 +25,8 @@ export interface Node extends Coord {
   id: string;
   occupied?: boolean;
   moveTo?: boolean;
+  worldX: number;
+  worldY: number;
 }
 
 export interface Walker {
@@ -35,11 +39,4 @@ export interface Walker {
   pathStyle: PathStyle;
   size: number;
   stepSize: number;
-}
-
-export interface State {
-  grid: Node[];
-  walkers: Walker[];
-  pts: Node[];
-  mode: 'draw' | 'complete';
 }

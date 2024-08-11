@@ -3,7 +3,7 @@ import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 import { state, spawnWalker } from './state-factory';
 import { config } from './config-factory';
-import { makeAsymmetricGrid } from './grid';
+import { makeAsymmetricGrid } from './domain';
 import { step, drawWalker } from './walker';
 
 const colors = [
