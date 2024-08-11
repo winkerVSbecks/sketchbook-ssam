@@ -27,17 +27,13 @@ export function clipDomain(domain: Node[], polygon: Point[]) {
   });
 }
 
-// export function clipDomainWorldCoords(
-//   grid: Node[],
-//   polygon: Point[],
-//   resolution: number
-// ) {
-//   return grid.filter(({ x, y }) => {
-//     const [worldX, worldY] = domainToWorld(x, y, resolution, resolution);
-//     return classifyPoint(polygon, [worldX, worldY]) <= 0;
-//   });
-// }
+export function clipDomainWithWorldCoords(grid: Node[], polygon: Point[]) {
+  return grid.filter(({ worldX, worldY }) => {
+    return classifyPoint(polygon, [worldX, worldY]) <= 0;
+  });
+}
 
+// Just a test function to see how the domain is clipped
 export function makeAsymmetricDomain(domainToWorld: DomainToWorld): Node[] {
   const domain = [];
 
