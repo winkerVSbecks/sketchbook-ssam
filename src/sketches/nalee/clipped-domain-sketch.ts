@@ -2,7 +2,7 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 import { createNaleeSystem } from './nalee-system';
-import { makeAsymmetricDomain } from './domain';
+import { makeDomain, clipDomain } from './domain';
 import { Config } from './types';
 import { xyToCoords } from './utils';
 
@@ -32,8 +32,20 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
     height
   );
 
-  const domain = makeAsymmetricDomain(domainToWorld);
-  const naleeSystem = createNaleeSystem(domain, config, domainToWorld);
+  const domain = makeDomain(config.resolution, domainToWorld);
+  const clippedDomain = clipDomain(domain, [
+    [30, 10],
+    [60, 10],
+    [60, 30],
+    [50, 30],
+    [50, 40],
+    [70, 40],
+    [70, 50],
+    [40, 50],
+    [40, 30],
+    [30, 30],
+  ]);
+  const naleeSystem = createNaleeSystem(clippedDomain, config, domainToWorld);
 
   wrap.render = (props: SketchProps) => {
     const { width, height } = props;

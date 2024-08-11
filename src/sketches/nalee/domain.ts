@@ -38,10 +38,7 @@ export function clipDomain(domain: Node[], polygon: Point[]) {
 //   });
 // }
 
-export function makeAsymmetricDomain(
-  resolution: number,
-  domainToWorld: DomainToWorld
-): Node[] {
+export function makeAsymmetricDomain(domainToWorld: DomainToWorld): Node[] {
   const domain = [];
 
   for (let y = 10; y <= 30; y++) {
