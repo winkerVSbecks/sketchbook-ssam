@@ -11,8 +11,9 @@ import {
   xyToCoords,
 } from '../nalee';
 import type { Config as NaleeConfig } from '../nalee';
+import { palettes } from '../../mindful-palettes';
 
-const size = 6; //64;
+const size = 64; //64;
 
 const corners = Random.shuffle([
   [0, Random.rangeFloor(0, size - 1)],
@@ -21,16 +22,7 @@ const corners = Random.shuffle([
   [size - 1, Random.rangeFloor(0, size - 1)],
 ]) as Point[];
 
-// https://x.com/AlexCristache/status/1778786001944535286
-const colors = [
-  '#FFDE73',
-  '#EE7744',
-  '#F9BC4F',
-  '#2C7C79',
-  '#4C4D78',
-  // '#101019',
-  '#FFF5E0',
-];
+const colors = Random.pick(palettes);
 
 const config = {
   size,
@@ -205,15 +197,14 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     groupPolygons.push({ color: c, regions: union.regions });
   }
 
-  // Generate nalee system for each region
-  const naleeSize = 12;
+  const naleeSize = 6;
   const naleeConfig = {
-    resolution: Math.floor(1080 / size),
+    resolution: Math.floor(1080 / naleeSize),
     size: naleeSize,
     stepSize: naleeSize / 3,
     walkerCount: 30,
     padding: 0.03125, // 1 / 32
-    pathStyle: 'solidStyle',
+    pathStyle: 'solidStyle', // 'pipeStyle', //'solidStyle',
     flat: true,
   } satisfies NaleeConfig;
 
@@ -224,29 +215,44 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     height
   );
 
-  const domain = makeDomain(naleeConfig.resolution, domainToWorld);
-  const clippedDomain = clipDomainWithWorldCoords(domain, [
-    [0, 0],
-    [400, 0],
-    [400, 400],
-    [0, 400],
-  ]);
-  const naleeSystem = createNaleeSystem(
-    clippedDomain,
-    naleeConfig,
-    domainToWorld
-  );
+  const naleeSystems: ((props: SketchProps) => void)[] = [];
 
-  wrap.render = ({ width, height, playhead }: SketchProps) => {
+  // One global domain
+  const domain = makeDomain(naleeConfig.resolution, domainToWorld);
+
+  // Generate nalee system for each region
+  Object.values(groupPolygons).forEach(({ color, regions }) => {
+    regions.forEach((region) => {
+      const clippedDomain = clipDomainWithWorldCoords(domain, region);
+      const naleeSystem = createNaleeSystem(
+        clippedDomain,
+        naleeConfig,
+        domainToWorld,
+        [color],
+        bg,
+        false
+      );
+      naleeSystems.push(naleeSystem);
+    });
+  });
+
+  wrap.render = (props: SketchProps) => {
+    const { width, height } = props;
+    context.clearRect(0, 0, width, height);
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
 
-    Object.values(groupPolygons).forEach(({ color, regions }) => {
-      context.fillStyle = color;
-      regions.forEach((region) => {
-        drawRegion(region, color);
-      });
+    naleeSystems.forEach((naleeSystem) => {
+      naleeSystem(props);
     });
+
+    // Object.values(groupPolygons).forEach(({ color, regions }) => {
+    //   context.fillStyle = color;
+
+    //   regions.forEach((region) => {
+    //     drawRegion(region, color);
+    //   });
+    // });
   };
 };
 
@@ -460,7 +466,7 @@ export const settings: SketchSettings = {
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
   animate: true,
-  duration: 2_000,
+  duration: 8_000,
   playFps: 60,
   exportFps: 60,
   framesFormat: ['mp4'],

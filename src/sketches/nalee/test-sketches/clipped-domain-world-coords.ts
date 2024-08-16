@@ -34,10 +34,20 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
 
   const domain = makeDomain(config.resolution, domainToWorld);
   const clippedDomain = clipDomainWithWorldCoords(domain, [
+    [900, 720],
+    [900, 180],
+    [720, 180],
+    [720, 0],
     [0, 0],
-    [400, 0],
-    [400, 400],
-    [0, 400],
+    [0, 360],
+    [360, 360],
+    [360, 900],
+    [720, 900],
+    [720, 720],
+    // [0, 0],
+    // [400, 0],
+    // [400, 400],
+    // [0, 400],
   ]);
   const naleeSystem = createNaleeSystem(clippedDomain, config, domainToWorld);
 
