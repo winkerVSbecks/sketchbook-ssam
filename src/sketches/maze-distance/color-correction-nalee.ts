@@ -1,20 +1,16 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
+import { drawPath } from '@daeinc/draw';
 import { mapRange } from 'canvas-sketch-util/math';
-import rough from 'roughjs';
 import PolyBool from 'polybooljs';
-
 import {
-  config as naleeConfig,
-  state,
-  spawnWalker,
-  makeGrid,
-  clipGridWorldCoords,
-  drawGrid,
-  step,
-  drawWalker,
+  createNaleeSystem,
+  makeDomain,
+  clipDomainWithWorldCoords,
+  xyToCoords,
 } from '../nalee';
+import type { Config as NaleeConfig } from '../nalee';
 
 const size = 6; //64;
 
@@ -60,39 +56,17 @@ interface DistanceGroup {
 // Based on:
 // https://observablehq.com/@jwolondon/mazes
 // https://observablehq.com/@jwolondon/mazes-traversing
-export const sketch = ({ wrap, context, width, canvas }: SketchProps) => {
+export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => wrap.dispose());
     import.meta.hot.accept(() => wrap.hotReload());
   }
 
-  const rc = rough.canvas(canvas);
-
-  function drawCell(path: Line, color: string) {
-    const [[x1, y1], [x2], [, y2]] = path;
-    const x = x1;
-    const y = y1;
-    const w = x2 - x1;
-    const h = y2 - y1;
-
-    rc.rectangle(x, y, w, h, {
-      stroke: 'none',
-      fill: color,
-      fillStyle: 'cross-hatch',
-    });
-  }
-
   function drawRegion(vertices: any, color: string) {
     if (vertices.length > 0) {
-      [20, 40, 60, 80].forEach((angle) => {
-        rc.polygon(vertices, {
-          stroke: 'none',
-          fill: color,
-          fillStyle: 'cross-hatch',
-          hachureAngle: angle,
-          hachureGap: 4,
-        });
-      });
+      drawPath(context, vertices);
+      context.fillStyle = color;
+      context.fill();
     }
   }
 
@@ -231,18 +205,41 @@ export const sketch = ({ wrap, context, width, canvas }: SketchProps) => {
     groupPolygons.push({ color: c, regions: union.regions });
   }
 
+  // Generate nalee system for each region
+  const naleeSize = 12;
+  const naleeConfig = {
+    resolution: Math.floor(1080 / size),
+    size: naleeSize,
+    stepSize: naleeSize / 3,
+    walkerCount: 30,
+    padding: 0.03125, // 1 / 32
+    pathStyle: 'solidStyle',
+    flat: true,
+  } satisfies NaleeConfig;
+
+  const domainToWorld = xyToCoords(
+    naleeConfig.resolution,
+    naleeConfig.padding,
+    width,
+    height
+  );
+
+  const domain = makeDomain(naleeConfig.resolution, domainToWorld);
+  const clippedDomain = clipDomainWithWorldCoords(domain, [
+    [0, 0],
+    [400, 0],
+    [400, 400],
+    [0, 400],
+  ]);
+  const naleeSystem = createNaleeSystem(
+    clippedDomain,
+    naleeConfig,
+    domainToWorld
+  );
+
   wrap.render = ({ width, height, playhead }: SketchProps) => {
-    context.fillStyle = '#101019';
+    context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
-    drawRegion(
-      [
-        [0, 0],
-        [width, 0],
-        [width, height],
-        [0, height],
-      ],
-      bg
-    );
 
     Object.values(groupPolygons).forEach(({ color, regions }) => {
       context.fillStyle = color;

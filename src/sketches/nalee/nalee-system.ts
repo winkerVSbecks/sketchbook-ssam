@@ -18,7 +18,8 @@ export function createNaleeSystem(
     '#4C4D78',
     '#FFF5E0',
   ],
-  bg: string = '#101019'
+  bg: string = '#101019',
+  debugGrid = false
 ) {
   function spawnWalker(colors: string[], initialPosition?: Node) {
     if (state.mode !== 'complete') {
@@ -86,7 +87,7 @@ export function createNaleeSystem(
     }
   }
 
-  return ({ context, width, height, playhead }: SketchProps) => {
+  return ({ context, playhead }: SketchProps) => {
     state.walkers.forEach((walker) => {
       const paths = walkerToPaths(walker);
 
@@ -97,6 +98,8 @@ export function createNaleeSystem(
       drawPath(context, walker, playhead, bg, pathsInWorldCoords);
     });
 
-    drawDomain(context, state.domain, '#000', config.size);
+    if (debugGrid) {
+      drawDomain(context, state.domain, '#000', config.size);
+    }
   };
 }

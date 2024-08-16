@@ -1,10 +1,10 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-import { createNaleeSystem } from './nalee-system';
-import { makeDomain } from './domain';
-import { Config } from './types';
-import { xyToCoords } from './utils';
+import { createNaleeSystem } from '../nalee-system';
+import { makeDomain } from '../domain';
+import { Config } from '../types';
+import { xyToCoords } from '../utils';
 
 Random.setSeed('nalee');
 
