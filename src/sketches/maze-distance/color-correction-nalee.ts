@@ -13,7 +13,8 @@ import {
 import type { Config as NaleeConfig } from '../nalee';
 import { palettes } from '../../mindful-palettes';
 
-const size = 64; //64;
+Random.setSeed(Random.getRandomSeed());
+const size = Random.pick([6, 16, 24, 32, 64]); //64;
 
 const corners = Random.shuffle([
   [0, Random.rangeFloor(0, size - 1)],
@@ -197,14 +198,14 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     groupPolygons.push({ color: c, regions: union.regions });
   }
 
-  const naleeSize = 6;
+  const naleeSize = Random.pick([6, 9, 12]);
   const naleeConfig = {
     resolution: Math.floor(1080 / naleeSize),
     size: naleeSize,
     stepSize: naleeSize / 3,
     walkerCount: 30,
     padding: 0.03125, // 1 / 32
-    pathStyle: 'solidStyle', // 'pipeStyle', //'solidStyle',
+    pathStyle: Random.pick(['pipeStyle', 'solidStyle']), // 'pipeStyle', //'solidStyle',
     flat: true,
   } satisfies NaleeConfig;
 
