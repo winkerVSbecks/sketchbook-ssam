@@ -9,9 +9,9 @@ import {
   makeDomain,
   clipDomainWithWorldCoords,
   xyToCoords,
-} from '../nalee';
-import type { Config as NaleeConfig } from '../nalee';
-import { palettes } from '../../mindful-palettes';
+} from './nalee';
+import type { Config as NaleeConfig } from './nalee';
+import { palettes } from '../mindful-palettes';
 
 Random.setSeed(Random.getRandomSeed());
 const size = Random.pick([6, 16, 24, 32, 64]); //64;
@@ -31,6 +31,17 @@ const config = {
   end: corners.pop()! as Point,
   colorCount: colors.length - 1,
 };
+
+const naleeSize = Random.pick([6, 9, 12]);
+const naleeConfig = {
+  resolution: Math.floor(1080 / naleeSize),
+  size: naleeSize,
+  stepSize: naleeSize / 3,
+  walkerCount: 30,
+  padding: 0.03125, // 1 / 32
+  pathStyle: Random.pick(['pipeStyle', 'solidStyle']), // 'pipeStyle', //'solidStyle',
+  flat: true,
+} satisfies NaleeConfig;
 
 interface DGCell {
   path: Line;
@@ -197,17 +208,6 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
 
     groupPolygons.push({ color: c, regions: union.regions });
   }
-
-  const naleeSize = Random.pick([6, 9, 12]);
-  const naleeConfig = {
-    resolution: Math.floor(1080 / naleeSize),
-    size: naleeSize,
-    stepSize: naleeSize / 3,
-    walkerCount: 30,
-    padding: 0.03125, // 1 / 32
-    pathStyle: Random.pick(['pipeStyle', 'solidStyle']), // 'pipeStyle', //'solidStyle',
-    flat: true,
-  } satisfies NaleeConfig;
 
   const domainToWorld = xyToCoords(
     naleeConfig.resolution,
