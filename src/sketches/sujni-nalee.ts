@@ -165,7 +165,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   }
 
   const groups: { [key: string]: DistanceGroup } = Object.fromEntries(
-    colors.map((c) => [c, { color: c, cells: [] as DGCell[] }])
+    colors.map((c: string) => [c, { color: c, cells: [] as DGCell[] }])
   );
 
   for (const c of cells) {
