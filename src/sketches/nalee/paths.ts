@@ -194,6 +194,39 @@ function distressedStyle(
   context.stroke();
 }
 
+function stitchStyle(
+  context: CanvasRenderingContext2D,
+  walker: Walker,
+  pts: Point[]
+) {
+  context.save();
+  context.lineCap = 'round';
+  context.lineJoin = 'round';
+  context.setLineDash([walker.stepSize, walker.stepSize * 2]);
+
+  // outer
+  context.strokeStyle = walker.color;
+  context.lineWidth = Math.max(walker.size / 4, 2);
+  drawShape(context, pts, false);
+  context.stroke();
+  context.restore();
+}
+
+function thinLineStyle(
+  context: CanvasRenderingContext2D,
+  walker: Walker,
+  pts: Point[]
+) {
+  context.lineCap = 'round';
+  context.lineJoin = 'round';
+
+  // outer
+  context.strokeStyle = walker.color;
+  context.lineWidth = Math.max(walker.size / 4, 2);
+  drawShape(context, pts, false);
+  context.stroke();
+}
+
 function drawShape(
   context: CanvasRenderingContext2D,
   [start, ...pts]: Point[],
@@ -214,4 +247,6 @@ const pathStyles = {
   pipeStyle,
   distressedStyle,
   highlightStyle,
+  stitchStyle,
+  thinLineStyle,
 };

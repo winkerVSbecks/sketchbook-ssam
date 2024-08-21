@@ -32,14 +32,14 @@ const config = {
   colorCount: colors.length - 1,
 };
 
-const naleeSize = Random.pick([6, 9, 12]);
+const naleeSize = 9; //Random.pick([6, 9, 12]);
 const naleeConfig = {
   resolution: Math.floor(1080 / naleeSize),
   size: naleeSize,
   stepSize: naleeSize / 3,
   walkerCount: 30,
   padding: 0.03125, // 1 / 32
-  pathStyle: Random.pick(['pipeStyle', 'solidStyle']), // 'pipeStyle', //'solidStyle',
+  pathStyle: Random.pick(['pipeStyle', 'solidStyle', 'stitchStyle']), // 'pipeStyle', //'solidStyle',
   flat: true,
 } satisfies NaleeConfig;
 
@@ -227,7 +227,10 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       const clippedDomain = clipDomainWithWorldCoords(domain, region);
       const naleeSystem = createNaleeSystem(
         clippedDomain,
-        naleeConfig,
+        {
+          ...naleeConfig,
+          pathStyle: Random.pick(['thinLineStyle', 'stitchStyle']),
+        },
         domainToWorld,
         [color],
         bg,

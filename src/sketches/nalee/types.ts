@@ -2,7 +2,9 @@ export type PathStyle =
   | 'solidStyle'
   | 'pipeStyle'
   | 'distressedStyle'
-  | 'highlightStyle';
+  | 'highlightStyle'
+  | 'stitchStyle'
+  | 'thinLineStyle';
 
 export type DomainToWorld = (x: number, y: number) => Point;
 
