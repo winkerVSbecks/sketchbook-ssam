@@ -9,37 +9,30 @@ import {
   makeDomain,
   clipDomainWithWorldCoords,
   xyToCoords,
-} from './nalee';
-import type { Config as NaleeConfig } from './nalee';
-import { palettes } from '../mindful-palettes';
+} from '../nalee';
+import type { Config as NaleeConfig } from '../nalee';
+import { palettes } from '../../mindful-palettes';
 
 Random.setSeed(Random.getRandomSeed());
-const size = Random.pick([6, 16, 24, 32, 64]); //64;
+const size = 32;
 
-const corners = Random.shuffle([
-  [0, Random.rangeFloor(0, size - 1)],
-  [Random.rangeFloor(0, size - 1), 0],
-  [Random.rangeFloor(0, size - 1), size - 1],
-  [size - 1, Random.rangeFloor(0, size - 1)],
-]) as Point[];
-
-const colors = Random.pick(palettes);
+const colors = palettes.at(-7)!;
 
 const config = {
   size,
-  start: corners.pop()! as Point,
-  end: corners.pop()! as Point,
+  start: [0, 0],
+  end: [size, size],
   colorCount: colors.length - 1,
 };
 
-const naleeSize = 9; //Random.pick([6, 9, 12]);
+const naleeSize = 6;
 const naleeConfig = {
   resolution: Math.floor(1080 / naleeSize),
   size: naleeSize,
   stepSize: naleeSize / 3,
   walkerCount: 30,
   padding: 0.03125, // 1 / 32
-  pathStyle: Random.pick(['pipeStyle', 'solidStyle', 'stitchStyle']), // 'pipeStyle', //'solidStyle',
+  pathStyle: 'solidStyle',
   flat: true,
 } satisfies NaleeConfig;
 
@@ -227,10 +220,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       const clippedDomain = clipDomainWithWorldCoords(domain, region);
       const naleeSystem = createNaleeSystem(
         clippedDomain,
-        {
-          ...naleeConfig,
-          pathStyle: Random.pick(['thinLineStyle', 'stitchStyle']),
-        },
+        naleeConfig,
         domainToWorld,
         [color],
         bg,
