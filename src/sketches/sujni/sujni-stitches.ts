@@ -11,7 +11,7 @@ import {
   xyToCoords,
 } from '../nalee';
 import type { Config as NaleeConfig } from '../nalee';
-import { palettes } from '../../mindful-palettes';
+import { palettes } from '../../colors/mindful-palettes';
 
 Random.setSeed(Random.getRandomSeed());
 const size = Random.pick([6, 16, 24, 32, 64]); //64;
@@ -41,6 +41,13 @@ const naleeConfig = {
   padding: 0.03125, // 1 / 32
   pathStyle: 'solidStyle', // Random.pick(['pipeStyle', 'solidStyle', 'stitchStyle']), // 'pipeStyle', //'solidStyle',
   flat: true,
+  spawnType: Random.pick([
+    'random',
+    'mandala',
+    'middle-out',
+    'quad-centres',
+    'middle-out-cross',
+  ]),
 } satisfies NaleeConfig;
 
 interface DGCell {
@@ -229,7 +236,13 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
         clippedDomain,
         {
           ...naleeConfig,
-          pathStyle: Random.pick(['thinLineStyle', 'stitchStyle']),
+          pathStyle: Random.pick([
+            'thinLineStyle',
+            'stitchStyle',
+            'withNormalsStyle',
+            'pipeStyle',
+            'distressedStyle',
+          ]),
         },
         domainToWorld,
         [color],

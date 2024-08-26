@@ -227,6 +227,50 @@ function thinLineStyle(
   context.stroke();
 }
 
+function withNormalsStyle(
+  context: CanvasRenderingContext2D,
+  walker: Walker,
+  pts: Point[]
+) {
+  context.lineCap = 'round';
+  context.lineJoin = 'round';
+
+  // outer
+  context.strokeStyle = walker.color;
+  context.lineWidth = Math.max(walker.size / 4, 1);
+
+  const d = walker.stepSize * 0.75;
+
+  // Calculate normals for each point
+  const normals = pts.map((pt, i) => {
+    const a = pts[i - 1] || pt;
+    const b = pts[i + 1] || pt;
+    const dx = b[0] - a[0];
+    const dy = b[1] - a[1];
+    const len = Math.hypot(dx, dy);
+
+    console.log(len);
+
+    return dx === 0 || dy === 0
+      ? ([(-dy / len) * d, (dx / len) * d] as Point)
+      : [0, 0];
+  });
+
+  // Draw the path
+  drawShape(context, pts, false);
+  context.stroke();
+
+  // Draw the normals
+  pts.forEach((pt, i) => {
+    const [nx, ny] = normals[i];
+    context.beginPath();
+    context.moveTo(pt[0] - nx, pt[1] - ny);
+    context.lineTo(pt[0], pt[1]);
+    context.lineTo(pt[0] + nx, pt[1] + ny);
+    context.stroke();
+  });
+}
+
 function drawShape(
   context: CanvasRenderingContext2D,
   [start, ...pts]: Point[],
@@ -249,4 +293,5 @@ const pathStyles = {
   highlightStyle,
   stitchStyle,
   thinLineStyle,
+  withNormalsStyle,
 };

@@ -14,25 +14,32 @@ import type { Config as NaleeConfig } from '../nalee';
 import { palettes } from '../../colors/mindful-palettes';
 
 Random.setSeed(Random.getRandomSeed());
-const size = 32;
+const size = 6; //Random.pick([6, 16, 24, 32, 64]); //64;
 
-const colors = palettes.at(-7)!;
+const corners = Random.shuffle([
+  [0, Random.rangeFloor(0, size - 1)],
+  [Random.rangeFloor(0, size - 1), 0],
+  [Random.rangeFloor(0, size - 1), size - 1],
+  [size - 1, Random.rangeFloor(0, size - 1)],
+]) as Point[];
+
+const colors = Random.pick(palettes);
 
 const config = {
   size,
-  start: [0, 0] as Point,
-  end: [size, size] as Point,
+  start: corners.pop()! as Point,
+  end: corners.pop()! as Point,
   colorCount: colors.length - 1,
 };
 
-const naleeSize = 6;
+const naleeSize = 12; //Random.pick([6, 9, 12]);
 const naleeConfig = {
   resolution: Math.floor(1080 / naleeSize),
   size: naleeSize,
   stepSize: naleeSize / 3,
   walkerCount: 30,
   padding: 0.03125, // 1 / 32
-  pathStyle: 'solidStyle',
+  pathStyle: 'withNormalsStyle', // Random.pick(['pipeStyle', 'solidStyle', 'stitchStyle']), // 'pipeStyle', //'solidStyle',
   flat: true,
 } satisfies NaleeConfig;
 

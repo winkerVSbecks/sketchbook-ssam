@@ -11,7 +11,8 @@ import {
   xyToCoords,
 } from '../nalee';
 import type { Config as NaleeConfig } from '../nalee';
-import { palettes } from '../../mindful-palettes';
+import { palettes as mindfulPalettes } from '../../colors/mindful-palettes';
+import { palettes as autoAlbersPalettes } from '../../colors/auto-albers';
 
 Random.setSeed(Random.getRandomSeed());
 const size = Random.pick([6, 16, 24, 32, 64]); //64;
@@ -23,7 +24,7 @@ const corners = Random.shuffle([
   [size - 1, Random.rangeFloor(0, size - 1)],
 ]) as Point[];
 
-const colors = Random.pick(palettes);
+const colors = Random.pick(autoAlbersPalettes); // Random.pick(mindfulPalettes);
 
 const config = {
   size,
@@ -41,6 +42,13 @@ const naleeConfig = {
   padding: 0.03125, // 1 / 32
   pathStyle: Random.pick(['pipeStyle', 'solidStyle']), // 'pipeStyle', //'solidStyle',
   flat: true,
+  spawnType: Random.pick([
+    'random',
+    'mandala',
+    'middle-out',
+    'quad-centres',
+    'middle-out-cross',
+  ]),
 } satisfies NaleeConfig;
 
 interface DGCell {

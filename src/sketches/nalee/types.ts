@@ -4,7 +4,15 @@ export type PathStyle =
   | 'distressedStyle'
   | 'highlightStyle'
   | 'stitchStyle'
-  | 'thinLineStyle';
+  | 'thinLineStyle'
+  | 'withNormalsStyle';
+
+export type SpawnTypes =
+  | 'random'
+  | 'mandala'
+  | 'middle-out'
+  | 'quad-centres'
+  | 'middle-out-cross';
 
 export type DomainToWorld = (x: number, y: number) => Point;
 
@@ -16,6 +24,7 @@ export interface Config {
   flat: boolean;
   padding: number;
   pathStyle: PathStyle;
+  spawnType?: SpawnTypes;
 }
 
 export interface Coord {

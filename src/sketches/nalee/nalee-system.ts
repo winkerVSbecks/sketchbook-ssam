@@ -3,8 +3,9 @@ import Random from 'canvas-sketch-util/random';
 import { drawDomain } from './domain';
 import { step, makeWalker, walkerToPaths } from './walker';
 import { drawPath } from './paths';
-import { Node, Config, DomainToWorld } from './types';
+import { Node, Config, DomainToWorld, Coord } from './types';
 import { State } from './state';
+import spawns from './spawns';
 
 export function createNaleeSystem(
   domain: Node[] = [],
@@ -21,7 +22,7 @@ export function createNaleeSystem(
   bg: string = '#101019',
   debugGrid = false
 ) {
-  function spawnWalker(colors: string[], initialPosition?: Node) {
+  function spawnWalker(colors: string[], initialPosition?: Coord) {
     if (state.mode !== 'complete') {
       const start = initialPosition
         ? state.getPoint(initialPosition.x, initialPosition.y)
@@ -46,8 +47,47 @@ export function createNaleeSystem(
 
   const state = new State(domain);
 
+  if (config.spawnType) {
+    spawns[config.spawnType](
+      (position?: Coord) => spawnWalker(colors, position),
+      config.resolution,
+      config.walkerCount
+    );
+  } else {
+    spawns.random(
+      (position?: Coord) => spawnWalker(colors, position),
+      config.resolution,
+      config.walkerCount
+    );
+  }
   // Spawn a bunch of random walkers
-  new Array(config.walkerCount).fill(null).forEach(() => spawnWalker(colors));
+  // new Array(config.walkerCount).fill(null).forEach(() => spawnWalker(colors));
+
+  function middleOutCross() {
+    // middle out cross style
+    spawnWalker(colors, { x: 0, y: 0 });
+    spawnWalker(colors, { x: config.resolution, y: 0 });
+    for (let x = 0; x < config.resolution; x++) {
+      spawnWalker(colors, { x: x, y: x % 2 === 0 ? config.resolution : 0 });
+    }
+    for (let y = 0; y < config.resolution; y++) {
+      spawnWalker(colors, { x: y % 2 === 0 ? config.resolution : 0, y: y });
+    }
+    spawnWalker(colors, { x: 0, y: config.resolution });
+    spawnWalker(colors, { x: config.resolution, y: config.resolution });
+
+    // spawnWalker({ x: 0, y: 0 });
+    // spawnWalker({ x: 90, y: 0 });
+    // for (let index = 0; index < 90; index++) {
+    //   spawnWalker({ x: index, y: index % 2 === 0 ? 90 : 0 });
+    //   spawnWalker({ x: index % 2 === 0 ? 90 : 0, y: index });
+    // }
+    // spawnWalker({ x: 0, y: 90 });
+    // spawnWalker({ x: 90, y: 90 });
+  }
+
+  middleOutCross();
+
   let initialWalkers = true;
 
   console.table({
