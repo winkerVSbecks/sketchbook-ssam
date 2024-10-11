@@ -24,7 +24,7 @@ const corners = Random.shuffle([
   [size - 1, Random.rangeFloor(0, size - 1)],
 ]) as Point[];
 
-const colors = Random.pick(autoAlbersPalettes); // Random.pick(mindfulPalettes);
+const colors = Random.pick([...mindfulPalettes, ...autoAlbersPalettes]);
 
 const config = {
   size,
@@ -33,14 +33,14 @@ const config = {
   colorCount: colors.length - 1,
 };
 
-const naleeSize = Random.pick([6, 9, 12, 24, 32]);
+const naleeSize = Random.pick([24, 32]);
 const naleeConfig = {
   resolution: Math.floor(1080 / naleeSize),
   size: naleeSize,
   stepSize: naleeSize / 3,
   walkerCount: 30,
   padding: 0.03125, // 1 / 32
-  pathStyle: Random.pick(['pipeStyle', 'solidStyle']), // 'pipeStyle', //'solidStyle',
+  pathStyle: 'polkaLine',
   flat: true,
   spawnType: Random.pick([
     'random',

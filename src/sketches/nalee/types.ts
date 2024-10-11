@@ -1,11 +1,6 @@
-export type PathStyle =
-  | 'solidStyle'
-  | 'pipeStyle'
-  | 'distressedStyle'
-  | 'highlightStyle'
-  | 'stitchStyle'
-  | 'thinLineStyle'
-  | 'withNormalsStyle';
+import { pathStyles } from './paths';
+
+export type PathStyle = keyof typeof pathStyles;
 
 export type SpawnTypes =
   | 'random'

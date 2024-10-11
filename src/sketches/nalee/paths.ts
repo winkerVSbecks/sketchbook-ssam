@@ -249,8 +249,6 @@ function withNormalsStyle(
     const dy = b[1] - a[1];
     const len = Math.hypot(dx, dy);
 
-    console.log(len);
-
     return dx === 0 || dy === 0
       ? ([(-dy / len) * d, (dx / len) * d] as Point)
       : [0, 0];
@@ -271,6 +269,63 @@ function withNormalsStyle(
   });
 }
 
+function polkaLine(
+  context: CanvasRenderingContext2D,
+  walker: Walker,
+  pts: Point[]
+) {
+  context.save();
+  context.lineCap = 'round';
+  context.lineJoin = 'round';
+
+  const width = walker.size - walker.stepSize;
+
+  // outer
+  context.strokeStyle = walker.color;
+  context.lineWidth = width;
+
+  // Draw the path
+  drawShape(context, pts, false);
+  context.stroke();
+
+  const r = Math.max(width / 4, 2);
+
+  pts.forEach((pt) => {
+    context.beginPath();
+    context.ellipse(pt[0], pt[1], r, r, 0, 0, Math.PI * 2);
+    context.fill();
+  });
+  context.restore();
+}
+
+function dimpleLine(
+  context: CanvasRenderingContext2D,
+  walker: Walker,
+  pts: Point[]
+) {
+  context.save();
+  context.lineCap = 'round';
+  context.lineJoin = 'round';
+
+  const width = walker.size - walker.stepSize;
+
+  // outer
+  context.strokeStyle = walker.color;
+  context.lineWidth = width / 4;
+
+  // Draw the path
+  drawShape(context, pts, false);
+  context.stroke();
+
+  context.fillStyle = walker.color;
+  pts.forEach((pt) => {
+    context.beginPath();
+    context.ellipse(pt[0], pt[1], width / 2, width / 2, 0, 0, Math.PI * 2);
+    context.fill();
+  });
+  context.restore();
+}
+
 function drawShape(
   context: CanvasRenderingContext2D,
   [start, ...pts]: Point[],
@@ -286,7 +341,7 @@ function drawShape(
   }
 }
 
-const pathStyles = {
+export const pathStyles = {
   solidStyle,
   pipeStyle,
   distressedStyle,
@@ -294,4 +349,6 @@ const pathStyles = {
   stitchStyle,
   thinLineStyle,
   withNormalsStyle,
+  polkaLine,
+  dimpleLine,
 };
