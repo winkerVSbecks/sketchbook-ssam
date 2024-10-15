@@ -196,7 +196,6 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
         greyscaleMethod: 'none',
         ditherMethod: 'atkinson',
         ditherThreshold: 50,
-        replaceColours: false,
         replaceColourMap: {
           black: { r: 0, g: 0, b: 0, a: 255 },
           white: { r: 255, g: 255, b: 255, a: 255 },

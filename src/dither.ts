@@ -8,12 +8,8 @@ interface RGB {
 interface processingOptions {
   greyscaleMethod: 'luminance' | 'average' | 'none';
   ditherMethod: 'atkinson' | 'threshold';
-  ditherThreshold: number;
-  replaceColours?: boolean;
-  replaceColourMap: {
-    black: RGB;
-    white: RGB;
-  };
+  ditherThreshold?: number;
+  replaceColourMap?: { black: RGB; white: RGB };
 }
 
 export function dither(
@@ -29,10 +25,10 @@ export function dither(
   if (options.ditherMethod == 'atkinson') {
     dither_atkinson(image, options.greyscaleMethod == 'none');
   } else if (options.ditherMethod == 'threshold') {
-    dither_threshold(image, options.ditherThreshold);
+    dither_threshold(image, options.ditherThreshold || 127);
   }
 
-  if (options.replaceColours == true) {
+  if (options.replaceColourMap !== undefined) {
     replace_colours(
       image,
       options.replaceColourMap.black,
