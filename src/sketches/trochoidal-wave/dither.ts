@@ -100,7 +100,7 @@ export const sketch = ({ wrap, context, canvas }: SketchProps) => {
     const ditheredImage = scaleCanvasAndApplyDither(
       width,
       height,
-      0.25,
+      0.125,
       canvas,
       (data) =>
         dither(data, {
@@ -117,7 +117,7 @@ export const sketch = ({ wrap, context, canvas }: SketchProps) => {
 export const settings: SketchSettings = {
   mode: '2d',
   dimensions: [1080, 1080],
-  pixelRatio: 1,
+  pixelRatio: window.devicePixelRatio,
   animate: true,
   duration: 4_000,
   playFps: 24,

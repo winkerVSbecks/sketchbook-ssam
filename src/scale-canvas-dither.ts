@@ -8,17 +8,14 @@ export function scaleCanvasAndApplyDither(
   const smallCanvas = document.createElement('canvas');
   const smallCtx = smallCanvas.getContext('2d')!;
 
-  smallCanvas.width = width * scaleFactor;
-  smallCanvas.height = height * scaleFactor;
-  smallCtx.drawImage(
-    canvas,
-    0,
-    0,
-    smallCanvas.width * window.devicePixelRatio,
-    smallCanvas.height * window.devicePixelRatio
-  );
+  const w = width * scaleFactor * window.devicePixelRatio;
+  const h = height * scaleFactor * window.devicePixelRatio;
 
-  const data = smallCtx.getImageData(0, 0, width, height);
+  smallCanvas.width = w;
+  smallCanvas.height = h;
+  smallCtx.drawImage(canvas, 0, 0, w, h);
+
+  const data = smallCtx.getImageData(0, 0, w, h);
 
   const dithered = dither(data);
 
