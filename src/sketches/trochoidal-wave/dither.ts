@@ -1,11 +1,11 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-import { generateColors } from '../../subtractive-color';
 import { palettes as autoAlbersPalettes } from '../../colors/auto-albers';
 import { palettes as mindfulPalettes } from '../../colors/mindful-palettes';
 import { dither as simpleDither } from '../../simple-dither';
 import { dither } from '../../dither';
+import { scaleCanvasAndApplyDither } from '../../scale-canvas-dither';
 
 Random.setSeed(Random.getRandomSeed());
 console.log(Random.getSeed());
@@ -17,7 +17,7 @@ interface WaveParams {
   radius: number;
 }
 
-const baseFrequency = Random.range(0.00001, 0.01);
+const baseFrequency = Random.range(0.00001, 0.0001);
 const baseRadius = Random.rangeFloor(1, 20);
 const baseAmplitude = Random.rangeFloor(20, 80);
 
@@ -69,12 +69,14 @@ export const sketch = ({ wrap, context, canvas }: SketchProps) => {
     context.fill();
   }
 
-  const layerCount = 5;
-  const colors = Random.pick([...mindfulPalettes, ...autoAlbersPalettes]);
-  // const colors = Array.from(
-  //   { length: layerCount + 1 },
-  //   (_, idx) => `hsl(0 0% ${((75 * idx) / layerCount).toFixed(2)}%)`
-  // );
+  const layerCount = Random.rangeFloor(5, 20);
+  const grayscale = Random.boolean();
+  const colors = grayscale
+    ? Array.from(
+        { length: layerCount + 1 },
+        (_, idx) => `hsl(0 0% ${((75 * idx) / layerCount).toFixed(2)}%)`
+      )
+    : Random.pick([...mindfulPalettes, ...autoAlbersPalettes]);
   const bg = colors.shift()!;
 
   wrap.render = ({ width, height, playhead }: SketchProps) => {
@@ -95,26 +97,20 @@ export const sketch = ({ wrap, context, canvas }: SketchProps) => {
       });
     }
 
-    const smallCanvas = document.createElement('canvas');
-    const smallCtx = smallCanvas.getContext('2d')!;
+    const ditheredImage = scaleCanvasAndApplyDither(
+      width,
+      height,
+      0.25,
+      canvas,
+      (data) =>
+        dither(data, {
+          greyscaleMethod: 'none',
+          ditherMethod: 'atkinson',
+        })
+      // simpleDither(data)
+    );
 
-    const scaleFactor = 0.25; // .25 or .5
-
-    smallCanvas.width = width * scaleFactor;
-    smallCanvas.height = height * scaleFactor;
-    smallCtx.drawImage(canvas, 0, 0, smallCanvas.width, smallCanvas.height);
-
-    const data = smallCtx.getImageData(0, 0, width, height);
-    // const dithered = simpleDither(data);
-
-    const dithered = dither(data, {
-      greyscaleMethod: 'none', // 'average'
-      ditherMethod: 'atkinson',
-    });
-
-    smallCtx.putImageData(dithered, 0, 0);
-
-    context.drawImage(smallCanvas, 0, 0, width, height);
+    context.drawImage(ditheredImage, 0, 0, width, height);
   };
 };
 
