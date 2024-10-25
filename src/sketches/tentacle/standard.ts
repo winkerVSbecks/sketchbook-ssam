@@ -1,7 +1,7 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-import { generateColors } from '../subtractive-color';
+import { generateColors } from '../../subtractive-color';
 import { lerp, mapRange } from 'canvas-sketch-util/math';
 import getNormals from 'polyline-normals';
 import { drawPath } from '@daeinc/draw';
