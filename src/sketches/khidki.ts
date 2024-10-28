@@ -4,6 +4,8 @@ import Random from 'canvas-sketch-util/random';
 import { generateColors } from '../subtractive-color';
 import { drawCircle, drawLine, drawPath } from '@daeinc/draw';
 import { lerpArray } from 'canvas-sketch-util/math';
+import { scaleCanvasAndApplyDither } from '../scale-canvas-dither';
+import { dither } from '../dither';
 
 Random.setSeed(Random.getRandomSeed());
 console.log(Random.getSeed());
@@ -31,7 +33,7 @@ export const sketch = ({ wrap, context }: SketchProps) => {
     import.meta.hot.accept(() => wrap.hotReload());
   }
 
-  wrap.render = ({ width, height }: SketchProps) => {
+  wrap.render = ({ width, height, canvas }: SketchProps) => {
     colors = generateColors();
     bg = colors.shift()!;
     frameFront = colors.pop()!;
@@ -145,6 +147,20 @@ export const sketch = ({ wrap, context }: SketchProps) => {
     }
 
     context.restore();
+
+    const ditheredImage = scaleCanvasAndApplyDither(
+      width,
+      height,
+      0.35,
+      canvas,
+      (data) =>
+        dither(data, {
+          greyscaleMethod: 'none',
+          ditherMethod: 'atkinson',
+        })
+    );
+
+    context.drawImage(ditheredImage, 0, 0, width, height);
   };
 };
 
