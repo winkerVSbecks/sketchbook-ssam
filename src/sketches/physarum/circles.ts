@@ -59,8 +59,17 @@ interface MoldParticle {
 
 function generateMoldParticle(width: number, height: number): MoldParticle {
   const heading = Random.range(0, Math.PI * 2);
+
+  const t = Random.chance();
+  const radius = t ? width * 0.25 : width * 0.125;
+  const o = Random.onCircle(radius);
+  const p = t ? [width * 0.25, height * 0.25] : [width * 0.75, height * 0.75];
+
+  // const p = Random.insideCircle(width * 0.4);
+
   return {
-    pos: new Vector(Random.range(0, width), Random.range(0, height)),
+    // pos: new Vector(width / 2 + p[0], height / 2 + p[1]),
+    pos: new Vector(o[0] + p[0], o[1] + p[1]),
     r: 1,
     heading,
     velocity: new Vector(Math.cos(heading), Math.sin(heading)),
