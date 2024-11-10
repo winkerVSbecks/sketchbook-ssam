@@ -4,13 +4,17 @@ import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import { mapRange } from 'canvas-sketch-util/math';
 import { interpolate, parse, formatCss, Color } from 'culori';
 import { Vector } from 'p5';
-import { snapBy, snapToArray } from '@daeinc/math';
-import { generateColors } from '../subtractive-color';
+import { drawPath } from '@daeinc/draw';
+import { quadtree as d3Quadtree, Quadtree } from 'd3-quadtree';
+import { generateColors } from '../../subtractive-color';
 
 const config = {
-  resolution: 64 * 2,
+  count: 128 * 7,
+  resolution: 64,
   neighbourDist: 60,
-  desiredSeparation: 40,
+  desiredSeparation: 30,
+  debug: false,
+  trailLengthMax: 30,
 };
 
 const scale = 2;
@@ -46,37 +50,17 @@ interface Node {
   occupied: boolean;
 }
 
-const start = new Date(
-  'Sat Jan 27 2024 10:38:02 GMT-0500 (Eastern Standard Time)'
-);
-
-export const sketch = ({
-  wrap,
-  context,
-  width,
-  height,
-  canvas,
-}: SketchProps) => {
+export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => wrap.dispose());
     import.meta.hot.accept(() => wrap.hotReload());
-
-    // import.meta.hot.on('ssam:timelapse-changed', () => {
-    //   import.meta.hot?.send('ssam:timelapse-newframe', {
-    //     image: canvas.toDataURL(),
-    //   });
-    // });
   }
 
   let flock: Boid[];
   let grid: Node[] = [];
-  let gridX: number[] = [];
-  let gridY: number[] = [];
-  let bounds: [number, number, number, number];
 
-  let handleBoundaries: (boid: Boid) => void;
+  const handleScreenBoundaries = handleBoundaries(width, height);
   const margin = 0.05 * width;
-  let step = (width - 2 * margin) / config.resolution;
 
   const xyToWorld = (x: number, y: number) => [
     mapRange(x, 0, config.resolution - 1, margin, width - margin),
@@ -95,18 +79,8 @@ export const sketch = ({
     grid.forEach((node) => {
       node.occupied = false;
     });
-    gridX = grid.map((node) => node.x);
-    gridY = grid.map((node) => node.y);
 
-    const xMin = Math.min(...gridX);
-    const xMax = Math.max(...gridX);
-    const yMin = Math.min(...gridY);
-    const yMax = Math.max(...gridY);
-    bounds = [xMin, yMin, xMax, yMax];
-
-    handleBoundaries = handleGridBoundaries(bounds);
-
-    flock = Array.from({ length: 128 }).map(() => {
+    flock = Array.from({ length: config.count }).map(() => {
       const node = Random.pick(grid.filter((node) => !node.occupied));
       return boidOf(node.x, node.y);
     });
@@ -119,6 +93,16 @@ export const sketch = ({
       reset();
     }
 
+    // quadtree.removeAll();
+    const quadtree = d3Quadtree<Boid>()
+      .extent([
+        [0, 0],
+        [width, height],
+      ])
+      .x((b) => b.position.x)
+      .y((b) => b.position.y)
+      .addAll(flock);
+
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
 
@@ -127,11 +111,18 @@ export const sketch = ({
       context.fillRect(node.x - 2, node.y - 2, 4, 4);
     });
 
+    // quadtree.addAll(flock);
+
     flock.forEach((boid) => {
-      move(flock, boid);
-      update(boid, gridX, gridY, step, bounds);
-      handleBoundaries(boid);
-      render(boid, context, width, height, playhead, bounds);
+      const neighbours = findBoidsInRadius(
+        quadtree,
+        boid.position,
+        config.neighbourDist
+      );
+      move(neighbours, boid);
+      update(boid);
+      handleScreenBoundaries(boid);
+      render(boid, context, width, height, playhead);
 
       if (playhead > 0.8) {
         boid.trailLength = Math.max(
@@ -142,20 +133,9 @@ export const sketch = ({
       }
     });
 
-    // // Timer
-    // const now = new Date();
-    // const timeElapsed = now.getTime() - start.getTime();
-    // const timeElapsedSeconds = Math.floor(timeElapsed / 1000);
-    // const mins = `${Math.floor(timeElapsedSeconds / 60)}`.padStart(2, '0');
-    // const secondsRemainder = `${timeElapsedSeconds % 60}`.padStart(2, '0');
-
-    // context.fillStyle = bg;
-    // context.fillRect(margin - 4, margin - 4, 112, 40);
-    // context.font = `600 32px monospace`;
-    // context.fillStyle = '#222';
-    // context.textAlign = 'left';
-    // context.textBaseline = 'top';
-    // context.fillText(`${mins}:${secondsRemainder}`, margin, margin);
+    if (config.debug) {
+      drawQuadtree(context, quadtree);
+    }
   };
 };
 
@@ -175,7 +155,7 @@ function boidOf(x: number, y: number) {
     maxSpeed: 3 * scale,
     maxForce: 0.1 * scale,
     trail: [],
-    trailLength: Random.rangeFloor(10, 30), // 10, // Random.range(25, 60),
+    trailLength: Random.range(5, config.trailLengthMax),
     color: Random.pick(colors),
   };
 }
@@ -202,32 +182,11 @@ function move(boids: Boid[], boid: Boid) {
 /**
  * Update the location of the boid
  */
-function update(
-  boid: Boid,
-  gridX: number[],
-  gridY: number[],
-  step: number,
-  [xMin, yMin, xMax, yMax]: [number, number, number, number]
-) {
+function update(boid: Boid) {
   boid.velocity.add(boid.acceleration);
   // Limit speed
   boid.velocity.limit(boid.maxSpeed);
-
-  const heading = boid.velocity.heading();
-  // snap heading to 45 degrees increments
-  const snappedHeading = snapBy(heading, Math.PI / 4);
-  const velocity = Vector.fromAngle(snappedHeading).mult(step);
-  boid.position.add(velocity);
-
-  // // snap to grid
-  // const velocity = boid.velocity.copy().normalize().mult(step);
-  // boid.position.add(velocity);
-  // if (boid.position.x > xMin && boid.position.x < xMax) {
-  //   boid.position.x = snapToArray(boid.position.x, gridX);
-  // }
-  // if (boid.position.y > yMin && boid.position.y < yMax) {
-  //   boid.position.y = snapToArray(boid.position.y, gridY);
-  // }
+  boid.position.add(boid.velocity);
 
   // Trail
   boid.trail.push([boid.position.x, boid.position.y]);
@@ -249,14 +208,13 @@ function render(
   context: CanvasRenderingContext2D,
   width: number,
   height: number,
-  playhead: number = 0,
-  bounds: [number, number, number, number]
+  playhead: number = 0
 ) {
   context.fillStyle = boid.color;
   context.strokeStyle = boid.color;
   context.lineWidth = boid.r;
 
-  const chunks = splitPath(boid, bounds);
+  const chunks = splitPath(boid, width, height);
 
   // Draw trail
   chunks.forEach((chunk) => {
@@ -270,12 +228,22 @@ function render(
     playhead > 0.9
       ? headColorMap(mapRange(playhead, 0.9, 0.95, 0, 1, true))
       : headColor;
-  context.fillRect(
-    boid.position.x - boid.r,
-    boid.position.y - boid.r,
-    boid.r * 2,
-    boid.r * 2
-  );
+  const theta = boid.velocity.heading() + Math.PI / 2;
+  context.save();
+  context.translate(boid.position.x, boid.position.y);
+  context.rotate(theta);
+  context.beginPath();
+  drawPath(context, drawEquilateralTriangle([0, 0], boid.r * 2));
+  context.fill();
+  context.restore();
+}
+
+function drawEquilateralTriangle([x, y]: number[], size: number) {
+  const a = [x, y - size];
+  const b = [x + (size * Math.sqrt(3)) / 2, y + (size * Math.sqrt(3)) / 2];
+  const c = [x - (size * Math.sqrt(3)) / 2, y + (size * Math.sqrt(3)) / 2];
+
+  return [a, b, c];
 }
 
 function drawGradientPath(context: CanvasRenderingContext2D, path: Point[]) {
@@ -383,28 +351,26 @@ function seek(target: Vector, boid: Boid) {
   return steer;
 }
 
-function handleGridBoundaries([xMin, yMin, xMax, yMax]: [
-  number,
-  number,
-  number,
-  number
-]) {
+/**
+ * Wrap the boid around canvas boundaries
+ */
+function handleBoundaries(width: number, height: number) {
   return (boid: Boid) => {
     // Left
-    if (boid.position.x < xMin) {
-      boid.position.x = xMax;
+    if (boid.position.x < -boid.r) {
+      boid.position.x = width + boid.r;
     }
     // Top
-    if (boid.position.y < yMin) {
-      boid.position.y = yMax;
+    if (boid.position.y < -boid.r) {
+      boid.position.y = height + boid.r;
     }
     // Right
-    if (boid.position.x > xMax) {
-      boid.position.x = xMin;
+    if (boid.position.x > width + boid.r) {
+      boid.position.x = -boid.r;
     }
     // Bottom
-    if (boid.position.y > yMax) {
-      boid.position.y = yMin;
+    if (boid.position.y > height + boid.r) {
+      boid.position.y = -boid.r;
     }
   };
 }
@@ -412,16 +378,16 @@ function handleGridBoundaries([xMin, yMin, xMax, yMax]: [
 /**
  * Split path into chunks that are on or off canvas
  */
-function splitPath(
-  boid: Boid,
-  [xMin, yMin, xMax, yMax]: [number, number, number, number]
-) {
+function splitPath(boid: Boid, width: number, height: number) {
   let prevOffCanvas = false;
 
   return boid.trail.reduce<Point[][]>(
     (acc, pt) => {
       const offCanvas =
-        pt[0] < xMin || pt[0] > xMax || pt[1] < yMin || pt[1] > yMax;
+        pt[0] < -boid.r ||
+        pt[0] > width + boid.r ||
+        pt[1] < -boid.r ||
+        pt[1] > height + boid.r;
 
       if (offCanvas !== prevOffCanvas) {
         acc.push([]);
@@ -435,14 +401,71 @@ function splitPath(
   );
 }
 
+/**
+ * Quadtree helpers
+ */
+// Function to find points within radius of target point
+function findBoidsInRadius(
+  quadtree: Quadtree<Boid>,
+  p: Vector,
+  radius: number
+): Boid[] {
+  const neighbours: Boid[] = [];
+  const radiusSquared = radius * radius;
+  const x = p.x;
+  const y = p.y;
+
+  quadtree.visit((node, x1, y1, x2, y2) => {
+    if (!node.length) {
+      if (node.data) {
+        const boid = node.data;
+        const dx = boid.position.x - x;
+        const dy = boid.position.y - y;
+        const distanceSquared = dx * dx + dy * dy;
+
+        if (distanceSquared <= radiusSquared) {
+          neighbours.push(boid);
+        }
+      }
+      return;
+    }
+
+    const closestX = Math.max(x1, Math.min(x, x2));
+    const closestY = Math.max(y1, Math.min(y, y2));
+    const dx = x - closestX;
+    const dy = y - closestY;
+
+    return dx * dx + dy * dy > radiusSquared;
+  });
+
+  return neighbours;
+}
+
+function drawQuadtree(
+  context: CanvasRenderingContext2D,
+  quadtree: Quadtree<Boid>
+) {
+  // Draw quadtree as before
+  context.lineWidth = 1;
+  context.beginPath();
+  context.strokeStyle = baseColor;
+  quadtree.visit((node, x1, y1, x2, y2) => {
+    context.rect(x1, y1, x2 - x1, y2 - y1);
+    return false;
+  });
+  context.stroke();
+}
+
 export const settings: SketchSettings = {
   mode: '2d',
-  dimensions: [1080, 1080],
+  // dimensions: [1080, 1080],
+  dimensions: [1920, 1080],
+  // dimensions: [1080, 1920],
   pixelRatio: window.devicePixelRatio,
   animate: true,
-  duration: 20_000,
-  playFps: 30,
-  exportFps: 30,
+  duration: 20_000, //20_000,
+  playFps: 60,
+  exportFps: 60,
   framesFormat: ['mp4'],
 };
 
