@@ -12,7 +12,7 @@ const config = {
   count: 128 * 7,
   resolution: 64,
   neighbourDist: 60,
-  desiredSeparation: 30,
+  desiredSeparation: 40,
   debug: false,
   trailLengthMax: 30,
 };
@@ -356,22 +356,30 @@ function seek(target: Vector, boid: Boid) {
  */
 function handleBoundaries(width: number, height: number) {
   return (boid: Boid) => {
-    // Left
-    if (boid.position.x < -boid.r) {
-      boid.position.x = width + boid.r;
-    }
-    // Top
-    if (boid.position.y < -boid.r) {
-      boid.position.y = height + boid.r;
-    }
-    // Right
-    if (boid.position.x > width + boid.r) {
-      boid.position.x = -boid.r;
-    }
-    // Bottom
-    if (boid.position.y > height + boid.r) {
-      boid.position.y = -boid.r;
-    }
+    // boid.position.x = ((boid.position.x % width) + width) % width;
+    // boid.position.y = ((boid.position.y % height) + height) % height;
+
+    boid.position.x =
+      ((((boid.position.x - boid.r) % width) + width) % width) + boid.r;
+    boid.position.y =
+      ((((boid.position.y - boid.r) % height) + height) % height) + boid.r;
+
+    // // Left
+    // if (boid.position.x < -boid.r) {
+    //   boid.position.x = width + boid.r;
+    // }
+    // // Top
+    // if (boid.position.y < -boid.r) {
+    //   boid.position.y = height + boid.r;
+    // }
+    // // Right
+    // if (boid.position.x > width + boid.r) {
+    //   boid.position.x = -boid.r;
+    // }
+    // // Bottom
+    // if (boid.position.y > height + boid.r) {
+    //   boid.position.y = -boid.r;
+    // }
   };
 }
 
@@ -380,6 +388,7 @@ function handleBoundaries(width: number, height: number) {
  */
 function splitPath(boid: Boid, width: number, height: number) {
   let prevOffCanvas = false;
+  let prevPt = boid.trail[0];
 
   return boid.trail.reduce<Point[][]>(
     (acc, pt) => {
@@ -389,12 +398,17 @@ function splitPath(boid: Boid, width: number, height: number) {
         pt[1] < -boid.r ||
         pt[1] > height + boid.r;
 
-      if (offCanvas !== prevOffCanvas) {
+      const wrappedAround =
+        Math.abs(pt[0] - prevPt[0]) > width / 2 ||
+        Math.abs(pt[1] - prevPt[1]) > height / 2;
+
+      if (offCanvas !== prevOffCanvas || wrappedAround) {
         acc.push([]);
       }
 
       acc[acc.length - 1].push(pt);
       prevOffCanvas = offCanvas;
+      prevPt = pt;
       return acc;
     },
     [[]]
