@@ -2,39 +2,42 @@ import Random from 'canvas-sketch-util/random';
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import { mapRange } from 'canvas-sketch-util/math';
-import { interpolate, parse, formatCss, Color } from 'culori';
+import { interpolate, parse, formatCss, Color, oklch, Oklch } from 'culori';
 import { Vector } from 'p5';
 import { drawPath } from '@daeinc/draw';
 import { quadtree as d3Quadtree, Quadtree } from 'd3-quadtree';
 import { generateColors } from '../../subtractive-color';
 import { palettes as autoAlbersPalettes } from '../../colors/auto-albers';
 import { palettes as mindfulPalettes } from '../../colors/mindful-palettes';
+import { scaleCanvasAndApplyDither } from '../../scale-canvas-dither';
+import { dither } from '../../dither';
 
 const config = {
-  count: 128 * 7,
+  count: 128 * 6,
   resolution: 64,
   neighbourDist: 60,
   desiredSeparation: 40,
   debug: false,
   trailLengthMax: 30,
+  noiseAmplitude: 0.001,
+  noiseFrequency: 1,
 };
 
-const scale = 2;
+const scale = 3;
 
-const colors = Random.chance()
+let colors = Random.chance()
   ? generateColors()
   : Random.pick([...mindfulPalettes, ...autoAlbersPalettes]);
+
 const bg = colors.shift()!;
 const baseColor = colors.shift()!;
-const headColor = colors.shift()!;
 
-const colorSale = interpolate([headColor, ...colors, bg]);
+colors = colors.sort((a: string, b: string) => {
+  return oklch(a)!.h! - oklch(b)!.h!;
+});
+
+const colorSale = interpolate([...colors, bg]);
 const trailColorMap = (t: number) => formatCss(colorSale(t));
-
-const headColor1 = formatCss({ ...parse(headColor), alpha: 1 } as Color);
-const headColor2 = formatCss({ ...parse(headColor), alpha: 0 } as Color);
-const headColorScale = interpolate([headColor1, headColor2]);
-const headColorMap = (t: number) => formatCss(headColorScale(t));
 
 interface Boid {
   acceleration: Vector;
@@ -92,12 +95,11 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
 
   reset();
 
-  wrap.render = ({ width, height, playhead, frame }: SketchProps) => {
+  wrap.render = ({ width, height, playhead, frame, canvas }: SketchProps) => {
     if (frame === 0) {
       reset();
     }
 
-    // quadtree.removeAll();
     const quadtree = d3Quadtree<Boid>()
       .extent([
         [0, 0],
@@ -113,9 +115,24 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     context.fillStyle = baseColor;
     grid.forEach((node) => {
       context.fillRect(node.x - 2, node.y - 2, 4, 4);
-    });
 
-    // quadtree.addAll(flock);
+      if (config.debug) {
+        const colorT = mapRange(
+          Random.noise2D(
+            node.x,
+            node.y,
+            config.noiseAmplitude,
+            config.noiseFrequency
+          ),
+          -1,
+          1,
+          0,
+          1
+        );
+        context.fillStyle = trailColorMap(colorT);
+        context.fillRect(node.x - 16, node.y - 8, 32, 16);
+      }
+    });
 
     flock.forEach((boid) => {
       const neighbours = findBoidsInRadius(
@@ -126,7 +143,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       move(neighbours, boid);
       update(boid);
       handleScreenBoundaries(boid);
-      render(boid, context, width, height, playhead);
+      render(boid, neighbours, context, width, height, playhead);
 
       if (playhead > 0.8) {
         boid.trailLength = Math.max(
@@ -140,6 +157,20 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     if (config.debug) {
       drawQuadtree(context, quadtree);
     }
+
+    const ditheredImage = scaleCanvasAndApplyDither(
+      width,
+      height,
+      0.35,
+      canvas,
+      (data) =>
+        dither(data, {
+          greyscaleMethod: 'none',
+          ditherMethod: 'atkinson',
+        })
+    );
+
+    context.drawImage(ditheredImage, 0, 0, width, height);
   };
 };
 
@@ -209,29 +240,49 @@ function update(boid: Boid) {
  */
 function render(
   boid: Boid,
+  neighbours: Boid[],
   context: CanvasRenderingContext2D,
   width: number,
   height: number,
   playhead: number = 0
 ) {
-  context.fillStyle = boid.color;
-  context.strokeStyle = boid.color;
+  const colorT = mapRange(
+    Random.noise2D(
+      boid.position.x,
+      boid.position.y,
+      config.noiseAmplitude,
+      config.noiseFrequency
+    ),
+    -1,
+    1,
+    0,
+    1
+  );
+  const color = trailColorMap(colorT);
+
+  context.fillStyle = color; //boid.color;
+  context.strokeStyle = color; //boid.color;
   context.lineWidth = boid.r;
 
   const chunks = splitPath(boid, width, height);
 
+  const colorSale = interpolate([color, bg]);
+  const colorMap = (t: number) => formatCss(colorSale(t));
+
   // Draw trail
   chunks.forEach((chunk) => {
     if (chunk.length > 4) {
-      drawGradientPath(context, chunk);
+      drawGradientPath(context, chunk, colorMap);
+      // drawPath(context, chunk);
+      // context.stroke();
     }
   });
 
   // Draw arrow head
   context.fillStyle =
     playhead > 0.9
-      ? headColorMap(mapRange(playhead, 0.9, 0.95, 0, 1, true))
-      : headColor;
+      ? colorMap(mapRange(playhead, 0.9, 0.95, 0, 1, true))
+      : color; //headColor;
   const theta = boid.velocity.heading() + Math.PI / 2;
   context.save();
   context.translate(boid.position.x, boid.position.y);
@@ -250,9 +301,13 @@ function drawEquilateralTriangle([x, y]: number[], size: number) {
   return [a, b, c];
 }
 
-function drawGradientPath(context: CanvasRenderingContext2D, path: Point[]) {
+function drawGradientPath(
+  context: CanvasRenderingContext2D,
+  path: Point[],
+  map: (x: number) => string
+) {
   for (let i = 1; i < path.length - 1; i++) {
-    context.strokeStyle = trailColorMap(1 - i / (path.length - 1));
+    context.strokeStyle = map(1 - i / (path.length - 1));
     context.beginPath();
     context.moveTo(...path[i - 1]);
     context.lineTo(...path[i]);

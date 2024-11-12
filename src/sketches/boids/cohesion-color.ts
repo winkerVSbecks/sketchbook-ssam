@@ -2,7 +2,7 @@ import Random from 'canvas-sketch-util/random';
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import { mapRange } from 'canvas-sketch-util/math';
-import { interpolate, parse, formatCss, Color } from 'culori';
+import { interpolate, parse, formatCss, Color, oklch, Oklch } from 'culori';
 import { Vector } from 'p5';
 import { drawPath } from '@daeinc/draw';
 import { quadtree as d3Quadtree, Quadtree } from 'd3-quadtree';
@@ -126,7 +126,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       move(neighbours, boid);
       update(boid);
       handleScreenBoundaries(boid);
-      render(boid, context, width, height, playhead);
+      render(boid, neighbours, context, width, height, playhead);
 
       if (playhead > 0.8) {
         boid.trailLength = Math.max(
@@ -209,13 +209,16 @@ function update(boid: Boid) {
  */
 function render(
   boid: Boid,
+  neighbours: Boid[],
   context: CanvasRenderingContext2D,
   width: number,
   height: number,
   playhead: number = 0
 ) {
-  context.fillStyle = boid.color;
-  context.strokeStyle = boid.color;
+  const color = calculateParticleColor(boid, neighbours);
+
+  context.fillStyle = color; //boid.color;
+  context.strokeStyle = color; //boid.color;
   context.lineWidth = boid.r;
 
   const chunks = splitPath(boid, width, height);
@@ -223,7 +226,9 @@ function render(
   // Draw trail
   chunks.forEach((chunk) => {
     if (chunk.length > 4) {
-      drawGradientPath(context, chunk);
+      drawPath(context, chunk);
+      context.stroke();
+      // drawGradientPath(context, chunk);
     }
   });
 
@@ -231,7 +236,7 @@ function render(
   context.fillStyle =
     playhead > 0.9
       ? headColorMap(mapRange(playhead, 0.9, 0.95, 0, 1, true))
-      : headColor;
+      : color; //headColor;
   const theta = boid.velocity.heading() + Math.PI / 2;
   context.save();
   context.translate(boid.position.x, boid.position.y);
@@ -452,6 +457,77 @@ function drawQuadtree(
     return false;
   });
   context.stroke();
+}
+
+function getNeighbourColors(
+  particle: Boid,
+  neighbours: Boid[]
+): {
+  value: Oklch;
+  weight: number;
+}[] {
+  const colors = [];
+  let totalWeight = 0;
+
+  // Find neighbors and calculate weights
+  for (const other of neighbours) {
+    if (other === particle) continue;
+
+    const dist = particle.position.dist(other.position);
+
+    if (dist <= config.neighbourDist) {
+      const weight = mapRange(dist, 0, config.neighbourDist, 0, 1);
+      totalWeight += weight;
+
+      colors.push({
+        value: oklch(parse(other.color))!,
+        weight,
+      });
+    }
+  }
+
+  // // Normalize weights to sum to 1
+  // if (totalWeight > 0) {
+  //   weights.forEach((w, i) => (weights[i] = w / totalWeight));
+  // }
+
+  return colors;
+}
+
+function calculateParticleColor(particle: Boid, neighbours: Boid[]) {
+  const colors = getNeighbourColors(particle, neighbours);
+
+  if (colors.length === 0) {
+    return particle.color; // No neighbors, return original color
+  }
+
+  // Calculate weighted average in OKLCH space
+  const averageColor: Oklch = {
+    mode: 'oklch',
+    l: 0,
+    c: 0,
+    h: 0,
+  };
+
+  // Special handling for hue averaging to handle wrap-around
+  let sinSum = 0;
+  let cosSum = 0;
+
+  colors.map(({ value, weight }) => {
+    averageColor.l += value.l * weight;
+    averageColor.c += value.c * weight;
+
+    // Convert hue to radians and calculate weighted sum of sin and cos
+    const hueRad = ((value.h || 0) * Math.PI) / 180;
+    sinSum += Math.sin(hueRad) * weight;
+    cosSum += Math.cos(hueRad) * weight;
+  });
+
+  // Convert averaged hue back to degrees
+  averageColor.h = (Math.atan2(sinSum, cosSum) * 180) / Math.PI;
+  if (averageColor.h < 0) averageColor.h += 360;
+
+  return formatCss(averageColor);
 }
 
 export const settings: SketchSettings = {
