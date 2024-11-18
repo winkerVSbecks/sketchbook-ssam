@@ -11,6 +11,7 @@ declare module 'canvas-sketch-util/geometry';
 declare module 'webfontloader';
 declare module 'polyline-normals';
 declare module 'resolve-lygia';
+declare module 'joy-joy';
 
 type Point = [number, number];
 type Line = Point[];

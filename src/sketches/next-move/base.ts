@@ -3,19 +3,19 @@ import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 import rough from 'roughjs';
 import { wcagContrast } from 'culori';
-import { loopNoise } from '../loop-noise';
-import { palettes as autoAlbersPalettes } from '../colors/auto-albers';
-import { palettes as mindfulPalettes } from '../colors/mindful-palettes';
-import { generateColors } from '../subtractive-color';
+import { loopNoise } from '../../loop-noise';
+import { palettes as autoAlbersPalettes } from '../../colors/auto-albers';
+import { palettes as mindfulPalettes } from '../../colors/mindful-palettes';
+import { generateColors } from '../../subtractive-color';
 
 const config = {
   resolution: { x: 32, y: 32 },
   scale: 1,
-  mode: 'hachure', // 'solid' 'hachure' 'mixed'
+  mode: Random.pick(['solid', 'hachure', 'mixed']), // 'solid' 'hachure' 'mixed'
+  timeShift: Random.chance(),
 };
 
 const [colorA, colorB] = colorPalette();
-console.log(colorA, colorB);
 
 export const sketch = ({ wrap, context, canvas }: SketchProps) => {
   if (import.meta.hot) {
@@ -32,11 +32,14 @@ export const sketch = ({ wrap, context, canvas }: SketchProps) => {
     const w = width / config.resolution.x;
     const h = height / config.resolution.y;
 
+    const timeOffset = Math.sin(playhead * Math.PI * 2);
+
     for (let y = 0; y < config.resolution.y; y++) {
       for (let x = 0; x < config.resolution.x; x++) {
         const t = Math.abs(
           loopNoise(
-            x / (config.resolution.x * config.scale),
+            x / (config.resolution.x * config.scale) +
+              (config.timeShift ? timeOffset : 0),
             y / (config.resolution.y * config.scale),
             playhead,
             0.25
