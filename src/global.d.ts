@@ -12,6 +12,7 @@ declare module 'webfontloader';
 declare module 'polyline-normals';
 declare module 'resolve-lygia';
 declare module 'joy-joy';
+declare module '@texel/color';
 
 type Point = [number, number];
 type Line = Point[];
