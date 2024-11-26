@@ -1,7 +1,6 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
-// import { ColorSpace, getPalette, System } from '../colors/texel';
-import { ColorSpace, getPalette, System } from '../colors/texel-random';
+import { ColorSpace, getPalette, System } from '../colors/texel';
 
 const config = {
   system: 0 as System,
@@ -19,9 +18,6 @@ const spaces: ColorSpace[] = [
   'rec2020',
 ];
 
-const colors = getPalette({ ...config, colorSpace: 'display-p3' });
-const bg = colors.shift()!;
-
 export const sketch = ({ wrap, context }: SketchProps) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => wrap.dispose());
@@ -30,19 +26,30 @@ export const sketch = ({ wrap, context }: SketchProps) => {
 
   wrap.render = ({ width, height }: SketchProps) => {
     context.clearRect(0, 0, width, height);
-    context.fillStyle = bg;
-    context.fillRect(0, 0, width, height);
 
     const padding = 20;
 
-    const availableHeight = height - (colors.length + 1) * padding;
-    const stripHeight = availableHeight / colors.length;
+    const availableWidth = width - (spaces.length + 1) * padding;
+    const stripWidth = availableWidth / spaces.length;
 
-    colors.forEach((color, idx) => {
-      const y = padding + idx * (stripHeight + padding);
-      context.fillStyle = color;
+    spaces.forEach((colorSpace, sIdx) => {
+      const colors = getPalette({ ...config, colorSpace });
+      const bg = colors.shift()!;
 
-      context.fillRect(padding, y, width - padding * 2, stripHeight);
+      const availableHeight = height - (colors.length + 1) * padding;
+      const stripHeight = availableHeight / colors.length;
+
+      const x = sIdx * (stripWidth + padding);
+
+      context.fillStyle = bg;
+      context.fillRect(x, 0, availableWidth, height);
+
+      colors.forEach((color, idx) => {
+        const y = padding + idx * (stripHeight + padding);
+        context.fillStyle = color;
+
+        context.fillRect(padding + x, y, stripWidth, stripHeight);
+      });
     });
   };
 };
