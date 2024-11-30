@@ -1,4 +1,4 @@
-export const colors = [
+export const clrs = [
   [
     'rgb(34, 44, 50)',
     'rgb(162, 168, 255)',

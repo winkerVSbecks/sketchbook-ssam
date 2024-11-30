@@ -1,11 +1,21 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
+import { palettes as autoAlbersPalettes } from '../../colors/auto-albers';
+import { palettes as mindfulPalettes } from '../../colors/mindful-palettes';
+import { generateColors } from '../../subtractive-color';
+import { clrs } from '../../colors/clrs';
 
-type Tile = '═' | '║' | '╔' | '╗' | '╚' | '╝' | '█' | '▀' | '▄';
+const colors = Random.chance()
+  ? generateColors()
+  : Random.pick([...mindfulPalettes, ...autoAlbersPalettes, ...clrs]);
+const bg = colors.pop();
+
+type Tile = '═' | '║' | '╔' | '╗' | '╚' | '╝';
 type Cell = {
   collapsed: boolean;
   options: Tile[];
+  color: string;
 };
 
 const rules = {
@@ -15,9 +25,11 @@ const rules = {
   '╗': ['═', '║', '╚'],
   '╚': ['═', '║', '╗'],
   '╝': ['═', '║', '╔'],
-  '█': ['█', '▀', '▄'],
-  '▀': ['█', '▀'],
-  '▄': ['█', '▄'],
+};
+
+const config = {
+  gridSize: 24,
+  padding: 0, //0.1,
 };
 
 function drawTile(
@@ -25,38 +37,15 @@ function drawTile(
   x: number,
   y: number,
   size: number,
-  tile: Tile
+  tile: Tile,
+  color: string = '#0066FF'
 ) {
-  const padding = size * 0.1;
-  context.fillStyle = '#0066FF';
-  context.strokeStyle = '#0066FF';
+  const padding = size * config.padding;
+  context.fillStyle = color;
+  context.strokeStyle = color;
   context.lineWidth = size * 0.2;
 
   switch (tile) {
-    case '█':
-      context.fillRect(
-        x * size + padding,
-        y * size + padding,
-        size - 2 * padding,
-        size - 2 * padding
-      );
-      break;
-    case '▀':
-      context.fillRect(
-        x * size + padding,
-        y * size + padding,
-        size - 2 * padding,
-        (size - 2 * padding) / 2
-      );
-      break;
-    case '▄':
-      context.fillRect(
-        x * size + padding,
-        y * size + size / 2,
-        size - 2 * padding,
-        (size - 2 * padding) / 2
-      );
-      break;
     case '═':
       context.beginPath();
       context.moveTo(x * size + padding, y * size + size / 2);
@@ -106,13 +95,13 @@ const sketch = ({ wrap, context, width, height }: SketchProps) => {
     import.meta.hot.accept(() => wrap.hotReload());
   }
 
-  const gridSize = 12;
-  const cellSize = width / gridSize;
+  const cellSize = width / config.gridSize;
 
   function createCell(): Cell {
     return {
       collapsed: false,
-      options: ['═', '║', '╔', '╗', '╚', '╝', '█', '▀', '▄'],
+      options: ['═', '║', '╔', '╗', '╚', '╝'],
+      color: Random.pick(colors),
     };
   }
 
@@ -144,18 +133,18 @@ const sketch = ({ wrap, context, width, height }: SketchProps) => {
   }
 
   wrap.render = () => {
-    context.fillStyle = '#F0F0F0';
+    context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
 
-    let grid: Cell[][] = Array(gridSize)
+    let grid: Cell[][] = Array(config.gridSize)
       .fill(0)
       .map(() =>
-        Array(gridSize)
+        Array(config.gridSize)
           .fill(0)
           .map(() => createCell())
       );
 
-    for (let iter = 0; iter < gridSize * gridSize; iter++) {
+    for (let iter = 0; iter < config.gridSize * config.gridSize; iter++) {
       const coords = findCellWithLeastEntropy(grid);
       if (!coords) break;
 
@@ -169,7 +158,12 @@ const sketch = ({ wrap, context, width, height }: SketchProps) => {
         const newX = x + dx[i];
         const newY = y + dy[i];
 
-        if (newX >= 0 && newX < gridSize && newY >= 0 && newY < gridSize) {
+        if (
+          newX >= 0 &&
+          newX < config.gridSize &&
+          newY >= 0 &&
+          newY < config.gridSize
+        ) {
           const neighbor = grid[newY][newX];
           if (!neighbor.collapsed) {
             const currentTile = grid[y][x].options[0];
@@ -181,11 +175,11 @@ const sketch = ({ wrap, context, width, height }: SketchProps) => {
       }
     }
 
-    for (let y = 0; y < gridSize; y++) {
-      for (let x = 0; x < gridSize; x++) {
+    for (let y = 0; y < config.gridSize; y++) {
+      for (let x = 0; x < config.gridSize; x++) {
         const cell = grid[y][x];
         if (cell.collapsed) {
-          drawTile(context, x, y, cellSize, cell.options[0]);
+          drawTile(context, x, y, cellSize, cell.options[0], cell.color);
         }
       }
     }
@@ -196,7 +190,7 @@ export const settings: SketchSettings = {
   mode: '2d',
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
-  animate: true,
+  animate: false,
   duration: 3000,
   playFps: 0.3333333333,
   exportFps: 0.3333333333,

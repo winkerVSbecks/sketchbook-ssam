@@ -2,7 +2,12 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import { renderCluster, ClusterConfig } from './system';
 
-export const sketch = ({ wrap, context, width, height }: SketchProps) => {
+export const sketch: Sketch<'2d'> = ({
+  wrap,
+  context,
+  width,
+  height,
+}: SketchProps) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => wrap.dispose());
     import.meta.hot.accept(() => wrap.hotReload());
@@ -32,4 +37,4 @@ export const settings: SketchSettings = {
   framesFormat: ['mp4'],
 };
 
-ssam(sketch as Sketch<'2d'>, settings);
+ssam(sketch, settings);
