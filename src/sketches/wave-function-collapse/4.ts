@@ -3,12 +3,18 @@ import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 import { palettes as autoAlbersPalettes } from '../../colors/auto-albers';
 import { palettes as mindfulPalettes } from '../../colors/mindful-palettes';
-import { generateColors } from '../../subtractive-color';
 import { clrs } from '../../colors/clrs';
 
-const colors = Random.chance()
-  ? generateColors()
-  : Random.pick([...mindfulPalettes, ...autoAlbersPalettes, ...clrs]);
+const config = {
+  gridSize: 32, //64,
+  padding: 0,
+};
+
+const colors = Random.pick([
+  ...mindfulPalettes,
+  ...autoAlbersPalettes,
+  ...clrs,
+]);
 const bg = colors.pop();
 
 type Tile = '═' | '║' | '╔' | '╗' | '╚' | '╝';
@@ -30,6 +36,14 @@ const connectionPoints: Record<Tile, Connection[]> = {
   '╝': ['left', 'top'],
 };
 
+// Define opposite directions for connection checking
+const oppositeDirection: Record<Connection, Connection> = {
+  top: 'bottom',
+  right: 'left',
+  bottom: 'top',
+  left: 'right',
+};
+
 const rules = {
   '═': ['═', '╔', '╗', '╚', '╝'],
   '║': ['║', '╔', '╗', '╚', '╝'],
@@ -37,11 +51,6 @@ const rules = {
   '╗': ['═', '║', '╚'],
   '╚': ['═', '║', '╗'],
   '╝': ['═', '║', '╔'],
-};
-
-const config = {
-  gridSize: 24,
-  padding: 0,
 };
 
 function drawTile(
@@ -101,50 +110,59 @@ function drawTile(
   }
 }
 
-function getConnectingColor(
+function checkConnection(
+  tile1: Tile,
+  tile2: Tile,
+  direction: Connection
+): boolean {
+  const tile1Connections = connectionPoints[tile1];
+  const tile2Connections = connectionPoints[tile2];
+  return (
+    tile1Connections.includes(direction) &&
+    tile2Connections.includes(oppositeDirection[direction])
+  );
+}
+
+function getAllConnectedCells(
   grid: Cell[][],
-  x: number,
-  y: number,
-  tile: Tile
-): string | null {
-  const connections = connectionPoints[tile];
-  const neighbors: Array<{ dir: Connection; color: string | null }> = [];
+  startX: number,
+  startY: number,
+  visited: Set<string> = new Set()
+): Array<{ x: number; y: number }> {
+  const key = `${startX},${startY}`;
+  if (visited.has(key)) return [];
+  visited.add(key);
 
-  // Check each neighboring cell
-  if (y > 0 && grid[y - 1][x].collapsed) {
-    const topTile = grid[y - 1][x].options[0];
-    if (connectionPoints[topTile].includes('bottom')) {
-      neighbors.push({ dir: 'top', color: grid[y - 1][x].color });
-    }
-  }
-  if (x < grid[0].length - 1 && grid[y][x + 1].collapsed) {
-    const rightTile = grid[y][x + 1].options[0];
-    if (connectionPoints[rightTile].includes('left')) {
-      neighbors.push({ dir: 'right', color: grid[y][x + 1].color });
-    }
-  }
-  if (y < grid.length - 1 && grid[y + 1][x].collapsed) {
-    const bottomTile = grid[y + 1][x].options[0];
-    if (connectionPoints[bottomTile].includes('top')) {
-      neighbors.push({ dir: 'bottom', color: grid[y + 1][x].color });
-    }
-  }
-  if (x > 0 && grid[y][x - 1].collapsed) {
-    const leftTile = grid[y][x - 1].options[0];
-    if (connectionPoints[leftTile].includes('right')) {
-      neighbors.push({ dir: 'left', color: grid[y][x - 1].color });
-    }
-  }
+  const connected: Array<{ x: number; y: number }> = [{ x: startX, y: startY }];
+  const currentTile = grid[startY][startX].options[0];
+  const currentConnections = connectionPoints[currentTile];
 
-  // Find matching connections
-  for (const connection of connections) {
-    const matchingNeighbor = neighbors.find((n) => n.dir === connection);
-    if (matchingNeighbor) {
-      return matchingNeighbor.color;
+  const directions = [
+    { dx: 0, dy: -1, dir: 'top' as Connection },
+    { dx: 1, dy: 0, dir: 'right' as Connection },
+    { dx: 0, dy: 1, dir: 'bottom' as Connection },
+    { dx: -1, dy: 0, dir: 'left' as Connection },
+  ];
+
+  for (const { dx, dy, dir } of directions) {
+    const newX = startX + dx;
+    const newY = startY + dy;
+
+    if (
+      newX >= 0 &&
+      newX < grid[0].length &&
+      newY >= 0 &&
+      newY < grid.length &&
+      grid[newY][newX].collapsed &&
+      currentConnections.includes(dir) &&
+      checkConnection(currentTile, grid[newY][newX].options[0], dir)
+    ) {
+      const neighborConnected = getAllConnectedCells(grid, newX, newY, visited);
+      connected.push(...neighborConnected);
     }
   }
 
-  return null;
+  return connected;
 }
 
 const sketch: Sketch<'2d'> = ({
@@ -195,14 +213,20 @@ const sketch: Sketch<'2d'> = ({
     cell.collapsed = true;
     const option: Tile = Random.pick(cell.options);
     cell.options = [option];
-
-    // Check for connecting neighbors and update color
-    const connectingColor = getConnectingColor(grid, x, y, option);
-    if (connectingColor) {
-      cell.color = connectingColor;
-    }
-
     cell.connections = connectionPoints[option];
+
+    // Find all connected cells and update their colors
+    const connectedCells = getAllConnectedCells(grid, x, y);
+    const colors = connectedCells
+      .map((pos) => grid[pos.y][pos.x])
+      .filter((cell) => cell.collapsed)
+      .map((cell) => cell.color);
+
+    // If there are any existing colors in the connected group, use one of them
+    const existingColor = colors.length > 0 ? colors[0] : cell.color;
+    connectedCells.forEach((pos) => {
+      grid[pos.y][pos.x].color = existingColor;
+    });
   }
 
   wrap.render = () => {
