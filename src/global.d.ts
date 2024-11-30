@@ -13,6 +13,7 @@ declare module 'polyline-normals';
 declare module 'resolve-lygia';
 declare module 'joy-joy';
 declare module '@texel/color';
+declare module 'load-asset';
 
 type Point = [number, number];
 type Line = Point[];
