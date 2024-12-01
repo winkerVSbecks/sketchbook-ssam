@@ -14,6 +14,7 @@ declare module 'resolve-lygia';
 declare module 'joy-joy';
 declare module '@texel/color';
 declare module 'load-asset';
+declare module 'chromotome';
 
 type Point = [number, number];
 type Line = Point[];

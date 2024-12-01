@@ -1,41 +1,43 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-// import { palettes as autoAlbersPalettes } from '../../colors/auto-albers';
-// import { palettes as mindfulPalettes } from '../../colors/mindful-palettes';
-// import { clrs } from '../../colors/clrs';
-import * as tome from 'chromotome';
+import { palettes as autoAlbersPalettes } from '../../colors/auto-albers';
+import { palettes as mindfulPalettes } from '../../colors/mindful-palettes';
+import { clrs } from '../../colors/clrs';
 
 const config = {
-  gridSize: 32, //64,
+  gridSize: 24,
   padding: 0,
+  branchProbability: 0.3,
+  curveVariation: 0.3,
+  thicknessVariation: 0.4,
 };
 
-// const colors = Random.pick([
-//   ...mindfulPalettes,
-//   ...autoAlbersPalettes,
-//   ...clrs,
-// ]);
-// const bg = colors.pop();
-const { colors, background: bg } = tome.get();
+const colors = Random.pick([
+  ...mindfulPalettes,
+  ...autoAlbersPalettes,
+  ...clrs,
+]);
+const bg = colors.pop();
 
-type Tile = '═' | '║' | '╔' | '╗' | '╚' | '╝';
+type Tile = 'stem' | 'branch' | 'leaf' | 'curve' | 'split';
 type Connection = 'top' | 'right' | 'bottom' | 'left';
 type Cell = {
   collapsed: boolean;
   options: Tile[];
   color: string;
   connections: Connection[];
+  thickness: number;
+  rotation: number;
+  curve: number;
 };
 
-// Define which sides each tile connects to
 const connectionPoints: Record<Tile, Connection[]> = {
-  '═': ['left', 'right'],
-  '║': ['top', 'bottom'],
-  '╔': ['right', 'bottom'],
-  '╗': ['left', 'bottom'],
-  '╚': ['right', 'top'],
-  '╝': ['left', 'top'],
+  stem: ['top', 'bottom'],
+  branch: ['bottom', 'right'],
+  leaf: ['bottom'],
+  curve: ['bottom', 'right'],
+  split: ['bottom', 'right', 'left'],
 };
 
 // Define opposite directions for connection checking
@@ -47,12 +49,11 @@ const oppositeDirection: Record<Connection, Connection> = {
 };
 
 const rules = {
-  '═': ['═', '╔', '╗', '╚', '╝'],
-  '║': ['║', '╔', '╗', '╚', '╝'],
-  '╔': ['═', '║', '╝'],
-  '╗': ['═', '║', '╚'],
-  '╚': ['═', '║', '╗'],
-  '╝': ['═', '║', '╔'],
+  stem: ['stem', 'leaf', 'split', 'branch'],
+  branch: ['stem', 'leaf', 'curve'],
+  leaf: ['stem', 'branch', 'split'],
+  curve: ['stem', 'leaf'],
+  split: ['stem', 'leaf'],
 };
 
 function drawTile(
@@ -61,55 +62,141 @@ function drawTile(
   y: number,
   size: number,
   tile: Tile,
-  color: string = '#0066FF'
+  cell: Cell
 ) {
   const padding = size * config.padding;
-  context.fillStyle = color;
-  context.strokeStyle = color;
-  context.lineWidth = size * 0.2;
+  context.strokeStyle = cell.color;
+  context.fillStyle = cell.color;
+  context.lineWidth = size * 0.15 * cell.thickness;
+  context.lineCap = 'round';
+  context.lineJoin = 'round';
+
+  const center = {
+    x: x * size + size / 2,
+    y: y * size + size / 2,
+  };
+
+  // Save context state for rotation
+  context.save();
+  context.translate(center.x, center.y);
+  context.rotate(cell.rotation);
+  context.translate(-center.x, -center.y);
 
   switch (tile) {
-    case '═':
+    case 'stem':
       context.beginPath();
-      context.moveTo(x * size + padding, y * size + size / 2);
-      context.lineTo(x * size + size - padding, y * size + size / 2);
+      context.moveTo(center.x, y * size + padding);
+      // Add some curve variation
+      const cp1x = center.x + size * cell.curve;
+      const cp1y = center.y - size * 0.25;
+      const cp2x = center.x - size * cell.curve;
+      const cp2y = center.y + size * 0.25;
+      context.bezierCurveTo(
+        cp1x,
+        cp1y,
+        cp2x,
+        cp2y,
+        center.x,
+        (y + 1) * size - padding
+      );
       context.stroke();
       break;
-    case '║':
+
+    case 'branch':
       context.beginPath();
-      context.moveTo(x * size + size / 2, y * size + padding);
-      context.lineTo(x * size + size / 2, y * size + size - padding);
+      context.moveTo(center.x, y * size + padding);
+      // Main stem
+      const branchCp1x = center.x + size * cell.curve * 0.5;
+      const branchCp1y = center.y;
+      context.quadraticCurveTo(
+        branchCp1x,
+        branchCp1y,
+        center.x,
+        (y + 1) * size - padding
+      );
+      // Branch
+      context.moveTo(center.x, center.y);
+      const branchCp2x = center.x + size * 0.3;
+      const branchCp2y = center.y - size * cell.curve * 0.5;
+      context.quadraticCurveTo(
+        branchCp2x,
+        branchCp2y,
+        (x + 1) * size - padding,
+        center.y
+      );
       context.stroke();
       break;
-    case '╔':
+
+    case 'leaf':
+      // Stem
       context.beginPath();
-      context.moveTo(x * size + size - padding, y * size + size / 2);
-      context.lineTo(x * size + size / 2, y * size + size / 2);
-      context.lineTo(x * size + size / 2, y * size + size - padding);
+      context.moveTo(center.x, y * size + padding);
+      context.lineTo(center.x, center.y);
+      context.stroke();
+      // Leaf shape
+      context.beginPath();
+      context.moveTo(center.x, center.y);
+      context.bezierCurveTo(
+        center.x + size * 0.3,
+        center.y - size * 0.2,
+        center.x + size * 0.2,
+        center.y - size * 0.4,
+        center.x,
+        center.y - size * 0.3
+      );
+      context.bezierCurveTo(
+        center.x - size * 0.2,
+        center.y - size * 0.4,
+        center.x - size * 0.3,
+        center.y - size * 0.2,
+        center.x,
+        center.y
+      );
+      context.fill();
+      break;
+
+    case 'curve':
+      context.beginPath();
+      context.moveTo(center.x, y * size + padding);
+      context.quadraticCurveTo(
+        center.x + size * cell.curve,
+        center.y,
+        (x + 1) * size - padding,
+        center.y
+      );
       context.stroke();
       break;
-    case '╗':
+
+    case 'split':
       context.beginPath();
-      context.moveTo(x * size + padding, y * size + size / 2);
-      context.lineTo(x * size + size / 2, y * size + size / 2);
-      context.lineTo(x * size + size / 2, y * size + size - padding);
-      context.stroke();
-      break;
-    case '╚':
-      context.beginPath();
-      context.moveTo(x * size + size / 2, y * size + padding);
-      context.lineTo(x * size + size / 2, y * size + size / 2);
-      context.lineTo(x * size + size - padding, y * size + size / 2);
-      context.stroke();
-      break;
-    case '╝':
-      context.beginPath();
-      context.moveTo(x * size + size / 2, y * size + padding);
-      context.lineTo(x * size + size / 2, y * size + size / 2);
-      context.lineTo(x * size + padding, y * size + size / 2);
+      // Main stem
+      context.moveTo(center.x, y * size + padding);
+      context.lineTo(center.x, center.y);
+      // Left branch
+      context.moveTo(center.x, center.y);
+      const splitCp1x = center.x - size * 0.3;
+      const splitCp1y = center.y - size * cell.curve * 0.5;
+      context.quadraticCurveTo(
+        splitCp1x,
+        splitCp1y,
+        x * size + padding,
+        center.y
+      );
+      // Right branch
+      context.moveTo(center.x, center.y);
+      const splitCp2x = center.x + size * 0.3;
+      const splitCp2y = center.y - size * cell.curve * 0.5;
+      context.quadraticCurveTo(
+        splitCp2x,
+        splitCp2y,
+        (x + 1) * size - padding,
+        center.y
+      );
       context.stroke();
       break;
   }
+
+  context.restore();
 }
 
 function checkConnection(
@@ -183,9 +270,13 @@ const sketch: Sketch<'2d'> = ({
   function createCell(): Cell {
     return {
       collapsed: false,
-      options: ['═', '║', '╔', '╗', '╚', '╝'],
+      options: ['stem', 'branch', 'leaf', 'curve', 'split'],
       color: Random.pick(colors),
       connections: [],
+      thickness:
+        1 + Random.range(-config.thicknessVariation, config.thicknessVariation),
+      rotation: Random.range(-0.1, 0.1),
+      curve: Random.range(-config.curveVariation, config.curveVariation),
     };
   }
 
@@ -278,7 +369,7 @@ const sketch: Sketch<'2d'> = ({
       for (let x = 0; x < config.gridSize; x++) {
         const cell = grid[y][x];
         if (cell.collapsed) {
-          drawTile(context, x, y, cellSize, cell.options[0], cell.color);
+          drawTile(context, x, y, cellSize, cell.options[0], cell);
         }
       }
     }

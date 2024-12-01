@@ -1,23 +1,23 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-// import { palettes as autoAlbersPalettes } from '../../colors/auto-albers';
-// import { palettes as mindfulPalettes } from '../../colors/mindful-palettes';
-// import { clrs } from '../../colors/clrs';
-import * as tome from 'chromotome';
+import { palettes as autoAlbersPalettes } from '../../colors/auto-albers';
+import { palettes as mindfulPalettes } from '../../colors/mindful-palettes';
+import { clrs } from '../../colors/clrs';
 
 const config = {
-  gridSize: 32, //64,
+  gridSize: 32,
   padding: 0,
+  arrowSize: 0.5,
+  lineWidth: 0.2,
 };
 
-// const colors = Random.pick([
-//   ...mindfulPalettes,
-//   ...autoAlbersPalettes,
-//   ...clrs,
-// ]);
-// const bg = colors.pop();
-const { colors, background: bg } = tome.get();
+const colors = Random.pick([
+  ...mindfulPalettes,
+  ...autoAlbersPalettes,
+  ...clrs,
+]);
+const bg = colors.pop();
 
 type Tile = '═' | '║' | '╔' | '╗' | '╚' | '╝';
 type Connection = 'top' | 'right' | 'bottom' | 'left';
@@ -28,7 +28,6 @@ type Cell = {
   connections: Connection[];
 };
 
-// Define which sides each tile connects to
 const connectionPoints: Record<Tile, Connection[]> = {
   '═': ['left', 'right'],
   '║': ['top', 'bottom'],
@@ -38,7 +37,6 @@ const connectionPoints: Record<Tile, Connection[]> = {
   '╝': ['left', 'top'],
 };
 
-// Define opposite directions for connection checking
 const oppositeDirection: Record<Connection, Connection> = {
   top: 'bottom',
   right: 'left',
@@ -55,6 +53,56 @@ const rules = {
   '╝': ['═', '║', '╔'],
 };
 
+function drawArrowhead(
+  context: CanvasRenderingContext2D,
+  fromX: number,
+  fromY: number,
+  toX: number,
+  toY: number,
+  arrowSize: number
+) {
+  const angle = Math.atan2(toY - fromY, toX - fromX);
+
+  context.beginPath();
+  context.moveTo(toX, toY);
+  context.lineTo(
+    toX - arrowSize * Math.cos(angle - Math.PI / 6),
+    toY - arrowSize * Math.sin(angle - Math.PI / 6)
+  );
+  context.lineTo(
+    toX - arrowSize * Math.cos(angle + Math.PI / 6),
+    toY - arrowSize * Math.sin(angle + Math.PI / 6)
+  );
+  context.closePath();
+  context.fill();
+}
+
+function drawArrowedLine(
+  context: CanvasRenderingContext2D,
+  startX: number,
+  startY: number,
+  endX: number,
+  endY: number,
+  arrowSize: number
+) {
+  const angle = Math.atan2(endY - startY, endX - startX);
+  const length = Math.sqrt(
+    Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2)
+  );
+
+  // Draw main line
+  context.beginPath();
+  context.moveTo(startX, startY);
+  context.lineTo(
+    endX - arrowSize * Math.cos(angle),
+    endY - arrowSize * Math.sin(angle)
+  );
+  context.stroke();
+
+  // Draw arrowhead
+  drawArrowhead(context, startX, startY, endX, endY, arrowSize);
+}
+
 function drawTile(
   context: CanvasRenderingContext2D,
   x: number,
@@ -64,50 +112,99 @@ function drawTile(
   color: string = '#0066FF'
 ) {
   const padding = size * config.padding;
+  const arrowSize = size * config.arrowSize;
+
   context.fillStyle = color;
   context.strokeStyle = color;
-  context.lineWidth = size * 0.2;
+  context.lineWidth = size * config.lineWidth;
+  context.lineCap = 'round';
+  context.lineJoin = 'round';
+
+  const center = {
+    x: x * size + size / 2,
+    y: y * size + size / 2,
+  };
 
   switch (tile) {
     case '═':
-      context.beginPath();
-      context.moveTo(x * size + padding, y * size + size / 2);
-      context.lineTo(x * size + size - padding, y * size + size / 2);
-      context.stroke();
+      drawArrowedLine(
+        context,
+        x * size + padding,
+        center.y,
+        x * size + size - padding,
+        center.y,
+        arrowSize
+      );
       break;
     case '║':
-      context.beginPath();
-      context.moveTo(x * size + size / 2, y * size + padding);
-      context.lineTo(x * size + size / 2, y * size + size - padding);
-      context.stroke();
+      drawArrowedLine(
+        context,
+        center.x,
+        y * size + padding,
+        center.x,
+        y * size + size - padding,
+        arrowSize
+      );
       break;
     case '╔':
       context.beginPath();
-      context.moveTo(x * size + size - padding, y * size + size / 2);
-      context.lineTo(x * size + size / 2, y * size + size / 2);
-      context.lineTo(x * size + size / 2, y * size + size - padding);
+      context.moveTo(x * size + size - padding, center.y);
+      context.lineTo(center.x, center.y);
+      context.lineTo(center.x, y * size + size - padding);
       context.stroke();
+      drawArrowhead(
+        context,
+        center.x,
+        center.y,
+        center.x,
+        y * size + size - padding,
+        arrowSize
+      );
       break;
     case '╗':
       context.beginPath();
-      context.moveTo(x * size + padding, y * size + size / 2);
-      context.lineTo(x * size + size / 2, y * size + size / 2);
-      context.lineTo(x * size + size / 2, y * size + size - padding);
+      context.moveTo(x * size + padding, center.y);
+      context.lineTo(center.x, center.y);
+      context.lineTo(center.x, y * size + size - padding);
       context.stroke();
+      drawArrowhead(
+        context,
+        center.x,
+        center.y,
+        center.x,
+        y * size + size - padding,
+        arrowSize
+      );
       break;
     case '╚':
       context.beginPath();
-      context.moveTo(x * size + size / 2, y * size + padding);
-      context.lineTo(x * size + size / 2, y * size + size / 2);
-      context.lineTo(x * size + size - padding, y * size + size / 2);
+      context.moveTo(center.x, y * size + padding);
+      context.lineTo(center.x, center.y);
+      context.lineTo(x * size + size - padding, center.y);
       context.stroke();
+      drawArrowhead(
+        context,
+        center.x,
+        center.y,
+        x * size + size - padding,
+        center.y,
+        arrowSize
+      );
       break;
     case '╝':
       context.beginPath();
-      context.moveTo(x * size + size / 2, y * size + padding);
-      context.lineTo(x * size + size / 2, y * size + size / 2);
-      context.lineTo(x * size + padding, y * size + size / 2);
+      context.moveTo(center.x, y * size + padding);
+      context.lineTo(center.x, center.y);
+      context.lineTo(x * size + padding, center.y);
       context.stroke();
+      drawArrowhead(
+        context,
+        center.x,
+        center.y,
+        x * size + padding,
+        center.y,
+        arrowSize
+      );
       break;
   }
 }
@@ -224,7 +321,6 @@ const sketch: Sketch<'2d'> = ({
       .filter((cell) => cell.collapsed)
       .map((cell) => cell.color);
 
-    // If there are any existing colors in the connected group, use one of them
     const existingColor = colors.length > 0 ? colors[0] : cell.color;
     connectedCells.forEach((pos) => {
       grid[pos.y][pos.x].color = existingColor;

@@ -1,23 +1,14 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-// import { palettes as autoAlbersPalettes } from '../../colors/auto-albers';
-// import { palettes as mindfulPalettes } from '../../colors/mindful-palettes';
-// import { clrs } from '../../colors/clrs';
 import * as tome from 'chromotome';
 
 const config = {
-  gridSize: 32, //64,
+  gridSize: 64, //64,
   padding: 0,
 };
 
-// const colors = Random.pick([
-//   ...mindfulPalettes,
-//   ...autoAlbersPalettes,
-//   ...clrs,
-// ]);
-// const bg = colors.pop();
-const { colors, background: bg } = tome.get();
+const { colors, background: bg, stroke } = tome.get();
 
 type Tile = '═' | '║' | '╔' | '╗' | '╚' | '╝';
 type Connection = 'top' | 'right' | 'bottom' | 'left';
@@ -61,7 +52,7 @@ function drawTile(
   y: number,
   size: number,
   tile: Tile,
-  color: string = '#0066FF'
+  color: string
 ) {
   const padding = size * config.padding;
   context.fillStyle = color;
@@ -73,12 +64,26 @@ function drawTile(
       context.beginPath();
       context.moveTo(x * size + padding, y * size + size / 2);
       context.lineTo(x * size + size - padding, y * size + size / 2);
+
+      context.strokeStyle = color;
+      context.lineWidth = size * 0.3;
+      context.stroke();
+
+      context.strokeStyle = bg;
+      context.lineWidth = size * 0.1;
       context.stroke();
       break;
     case '║':
       context.beginPath();
       context.moveTo(x * size + size / 2, y * size + padding);
       context.lineTo(x * size + size / 2, y * size + size - padding);
+
+      context.strokeStyle = color;
+      context.lineWidth = size * 0.3;
+      context.stroke();
+
+      context.strokeStyle = bg;
+      context.lineWidth = size * 0.1;
       context.stroke();
       break;
     case '╔':
@@ -86,6 +91,13 @@ function drawTile(
       context.moveTo(x * size + size - padding, y * size + size / 2);
       context.lineTo(x * size + size / 2, y * size + size / 2);
       context.lineTo(x * size + size / 2, y * size + size - padding);
+
+      context.strokeStyle = color;
+      context.lineWidth = size * 0.3;
+      context.stroke();
+
+      context.strokeStyle = bg;
+      context.lineWidth = size * 0.1;
       context.stroke();
       break;
     case '╗':
@@ -93,6 +105,13 @@ function drawTile(
       context.moveTo(x * size + padding, y * size + size / 2);
       context.lineTo(x * size + size / 2, y * size + size / 2);
       context.lineTo(x * size + size / 2, y * size + size - padding);
+
+      context.strokeStyle = color;
+      context.lineWidth = size * 0.3;
+      context.stroke();
+
+      context.strokeStyle = bg;
+      context.lineWidth = size * 0.1;
       context.stroke();
       break;
     case '╚':
@@ -100,6 +119,13 @@ function drawTile(
       context.moveTo(x * size + size / 2, y * size + padding);
       context.lineTo(x * size + size / 2, y * size + size / 2);
       context.lineTo(x * size + size - padding, y * size + size / 2);
+
+      context.strokeStyle = color;
+      context.lineWidth = size * 0.3;
+      context.stroke();
+
+      context.strokeStyle = bg;
+      context.lineWidth = size * 0.1;
       context.stroke();
       break;
     case '╝':
@@ -107,6 +133,13 @@ function drawTile(
       context.moveTo(x * size + size / 2, y * size + padding);
       context.lineTo(x * size + size / 2, y * size + size / 2);
       context.lineTo(x * size + padding, y * size + size / 2);
+
+      context.strokeStyle = color;
+      context.lineWidth = size * 0.3;
+      context.stroke();
+
+      context.strokeStyle = bg;
+      context.lineWidth = size * 0.1;
       context.stroke();
       break;
   }
