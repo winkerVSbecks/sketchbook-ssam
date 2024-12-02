@@ -3,7 +3,7 @@ import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import { lerp } from 'canvas-sketch-util/math';
 import eases from 'eases';
 import { renderOffscreen } from '../../render-offscreen';
-import { ClusterConfig, renderCluster } from '../cluster-growth/system';
+import { ClusterConfig, createClusterSystem } from '../cluster-growth/system';
 
 const config = {
   count: 5,
@@ -26,7 +26,7 @@ const sketch: Sketch<'2d'> = async ({ wrap, context: ctx, width, height }) => {
 
     return new Promise((resolve, reject) => {
       const draw = ({ context, width, height, pixelRatio }: SketchProps) => {
-        renderCluster(clusterConfig)({
+        createClusterSystem(clusterConfig)({
           context,
           width,
           height,

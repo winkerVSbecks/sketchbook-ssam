@@ -1,6 +1,6 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
-import { renderCluster, ClusterConfig } from './system';
+import { createClusterSystem, ClusterConfig } from './system';
 
 export const sketch: Sketch<'2d'> = ({
   wrap,
@@ -24,7 +24,7 @@ export const sketch: Sketch<'2d'> = ({
     height,
   };
 
-  wrap.render = renderCluster(config);
+  wrap.render = createClusterSystem(config);
 };
 
 export const settings: SketchSettings = {

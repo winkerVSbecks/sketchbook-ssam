@@ -1,4 +1,5 @@
 import Random from 'canvas-sketch-util/random';
+import * as tome from 'chromotome';
 
 export type GridPatternConfig = {
   width: number;
@@ -6,7 +7,16 @@ export type GridPatternConfig = {
   cellSize: number;
   stairCount: number;
   chequerboardCount: number;
+  colors?: string[];
 };
+
+interface Cell {
+  x: number;
+  y: number;
+  cellSize: number;
+  color: string;
+  filled?: boolean;
+}
 
 export function createGrid(gridHeight: number, gridWidth: number) {
   return Array.from({ length: gridHeight }, () =>
@@ -21,17 +31,34 @@ export function createGrid(gridHeight: number, gridWidth: number) {
 //   }
 // }
 
-export function drawGridPattern(
+export function createGridPattern(
   config: GridPatternConfig,
-  drawCell: (x: number, y: number, cellSize: number, filled?: boolean) => void
+  drawCell: (
+    x: number,
+    y: number,
+    cellSize: number,
+    color: string,
+    filled?: boolean
+  ) => void
 ) {
+  const fallbackPalette = tome.get();
+  const colors = config.colors || fallbackPalette.colors;
   const totalOffset = config.cellSize;
   const gridWidth = Math.floor(config.width / totalOffset);
   const gridHeight = Math.floor(config.height / totalOffset);
 
+  const cells: Cell[] = [];
+
   function createStairs(startX: number, startY: number, length: number) {
     for (let i = 0; i < length; i++) {
-      drawCell(startX + i, startY + i, config.cellSize, true);
+      // drawCell(startX + i, startY + i, config.cellSize, true);
+      cells.push({
+        x: startX + i,
+        y: startY + i,
+        cellSize: config.cellSize,
+        filled: true,
+        color: Random.pick(colors),
+      });
     }
   }
 
@@ -39,7 +66,14 @@ export function drawGridPattern(
   const grid = createGrid(gridHeight, gridWidth);
   for (let y = 0; y < gridHeight; y++) {
     for (let x = 0; x < gridWidth; x++) {
-      drawCell(x, y, config.cellSize, grid[y][x]);
+      // drawCell(x, y, config.cellSize, grid[y][x]);
+      cells.push({
+        x,
+        y,
+        cellSize: config.cellSize,
+        filled: grid[y][x],
+        color: Random.pick(colors),
+      });
     }
   }
 
@@ -57,9 +91,22 @@ export function drawGridPattern(
     for (let y = 0; y < 5; y++) {
       for (let x = 0; x < 5; x++) {
         if ((x + y) % 2 === 0) {
-          drawCell(startX + x, startY + y, config.cellSize, true);
+          // drawCell(startX + x, startY + y, config.cellSize, true);
+          cells.push({
+            x: startX + x,
+            y: startY + y,
+            cellSize: config.cellSize,
+            filled: true,
+            color: Random.pick(colors),
+          });
         }
       }
     }
   }
+
+  return () => {
+    cells.forEach((cell) =>
+      drawCell(cell.x, cell.y, cell.cellSize, cell.color, cell.filled)
+    );
+  };
 }

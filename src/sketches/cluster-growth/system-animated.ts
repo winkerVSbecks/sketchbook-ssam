@@ -289,8 +289,33 @@ export function createClusterSystem(
     return initCluster(cluster, gridWidth, gridHeight, { x, y }, config);
   });
 
-  // Grow clusters until stable
-  while (clusters.some((cluster) => cluster.state === 'growing')) {
+  return ({ width, height, playhead, context }: SketchProps) => {
+    // Reset on loop
+    if (playhead === 0) {
+      clusters = Array.from({ length: config.clusterCount! }, () =>
+        createCluster(gridWidth, gridHeight, colors, config.radiusRange!)
+      );
+
+      // Initialize each cluster at different positions
+      clusters = clusters.map((cluster) => {
+        const x = Random.rangeFloor(gridWidth);
+        const y = Random.rangeFloor(gridHeight);
+        return initCluster(cluster, gridWidth, gridHeight, { x, y }, config);
+      });
+    }
+
+    if (config.renderBackground) {
+      context.fillStyle = background;
+      context.fillRect(0, 0, width, height);
+    }
+
+    // Setup text rendering
+    if (config.mode === 'ascii') {
+      context.font = `${config.cellSize}px jgs7`;
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+    }
+
     clusters = clusters.map((cluster) => {
       if (cluster.state === 'growing') {
         return updateCluster(
@@ -303,20 +328,6 @@ export function createClusterSystem(
       }
       return cluster;
     });
-  }
-
-  return ({ width, height, playhead, context }: SketchProps) => {
-    if (config.renderBackground) {
-      context.fillStyle = background;
-      context.fillRect(0, 0, width, height);
-    }
-
-    // Setup text rendering
-    if (config.mode === 'ascii') {
-      context.font = `${config.cellSize}px jgs7`;
-      context.textAlign = 'center';
-      context.textBaseline = 'middle';
-    }
 
     clusters.forEach((cluster) => {
       drawCluster(cluster, context, gridWidth, gridHeight, playhead, config);

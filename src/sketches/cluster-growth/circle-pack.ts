@@ -256,7 +256,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     minRadius: 0.03125,
     maxRadius: 0.75,
   })
-    .filter((s) => s.radius > 0.1)
+    .filter((s: any) => s.radius > 0.1)
     .map((shape: any) => ({
       position: [shape.position[0] * gridWidth, shape.position[1] * gridHeight],
       r: shape.radius,
