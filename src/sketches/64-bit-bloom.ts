@@ -1,16 +1,34 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-import { drawGridPattern } from './system';
+import { drawGridPattern } from './grid-stairs/system';
+import * as tome from 'chromotome';
+import { ClusterConfig } from './cluster-growth/system';
 
-const colors = ['#0066FF', '#003399', '#000066'];
-const bg = '#F0F0F0';
+const { colors, background: bg } = tome.get();
+
+const config = {
+  gridSize: 20,
+  stairCount: 3,
+  chequerboardCount: 2,
+};
 
 const sketch = ({ wrap, context, width, height }: SketchProps) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => wrap.dispose());
     import.meta.hot.accept(() => wrap.hotReload());
   }
+
+  const clusterConfig: ClusterConfig = {
+    cellSize: 10,
+    gap: 0,
+    growthProbabilityMin: 0.05,
+    growthProbabilityMax: 0.2,
+    initialClusterSize: 8,
+    chars: '░▒▓'.split(''),
+    width,
+    height,
+  };
 
   wrap.render = () => {
     context.fillStyle = bg;
@@ -20,9 +38,7 @@ const sketch = ({ wrap, context, width, height }: SketchProps) => {
       {
         width,
         height,
-        cellSize: 54,
-        stairCount: 3,
-        chequerboardCount: 2,
+        ...config,
       },
       function drawPixel(
         x: number,

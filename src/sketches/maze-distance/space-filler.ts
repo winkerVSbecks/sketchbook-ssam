@@ -5,6 +5,7 @@ import { mapRange } from 'canvas-sketch-util/math';
 import { palettes as autoAlbersPalettes } from '../../colors/auto-albers';
 import { palettes as mindfulPalettes } from '../../colors/mindful-palettes';
 import { generateColors } from '../../subtractive-color';
+import * as tome from 'chromotome';
 
 const size = 64;
 const corners = Random.shuffle([
@@ -14,9 +15,11 @@ const corners = Random.shuffle([
   [size - 1, Random.rangeFloor(0, size - 1)],
 ]) as Point[];
 
-const colors = Random.chance()
-  ? generateColors()
-  : Random.pick([...mindfulPalettes, ...autoAlbersPalettes]);
+// const colors = Random.chance()
+//   ? generateColors()
+//   : Random.pick([...mindfulPalettes, ...autoAlbersPalettes]);
+
+const { colors, background: bg, stroke: base } = tome.get();
 
 const config = {
   size: 64,
@@ -64,8 +67,8 @@ export const sketch = ({ wrap, context, width }: SketchProps) => {
     import.meta.hot.accept(() => wrap.hotReload());
   }
 
-  const bg = colors.pop()!;
-  const base = colors.pop()!;
+  // const bg = colors.pop()!;
+  // const base = colors.pop()!;
 
   const maze = sidewinder(new Maze(config.size, config.size)).setStartAndEnd(
     config.start,

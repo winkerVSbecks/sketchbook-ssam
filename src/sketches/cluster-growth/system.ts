@@ -1,7 +1,8 @@
 import Random from 'canvas-sketch-util/random';
 import { mapRange } from 'canvas-sketch-util/math';
-import { generateColors } from '../../subtractive-color';
 import { SketchProps } from 'ssam';
+import * as tome from 'chromotome';
+import { generateColors } from '../../subtractive-color';
 
 export interface Point {
   x: number;
@@ -251,7 +252,8 @@ export function renderCluster(
     config.growthProbabilityMax
   );
 
-  const colors = generateColors();
+  // const colors = generateColors();
+  const { colors, background } = tome.get();
 
   // Create multiple clusters
   let clusters = Array.from({ length: 6 }, () =>
@@ -283,7 +285,7 @@ export function renderCluster(
 
   return ({ width, height, playhead, context }: SketchProps) => {
     // Clear canvas with first cluster's base color
-    context.fillStyle = clusters[0].baseColor;
+    context.fillStyle = background; // clusters[0].baseColor;
     context.fillRect(0, 0, width, height);
 
     // Setup text rendering
