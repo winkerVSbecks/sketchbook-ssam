@@ -10,7 +10,7 @@ export type GridPatternConfig = {
   colors?: string[];
 };
 
-interface Cell {
+export interface GridCell {
   x: number;
   y: number;
   cellSize: number;
@@ -24,22 +24,9 @@ export function createGrid(gridHeight: number, gridWidth: number) {
   );
 }
 
-// function drawPixel(x: number, y: number, cellSize: number, filled?: boolean) {
-//   if (filled) {
-//     context.fillStyle = '#000';
-//     context.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
-//   }
-// }
-
-export function createGridPattern(
+export function createGridStairsSystem(
   config: GridPatternConfig,
-  drawCell: (
-    x: number,
-    y: number,
-    cellSize: number,
-    color: string,
-    filled?: boolean
-  ) => void
+  drawCell: (cell: GridCell) => void
 ) {
   const fallbackPalette = tome.get();
   const colors = config.colors || fallbackPalette.colors;
@@ -47,11 +34,10 @@ export function createGridPattern(
   const gridWidth = Math.floor(config.width / totalOffset);
   const gridHeight = Math.floor(config.height / totalOffset);
 
-  const cells: Cell[] = [];
+  const cells: GridCell[] = [];
 
   function createStairs(startX: number, startY: number, length: number) {
     for (let i = 0; i < length; i++) {
-      // drawCell(startX + i, startY + i, config.cellSize, true);
       cells.push({
         x: startX + i,
         y: startY + i,
@@ -66,7 +52,6 @@ export function createGridPattern(
   const grid = createGrid(gridHeight, gridWidth);
   for (let y = 0; y < gridHeight; y++) {
     for (let x = 0; x < gridWidth; x++) {
-      // drawCell(x, y, config.cellSize, grid[y][x]);
       cells.push({
         x,
         y,
@@ -91,7 +76,6 @@ export function createGridPattern(
     for (let y = 0; y < 5; y++) {
       for (let x = 0; x < 5; x++) {
         if ((x + y) % 2 === 0) {
-          // drawCell(startX + x, startY + y, config.cellSize, true);
           cells.push({
             x: startX + x,
             y: startY + y,
@@ -105,8 +89,6 @@ export function createGridPattern(
   }
 
   return () => {
-    cells.forEach((cell) =>
-      drawCell(cell.x, cell.y, cell.cellSize, cell.color, cell.filled)
-    );
+    cells.forEach(drawCell);
   };
 }

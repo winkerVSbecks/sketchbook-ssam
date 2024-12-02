@@ -1,13 +1,17 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
-import { GridPatternConfig, createGridPattern } from './grid-stairs/system';
+import {
+  GridCell,
+  GridPatternConfig,
+  createGridStairsSystem,
+} from '../grid-stairs/system';
 import * as tome from 'chromotome';
 import {
   ClusterConfig,
   createClusterSystem,
-} from './cluster-growth/system-animated';
-import { scaleCanvasAndApplyDither } from '../scale-canvas-dither';
-import { dither } from '../dither';
+} from '../cluster-growth/system-animated';
+import { scaleCanvasAndApplyDither } from '../../scale-canvas-dither';
+import { dither } from '../../dither';
 
 const { colors, background: bg } = tome.get();
 
@@ -50,22 +54,21 @@ const sketch = ({ wrap, context, width, height, canvas }: SketchProps) => {
   };
 
   const drawClusterSystem = createClusterSystem(clusterConfig);
-  const drawGridPattern = createGridPattern(
+  const drawGridPattern = createGridStairsSystem(
     {
       ...(config as Omit<GridPatternConfig, 'width' | 'height'>),
       width,
       height,
     },
-    function drawPixel(
-      x: number,
-      y: number,
-      cellSize: number,
-      color: string,
-      filled?: boolean
-    ) {
-      if (filled) {
-        context.fillStyle = color;
-        context.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+    function drawPixel(c: GridCell) {
+      if (c.filled) {
+        context.fillStyle = c.color;
+        context.fillRect(
+          c.x * c.cellSize,
+          c.y * c.cellSize,
+          c.cellSize,
+          c.cellSize
+        );
       }
     }
   );
@@ -73,16 +76,6 @@ const sketch = ({ wrap, context, width, height, canvas }: SketchProps) => {
   wrap.render = (props) => {
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
-
-    const { playhead } = props;
-
-    // Create a pulsing growth probability
-    const pulseRate = Math.sin(playhead * Math.PI * 2 * config.pulseSpeed);
-    const currentGrowthProbability =
-      config.growthProbabilityMin +
-      ((config.growthProbabilityMax - config.growthProbabilityMin) *
-        (pulseRate + 1)) /
-        2;
 
     drawGridPattern();
     drawClusterSystem(props);
