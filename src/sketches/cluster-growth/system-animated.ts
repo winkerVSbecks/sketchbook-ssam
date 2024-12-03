@@ -66,7 +66,7 @@ export function createCluster(
       color: '',
     })),
     cells: [],
-    colors: colors.slice(0, -1),
+    colors: colors.length > 2 ? colors.slice(0, -1) : colors,
     baseColor: colors[colors.length - 1],
     radius: Random.range(radiusRange[0], radiusRange[1]),
   };
