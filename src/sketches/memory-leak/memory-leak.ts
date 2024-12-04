@@ -20,6 +20,8 @@ if (stroke === bg) {
   stroke = Random.pick(colors);
 }
 
+console.log({ colors, bg, stroke });
+
 interface MemoryLeakConfig
   extends Omit<GridPatternConfig, 'width' | 'height'>,
     Omit<ClusterConfig, 'width' | 'height'> {
@@ -35,10 +37,12 @@ interface MemoryLeakConfig
     right: number;
     bottom: number;
     gap: number;
+    logoHeight: number;
   };
   label: {
     fontSize1: number;
     fontSize2: number;
+    version: string;
   };
 }
 
@@ -68,10 +72,12 @@ const config: MemoryLeakConfig = {
     right: 80,
     bottom: 320,
     gap: 40,
+    logoHeight: 60,
   },
   label: {
     fontSize1: 80,
     fontSize2: 40,
+    version: `ROM ${getRandomVersion()}`,
   },
 };
 
@@ -142,7 +148,8 @@ const sketch = ({ wrap, context, width, height, canvas }: SketchProps) => {
   const scanLinePattern = createScanLinePattern(context);
 
   wrap.render = async (props) => {
-    drawPico8Cartridge(context, width, height);
+    // drawPico8Cartridge(context, width, height);
+    drawCartridge(context, width, height);
 
     // Draw background that will be clipped
     context.globalCompositeOperation = 'destination-in';
@@ -170,12 +177,6 @@ const sketch = ({ wrap, context, width, height, canvas }: SketchProps) => {
 
     context.restore();
 
-    // context.save();
-    // context.globalCompositeOperation = 'destination-out'; // difference destination-out exclusion
-    // context.globalAlpha = 1;
-    // drawEraserSystem(props);
-    // context.restore();
-
     if (config.dither) {
       const ditheredImage = scaleCanvasAndApplyDither(
         width,
@@ -194,11 +195,12 @@ const sketch = ({ wrap, context, width, height, canvas }: SketchProps) => {
   };
 };
 
-function drawPico8Cartridge(
+function drawCartridge(
   context: CanvasRenderingContext2D,
   width: number,
   height: number
 ) {
+  // Main cartridge shape
   context.lineWidth = config.cartridge.stroke;
   context.strokeStyle = stroke;
   context.fillStyle = bg;
@@ -214,10 +216,20 @@ function drawPico8Cartridge(
   context.fill();
   context.stroke();
 
+  // Draw SSAM logo
+  const logoY = config.cartridge.top / 2 - config.cartridge.logoHeight / 2;
+  drawSSAMLogo(
+    context,
+    config.cartridge.left,
+    logoY,
+    config.cartridge.logoHeight
+  );
+
   const w = width - config.cartridge.left - config.cartridge.right;
   const h = height - config.cartridge.top - config.cartridge.bottom;
   context.strokeRect(config.cartridge.left, config.cartridge.top, w, h);
 
+  // Label area
   const lX = config.cartridge.left;
   const lY =
     config.cartridge.top +
@@ -231,16 +243,100 @@ function drawPico8Cartridge(
   context.fill();
   context.stroke();
 
+  // Label text
   context.fillStyle = bg;
   drawCentredTextGroup(
     context,
     { text: 'MEMORY LEAK 64', fontSize: config.label.fontSize1 },
-    { text: 'SSAM CARTRIDGE', fontSize: config.label.fontSize2 },
+    { text: config.label.version, fontSize: config.label.fontSize2 },
     config.cartridge.left + config.cartridge.gap,
     lY,
     w,
     lH
   );
+
+  // Optional: Add minimal grid pattern to label area
+  const gridSize = 8;
+  context.strokeStyle = bg;
+  context.lineWidth = 1;
+  context.globalAlpha = 0.1;
+
+  for (let x = lX; x < lX + w; x += gridSize) {
+    context.beginPath();
+    context.moveTo(x, lY);
+    context.lineTo(x, lY + lH);
+    context.stroke();
+  }
+
+  context.globalAlpha = 1.0;
+}
+
+function drawSSAMLogo(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  height: number
+) {
+  context.save();
+
+  // Draw "SSAM" text as logo
+  context.fillStyle = stroke;
+  context.font = `bold ${height * 0.6}px VT323`;
+  context.textBaseline = 'middle';
+  context.textAlign = 'left';
+  context.fillText('SSAM-JS', x, y + height / 2);
+
+  // Add star to the right of text
+  const textMetrics = context.measureText('SSAM-JS');
+  const textWidth = textMetrics.width;
+  const starSize = height * 0.6;
+  const starX = x + textWidth + starSize * 0.75;
+  const starY = y + height / 2;
+  drawPico8Star(context, starX, starY, starSize);
+
+  context.restore();
+}
+
+function drawPico8Star(
+  context: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  size: number
+) {
+  context.save();
+
+  // Draw each pixel of the star
+  const pixelSize = size / 8; // Adjust for desired chunkiness
+
+  // Star pixel map (1 represents pixel positions)
+  const starMap = [
+    [0, 0, 1, 0, 0],
+    [0, 1, 1, 1, 0],
+    [1, 1, 1, 1, 1],
+    [0, 1, 1, 1, 0],
+    [0, 0, 1, 0, 0],
+  ];
+
+  // Calculate start position to center the star
+  const startX = centerX - pixelSize * 2.5;
+  const startY = centerY - pixelSize * 2.5;
+
+  // Draw pixels
+  starMap.forEach((row, y) => {
+    row.forEach((pixel, x) => {
+      if (pixel === 1) {
+        context.fillStyle = colors[(x + y) % colors.length];
+        context.fillRect(
+          startX + x * pixelSize,
+          startY + y * pixelSize,
+          pixelSize,
+          pixelSize
+        );
+      }
+    });
+  });
+
+  context.restore();
 }
 
 function drawCentredTextGroup(
@@ -302,6 +398,13 @@ function drawRoundedRectWithSlant(
   context.arcTo(x, y, x + radius, y, radius);
 
   context.closePath();
+}
+
+function getRandomVersion() {
+  const major = Random.rangeFloor(0, 9); // Random integer between 0 and 9
+  const minor = Random.rangeFloor(0, 100); // Random integer between 0 and 99
+  const patch = Random.rangeFloor(0, 100); // Random integer between 0 and 999
+  return `v${major}.${minor}.${patch}`;
 }
 
 export const settings: SketchSettings = {
