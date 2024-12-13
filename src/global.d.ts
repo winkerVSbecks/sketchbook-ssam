@@ -8,6 +8,7 @@ declare module 'canvas-sketch-util/math';
 declare module 'canvas-sketch-util/random';
 declare module 'canvas-sketch-util/color';
 declare module 'canvas-sketch-util/geometry';
+declare module 'canvas-sketch-util/penplot';
 declare module 'webfontloader';
 declare module 'polyline-normals';
 declare module 'resolve-lygia';
@@ -15,6 +16,7 @@ declare module 'joy-joy';
 declare module '@texel/color';
 declare module 'load-asset';
 declare module 'chromotome';
+declare module 'convert-length';
 
 type Point = [number, number];
 type Line = Point[];

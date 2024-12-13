@@ -41,6 +41,7 @@
     "canvas-sketch-util-types": "^0.5.1",
     "chaikin-smooth": "^1.0.4",
     "chromotome": "^1.21.4",
+    "convert-length": "^1.0.1",
     "convex-hull": "^1.0.3",
     "culori": "^3.3.0",
     "d3-delaunay": "^6.0.4",

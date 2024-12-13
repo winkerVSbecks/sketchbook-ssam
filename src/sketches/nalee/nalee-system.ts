@@ -3,7 +3,7 @@ import Random from 'canvas-sketch-util/random';
 import { drawDomain } from './domain';
 import { step, makeWalker, walkerToPaths } from './walker';
 import { drawPath } from './paths';
-import { Node, Config, DomainToWorld, Coord } from './types';
+import { Node, Config, DomainToWorld, Coord, Walker } from './types';
 import { State } from './state';
 import spawns from './spawns';
 
@@ -20,7 +20,8 @@ export function createNaleeSystem(
     '#FFF5E0',
   ],
   bg: string = '#101019',
-  debugGrid = false
+  debugGrid = false,
+  pathsOnly = false
 ) {
   function spawnWalker(colors: string[], initialPosition?: Coord) {
     if (state.mode !== 'complete') {
@@ -125,6 +126,18 @@ export function createNaleeSystem(
     if (state.domain.every((cell) => cell.occupied)) {
       state.mode = 'complete';
     }
+  }
+
+  if (pathsOnly) {
+    return state.walkers.map((walker) => {
+      const paths = walkerToPaths(walker);
+
+      const pathsInWorldCoords = paths.map((pts) => {
+        return pts.map(([x, y]) => domainToWorld(x, y));
+      });
+
+      return pathsInWorldCoords;
+    });
   }
 
   return ({ context, playhead }: SketchProps) => {
