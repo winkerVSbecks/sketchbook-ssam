@@ -11,6 +11,8 @@ const [ring, inner, ...bases] = Random.shuffle(colors);
 const config = {
   xCount: 6,
   yCount: 6,
+  direction: 'vertical', // 'horizontal' or 'vertical'
+  trim: true,
 };
 
 // Check for An+B type patterns
@@ -30,13 +32,17 @@ export const sketch = ({ wrap, context }: SketchProps) => {
 
     const res = [2 * config.xCount + 1, 2 * config.yCount + 1];
     const size = [width / res[0], height / res[1]];
-
     const r = size[0] / 2;
+
+    const limits = {
+      x: [config.trim ? 0 : -2, config.trim ? res[0] - 1 : res[0]],
+      y: [config.trim ? 0 : -2, config.trim ? res[1] - 1 : res[1]],
+    };
 
     const grid = [];
 
-    for (let i = 0; i < res[0] - 1; i++) {
-      for (let j = 0; j < res[1] - 1; j++) {
+    for (let i = limits.x[0]; i < limits.x[1]; i++) {
+      for (let j = limits.y[0]; j < limits.y[1]; j++) {
         const x = i * size[0];
         const y = j * size[1];
 
@@ -50,6 +56,7 @@ export const sketch = ({ wrap, context }: SketchProps) => {
     }
 
     grid.forEach(({ x, y, cx, cy }) => {
+      const test = config.direction === 'horizontal' ? x : y;
       if (y % 2 === 0) {
         if (x % 2 === 0) {
           drawClixo(
@@ -57,23 +64,9 @@ export const sketch = ({ wrap, context }: SketchProps) => {
             cx,
             cy,
             r,
-            x % 4 === 0
+            test % 4 === 0
               ? { ring, inner, base: bases[1] }
               : { ring, inner, base: bases[0] }
-          );
-        }
-      }
-
-      if (y % 4 === 0) {
-        if (x % 2 === 0) {
-          drawClixo(
-            context,
-            cx,
-            cy,
-            r,
-            x % 4 === 0
-              ? { ring, inner, base: bases[0] }
-              : { ring, inner, base: bases[1] }
           );
         }
       }
