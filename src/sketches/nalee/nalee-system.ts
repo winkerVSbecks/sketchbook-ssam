@@ -3,7 +3,7 @@ import Random from 'canvas-sketch-util/random';
 import { drawDomain } from './domain';
 import { step, makeWalker, walkerToPaths } from './walker';
 import { drawPath } from './paths';
-import { Node, Config, DomainToWorld, Coord, Walker } from './types';
+import { Node, Config, DomainToWorld, Coord } from './types';
 import { State } from './state';
 import spawns from './spawns';
 
