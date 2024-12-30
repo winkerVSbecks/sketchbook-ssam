@@ -1,7 +1,7 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-import { clrs } from '../colors/clrs';
+import { clrs } from '../../colors/clrs';
 import { drawClixo } from './draw-clixo';
 
 const colors = Random.pick(clrs);
@@ -9,9 +9,10 @@ const bg = colors.pop();
 const [ring, inner, ...bases] = Random.shuffle(colors);
 
 const config = {
-  xCount: 7,
-  yCount: 7,
+  xCount: 7 * 3,
+  yCount: 7 * 3,
   trim: true,
+  layerCount: 4,
 };
 
 if (bases.length < 4) {
@@ -58,35 +59,19 @@ export const sketch = ({ wrap, context }: SketchProps) => {
       }
     }
 
-    grid.forEach(({ x, y, cx, cy }) => {
-      if (matchesPattern(4, 0, y)) {
-        if (matchesPattern(2, 0, x)) {
-          drawClixo(context, cx, cy, r, { ring, inner, base: bases[0] });
+    for (let layer = 0; layer < config.layerCount; layer++) {
+      grid.forEach(({ x, y, cx, cy }) => {
+        if (
+          matchesPattern(Random.rangeFloor(0, 4), Random.rangeFloor(0, 4), y)
+        ) {
+          if (
+            matchesPattern(Random.rangeFloor(0, 4), Random.rangeFloor(0, 4), x)
+          ) {
+            drawClixo(context, cx, cy, r, { ring, inner, base: bases[layer] });
+          }
         }
-      }
-    });
-    grid.forEach(({ x, y, cx, cy }) => {
-      if (matchesPattern(4, 0, y)) {
-        if (matchesPattern(2, 1, x)) {
-          drawClixo(context, cx, cy, r, { ring, inner, base: bases[1] });
-        }
-      }
-    });
-
-    grid.forEach(({ x, y, cx, cy }) => {
-      if (matchesPattern(4, 2, y)) {
-        if (matchesPattern(2, 0, x)) {
-          drawClixo(context, cx, cy, r, { ring, inner, base: bases[2] });
-        }
-      }
-    });
-    grid.forEach(({ x, y, cx, cy }) => {
-      if (matchesPattern(4, 2, y)) {
-        if (matchesPattern(2, 1, x)) {
-          drawClixo(context, cx, cy, r, { ring, inner, base: bases[3] });
-        }
-      }
-    });
+      });
+    }
   };
 };
 

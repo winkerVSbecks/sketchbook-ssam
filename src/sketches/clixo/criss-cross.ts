@@ -1,7 +1,7 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-import { clrs } from '../colors/clrs';
+import { clrs } from '../../colors/clrs';
 import { drawClixo } from './draw-clixo';
 
 const colors = Random.pick(clrs);
@@ -11,7 +11,6 @@ const [ring, inner, ...bases] = Random.shuffle(colors);
 const config = {
   xCount: 6,
   yCount: 6,
-  direction: 'vertical', // 'horizontal' or 'vertical'
   trim: true,
 };
 
@@ -56,7 +55,6 @@ export const sketch = ({ wrap, context }: SketchProps) => {
     }
 
     grid.forEach(({ x, y, cx, cy }) => {
-      const test = config.direction === 'horizontal' ? x : y;
       if (y % 2 === 0) {
         if (x % 2 === 0) {
           drawClixo(
@@ -64,10 +62,24 @@ export const sketch = ({ wrap, context }: SketchProps) => {
             cx,
             cy,
             r,
-            test % 4 === 0
+            x % 4 === 0
               ? { ring, inner, base: bases[1] }
               : { ring, inner, base: bases[0] }
           );
+        }
+
+        if (y % 4 === 0) {
+          if (x % 2 === 0) {
+            drawClixo(
+              context,
+              cx,
+              cy,
+              r,
+              x % 4 === 0
+                ? { ring, inner, base: bases[0] }
+                : { ring, inner, base: bases[1] }
+            );
+          }
         }
       }
     });

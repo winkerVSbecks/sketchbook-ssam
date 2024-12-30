@@ -2,7 +2,7 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 import { mapRange } from 'canvas-sketch-util/math';
-import { clrs } from '../colors/clrs';
+import { clrs } from '../../colors/clrs';
 import { drawClixo } from './draw-clixo';
 
 const colors = Random.pick(clrs);
