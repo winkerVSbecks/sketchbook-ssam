@@ -12,7 +12,8 @@ import { clrs } from '../../colors/clrs';
 
 const colors = Random.pick(clrs);
 const bg = colors.pop();
-const outline = colors.shift();
+const outline = Random.pick(colors);
+const fill = Random.pick(colors);
 
 Random.setSeed(Random.getRandomSeed());
 console.log(Random.getSeed());
@@ -29,7 +30,7 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
     import.meta.hot.accept(() => wrap.hotReload());
   }
 
-  const size = 4;
+  const size = 2;
   const naleeConfig = {
     resolution: [Math.floor(width / size), Math.floor(height / size)],
     size: size,
@@ -46,59 +47,65 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
   const h = height * config.h;
   const top = (height * (1 - config.h)) / 2;
 
-  const rects = [
-    { x: left, y: top, w, h, fillH: h * 0.5 },
-    { x: left + w + gap, y: top, w, h, fillH: h * 0.6 },
-    { x: left + w * 2 + gap * 2, y: top, w, h, fillH: h * 0.85 },
-    { x: left + w * 3 + gap * 3, y: top, w, h, fillH: h * 0.5 },
-    { x: left + w * 4 + gap * 4, y: top, w, h, fillH: h * 0.85 },
-    { x: left + w * 5 + gap * 5, y: top, w, h, fillH: h * 0.5 },
-    { x: left + w * 6 + gap * 6, y: top, w, h, fillH: h * 0.5 },
-  ];
-
-  const clipRects = rects
-    .map((rect) => {
-      return {
-        x: rect.x,
-        y: rect.y,
-        w: rect.w,
-        h: rect.fillH,
-      };
-    })
-    .map<Point[]>(({ x, y, w, h }) => [
-      [x, y],
-      [x + w, y],
-      [x + w, y + h],
-      [x, y + h],
-    ]);
-
-  const domainToWorld = xyToCoords(
-    naleeConfig.resolution,
-    naleeConfig.padding,
-    width,
-    height
-  );
-
-  const systems = clipRects.map((clipRect, idx) => {
-    const domain = makeDomain(naleeConfig.resolution, domainToWorld);
-    const clippedDomain = clipDomainWithWorldCoords(domain, clipRect);
-    return createNaleeSystem(
-      clippedDomain,
-      naleeConfig,
-      domainToWorld,
-      [colors[idx % colors.length]],
-      bg
-    );
-  });
-
   wrap.render = (props: SketchProps) => {
-    const { width, height } = props;
+    const { width, height, playhead } = props;
     context.clearRect(0, 0, width, height);
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
 
+    const rects = [
+      { x: left, y: top, w, h },
+      { x: left + w + gap, y: top, w, h },
+      { x: left + w * 2 + gap * 2, y: top, w, h },
+      { x: left + w * 3 + gap * 3, y: top, w, h },
+      { x: left + w * 4 + gap * 4, y: top, w, h },
+      { x: left + w * 5 + gap * 5, y: top, w, h },
+      { x: left + w * 6 + gap * 6, y: top, w, h },
+    ].map((rect, idx) => ({
+      ...rect,
+      fillH: Math.max(
+        h * 0.1,
+        rect.h * Math.abs(Math.sin((playhead + idx / 7) * Math.PI * 2))
+      ),
+    }));
+
+    const clipRects = rects
+      .map((rect, idx) => {
+        return {
+          x: rect.x,
+          y: rect.y,
+          w: rect.w,
+          h: rect.fillH,
+        };
+      })
+      .map<Point[]>(({ x, y, w, h }) => [
+        [x, y],
+        [x + w, y],
+        [x + w, y + h],
+        [x, y + h],
+      ]);
+
+    const domainToWorld = xyToCoords(
+      naleeConfig.resolution,
+      naleeConfig.padding,
+      width,
+      height
+    );
+
+    const systems = clipRects.map((clipRect, idx) => {
+      const domain = makeDomain(naleeConfig.resolution, domainToWorld);
+      const clippedDomain = clipDomainWithWorldCoords(domain, clipRect);
+      return createNaleeSystem(
+        clippedDomain,
+        naleeConfig,
+        domainToWorld,
+        [fill],
+        bg
+      );
+    });
+
     // Draw composition
-    context.fillStyle = colors[0];
+    context.fillStyle = fill;
     context.strokeStyle = outline;
     rects.forEach((rect) => {
       context.strokeRect(
@@ -118,9 +125,13 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
 
 export const settings: SketchSettings = {
   mode: '2d',
-  dimensions: [210 * 6, 133 * 6],
+  dimensions: [800, 600],
   pixelRatio: window.devicePixelRatio,
-  animate: false,
+  animate: true,
+  duration: 10_000,
+  playFps: 24,
+  exportFps: 24,
+  framesFormat: ['mp4'],
 };
 
 ssam(sketch as Sketch<'2d'>, settings);

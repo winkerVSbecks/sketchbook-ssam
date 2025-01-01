@@ -126,7 +126,6 @@ export function createNaleeSystem(
       state.mode = 'complete';
     }
   }
-  console.log(state.walkers);
 
   return ({ context, playhead }: SketchProps) => {
     state.walkers.forEach((walker) => {
