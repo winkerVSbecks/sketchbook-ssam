@@ -20,14 +20,14 @@ export function inBounds(nodes: Node[], { x, y }: Coord) {
 }
 
 export function xyToCoords(
-  resolution: number,
+  resolution: number[],
   padding: number,
   width: number,
   height: number
 ): DomainToWorld {
   return (x, y) => [
-    toWorld(x, width, resolution, width * padding),
-    toWorld(y, height, resolution, width * padding),
+    toWorld(x, width, resolution[0], width * padding),
+    toWorld(y, height, resolution[1], width * padding),
   ];
 }
 

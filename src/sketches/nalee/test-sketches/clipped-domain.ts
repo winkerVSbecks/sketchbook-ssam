@@ -16,7 +16,7 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
 
   const size = 12;
   const config = {
-    resolution: Math.floor(1080 / size),
+    resolution: [Math.floor(width / size), Math.floor(height / size)],
     size: size,
     stepSize: size / 3,
     walkerCount: 30,

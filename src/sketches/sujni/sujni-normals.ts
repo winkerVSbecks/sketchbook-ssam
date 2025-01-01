@@ -33,15 +33,6 @@ const config = {
 };
 
 const naleeSize = 12; //Random.pick([6, 9, 12]);
-const naleeConfig = {
-  resolution: Math.floor(1080 / naleeSize),
-  size: naleeSize,
-  stepSize: naleeSize / 3,
-  walkerCount: 30,
-  padding: 0.03125, // 1 / 32
-  pathStyle: 'withNormalsStyle', // Random.pick(['pipeStyle', 'solidStyle', 'stitchStyle']), // 'pipeStyle', //'solidStyle',
-  flat: true,
-} satisfies NaleeConfig;
 
 interface DGCell {
   path: Line;
@@ -65,6 +56,16 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     import.meta.hot.dispose(() => wrap.dispose());
     import.meta.hot.accept(() => wrap.hotReload());
   }
+
+  const naleeConfig = {
+    resolution: [Math.floor(width / naleeSize), Math.floor(height / naleeSize)],
+    size: naleeSize,
+    stepSize: naleeSize / 3,
+    walkerCount: 30,
+    padding: 0.03125, // 1 / 32
+    pathStyle: 'withNormalsStyle', // Random.pick(['pipeStyle', 'solidStyle', 'stitchStyle']), // 'pipeStyle', //'solidStyle',
+    flat: true,
+  } satisfies NaleeConfig;
 
   function drawRegion(vertices: any, color: string) {
     if (vertices.length > 0) {

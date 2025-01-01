@@ -67,15 +67,15 @@ export function createNaleeSystem(
   function middleOutCross() {
     // middle out cross style
     spawnWalker(colors, { x: 0, y: 0 });
-    spawnWalker(colors, { x: config.resolution, y: 0 });
-    for (let x = 0; x < config.resolution; x++) {
-      spawnWalker(colors, { x: x, y: x % 2 === 0 ? config.resolution : 0 });
+    spawnWalker(colors, { x: config.resolution[0], y: 0 });
+    for (let x = 0; x < config.resolution[0]; x++) {
+      spawnWalker(colors, { x: x, y: x % 2 === 0 ? config.resolution[1] : 0 });
     }
-    for (let y = 0; y < config.resolution; y++) {
-      spawnWalker(colors, { x: y % 2 === 0 ? config.resolution : 0, y: y });
+    for (let y = 0; y < config.resolution[1]; y++) {
+      spawnWalker(colors, { x: y % 2 === 0 ? config.resolution[1] : 0, y: y });
     }
-    spawnWalker(colors, { x: 0, y: config.resolution });
-    spawnWalker(colors, { x: config.resolution, y: config.resolution });
+    spawnWalker(colors, { x: 0, y: config.resolution[1] });
+    spawnWalker(colors, { x: config.resolution[0], y: config.resolution[1] });
 
     // spawnWalker({ x: 0, y: 0 });
     // spawnWalker({ x: 90, y: 0 });
@@ -126,18 +126,6 @@ export function createNaleeSystem(
     if (state.domain.every((cell) => cell.occupied)) {
       state.mode = 'complete';
     }
-  }
-
-  if (pathsOnly) {
-    return state.walkers.map((walker) => {
-      const paths = walkerToPaths(walker);
-
-      const pathsInWorldCoords = paths.map((pts) => {
-        return pts.map(([x, y]) => domainToWorld(x, y));
-      });
-
-      return pathsInWorldCoords;
-    });
   }
 
   return ({ context, playhead }: SketchProps) => {

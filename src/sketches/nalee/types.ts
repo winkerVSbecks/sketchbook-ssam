@@ -12,7 +12,7 @@ export type SpawnTypes =
 export type DomainToWorld = (x: number, y: number) => Point;
 
 export interface Config {
-  resolution: number;
+  resolution: number[];
   size: number;
   stepSize: number;
   walkerCount: number;

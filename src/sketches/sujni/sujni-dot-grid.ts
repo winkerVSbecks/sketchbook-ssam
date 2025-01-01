@@ -34,22 +34,6 @@ const config = {
 };
 
 const naleeSize = Random.pick([24, 32]);
-const naleeConfig = {
-  resolution: Math.floor(1080 / naleeSize),
-  size: naleeSize,
-  stepSize: naleeSize / 3,
-  walkerCount: 30,
-  padding: 0.03125, // 1 / 32
-  pathStyle: 'polkaLine',
-  flat: true,
-  spawnType: Random.pick([
-    'random',
-    'mandala',
-    'middle-out',
-    'quad-centres',
-    'middle-out-cross',
-  ]),
-} satisfies NaleeConfig;
 
 interface DGCell {
   path: Line;
@@ -73,6 +57,23 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     import.meta.hot.dispose(() => wrap.dispose());
     import.meta.hot.accept(() => wrap.hotReload());
   }
+
+  const naleeConfig = {
+    resolution: [Math.floor(width / naleeSize), Math.floor(height / naleeSize)],
+    size: naleeSize,
+    stepSize: naleeSize / 3,
+    walkerCount: 30,
+    padding: 0.03125, // 1 / 32
+    pathStyle: 'polkaLine',
+    flat: true,
+    spawnType: Random.pick([
+      'random',
+      'mandala',
+      'middle-out',
+      'quad-centres',
+      'middle-out-cross',
+    ]),
+  } satisfies NaleeConfig;
 
   function drawRegion(vertices: any, color: string) {
     if (vertices.length > 0) {

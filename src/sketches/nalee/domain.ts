@@ -6,13 +6,13 @@ import type { DomainToWorld, Node } from './types';
  * Domain
  */
 export function makeDomain(
-  resolution: number,
+  resolution: number[],
   domainToWorld: DomainToWorld
 ): Node[] {
   const domain = [];
 
-  for (let y = 0; y <= resolution; y++) {
-    for (let x = 0; x <= resolution; x++) {
+  for (let y = 0; y <= resolution[1]; y++) {
+    for (let x = 0; x <= resolution[0]; x++) {
       const [worldX, worldY] = domainToWorld(x, y);
       domain.push({ x, y, occupied: false, id: xyToId(x, y), worldX, worldY });
     }
