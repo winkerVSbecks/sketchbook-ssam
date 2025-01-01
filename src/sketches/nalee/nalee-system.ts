@@ -20,8 +20,7 @@ export function createNaleeSystem(
     '#FFF5E0',
   ],
   bg: string = '#101019',
-  debugGrid = false,
-  pathsOnly = false
+  debugGrid = false
 ) {
   function spawnWalker(colors: string[], initialPosition?: Coord) {
     if (state.mode !== 'complete') {
@@ -127,6 +126,7 @@ export function createNaleeSystem(
       state.mode = 'complete';
     }
   }
+  console.log(state.walkers);
 
   return ({ context, playhead }: SketchProps) => {
     state.walkers.forEach((walker) => {
