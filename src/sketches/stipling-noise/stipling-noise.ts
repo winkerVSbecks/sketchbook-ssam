@@ -1,7 +1,7 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-import { generateColors } from '../subtractive-color';
+import { generateColors } from '../../subtractive-color';
 import { lerpArray, mapRange } from 'canvas-sketch-util/math';
 import { drawCircle, drawPath } from '@daeinc/draw';
 import { Delaunay, Voronoi } from 'd3-delaunay';
