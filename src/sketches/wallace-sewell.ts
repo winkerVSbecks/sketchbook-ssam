@@ -1,130 +1,114 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-import Color from 'canvas-sketch-util/color';
-import { mapRange } from 'canvas-sketch-util/math';
-import { generateColors } from '../subtractive-color';
+import { lerp } from 'canvas-sketch-util/math';
+import { scaleCanvasAndApplyDither } from '../scale-canvas-dither';
+import { dither } from '../dither';
+import { clrs as palettes } from '../colors/clrs';
+// import { palettes } from '../colors/auto-albers';
+// import { palettes } from '../colors/mindful-palettes';
 
-type Mode = 'fill' | 'stripe';
-type Cell = {
-  x: number;
-  y: number;
-  color: string;
-  mode: Mode;
+// const colors = {
+//   base: ['#526EA5', '#8C977E', '#334B6B', '#8C977E'],
+//   highlights: [
+//     '#D5AF75',
+//     '#E2D8BF',
+//     '#D66248',
+//     '#A8B2D7',
+//     '#512768',
+//     '#1D2B6C',
+//   ],
+// };
+const colors = {
+  base: Random.pick(palettes),
+  highlights: Random.pick(palettes),
 };
 
 const config = {
-  rows: 9,
-  columns: 12,
-  stripeCount: 12,
-  margin: 0.1,
-  border: 6,
-  animate: true,
+  rows: 12,
+  cols: 6,
+  gap: 0,
+  highlightSize: 8,
 };
 
-const randomMode = () =>
-  Random.weightedSet([
-    {
-      value: 'fill',
-      weight: 60,
-    },
-    { value: 'stripe', weight: 40 },
-  ]) as unknown as Mode;
-
-const baseColors = generateColors('hex');
-
-function generateColorPairs() {
-  let pairs = [];
-
-  for (let i = 0; i < baseColors.length; i++) {
-    for (let j = 0; j < baseColors.length; j++) {
-      if (i === j) continue;
-      pairs.push([baseColors[i], baseColors[j]]);
-    }
-  }
-
-  pairs = pairs.filter((pair) => Color.contrastRatio(pair[0], pair[1]) > 2);
-
-  return pairs;
-}
-
-// https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Anni_Albers_%281899%E2%80%931994%29%2C_Design_for_a_Silk_Tapestry%2C_1926.jpg/1024px-Anni_Albers_%281899%E2%80%931994%29%2C_Design_for_a_Silk_Tapestry%2C_1926.jpg
 export const sketch = ({ wrap, context, width, height }: SketchProps) => {
-  if (import.meta.hot) {
-    import.meta.hot.dispose(() => wrap.dispose());
-    import.meta.hot.accept(() => wrap.hotReload());
+  function grid(cols: number, rows: number) {
+    const gap = width * config.gap;
+    const w = (width - gap) / cols;
+    const h = (height - gap) / rows;
+
+    return { rows, cols, w, h };
   }
 
-  const colors = generateColorPairs();
-  const margin = width * config.margin;
-  const w = (width - 2 * margin) / config.columns;
-  const h = (height - 2 * margin) / config.rows / config.stripeCount;
-
-  const cells: Cell[] = [];
-
-  // let cellDefs = Array.from({ length: config.columns * config.rows }, () => ({
-  //   mode: randomMode(),
-  //   colors: Random.pick(colors),
-  // }));
-
-  let cellDefs: { mode: Mode; colors: string[] }[] = [];
-
-  for (let row = 0; row < config.rows * config.stripeCount; row++) {
-    if (row % config.stripeCount === 0) {
-      cellDefs = Array.from({ length: config.columns * config.rows }, () => ({
-        mode: randomMode(),
-        colors: Random.pick(colors),
-      }));
-    }
-
-    for (let column = 0; column < config.columns; column++) {
-      const { colors, mode } = cellDefs[column];
-
-      const x = column * w;
-      const y = row * h;
-
-      cells.push({
-        x,
-        y,
-        color: mode === 'stripe' ? colors[row % 2 === 0 ? 0 : 1] : colors[0],
-        mode,
-      });
-    }
-  }
-
-  wrap.render = ({ width, height, playhead }: SketchProps) => {
+  wrap.render = ({ width, height, canvas }: SketchProps) => {
     context.fillStyle = '#fff';
     context.fillRect(0, 0, width, height);
 
-    context.strokeStyle = baseColors.at(-1)!;
-    context.lineWidth = 6;
-    context.strokeRect(
-      margin - config.border / 2,
-      margin - config.border / 2,
-      width - 2 * margin + config.border,
-      height - 2 * margin + config.border
+    const bg = grid(config.cols, config.rows);
+
+    for (let x = 0; x < bg.cols; x++) {
+      for (let y = 0; y < bg.rows; y++) {
+        const colorIndex = (x % 2 === 0 ? y : y + 1) % colors.base.length;
+        context.fillStyle = colors.base[colorIndex];
+        context.fillRect(x * bg.w, y * bg.h, bg.w, bg.h);
+      }
+    }
+
+    const hg = grid(config.cols * 4, config.rows);
+
+    for (let x = 1; x < hg.cols; x++) {
+      context.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+
+      Array.from({ length: hg.rows * 18 }).forEach((_, idx) => {
+        const y = lerp(0, hg.rows * hg.h, idx / (hg.rows * 18));
+        context.beginPath();
+        context.moveTo(x * hg.w - 5, y);
+        context.lineTo(x * hg.w + 5, y);
+        context.stroke();
+      });
+    }
+
+    for (let y = 0; y < hg.rows; y++) {
+      const h = hg.h / config.highlightSize;
+      const y1 = Random.rangeFloor(0, config.highlightSize - 1) * h;
+
+      if (Random.chance(0.4)) {
+        context.fillStyle = Random.pick(colors.highlights);
+        context.fillRect(0, y1 + y * hg.h, width, h);
+      } else {
+        let start = 0;
+
+        while (start < hg.cols) {
+          const x = Random.rangeFloor(2, 8);
+          const w = x * hg.w;
+
+          context.fillStyle = Random.pick(colors.highlights);
+          context.fillRect(start * hg.w, y1 + y * hg.h, start + w, h);
+
+          start += x;
+        }
+      }
+    }
+
+    const ditheredImage = scaleCanvasAndApplyDither(
+      width,
+      height,
+      0.5,
+      canvas,
+      (data) =>
+        dither(data, {
+          greyscaleMethod: 'none',
+          ditherMethod: 'atkinson',
+        })
     );
-
-    context.save();
-    context.translate(margin, margin);
-
-    cells.forEach((cell, idx) => {
-      context.fillStyle = cell.color;
-      context.fillRect(cell.x, cell.y, w, h);
-    });
-    context.restore();
+    context.drawImage(ditheredImage, 0, 0, width, height);
   };
 };
 
 export const settings: SketchSettings = {
-  mode: '2d',
-  dimensions: [800 * 2, 600 * 2],
+  dimensions: [1920, 1080],
   pixelRatio: window.devicePixelRatio,
   animate: false,
-  duration: 10_000,
-  playFps: 60,
-  exportFps: 60,
-  framesFormat: ['mp4'],
 };
 
 ssam(sketch as Sketch<'2d'>, settings);

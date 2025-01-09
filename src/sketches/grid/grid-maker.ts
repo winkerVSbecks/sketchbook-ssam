@@ -73,7 +73,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     context.fillStyle = stroke || background;
     context.fillRect(0, 0, width, height);
 
-    generateAreas(res[0], res[1]).forEach((r) => {
+    generateAreas(res[1], res[0]).forEach((r) => {
       context.fillStyle = Random.pick(colors);
       context.fillRect(
         gap / 2 + r.x * w + gap / 2,
