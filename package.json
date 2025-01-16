@@ -66,6 +66,7 @@
     "roughjs": "^4.6.6",
     "socket.io-client": "^4.7.3",
     "ssam": "^0.18.1",
+    "toxiclibsjs": "^0.3.3",
     "tweakpane": "^4.0.1",
     "tween-ticker": "^3.3.2",
     "tweenr": "^2.2.1",

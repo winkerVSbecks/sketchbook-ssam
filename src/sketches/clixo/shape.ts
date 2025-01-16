@@ -8,8 +8,6 @@ const colors = Random.pick(clrs);
 const bg = colors.pop();
 const [fg1, fg2, fg3] = Random.shuffle(colors);
 
-const PI = Math.PI;
-
 export const sketch = ({ wrap, context }: SketchProps) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => wrap.dispose());
@@ -21,7 +19,6 @@ export const sketch = ({ wrap, context }: SketchProps) => {
     context.fillRect(0, 0, width, height);
 
     const r = width / 6;
-    const PI = Math.PI;
 
     const x = r;
     const y = r;

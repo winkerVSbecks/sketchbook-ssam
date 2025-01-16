@@ -17,6 +17,7 @@ declare module '@texel/color';
 declare module 'load-asset';
 declare module 'chromotome';
 declare module 'convert-length';
+declare module 'toxiclibsjs';
 
 type Point = [number, number];
 type Line = Point[];
