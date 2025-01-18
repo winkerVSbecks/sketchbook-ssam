@@ -1,10 +1,10 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-import { palettes as autoAlbersPalettes } from '../colors/auto-albers';
-import { palettes as mindfulPalettes } from '../colors/mindful-palettes';
-import { scaleCanvasAndApplyDither } from '../scale-canvas-dither';
-import { dither } from '../dither';
+import { palettes as autoAlbersPalettes } from '../../colors/auto-albers';
+import { palettes as mindfulPalettes } from '../../colors/mindful-palettes';
+import { scaleCanvasAndApplyDither } from '../../scale-canvas-dither';
+import { dither } from '../../dither';
 
 const TAU = Math.PI * 2;
 
