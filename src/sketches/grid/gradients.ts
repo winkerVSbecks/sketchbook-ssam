@@ -2,10 +2,14 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 import * as tome from 'chromotome';
-const { colors, background, stroke } = tome.get();
+// const { colors, background, stroke } = tome.get();
+// import { clrs } from '../../colors/clrs';
+// import { palettes } from '../../colors/auto-albers';
+import { palettes } from '../../colors/mindful-palettes';
 
 const config = {
   gap: 0.01,
+  debug: false,
 };
 
 type Region = {
@@ -15,71 +19,67 @@ type Region = {
   width: number;
   height: number;
 };
-type Grid = (number | null)[][];
+
+const colors = Random.pick(palettes);
+const bg = colors.pop()!;
 
 export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   function generateAreas(rows: number, cols: number): Region[] {
-    const grid: Grid = Array(rows)
-      .fill(null)
-      .map(() => Array(cols).fill(null));
     const regions: Region[] = [];
-    let rowIndex = 0;
+    let colIndex = 0;
 
-    while (rowIndex < rows) {
-      const colIndex = grid[rowIndex].findIndex((cell) => cell === null);
-      if (colIndex === -1) {
-        rowIndex++;
-        continue;
-      }
-
-      let maxWidth = 0,
-        maxHeight = 0;
-
-      while (
-        colIndex + maxWidth < cols &&
-        grid[rowIndex][colIndex + maxWidth] === null
-      )
-        maxWidth++;
-      while (
-        rowIndex + maxHeight < rows &&
-        grid[rowIndex + maxHeight][colIndex] === null
-      )
-        maxHeight++;
+    while (colIndex < cols) {
+      const span = Random.rangeFloor(colIndex + 1, cols) ?? 1;
 
       const region = {
         id: regions.length,
         x: colIndex,
-        y: rowIndex,
-        width: Random.rangeFloor(1, maxWidth),
-        height: Random.rangeFloor(1, maxHeight),
+        y: 0,
+        width: span - colIndex,
+        height: rows,
       };
 
-      for (let row = rowIndex; row < rowIndex + region.height; row++) {
-        for (let col = colIndex; col < colIndex + region.width; col++) {
-          grid[row][col] = region.id;
-        }
-      }
+      colIndex = span;
+
       regions.push(region);
     }
+
     return regions;
   }
 
   const res = Random.pick([
+    [12, 12],
+    [8, 8],
     [6, 6],
     [4, 4],
-    [3, 3],
     [2, 2],
   ]);
   const gap = Math.min(width, height) * config.gap;
   const w = (width - gap) / res[0];
   const h = (height - gap) / res[1];
 
+  function makeGradient() {
+    const colorA = Random.pick(colors);
+    const colorB = Random.pick(colors);
+    const colorC = Random.pick(colors);
+    const gradient = context.createLinearGradient(
+      width / 2,
+      0,
+      width / 2,
+      height
+    );
+    gradient.addColorStop(0, colorA);
+    gradient.addColorStop(Random.range(0.25, 0.75), colorB);
+    gradient.addColorStop(1, colorC);
+    return gradient;
+  }
+
   wrap.render = ({ width, height }: SketchProps) => {
-    context.fillStyle = stroke || background;
+    context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
 
     generateAreas(res[1], res[0]).forEach((r) => {
-      context.fillStyle = Random.pick(colors);
+      context.fillStyle = makeGradient(); // Random.pick(colors);
       const gW = r.width * w - gap;
       const gH = r.height * h - gap;
       const gX = gap / 2 + r.x * w + gap / 2;
@@ -87,6 +87,13 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
 
       context.fillRect(gX, gY, gW, gH);
     });
+
+    if (config.debug) {
+      context.fillStyle = 'rgba(255, 0, 0, 0.4)';
+      for (let x = 0; x < res[0]; x++) {
+        context.fillRect(gap + x * w, gap, w - gap, height - 2 * gap);
+      }
+    }
   };
 };
 
