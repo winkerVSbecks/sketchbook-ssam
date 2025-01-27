@@ -1,11 +1,21 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-import * as tome from 'chromotome';
 
-let { colors, background, stroke } = tome.get();
-colors = colors; //.filter((c: string) => c !== background && c !== stroke);
-background ??= colors.shift();
+// const earth = [
+//   '#b66239',
+//   '#733632',
+//   '#b0a1a4',
+//   '#524643',
+//   '#b6754d',
+//   '#a88d5f',
+// ];
+// const fauna = ['#5f9e93', '#3c5a53', '#7d8c7c'];
+// const sky = ['#87c3ca', '#40708c' /* '#dad6cd', '#f2e9e2' */];
+
+const earth = ['#b66239', '#733632'];
+const fauna = ['#3c5a53'];
+const sky = ['#87c3ca'];
 
 const darken = (c: string, amount: number = 0.75) =>
   `oklch(from ${c} calc(l * ${amount}) c h)`;
@@ -17,24 +27,19 @@ type Cube = {
   color: string;
 };
 const config = {
-  sideLength: 64, // 48,
-  cubeCount: 24, //64,
-  outline: 64,
+  sideLength: 64 * 1, // 48,
+  cubeCount: 64 * 6,
 };
 
-const cubeColor = (c: Omit<Cube, 'color'>) =>
-  colors[Math.min(c.c, c.r, c.z) % colors.length];
-// colors[c.c % colors.length];
-
-function generateCubes(): Cube[] {
+function generateCubes(zMin: number, zMax: number, colors: string[]): Cube[] {
   const cubes: Cube[] = [];
 
   // Start with initial cube
   cubes.push({
     c: 0,
     r: 0,
-    z: 0,
-    color: cubeColor({ c: 0, r: 0, z: 0 }),
+    z: zMin,
+    color: Random.pick(colors),
   });
 
   while (cubes.length < config.cubeCount) {
@@ -64,8 +69,8 @@ function generateCubes(): Cube[] {
         cubes.push({
           c: newCubeC,
           r: newCubeR,
-          z: newCubeZ,
-          color: cubeColor({ c: newCubeC, r: newCubeR, z: newCubeZ }),
+          z: Math.min(newCubeZ, zMax),
+          color: Random.pick(colors),
         });
         cubeAdded = true;
       }
@@ -134,28 +139,21 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   }
 
   wrap.render = () => {
-    const cubes = generateCubes();
-    context.fillStyle = stroke || background;
+    context.fillStyle = '#000';
     context.fillRect(0, 0, width, height);
 
-    // context.strokeStyle = background;
-    // context.lineWidth = config.outline;
-    // context.strokeRect(0, 0, width, height);
-
-    context.lineWidth = 2;
-    cubes.forEach(drawCube);
+    const cubesEarth = generateCubes(-4, 1, earth);
+    const cubesFauna = generateCubes(2, 3, fauna);
+    const cubesSky = generateCubes(4, 12, sky);
+    [...cubesEarth, ...cubesFauna, ...cubesSky].forEach(drawCube);
   };
 };
 
 export const settings: SketchSettings = {
   mode: '2d',
-  dimensions: [1080, 1080],
+  dimensions: [1080 / 2, 1080],
   pixelRatio: window.devicePixelRatio,
-  animate: true,
-  duration: 8_000,
-  playFps: 2,
-  exportFps: 2,
-  framesFormat: ['mp4'],
+  animate: false,
 };
 
 ssam(sketch as Sketch<'2d'>, settings);
