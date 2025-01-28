@@ -1,6 +1,12 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
-import { palettes } from '../colors/mindful-palettes';
+import Random from 'canvas-sketch-util/random';
+// import { palettes } from '../colors/mindful-palettes';
+import { palettes } from '../colors/auto-albers';
+
+const colors = Random.shuffle(Random.pick(palettes));
+const bg = colors.pop()!;
+// const fg = colors.pop()!;
 
 interface Cell {
   state: number;
@@ -9,9 +15,6 @@ interface Cell {
 
 const config = {
   cellSize: 10,
-  colorIntensity: 70,
-  colorLightness: 50,
-  backgroundColor: '#1a1a1a',
 };
 
 const createGrid = (width: number, height: number): Cell[][] => {
@@ -26,8 +29,8 @@ const createGrid = (width: number, height: number): Cell[][] => {
     }
   }
   // Set initial state in center
-  const centerX = Math.floor(width / 2);
-  const centerY = Math.floor(height / 2);
+  const centerX = Random.rangeFloor(0, width); //Math.floor(width / 2);
+  const centerY = Random.rangeFloor(0, height); //Math.floor(height / 2);
   grid[centerY][centerX].state = 1;
   return grid;
 };
@@ -62,10 +65,9 @@ const updateGrid = (grid: Cell[][]): Cell[][] => {
   return newGrid;
 };
 
-const getColor = (cell: Cell): string => {
-  if (cell.state === 0) return config.backgroundColor;
-  const hue = (cell.age * 5) % 360;
-  return `hsl(${hue}, ${config.colorIntensity}%, ${config.colorLightness}%)`;
+const getColor = (cell: Cell, playhead: number): string => {
+  if (cell.state === 0) return bg;
+  return colors[Math.floor(playhead * colors.length)];
 };
 
 const sketch = ({ context, wrap, width, height }: SketchProps) => {
@@ -79,10 +81,15 @@ const sketch = ({ context, wrap, width, height }: SketchProps) => {
   const gridHeight = Math.floor(height / config.cellSize);
   let grid = createGrid(gridWidth, gridHeight);
 
-  wrap.render = ({ width, height }: SketchProps) => {
+  wrap.render = ({ width, height, frame, playhead }: SketchProps) => {
     // Clear background
-    context.fillStyle = config.backgroundColor;
+    context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
+
+    if (frame === 0) {
+      // Reset grid
+      grid = createGrid(gridWidth, gridHeight);
+    }
 
     // Update grid state
     grid = updateGrid(grid);
@@ -91,7 +98,7 @@ const sketch = ({ context, wrap, width, height }: SketchProps) => {
     for (let y = 0; y < grid.length; y++) {
       for (let x = 0; x < grid[0].length; x++) {
         const cell = grid[y][x];
-        context.fillStyle = getColor(cell);
+        context.fillStyle = getColor(cell, playhead);
         context.fillRect(
           x * config.cellSize,
           y * config.cellSize,
@@ -108,8 +115,9 @@ export const settings: SketchSettings = {
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
   animate: true,
-  playFps: 4,
-  exportFps: 4,
+  duration: 8_000,
+  playFps: 8,
+  exportFps: 8,
   framesFormat: ['mp4'],
 };
 
