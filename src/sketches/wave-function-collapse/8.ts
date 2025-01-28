@@ -2,14 +2,18 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 import * as tome from 'chromotome';
+// import { palettes } from '../../colors/auto-albers';
+import { palettes } from '../../colors/mindful-palettes';
 
 const config = {
-  gridSize: 32, // 64
+  gridSize: 16, //32, // 64
   padding: 0,
   scrollSpeed: 0.0625, // Cells per second
 };
 
-const { colors, background: bg, stroke } = tome.get();
+// const { colors, background: bg, stroke } = tome.get();
+const colors = Random.pick(palettes);
+const bg = colors.shift();
 
 type Tile = '═' | '║' | '╔' | '╗' | '╚' | '╝';
 type Connection = 'top' | 'right' | 'bottom' | 'left';
@@ -320,7 +324,7 @@ const sketch: Sketch<'2d'> = ({
 export const settings: SketchSettings = {
   mode: '2d',
   dimensions: [1080, 1080],
-  pixelRatio: window.devicePixelRatio,
+  pixelRatio: 1, // window.devicePixelRatio,
   animate: true,
   duration: 20_000,
   playFps: 60,

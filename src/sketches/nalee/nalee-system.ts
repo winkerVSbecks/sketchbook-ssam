@@ -61,32 +61,32 @@ export function createNaleeSystem(
     );
   }
   // Spawn a bunch of random walkers
-  // new Array(config.walkerCount).fill(null).forEach(() => spawnWalker(colors));
+  new Array(config.walkerCount).fill(null).forEach(() => spawnWalker(colors));
 
-  function middleOutCross() {
-    // middle out cross style
-    spawnWalker(colors, { x: 0, y: 0 });
-    spawnWalker(colors, { x: config.resolution[0], y: 0 });
-    for (let x = 0; x < config.resolution[0]; x++) {
-      spawnWalker(colors, { x: x, y: x % 2 === 0 ? config.resolution[1] : 0 });
-    }
-    for (let y = 0; y < config.resolution[1]; y++) {
-      spawnWalker(colors, { x: y % 2 === 0 ? config.resolution[1] : 0, y: y });
-    }
-    spawnWalker(colors, { x: 0, y: config.resolution[1] });
-    spawnWalker(colors, { x: config.resolution[0], y: config.resolution[1] });
+  // function middleOutCross() {
+  //   // middle out cross style
+  //   spawnWalker(colors, { x: 0, y: 0 });
+  //   spawnWalker(colors, { x: config.resolution[0], y: 0 });
+  //   for (let x = 0; x < config.resolution[0]; x++) {
+  //     spawnWalker(colors, { x: x, y: x % 2 === 0 ? config.resolution[1] : 0 });
+  //   }
+  //   for (let y = 0; y < config.resolution[1]; y++) {
+  //     spawnWalker(colors, { x: y % 2 === 0 ? config.resolution[1] : 0, y: y });
+  //   }
+  //   spawnWalker(colors, { x: 0, y: config.resolution[1] });
+  //   spawnWalker(colors, { x: config.resolution[0], y: config.resolution[1] });
 
-    // spawnWalker({ x: 0, y: 0 });
-    // spawnWalker({ x: 90, y: 0 });
-    // for (let index = 0; index < 90; index++) {
-    //   spawnWalker({ x: index, y: index % 2 === 0 ? 90 : 0 });
-    //   spawnWalker({ x: index % 2 === 0 ? 90 : 0, y: index });
-    // }
-    // spawnWalker({ x: 0, y: 90 });
-    // spawnWalker({ x: 90, y: 90 });
-  }
+  //   // spawnWalker({ x: 0, y: 0 });
+  //   // spawnWalker({ x: 90, y: 0 });
+  //   // for (let index = 0; index < 90; index++) {
+  //   //   spawnWalker({ x: index, y: index % 2 === 0 ? 90 : 0 });
+  //   //   spawnWalker({ x: index % 2 === 0 ? 90 : 0, y: index });
+  //   // }
+  //   // spawnWalker({ x: 0, y: 90 });
+  //   // spawnWalker({ x: 90, y: 90 });
+  // }
 
-  middleOutCross();
+  // middleOutCross();
 
   let initialWalkers = true;
 
