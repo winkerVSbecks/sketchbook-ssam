@@ -36,7 +36,6 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   // The N value for k-means clustering
   // Lower values will produce bigger chunks
   const clusterCount = 3;
-
   function integrate() {
     // Not enough points in our data set
     if (points.length <= clusterCount) return false;
