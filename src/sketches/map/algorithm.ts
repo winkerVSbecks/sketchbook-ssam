@@ -20,8 +20,11 @@ const config = {
   step: 2,
 };
 
-export function mapMaker({ width, height }: { width: number; height: number }) {
-  const points = fillPoints([width, height], [0, 0]);
+export function mapMaker(
+  [width, height]: [number, number],
+  [x, y]: [number, number] = [0, 0]
+) {
+  const points = fillPoints([width, height], [x, y]);
   let streets = points.map(initStreet);
 
   const state = {
@@ -67,7 +70,14 @@ export function mapMaker({ width, height }: { width: number; height: number }) {
         street.backwardState !== 'stopped'
       ) {
         street = growStreet(street);
-        street = updateStreet(street, [width, height], streets);
+        street = updateStreet(
+          street,
+          [
+            [x, y],
+            [x + width, y + height],
+          ],
+          streets
+        );
       }
     });
 
@@ -130,7 +140,7 @@ function findIntersection(
 
 function updateStreet(
   street: Street,
-  bounds: Point,
+  bounds: [Point, Point],
   streets: Street[]
 ): Street {
   if (street.forwardState === 'stopped' && street.backwardState === 'stopped') {
@@ -187,8 +197,11 @@ function updateStreet(
   return street;
 }
 
-function outOfBounds([x, y]: Point, [width, height]: Point): boolean {
-  return x < 0 || x > width || y < 0 || y > height;
+function outOfBounds(
+  [x, y]: Point,
+  [[xMin, yMin], [xMax, yMax]]: [Point, Point]
+): boolean {
+  return x < xMin || x > xMax || y < yMin || y > yMax;
 }
 
 function fillPoints(shape: Point, offset: Point): Point[] {

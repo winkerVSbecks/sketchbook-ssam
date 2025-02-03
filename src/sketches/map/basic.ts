@@ -10,7 +10,8 @@ const bg = '#fff';
 const fg = '#000';
 
 export const sketch = ({ wrap, context, width, height }: SketchProps) => {
-  const mapSystem = mapMaker({ width, height });
+  const mapSystem = mapMaker([width, height]);
+  // const mapSystem = mapMaker([width/2, height/2], [width / 4, height / 4]);
 
   wrap.render = ({ width, height }: SketchProps) => {
     context.fillStyle = bg;

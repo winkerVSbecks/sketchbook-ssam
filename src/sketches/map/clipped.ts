@@ -14,7 +14,7 @@ const bg = colors.shift()!; // '#fff'
 const fg = colors.shift()!; // '#000'
 
 export const sketch = ({ wrap, context, width, height }: SketchProps) => {
-  const mapSystem = mapMaker({ width, height });
+  const mapSystem = mapMaker([width, height]);
 
   let clip = [
     [50, 50],
