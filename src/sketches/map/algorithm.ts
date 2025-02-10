@@ -13,17 +13,20 @@ export interface Street {
   color?: string;
 }
 
-const config = {
+let config = {
   minDistance: 50,
   maxDistance: 100,
   debug: false,
   step: 2,
+  jitter: false,
 };
 
 export function mapMaker(
   [width, height]: [number, number],
-  [x, y]: [number, number] = [0, 0]
+  [x, y]: [number, number] = [0, 0],
+  configOverrides: Partial<typeof config> = {}
 ) {
+  config = { ...config, ...configOverrides };
   const points = fillPoints([width, height], [x, y]);
   let streets = points.map(initStreet);
 
@@ -69,7 +72,7 @@ export function mapMaker(
         street.forwardState !== 'stopped' ||
         street.backwardState !== 'stopped'
       ) {
-        street = growStreet(street);
+        street = growStreet(street, config.jitter);
         street = updateStreet(
           street,
           [
@@ -97,13 +100,19 @@ function initStreet(point: Point): Street {
   };
 }
 
-function growStreet(street: Street): Street {
+function growStreet(street: Street, applyJitter: boolean): Street {
   // Grow forward from last point
   if (street.forwardState !== 'stopped') {
     const lastPoint = street.points[street.points.length - 1];
+    // const jitter = applyJitter ? (Random.range(-1, 1) * Math.PI) / 32 : 0;
+    const jitter = applyJitter
+      ? (Random.noise2D(lastPoint[0] / 1000, lastPoint[1] / 1000, 1, 2) *
+          Math.PI) /
+        16
+      : 0;
     const newForwardPoint: Point = [
-      lastPoint[0] + config.step * Math.cos(street.angle),
-      lastPoint[1] + config.step * Math.sin(street.angle),
+      lastPoint[0] + config.step * Math.cos(street.angle + jitter),
+      lastPoint[1] + config.step * Math.sin(street.angle + jitter),
     ];
     street.points.push(newForwardPoint);
   }

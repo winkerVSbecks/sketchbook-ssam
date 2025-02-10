@@ -5,15 +5,16 @@ import { drawPath } from '@daeinc/draw';
 import clustering from 'density-clustering';
 import convexHull from 'convex-hull';
 import Random from 'canvas-sketch-util/random';
+import { mapRange } from 'canvas-sketch-util/math';
 import { randomPalette } from '../../colors';
-import { mapMaker, Street } from './algorithm';
+import { mapMaker } from './algorithm';
 
 const config = {
   size: 5,
 };
 
 const colors = randomPalette();
-const bg = colors.shift()!;
+const bg = colors.pop()!;
 const fg = colors.shift()!;
 
 export const sketch = ({ wrap, context, width, height }: SketchProps) => {
@@ -41,17 +42,17 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     const scan = new clustering.KMEANS();
     const clusters = scan
       .run(points, clusterCount)
-      .filter((c) => c.length >= 3);
+      .filter((c: number[]) => c.length >= 3);
 
     // Ensure we resulted in some clusters
     if (clusters.length === 0) return false;
 
     // Sort clusters by density
-    clusters.sort((a, b) => a.length - b.length);
+    clusters.sort((a: number[], b: number[]) => a.length - b.length);
 
     // Select the least dense cluster
     const cluster = clusters[0];
-    const positions = cluster.map((i) => points[i]);
+    const positions = cluster.map((i: number) => points[i]);
 
     // Find the hull of the cluster
     const edges = convexHull(positions);
@@ -60,7 +61,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     if (edges.length <= 2) return false;
 
     // Create a closed polyline from the hull
-    let path = edges.map((c) => positions[c[0]]);
+    let path = edges.map((c: number[]) => positions[c[0]]);
     path.push(path[0]);
 
     // Add to total list of polylines
@@ -78,7 +79,8 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     remaining = integrate();
   }
 
-  const sections = polygons.map((polygon, idx) => {
+  const maxArea = width * height;
+  const sections = polygons.map((polygon) => {
     const xS = polygon.map((p) => p[0]);
     const yS = polygon.map((p) => p[1]);
 
@@ -89,8 +91,14 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
 
     const w = xMax - xMin;
     const h = yMax - yMin;
+    const area = w * h;
 
-    const mapSystem = mapMaker([w, h], [xMin, yMin]);
+    const mapSystem = mapMaker([w, h], [xMin, yMin], {
+      minDistance: mapRange(area, 0, maxArea, 50 * 2, 50 * 0.25, true),
+      maxDistance: mapRange(area, 0, maxArea, 100 * 2, 100 * 0.25, true),
+      step: 5,
+      jitter: true,
+    });
 
     return {
       clip: polygon,
@@ -98,49 +106,52 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     };
   });
 
+  const margin = width * 0.05;
+  const globalClip = [
+    [margin, margin],
+    [width - margin, margin],
+    [width - margin, height - margin],
+    [margin, height - margin],
+  ];
+
+  const clippedPolygons = polygons
+    .map((poly) => clipPolylinePoly(poly, globalClip))
+    .flat() as Point[][];
+
   wrap.render = ({ width, height }: SketchProps) => {
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
 
     context.lineWidth = config.size;
     context.strokeStyle = fg;
-    sections.forEach(({ clip, mapSystem }, idx) => {
+    sections.forEach(({ clip, mapSystem }) => {
       const streets = mapSystem();
       const regions = streets.map((street) => street.points);
 
-      const output = regions.map((r) => clipPolylinePoly(r, clip as any));
+      const output = regions
+        .map((r) => clipPolylinePoly(r, clip as any))
+        .flat()
+        .map((r) => clipPolylinePoly(r as any, globalClip))
+        .flat();
 
-      // context.strokeStyle = colors[idx % colors.length];
-
-      output.forEach((regions) => {
-        regions.forEach((region) => {
-          drawPath(context, region as Point[], false);
-          context.stroke();
-        });
+      output.forEach((region, idx) => {
+        const cIdx = Math.floor(
+          mapRange(region.length, 0, 50, 0, colors.length)
+        );
+        context.strokeStyle = colors[cIdx % colors.length];
+        drawPath(context, region as Point[], false);
+        context.stroke();
       });
     });
 
     context.lineWidth = config.size * 4;
     context.strokeStyle = fg;
-    polygons.forEach((poly) => {
+    clippedPolygons.forEach((poly) => {
       drawPath(context, poly);
       context.stroke();
     });
   };
 };
-
-function drawStreet(context: CanvasRenderingContext2D, street: Street) {
-  context.strokeStyle = street.color || fg;
-  context.beginPath();
-  street.points.forEach(([x, y], i) => {
-    if (i === 0) {
-      context.moveTo(x, y);
-    } else {
-      context.lineTo(x, y);
-    }
-  });
-  context.stroke();
-}
 
 export const settings: SketchSettings = {
   dimensions: [1080, 1080],
