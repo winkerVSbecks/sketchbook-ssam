@@ -71,7 +71,7 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
   );
 
   const domain = makeDomain(naleeConfig.resolution, domainToWorld);
-  const systems = clipRects.map((clipRect, idx) => {
+  const systems = clipRects.map((clipRect) => {
     const clippedDomain = clipDomainWithWorldCoords(domain, clipRect);
     return createNaleeSystem(
       clippedDomain,

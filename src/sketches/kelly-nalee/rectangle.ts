@@ -16,8 +16,6 @@ console.log(Random.getSeed());
 
 let colors = Random.pick(clrs);
 const bg = colors.pop();
-const fg1 = Random.pick(colors);
-const fg2 = Random.pick(colors);
 
 const config = {
   x: 0.3,
@@ -61,7 +59,7 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
   );
 
   const domain = makeDomain(naleeConfig.resolution, domainToWorld);
-  const systems = clipRects.map((clipRect, idx) => {
+  const systems = clipRects.map((clipRect) => {
     const clippedDomain = clipDomainWithWorldCoords(domain, clipRect);
     return createNaleeSystem(
       clippedDomain,
