@@ -3,30 +3,108 @@ import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 import * as tome from 'chromotome';
 import { drawPath } from '@daeinc/draw';
-const { colors, background, stroke } = tome.get();
+import PolyBool from 'polybooljs';
+import { randomPalette } from '../colors';
 
-const outline = stroke || colors.pop();
+const seed = Random.getRandomSeed();
+Random.setSeed(seed);
+console.log(seed);
+// Random.setSeed('473164');
+
+// const { colors, background, stroke } = tome.get();
+// const outline = stroke || colors.pop();
+
+const colors = randomPalette();
+const outline = '#333';
 
 const config = {
-  gap: 0.01,
-  debug: true,
+  gap: 0.02,
+  debug: false,
+  invert: Random.chance(),
+  res: Random.pick([
+    [5, 5],
+    [4, 4],
+    [3, 3],
+    [2, 2],
+  ]),
 };
 
-type Region = {
+type Grid = (number | null)[][];
+interface Region {
+  id: number;
   x: number;
   y: number;
   width: number;
   height: number;
-};
-type Grid = (number | null)[][];
+  debug?: boolean;
+}
+
+interface Domain {
+  id: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  massive?: boolean;
+  debug?: boolean;
+}
 
 export const sketch = ({ wrap, context, width, height }: SketchProps) => {
-  const res = Random.pick([
-    [5, 5],
-    [4, 4],
-    [3, 3],
-  ]);
+  const { domains, domainRects, polygon } = generateDomainSystem(width, height);
 
+  wrap.render = ({ width, height }: SketchProps) => {
+    context.fillStyle = '#fff';
+    context.fillRect(0, 0, width, height);
+
+    domains.forEach((d) => {
+      context.fillStyle = config.invert ? Random.pick(colors) : '#fff';
+      context.fillRect(d.x, d.y, d.width, d.height);
+    });
+
+    const clippedAreas = domainRects.map((d) => {
+      const clip = PolyBool.intersect({ regions: [polygon] }, { regions: [d] });
+      return clip.regions.flat();
+    });
+
+    clippedAreas.forEach((area) => {
+      if (area.length < 3) return;
+      context.fillStyle = config.invert ? '#fff' : Random.pick(colors);
+      drawPath(context, area, true);
+      context.fill();
+    });
+
+    context.strokeStyle = outline;
+    context.lineWidth = 2;
+    domains.forEach((d) => {
+      context.strokeStyle = d.debug ? '#f00' : outline;
+      context.strokeRect(d.x, d.y, d.width, d.height);
+    });
+
+    if (config.debug) {
+      context.fillStyle = Random.pick(colors);
+      drawPath(context, polygon, true);
+      context.fill();
+
+      context.fillStyle = outline;
+      polygon.forEach((point) => {
+        context.beginPath();
+        context.arc(point[0], point[1], 3, 0, Math.PI * 2);
+        context.fill();
+      });
+    }
+  };
+};
+
+function generateDomainSystem(
+  width: number,
+  height: number,
+  attempts: number = 0
+): {
+  domains: Domain[];
+  domainRects: Point[][];
+  polygon: Point[];
+  chosenDomains: number[];
+} {
   const grid = {
     w: width * 0.75,
     h: height * 0.75,
@@ -35,105 +113,155 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   };
 
   const gap = Math.min(grid.w, grid.h) * config.gap;
-  const w = (grid.w - gap) / res[0];
-  const h = (grid.h - gap) / res[1];
+  const w = (grid.w - gap) / config.res[0];
+  const h = (grid.h - gap) / config.res[1];
 
-  wrap.render = ({ width, height }: SketchProps) => {
-    context.fillStyle = background;
-    context.fillRect(0, 0, width, height);
+  try {
+    let regions = generateRegions(config.res[1], config.res[0]);
 
-    const regions = generateRegions(res[1], res[0]).map((r) => {
+    if (regions.length > 3) {
+      regions = combineSmallRegions(regions);
+    }
+
+    const domains: Domain[] = regions.map((r) => {
       const gW = r.width * w - gap;
       const gH = r.height * h - gap;
       const gX = grid.x + gap / 2 + r.x * w + gap / 2;
       const gY = grid.y + gap / 2 + r.y * h + gap / 2;
-      return { x: gX, y: gY, width: gW, height: gH };
+      return {
+        id: r.id,
+        x: gX,
+        y: gY,
+        width: gW,
+        height: gH,
+        area: gW * gH,
+        debug: r.debug,
+      };
     });
 
-    const domains = regions.slice(0, 5);
-    const polygon = generatePolygon(domains);
+    const polygonDomains = domains.slice(0, 5);
+    const domainRects = domains.map(
+      (d) =>
+        [
+          [d.x, d.y],
+          [d.x + d.width, d.y],
+          [d.x + d.width, d.y + d.height],
+          [d.x, d.y + d.height],
+        ] as Point[]
+    );
+    const polygon = generatePolygon(polygonDomains);
 
-    context.fillStyle = Random.pick(colors);
-    drawPath(context, polygon, true);
-    context.fill();
+    const chosenDomains = polygonDomains.map((d) => d.id);
 
-    context.strokeStyle = outline;
-    context.lineWidth = 2;
-    regions.forEach((r) => {
-      context.strokeRect(r.x, r.y, r.width, r.height);
-    });
+    return { domains, domainRects, polygon, chosenDomains };
+  } catch (error: any) {
+    if (attempts > 10) {
+      const regions = generateRegions(config.res[1], config.res[0]);
+      console.error(
+        'Failed to generate a domain system',
+        regions,
+        combineSmallRegions(regions)
+      );
+      return { domains: [], domainRects: [], polygon: [], chosenDomains: [] };
+    } else {
+      console.log(error.message);
+      console.log('Retrying…');
+      return generateDomainSystem(width, height, attempts + 1);
+    }
+  }
+}
+const hasSmall = (regions: Region[], skipIds: number[]) =>
+  regions
+    .filter((r) => !skipIds.includes(r.id))
+    .some((r) => r.width === 1 && r.height === 1);
 
-    context.fillStyle = outline;
-    polygon.forEach((point) => {
-      context.beginPath();
-      context.arc(point[0], point[1], 3, 0, Math.PI * 2);
-      context.fill();
-    });
-  };
-};
+function isNeighbour(region: Region, other: Region) {
+  if (other.id === region.id) return false;
 
-function generatePolygon(regions: Region[]): Point[] {
-  let polygon: Point[] = regions.map((r) => [
-    Random.range(r.x, r.x + r.width),
-    Random.range(r.y, r.y + r.height),
-  ]);
+  // Regions share a vertical edge if they have the same x or x+width
+  const shareVerticalEdge =
+    region.x === other.x + other.width || other.x === region.x + region.width;
 
-  // Calculate centroid
-  const centroid = polygon
-    .reduce((acc, point) => [acc[0] + point[0], acc[1] + point[1]], [0, 0])
-    .map((coord) => coord / polygon.length);
+  // Regions share a horizontal edge if they have the same y or y+height
+  const shareHorizontalEdge =
+    region.y === other.y + other.height || other.y === region.y + region.height;
 
-  // Sort points clockwise
-  polygon = polygon.sort((a, b) => {
-    const angleA = Math.atan2(a[1] - centroid[1], a[0] - centroid[0]);
-    const angleB = Math.atan2(b[1] - centroid[1], b[0] - centroid[0]);
-    return angleA - angleB; // Clockwise sorting
-  });
+  // Check horizontal adjacency (x-ranges overlap except at endpoints)
+  const horizontalOverlap =
+    region.x < other.x + other.width && other.x < region.x + region.width;
 
-  return isConvexPolygon(polygon) ? polygon : generatePolygon(regions);
+  // Check vertical adjacency (y-ranges overlap except at endpoints)
+  const verticalOverlap =
+    region.y < other.y + other.height && other.y < region.y + region.height;
+
+  // For edge adjacency: (share vertical edge AND y-ranges overlap)
+  // OR (share horizontal edge AND x-ranges overlap)
+  return (
+    (shareVerticalEdge && verticalOverlap) ||
+    (shareHorizontalEdge && horizontalOverlap)
+  );
 }
 
-/**
- * Checks if a polygon is convex.
- * A polygon is convex if all interior angles are less than 180 degrees,
- * which can be determined by checking if all cross products of consecutive edges have the same sign.
- */
-function isConvexPolygon(vertices: Point[]): boolean {
-  // A polygon needs at least 3 vertices
-  if (vertices.length < 3) {
-    return false;
-  }
+function combineSmallRegions(regions: Region[]): Region[] {
+  const skipIds: number[] = [];
 
-  // For a convex polygon, all cross products of consecutive edges should have the same sign
-  let sign = 0;
+  while (hasSmall(regions, skipIds)) {
+    const region = regions
+      .filter((r) => !skipIds.includes(r.id))
+      .find((r) => r.width === 1 && r.height === 1)!;
 
-  const n = vertices.length;
+    const neighbours = regions.filter((r) => isNeighbour(region, r));
 
-  for (let i = 0; i < n; i++) {
-    const current = vertices[i];
-    const next = vertices[(i + 1) % n];
-    const afterNext = vertices[(i + 2) % n];
+    const suitableNeighbours = neighbours.filter((n) => {
+      const nSmall = n.width === 1 && n.height === 1;
 
-    // Calculate vectors for two consecutive edges
-    const edge1 = [next[0] - current[0], next[1] - current[1]];
-    const edge2 = [afterNext[0] - next[0], afterNext[1] - next[1]];
+      const sameWidth = region.x === n.x && region.width === n.width;
+      const sameHeight = region.y === n.y && region.height === n.height;
 
-    // Calculate cross product (in 2D, it's a scalar: edge1.x * edge2.y - edge1.y * edge2.x)
-    const crossProduct = edge1[0] * edge2[1] - edge1[1] * edge2[0];
+      return nSmall || sameWidth || sameHeight;
+    });
 
-    // On the first valid cross product, store its sign
-    if (crossProduct !== 0) {
-      if (sign === 0) {
-        sign = Math.sign(crossProduct);
+    if (config.debug) {
+      console.log({ region, neighbours, suitableNeighbours });
+    }
+
+    if (suitableNeighbours.length > 0) {
+      const neighbour = suitableNeighbours[0];
+
+      regions = regions.filter(
+        (r) => r.id !== neighbour.id && r.id !== region.id
+      );
+
+      regions.push({
+        id: region.id,
+        x: Math.min(region.x, neighbour.x),
+        y: Math.min(region.y, neighbour.y),
+        width:
+          region.y === neighbour.y
+            ? region.width + neighbour.width
+            : region.width,
+        height:
+          region.x === neighbour.x
+            ? region.height + neighbour.height
+            : region.height,
+      });
+
+      if (config.debug) {
+        console.log('Combining', region, neighbour);
       }
-      // If we find a cross product with different sign, the polygon is not convex
-      else if (sign * crossProduct < 0) {
-        return false;
+    } else {
+      if (config.debug) {
+        console.log(
+          'No suitable neighbours found for',
+          region.id,
+          'so skipping it'
+        );
       }
+      skipIds.push(region.id);
     }
   }
 
-  return true;
+  return regions;
 }
 
 function generateRegions(
@@ -216,6 +344,82 @@ function generateRegions(
   }
 
   return regions;
+}
+
+/**
+ * Generates a convex polygon from a set of regions.
+ * The polygon is generated by finding a random location within each region
+ *  and sorting their vertices in clockwise order. If the resulting polygon
+ * is not convex, the process is repeated.
+ */
+function generatePolygon(regions: Domain[], attempts: number = 0): Point[] {
+  if (attempts > 100) {
+    throw new Error('Failed to generate a convex polygon');
+  }
+
+  let polygon: Point[] = regions.map((r) => [
+    Random.range(r.x, r.x + r.width),
+    Random.range(r.y, r.y + r.height),
+  ]);
+
+  // Calculate centroid
+  const centroid = polygon
+    .reduce((acc, point) => [acc[0] + point[0], acc[1] + point[1]], [0, 0])
+    .map((coord) => coord / polygon.length);
+
+  // Sort points clockwise
+  polygon = polygon.sort((a, b) => {
+    const angleA = Math.atan2(a[1] - centroid[1], a[0] - centroid[0]);
+    const angleB = Math.atan2(b[1] - centroid[1], b[0] - centroid[0]);
+    return angleA - angleB; // Clockwise sorting
+  });
+
+  return isConvexPolygon(polygon)
+    ? polygon
+    : generatePolygon(regions, attempts + 1);
+}
+
+/**
+ * Checks if a polygon is convex.
+ * A polygon is convex if all interior angles are less than 180 degrees,
+ * which can be determined by checking if all cross products of consecutive edges have the same sign.
+ */
+function isConvexPolygon(vertices: Point[]): boolean {
+  // A polygon needs at least 3 vertices
+  if (vertices.length < 3) {
+    return false;
+  }
+
+  // For a convex polygon, all cross products of consecutive edges should have the same sign
+  let sign = 0;
+
+  const n = vertices.length;
+
+  for (let i = 0; i < n; i++) {
+    const current = vertices[i];
+    const next = vertices[(i + 1) % n];
+    const afterNext = vertices[(i + 2) % n];
+
+    // Calculate vectors for two consecutive edges
+    const edge1 = [next[0] - current[0], next[1] - current[1]];
+    const edge2 = [afterNext[0] - next[0], afterNext[1] - next[1]];
+
+    // Calculate cross product (in 2D, it's a scalar: edge1.x * edge2.y - edge1.y * edge2.x)
+    const crossProduct = edge1[0] * edge2[1] - edge1[1] * edge2[0];
+
+    // On the first valid cross product, store its sign
+    if (crossProduct !== 0) {
+      if (sign === 0) {
+        sign = Math.sign(crossProduct);
+      }
+      // If we find a cross product with different sign, the polygon is not convex
+      else if (sign * crossProduct < 0) {
+        return false;
+      }
+    }
+  }
+
+  return true;
 }
 
 export const settings: SketchSettings = {
