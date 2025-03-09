@@ -45,39 +45,57 @@ interface Domain {
   y: number;
   width: number;
   height: number;
-  massive?: boolean;
   debug?: boolean;
+  type: 'default' | 'full-span';
+  selected?: boolean;
+  rect: Point[];
 }
 
 export const sketch = ({ wrap, context, width, height }: SketchProps) => {
-  const { domains, domainRects, polygon } = generateDomainSystem(width, height);
+  const { domains, polygon } = generateDomainSystem(width, height);
 
   wrap.render = ({ width, height }: SketchProps) => {
     context.fillStyle = '#fff';
     context.fillRect(0, 0, width, height);
 
     domains.forEach((d) => {
-      context.fillStyle = config.invert ? Random.pick(colors) : '#fff';
-      context.fillRect(d.x, d.y, d.width, d.height);
+      if (d.selected && d.type === 'full-span') {
+      } else {
+        context.fillStyle = config.invert ? Random.pick(colors) : '#fff';
+        context.fillRect(d.x, d.y, d.width, d.height);
+      }
     });
 
-    const clippedAreas = domainRects.map((d) => {
-      const clip = PolyBool.intersect({ regions: [polygon] }, { regions: [d] });
-      return clip.regions.flat();
+    const clips = domains.map((d) => {
+      const clip = PolyBool.intersect(
+        { regions: [polygon] },
+        { regions: [d.rect] }
+      );
+      return { area: clip.regions.flat(), island: d.type === 'full-span' };
     });
 
-    clippedAreas.forEach((area) => {
-      if (area.length < 3) return;
+    context.strokeStyle = outline;
+    context.lineWidth = 2;
+    clips.forEach((clip) => {
+      if (clip.area.length < 3) return;
       context.fillStyle = config.invert ? '#fff' : Random.pick(colors);
-      drawPath(context, area, true);
-      context.fill();
+      drawPath(context, clip.area, true);
+
+      if (clip.island) {
+        context.stroke();
+      } else {
+        context.fill();
+      }
     });
 
     context.strokeStyle = outline;
     context.lineWidth = 2;
     domains.forEach((d) => {
-      context.strokeStyle = d.debug ? '#f00' : outline;
-      context.strokeRect(d.x, d.y, d.width, d.height);
+      if (d.selected && d.type === 'full-span') {
+      } else {
+        context.strokeStyle = d.debug ? '#f00' : outline;
+        context.strokeRect(d.x, d.y, d.width, d.height);
+      }
     });
 
     if (config.debug) {
@@ -101,7 +119,6 @@ function generateDomainSystem(
   attempts: number = 0
 ): {
   domains: Domain[];
-  domainRects: Point[][];
   polygon: Point[];
   chosenDomains: number[];
 } {
@@ -115,6 +132,7 @@ function generateDomainSystem(
   const gap = Math.min(grid.w, grid.h) * config.gap;
   const w = (grid.w - gap) / config.res[0];
   const h = (grid.h - gap) / config.res[1];
+  const selectionCount = 5;
 
   try {
     let regions = generateRegions(config.res[1], config.res[0]);
@@ -123,7 +141,7 @@ function generateDomainSystem(
       regions = combineSmallRegions(regions);
     }
 
-    const domains: Domain[] = regions.map((r) => {
+    const domains: Domain[] = regions.map((r, idx) => {
       const gW = r.width * w - gap;
       const gH = r.height * h - gap;
       const gX = grid.x + gap / 2 + r.x * w + gap / 2;
@@ -134,26 +152,27 @@ function generateDomainSystem(
         y: gY,
         width: gW,
         height: gH,
-        area: gW * gH,
         debug: r.debug,
+        type:
+          r.width === config.res[0] || r.height === config.res[1]
+            ? 'full-span'
+            : 'default',
+        selected: idx < selectionCount,
+        rect: [
+          [gX, gY],
+          [gX + gW, gY],
+          [gX + gW, gY + gH],
+          [gX, gY + gH],
+        ] as Point[],
       };
     });
 
-    const polygonDomains = domains.slice(0, 5);
-    const domainRects = domains.map(
-      (d) =>
-        [
-          [d.x, d.y],
-          [d.x + d.width, d.y],
-          [d.x + d.width, d.y + d.height],
-          [d.x, d.y + d.height],
-        ] as Point[]
-    );
+    const polygonDomains = domains.slice(0, selectionCount);
     const polygon = generatePolygon(polygonDomains);
 
     const chosenDomains = polygonDomains.map((d) => d.id);
 
-    return { domains, domainRects, polygon, chosenDomains };
+    return { domains, polygon, chosenDomains };
   } catch (error: any) {
     if (attempts > 10) {
       const regions = generateRegions(config.res[1], config.res[0]);
@@ -162,7 +181,7 @@ function generateDomainSystem(
         regions,
         combineSmallRegions(regions)
       );
-      return { domains: [], domainRects: [], polygon: [], chosenDomains: [] };
+      return { domains: [], polygon: [], chosenDomains: [] };
     } else {
       console.log(error.message);
       console.log('Retrying…');
