@@ -9,12 +9,12 @@ import { randomPalette } from '../colors';
 const seed = Random.getRandomSeed();
 Random.setSeed(seed);
 console.log(seed);
-// Random.setSeed('473164');
+Random.setSeed('772042');
 
-// const { colors, background, stroke } = tome.get();
-// const outline = stroke || colors.pop();
+let { colors } = tome.get();
+// let colors = Random.shuffle(randomPalette()).slice(0, 3);
 
-const colors = randomPalette();
+colors = Random.shuffle(randomPalette()).slice(0, 3);
 const outline = '#333';
 
 const config = {
@@ -47,7 +47,7 @@ interface Domain {
   height: number;
   debug?: boolean;
   type: 'default' | 'full-span';
-  selected?: boolean;
+  selected: boolean;
   rect: Point[];
 }
 
@@ -59,8 +59,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     context.fillRect(0, 0, width, height);
 
     domains.forEach((d) => {
-      if (d.selected && d.type === 'full-span') {
-      } else {
+      if (!isIsland(d)) {
         context.fillStyle = config.invert ? Random.pick(colors) : '#fff';
         context.fillRect(d.x, d.y, d.width, d.height);
       }
@@ -71,7 +70,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
         { regions: [polygon] },
         { regions: [d.rect] }
       );
-      return { area: clip.regions.flat(), island: d.type === 'full-span' };
+      return { area: clip.regions.flat(), island: isIsland(d) };
     });
 
     context.strokeStyle = outline;
@@ -91,8 +90,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     context.strokeStyle = outline;
     context.lineWidth = 2;
     domains.forEach((d) => {
-      if (d.selected && d.type === 'full-span') {
-      } else {
+      if (!isIsland(d)) {
         context.strokeStyle = d.debug ? '#f00' : outline;
         context.strokeRect(d.x, d.y, d.width, d.height);
       }
@@ -112,6 +110,10 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     }
   };
 };
+
+function isIsland(d: Domain): boolean {
+  return d.selected && d.type === 'full-span';
+}
 
 function generateDomainSystem(
   width: number,
