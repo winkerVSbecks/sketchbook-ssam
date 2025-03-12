@@ -1,33 +1,8 @@
-import { ssam } from 'ssam';
-import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-import * as tome from 'chromotome';
-import { drawPath } from '@daeinc/draw';
 import PolyBool from 'polybooljs';
-import { randomPalette } from '../colors';
 
-const seed = Random.getRandomSeed();
-Random.setSeed(seed);
-console.log(seed);
-Random.setSeed('772042');
-
-let { colors } = tome.get();
-// let colors = Random.shuffle(randomPalette()).slice(0, 3);
-
-colors = Random.shuffle(randomPalette()).slice(0, 3);
-const outline = '#333';
-
-const config = {
-  gap: 0.02,
-  debug: false,
-  invert: Random.chance(),
-  res: Random.pick([
-    [5, 5],
-    [4, 4],
-    [3, 3],
-    [2, 2],
-  ]),
-};
+const url = new URL(import.meta.url);
+const debug = url.searchParams.get('debug');
 
 type Grid = (number | null)[][];
 interface Region {
@@ -51,71 +26,13 @@ interface Domain {
   rect: Point[];
 }
 
-export const sketch = ({ wrap, context, width, height }: SketchProps) => {
-  const { domains, polygon } = generateDomainSystem(width, height);
-
-  wrap.render = ({ width, height }: SketchProps) => {
-    context.fillStyle = '#fff';
-    context.fillRect(0, 0, width, height);
-
-    domains.forEach((d) => {
-      if (!isIsland(d)) {
-        context.fillStyle = config.invert ? Random.pick(colors) : '#fff';
-        context.fillRect(d.x, d.y, d.width, d.height);
-      }
-    });
-
-    const clips = domains.map((d) => {
-      const clip = PolyBool.intersect(
-        { regions: [polygon] },
-        { regions: [d.rect] }
-      );
-      return { area: clip.regions.flat(), island: isIsland(d) };
-    });
-
-    context.strokeStyle = outline;
-    context.lineWidth = 2;
-    clips.forEach((clip) => {
-      if (clip.area.length < 3) return;
-      context.fillStyle = config.invert ? '#fff' : Random.pick(colors);
-      drawPath(context, clip.area, true);
-
-      if (clip.island) {
-        context.stroke();
-      } else {
-        context.fill();
-      }
-    });
-
-    context.strokeStyle = outline;
-    context.lineWidth = 2;
-    domains.forEach((d) => {
-      if (!isIsland(d)) {
-        context.strokeStyle = d.debug ? '#f00' : outline;
-        context.strokeRect(d.x, d.y, d.width, d.height);
-      }
-    });
-
-    if (config.debug) {
-      context.fillStyle = Random.pick(colors);
-      drawPath(context, polygon, true);
-      context.fill();
-
-      context.fillStyle = outline;
-      polygon.forEach((point) => {
-        context.beginPath();
-        context.arc(point[0], point[1], 3, 0, Math.PI * 2);
-        context.fill();
-      });
-    }
-  };
-};
-
-function isIsland(d: Domain): boolean {
+export function isIsland(d: Domain): boolean {
   return d.selected && d.type === 'full-span';
 }
 
-function generateDomainSystem(
+export function generateDomainSystem(
+  res: [number, number],
+  gapScale: number,
   width: number,
   height: number,
   attempts: number = 0
@@ -123,6 +40,7 @@ function generateDomainSystem(
   domains: Domain[];
   polygon: Point[];
   chosenDomains: number[];
+  polygonParts: { area: Point[]; island: boolean }[];
 } {
   const grid = {
     w: width * 0.75,
@@ -131,13 +49,13 @@ function generateDomainSystem(
     y: height * 0.125,
   };
 
-  const gap = Math.min(grid.w, grid.h) * config.gap;
-  const w = (grid.w - gap) / config.res[0];
-  const h = (grid.h - gap) / config.res[1];
+  const gap = Math.min(grid.w, grid.h) * gapScale;
+  const w = (grid.w - gap) / res[0];
+  const h = (grid.h - gap) / res[1];
   const selectionCount = 5;
 
   try {
-    let regions = generateRegions(config.res[1], config.res[0]);
+    let regions = generateRegions(res[1], res[0]);
 
     if (regions.length > 3) {
       regions = combineSmallRegions(regions);
@@ -156,9 +74,7 @@ function generateDomainSystem(
         height: gH,
         debug: r.debug,
         type:
-          r.width === config.res[0] || r.height === config.res[1]
-            ? 'full-span'
-            : 'default',
+          r.width === res[0] || r.height === res[1] ? 'full-span' : 'default',
         selected: idx < selectionCount,
         rect: [
           [gX, gY],
@@ -174,23 +90,32 @@ function generateDomainSystem(
 
     const chosenDomains = polygonDomains.map((d) => d.id);
 
-    return { domains, polygon, chosenDomains };
+    const polygonParts = domains.map((d) => {
+      const clip = PolyBool.intersect(
+        { regions: [polygon] },
+        { regions: [d.rect] }
+      );
+      return { area: clip.regions.flat(), island: isIsland(d) };
+    });
+
+    return { domains, polygon, chosenDomains, polygonParts };
   } catch (error: any) {
     if (attempts > 10) {
-      const regions = generateRegions(config.res[1], config.res[0]);
+      const regions = generateRegions(res[1], res[0]);
       console.error(
         'Failed to generate a domain system',
         regions,
         combineSmallRegions(regions)
       );
-      return { domains: [], polygon: [], chosenDomains: [] };
+      return { domains: [], polygon: [], chosenDomains: [], polygonParts: [] };
     } else {
       console.log(error.message);
       console.log('Retrying…');
-      return generateDomainSystem(width, height, attempts + 1);
+      return generateDomainSystem(res, gapScale, width, height, attempts + 1);
     }
   }
 }
+
 const hasSmall = (regions: Region[], skipIds: number[]) =>
   regions
     .filter((r) => !skipIds.includes(r.id))
@@ -242,7 +167,7 @@ function combineSmallRegions(regions: Region[]): Region[] {
       return nSmall || sameWidth || sameHeight;
     });
 
-    if (config.debug) {
+    if (debug) {
       console.log({ region, neighbours, suitableNeighbours });
     }
 
@@ -267,11 +192,11 @@ function combineSmallRegions(regions: Region[]): Region[] {
             : region.height,
       });
 
-      if (config.debug) {
+      if (debug) {
         console.log('Combining', region, neighbour);
       }
     } else {
-      if (config.debug) {
+      if (debug) {
         console.log(
           'No suitable neighbours found for',
           region.id,
@@ -442,11 +367,3 @@ function isConvexPolygon(vertices: Point[]): boolean {
 
   return true;
 }
-
-export const settings: SketchSettings = {
-  dimensions: [1080, 1080],
-  pixelRatio: window.devicePixelRatio,
-  animate: false,
-};
-
-ssam(sketch as Sketch<'2d'>, settings);
