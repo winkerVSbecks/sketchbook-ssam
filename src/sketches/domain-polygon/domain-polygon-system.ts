@@ -15,13 +15,18 @@ export function generateDomainSystem(
   gapScale: number,
   width: number,
   height: number,
+  options: { clipOffset: [number, number, number, number] } = {
+    clipOffset: [0, 0, 0, 0],
+  },
   attempts: number = 0
 ): {
   domains: Domain[];
   polygon: Point[];
   chosenDomains: number[];
-  polygonParts: { area: Point[]; island: boolean }[];
+  polygonParts: { area: Point[]; island: boolean; domain: Domain }[];
 } {
+  const { clipOffset: cO } = options;
+
   const grid = {
     w: width * 0.75,
     h: height * 0.75,
@@ -57,10 +62,10 @@ export function generateDomainSystem(
           r.width === res[0] || r.height === res[1] ? 'full-span' : 'default',
         selected: idx < selectionCount,
         rect: [
-          [gX, gY],
-          [gX + gW, gY],
-          [gX + gW, gY + gH],
-          [gX, gY + gH],
+          [gX + cO[3], gY + cO[0]],
+          [gX + gW - cO[3], gY + cO[0]],
+          [gX + gW - cO[3], gY + gH - cO[2]],
+          [gX + cO[3], gY + gH - cO[2]],
         ] as Point[],
       };
     });
@@ -75,7 +80,7 @@ export function generateDomainSystem(
         { regions: [polygon] },
         { regions: [d.rect] }
       );
-      return { area: clip.regions.flat(), island: isIsland(d) };
+      return { area: clip.regions.flat(), island: isIsland(d), domain: d };
     });
 
     return { domains, polygon, chosenDomains, polygonParts };
@@ -91,7 +96,14 @@ export function generateDomainSystem(
     } else {
       console.log(error.message);
       console.log('Retrying…');
-      return generateDomainSystem(res, gapScale, width, height, attempts + 1);
+      return generateDomainSystem(
+        res,
+        gapScale,
+        width,
+        height,
+        options,
+        attempts + 1
+      );
     }
   }
 }

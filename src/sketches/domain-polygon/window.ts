@@ -9,7 +9,7 @@ import { generateDomainSystem, isIsland } from './domain-polygon-system';
 const seed = Random.getRandomSeed();
 Random.setSeed(seed);
 console.log(seed);
-// Random.setSeed('264777');
+// Random.setSeed('550276');
 
 // let { colors } = tome.get();
 let colors = randomPalette();
@@ -33,6 +33,11 @@ const config = {
     [2, 2],
   ]),
   r: 4,
+  window: {
+    toolbar: 20,
+    button: 4,
+    buttonSpacing: 15,
+  },
 };
 
 console.log(config, colors);
@@ -42,7 +47,8 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     config.res,
     config.gap,
     width,
-    height
+    height,
+    { clipOffset: [config.window.toolbar + 5, 5, 5, 5] }
   );
 
   wrap.render = ({ width, height }: SketchProps) => {
@@ -51,11 +57,10 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
 
     context.lineJoin = 'round';
 
+    context.fillStyle = '#fff';
     domains.forEach((d) => {
       if (!isIsland(d)) {
         applyShadow(context, () => {
-          context.fillStyle = '#fff';
-          context.fillRect(d.x, d.y, d.width, d.height);
           context.beginPath();
           context.roundRect(d.x, d.y, d.width, d.height, [
             config.r,
@@ -72,19 +77,27 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     polygonParts.forEach((part, idx) => {
       if (part.area.length < 3 || part.island) return;
       context.fillStyle = colors[idx % colors.length]; // Random.pick(colors);
+      context.strokeStyle = '#2fbfff';
+      context.beginPath();
       drawPath(context, part.area, true);
       context.fill();
+      context.stroke();
+
+      context.fillStyle = '#fff';
+      context.strokeStyle = '#2fbfff';
+      part.area.forEach((point) => {
+        context.beginPath();
+        context.arc(point[0], point[1], 3, 0, Math.PI * 2);
+        // context.rect(point[0] - 2, point[1] - 2, 4, 4);
+        context.fill();
+        context.stroke();
+      });
     });
 
     // render islands
     polygonParts.forEach((part) => {
       if (part.area.length < 3 || !part.island) return;
       drawIsland(context, part.area);
-      // applyShadow(context, () => {
-      //   drawPath(context, part.area, true);
-      //   context.stroke();
-      //   context.fill();
-      // });
     });
 
     domains.forEach((d) => {
@@ -132,19 +145,30 @@ function drawWindow(
 
   context.fillStyle = windowColors.background;
   context.beginPath();
-  context.roundRect(x, y, width, 20, [config.r, config.r, 0, 0]);
+  context.roundRect(x, y, width, config.window.toolbar, [
+    config.r,
+    config.r,
+    0,
+    0,
+  ]);
   context.fill();
 
   context.strokeStyle = windowColors.outline;
   context.beginPath();
-  context.moveTo(x, y + 20);
-  context.lineTo(x + width, y + 20);
+  context.moveTo(x, y + config.window.toolbar);
+  context.lineTo(x + width, y + config.window.toolbar);
   context.stroke();
 
   windowColors.buttons.forEach((color, idx) => {
     context.fillStyle = color;
     context.beginPath();
-    context.arc(x + 15 + idx * 15, y + 10, 4, 0, Math.PI * 2);
+    context.arc(
+      x + config.window.buttonSpacing + idx * config.window.buttonSpacing,
+      y + 10,
+      config.window.button,
+      0,
+      Math.PI * 2
+    );
     context.fill();
   });
 
