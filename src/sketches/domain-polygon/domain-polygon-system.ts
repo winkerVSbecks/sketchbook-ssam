@@ -1,6 +1,6 @@
 import Random from 'canvas-sketch-util/random';
 import PolyBool from 'polybooljs';
-import { Domain, Grid, Region } from './types';
+import { Domain, Grid, PolygonPart, Region } from './types';
 import { generatePolygon } from './polygon-utils';
 
 const url = new URL(import.meta.url);
@@ -15,17 +15,17 @@ export function generateDomainSystem(
   gapScale: number,
   width: number,
   height: number,
-  options: { clipOffset: [number, number, number, number] } = {
-    clipOffset: [0, 0, 0, 0],
+  options: { inset: [number, number, number, number] } = {
+    inset: [0, 0, 0, 0],
   },
   attempts: number = 0
 ): {
   domains: Domain[];
   polygon: Point[];
   chosenDomains: number[];
-  polygonParts: { area: Point[]; island: boolean; domain: Domain }[];
+  polygonParts: PolygonPart[];
 } {
-  const { clipOffset: cO } = options;
+  const { inset } = options;
 
   const grid = {
     w: width * 0.75,
@@ -62,10 +62,16 @@ export function generateDomainSystem(
           r.width === res[0] || r.height === res[1] ? 'full-span' : 'default',
         selected: idx < selectionCount,
         rect: [
-          [gX + cO[3], gY + cO[0]],
-          [gX + gW - cO[3], gY + cO[0]],
-          [gX + gW - cO[3], gY + gH - cO[2]],
-          [gX + cO[3], gY + gH - cO[2]],
+          [gX, gY],
+          [gX + gW, gY],
+          [gX + gW, gY + gH],
+          [gX, gY + gH],
+        ] as Point[],
+        rectWithInset: [
+          [gX + inset[3], gY + inset[0]],
+          [gX + gW - inset[3], gY + inset[0]],
+          [gX + gW - inset[3], gY + gH - inset[2]],
+          [gX + inset[3], gY + gH - inset[2]],
         ] as Point[],
       };
     });
@@ -76,11 +82,12 @@ export function generateDomainSystem(
     const chosenDomains = polygonDomains.map((d) => d.id);
 
     const polygonParts = domains.map((d) => {
+      const pIsIsland = isIsland(d);
       const clip = PolyBool.intersect(
         { regions: [polygon] },
-        { regions: [d.rect] }
+        { regions: [pIsIsland ? d.rect : d.rectWithInset] }
       );
-      return { area: clip.regions.flat(), island: isIsland(d), domain: d };
+      return { area: clip.regions.flat(), island: pIsIsland, domain: d };
     });
 
     return { domains, polygon, chosenDomains, polygonParts };

@@ -18,4 +18,11 @@ export interface Domain {
   type: 'default' | 'full-span';
   selected: boolean;
   rect: Point[];
+  rectWithInset: Point[];
+}
+
+export interface PolygonPart {
+  area: Point[];
+  island: boolean;
+  domain: Domain;
 }
