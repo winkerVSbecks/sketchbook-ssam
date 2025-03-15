@@ -49,7 +49,7 @@ const config = {
     button: 4,
     buttonSpacing: 15,
   },
-  inset: 8,
+  inset: 10,
 };
 
 console.log(config, colors);
