@@ -23,7 +23,7 @@ const colors = {
   shadow: 'rgba(0, 0, 0, 0.1)',
   bg: '#fff',
   window: {
-    background: color('slate', 3),
+    background: [color('slate', 3), color('slate', 5)],
     outline: color('slate', 6),
     buttons: [color('tomato', 9), color('amber', 9), color('grass', 9)],
   },
@@ -148,7 +148,16 @@ function drawWindow(
 ) {
   context.lineWidth = 1;
 
-  context.fillStyle = colors.window.background;
+  const gradient = context.createLinearGradient(
+    x,
+    y,
+    x,
+    y + config.window.toolbar
+  );
+  gradient.addColorStop(0, colors.window.background[0]);
+  gradient.addColorStop(1, colors.window.background[1]);
+
+  context.fillStyle = gradient;
   context.beginPath();
   context.roundRect(x, y, width, config.window.toolbar, [
     config.r,
