@@ -1,35 +1,34 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-import * as tome from 'chromotome';
+
 import { drawPath } from '@daeinc/draw';
-import { randomPalette } from '../../colors';
 import { generateDomainSystem, isIsland } from './domain-polygon-system';
 import { PolygonPart } from './types';
-import '../../colors/radix';
+import { color, keys, ColorType } from '../../colors/radix';
 
 const seed = Random.getRandomSeed();
 Random.setSeed(seed);
 console.log(seed);
 // Random.setSeed('550276');
 
-// let { colors } = tome.get();
-let baseColors = randomPalette();
-
 const colors = {
-  fills: Random.shuffle(baseColors).slice(0, 3),
-  outline: '#D9D9D9',
+  fills: Random.shuffle(keys)
+    .slice(0, 3)
+    .map((key: ColorType) => color(key, 9)),
+  shadow: 'rgba(0, 0, 0, 0.1)',
+  bg: '#fff',
   window: {
-    background: '#F1F1F1',
-    outline: '#D9D9D9',
-    buttons: ['#FC521F', '#FFAE00', '#66BF3C'],
-    shadow: 'rgba(0, 0, 0, 0.1)',
+    background: color('slate', 3),
+    outline: color('slate', 6),
+    buttons: [color('tomato', 9), color('amber', 9), color('grass', 9)],
   },
   vector: {
-    fg: '#2fbfff',
-    bg: '#fff',
+    fg: color('blue', 8),
+    connector: color('slate', 7),
   },
 };
+console.log(color('blue', 12));
 
 const config = {
   gap: 0.02,
@@ -68,12 +67,12 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   );
 
   wrap.render = ({ width, height }: SketchProps) => {
-    context.fillStyle = '#fff';
+    context.fillStyle = colors.bg;
     context.fillRect(0, 0, width, height);
 
     context.lineJoin = 'round';
 
-    context.fillStyle = '#fff';
+    context.fillStyle = colors.bg;
     domains.forEach((d) => {
       if (!isIsland(d)) {
         applyShadow(context, () => {
@@ -92,14 +91,13 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
 
     polygonParts.forEach((part, idx) => {
       if (part.area.length < 3 || part.island) return;
-      drawIsland(context, part.area, colors.fills[idx % colors.fills.length]);
+      drawPart(context, part.area, colors.fills[idx % colors.fills.length]);
     });
 
     // render islands
-    polygonParts.forEach((part, idx) => {
+    polygonParts.forEach((part) => {
       if (part.area.length < 3 || !part.island) return;
       drawVectorNetwork(context, part);
-      // drawIsland(context, part.area, colors.fills[idx % colors.fills.length]);
     });
 
     domains.forEach((d) => {
@@ -110,11 +108,11 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     });
 
     if (config.debug) {
-      context.fillStyle = Random.pick(colors.fills);
+      context.fillStyle = 'red';
       drawPath(context, polygon, true);
       context.fill();
 
-      context.fillStyle = colors.outline;
+      context.fillStyle = 'red';
       polygon.forEach((point) => {
         context.beginPath();
         context.arc(point[0], point[1], 3, 0, Math.PI * 2);
@@ -126,7 +124,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
 
 function applyShadow(context: CanvasRenderingContext2D, callback: () => void) {
   context.save();
-  context.shadowColor = colors.window.shadow;
+  context.shadowColor = colors.shadow;
   context.shadowBlur = 20;
   context.shadowOffsetX = 0;
   context.shadowOffsetY = 5;
@@ -182,7 +180,7 @@ function drawWindow(
   context.stroke();
 }
 
-function drawIsland(
+function drawPart(
   context: CanvasRenderingContext2D,
   area: Point[],
   color = colors.window.background
@@ -204,7 +202,7 @@ function drawIsland(
   applyShadow(context, () => {
     drawPath(context, area, true);
 
-    context.strokeStyle = colors.outline;
+    context.strokeStyle = 'red';
     context.lineWidth = 3;
     context.stroke();
 
@@ -220,10 +218,10 @@ function drawVectorNetwork(
   context: CanvasRenderingContext2D,
   part: PolygonPart,
   fg = colors.vector.fg,
-  bg = colors.vector.bg
+  bg = colors.bg
 ) {
   context.fillStyle = bg;
-  context.strokeStyle = colors.outline;
+  context.strokeStyle = colors.vector.connector;
   context.beginPath();
   drawPath(context, part.area, true);
   context.fill();

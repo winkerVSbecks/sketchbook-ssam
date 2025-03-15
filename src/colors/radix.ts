@@ -6,7 +6,7 @@ import * as radixColors from '@radix-ui/colors';
 // Solid colors: 9-10
 // Accessible text: 11-12
 
-const keys = [
+export const keys = [
   'gray',
   'mauve',
   'slate',
@@ -40,25 +40,26 @@ const keys = [
   'sky',
 ] as const;
 
-type ColorTypes = (typeof keys)[number];
+export type ColorType = (typeof keys)[number];
 
 const type = 'P3';
 type Variant = 'light' | 'dark';
 
-const getKey = (variant: Variant, name: string) =>
-  variant === 'light' ? `${name}${type}` : `${keys[0]}Dark${type}`;
+const getKey = (variant: Variant, colName: string) =>
+  variant === 'light' ? `${colName}${type}` : `${colName}Dark${type}`;
 
-export function getRamp(name: ColorTypes, variant: Variant = 'light'): any {
-  const key = getKey(variant, name);
+export function getRamp(colName: ColorType, variant: Variant = 'light'): any {
+  const key = getKey(variant, colName);
   return (radixColors as any)[key];
 }
 
-export function get(
-  name: ColorTypes,
-  level: number,
+export function color(
+  colName: ColorType,
+  level: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12,
   variant: Variant = 'light'
 ) {
-  const key = getKey(variant, name);
-  const shade = `${name}${level}`;
+  const key = getKey(variant, colName);
+  const shade = `${colName}${level}`;
+
   return (radixColors as any)[key][shade];
 }
