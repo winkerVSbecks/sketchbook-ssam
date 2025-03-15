@@ -18,7 +18,7 @@ const colors = {
     .map((key: ColorType) => ({
       base: [color(key, 3), color(key, 4), color(key, 5)],
       border: color(key, 6),
-      accent: [color(key, 2), color(key, 7)],
+      accent: color(key, 1),
     })),
   shadow: 'rgba(0, 0, 0, 0.1)',
   bg: '#fff',
@@ -200,7 +200,7 @@ function drawPart(
   color: {
     base: [string, string, string];
     border: string;
-    accent: [string, string];
+    accent: string;
   }
 ) {
   const ys = area.map((p) => p[1]);
@@ -213,8 +213,8 @@ function drawPart(
   fillGradient.addColorStop(1, color.base[2]);
 
   const strokeGradient = context.createLinearGradient(0, y0, 0, y1);
-  strokeGradient.addColorStop(0, color.accent[0]);
-  strokeGradient.addColorStop(1, color.accent[1]);
+  strokeGradient.addColorStop(0, color.accent);
+  strokeGradient.addColorStop(1, color.base[1]);
 
   context.fillStyle = fillGradient;
 
@@ -222,15 +222,11 @@ function drawPart(
     drawPath(context, area, true);
 
     context.strokeStyle = color.border;
-    context.lineWidth = 3;
+    context.lineWidth = 6;
     context.stroke();
 
     context.strokeStyle = strokeGradient;
-    context.lineWidth = 2;
-    context.stroke();
-
-    context.strokeStyle = color.accent[0];
-    context.lineWidth = 1;
+    context.lineWidth = 3;
     context.stroke();
 
     context.fill();
