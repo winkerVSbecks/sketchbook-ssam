@@ -13,9 +13,13 @@ console.log(seed);
 // Random.setSeed('550276');
 
 const colors = {
-  fills: Random.shuffle(keys)
+  parts: Random.shuffle(keys)
     .slice(0, 3)
-    .map((key: ColorType) => color(key, 9)),
+    .map((key: ColorType) => ({
+      base: [color(key, 3), color(key, 4), color(key, 5)],
+      border: color(key, 6),
+      accent: [color(key, 2), color(key, 7)],
+    })),
   shadow: 'rgba(0, 0, 0, 0.1)',
   bg: '#fff',
   window: {
@@ -45,7 +49,7 @@ const config = {
     button: 4,
     buttonSpacing: 15,
   },
-  inset: 6,
+  inset: 8,
 };
 
 console.log(config, colors);
@@ -66,45 +70,46 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     }
   );
 
+  const windows = domains.filter((d) => !isIsland(d));
+  const solidParts = polygonParts.filter(
+    (part) => part.area.length > 2 && !part.island
+  );
+  const islands = polygonParts.filter(
+    (part) => part.area.length > 2 && part.island
+  );
+
   wrap.render = ({ width, height }: SketchProps) => {
     context.fillStyle = colors.bg;
     context.fillRect(0, 0, width, height);
 
     context.lineJoin = 'round';
 
-    context.fillStyle = colors.bg;
-    domains.forEach((d) => {
-      if (!isIsland(d)) {
-        applyShadow(context, () => {
-          context.beginPath();
-          context.roundRect(d.x, d.y, d.width, d.height, [
-            config.r,
-            config.r,
-            0,
-            0,
-          ]);
-          context.fill();
-          context.restore();
-        });
-      }
+    // Render macos style windows with top bar,
+    // three circular buttons and shadow
+    windows.forEach((d) => {
+      context.fillStyle = colors.bg;
+      applyShadow(context, () => {
+        context.beginPath();
+        context.roundRect(d.x, d.y, d.width, d.height, [
+          config.r,
+          config.r,
+          0,
+          0,
+        ]);
+        context.fill();
+        context.restore();
+      });
+      drawWindow(context, d.x, d.y, d.width, d.height, d.debug);
     });
 
-    polygonParts.forEach((part, idx) => {
-      if (part.area.length < 3 || part.island) return;
-      drawPart(context, part.area, colors.fills[idx % colors.fills.length]);
+    // render solid parts with button style aesthetic
+    solidParts.forEach((part, idx) => {
+      drawPart(context, part.area, colors.parts[idx % colors.parts.length]);
     });
 
-    // render islands
-    polygonParts.forEach((part) => {
-      if (part.area.length < 3 || !part.island) return;
+    // render islands with vector network aesthetic
+    islands.forEach((part) => {
       drawVectorNetwork(context, part);
-    });
-
-    domains.forEach((d) => {
-      if (!isIsland(d)) {
-        // render macos style window with top bar and three circular buttons
-        drawWindow(context, d.x, d.y, d.width, d.height, d.debug);
-      }
     });
 
     if (config.debug) {
@@ -183,31 +188,40 @@ function drawWindow(
 function drawPart(
   context: CanvasRenderingContext2D,
   area: Point[],
-  color = colors.window.background
+  color: {
+    base: [string, string, string];
+    border: string;
+    accent: [string, string];
+  }
 ) {
   const ys = area.map((p) => p[1]);
   const y0 = Math.min(...ys);
   const y1 = Math.max(...ys);
 
-  const gradient = context.createLinearGradient(0, y0, 0, y1);
-  gradient.addColorStop(0, `oklch(from ${color} calc(l * 1.25) c h)`);
-  gradient.addColorStop(1, `oklch(from ${color} calc(l * .9) c h)`);
+  const fillGradient = context.createLinearGradient(0, y0, 0, y1);
+  fillGradient.addColorStop(0, color.base[0]);
+  fillGradient.addColorStop(0.75, color.base[1]);
+  fillGradient.addColorStop(1, color.base[2]);
 
-  const gradient2 = context.createLinearGradient(0, y0, 0, y1);
-  gradient2.addColorStop(0, `oklch(from ${color} calc(l * 1.25) c h)`);
-  gradient2.addColorStop(1, `oklch(from ${color} calc(l * .9) c h)`);
+  const strokeGradient = context.createLinearGradient(0, y0, 0, y1);
+  strokeGradient.addColorStop(0, color.accent[0]);
+  strokeGradient.addColorStop(1, color.accent[1]);
 
-  context.fillStyle = gradient;
+  context.fillStyle = fillGradient;
 
   applyShadow(context, () => {
     drawPath(context, area, true);
 
-    context.strokeStyle = 'red';
+    context.strokeStyle = color.border;
     context.lineWidth = 3;
     context.stroke();
 
-    context.strokeStyle = gradient2;
+    context.strokeStyle = strokeGradient;
     context.lineWidth = 2;
+    context.stroke();
+
+    context.strokeStyle = color.accent[0];
+    context.lineWidth = 1;
     context.stroke();
 
     context.fill();
