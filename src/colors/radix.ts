@@ -43,12 +43,12 @@ export const keys = [
 export type ColorType = (typeof keys)[number];
 
 const type = 'P3';
-type Variant = 'light' | 'dark';
+export type ColorMode = 'light' | 'dark';
 
-const getKey = (variant: Variant, colName: string) =>
+const getKey = (variant: ColorMode, colName: string) =>
   variant === 'light' ? `${colName}${type}` : `${colName}Dark${type}`;
 
-export function getRamp(colName: ColorType, variant: Variant = 'light'): any {
+export function getRamp(colName: ColorType, variant: ColorMode = 'light'): any {
   const key = getKey(variant, colName);
   return (radixColors as any)[key];
 }
@@ -56,10 +56,13 @@ export function getRamp(colName: ColorType, variant: Variant = 'light'): any {
 export function color(
   colName: ColorType,
   level: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12,
-  variant: Variant = 'light'
+  variant: ColorMode = 'light'
 ) {
   const key = getKey(variant, colName);
   const shade = `${colName}${level}`;
 
   return (radixColors as any)[key][shade];
 }
+
+export const black = radixColors.blackP3A;
+export const white = radixColors.whiteP3A;
