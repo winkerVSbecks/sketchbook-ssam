@@ -17,6 +17,7 @@ export interface Domain {
   debug?: boolean;
   type: 'default' | 'full-span';
   selected: boolean;
+  hasPart?: boolean;
   rect: Point[];
   rectWithInset: Point[];
 }

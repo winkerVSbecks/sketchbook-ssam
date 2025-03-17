@@ -1,16 +1,13 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
-import Random from 'canvas-sketch-util/random';
-
 import { drawPath } from '@daeinc/draw';
 import { generateDomainSystem, isIsland } from '../domain-polygon-system';
-import { applyShadow, drawWindow, drawPart, drawVectorNetwork } from './ui';
+import { drawWindow, drawPart, drawVectorNetwork, drawTerminal } from './ui';
 import { config, colors } from './config';
 
-const seed = Random.getRandomSeed();
-Random.setSeed(seed);
-console.log(seed);
-Random.setSeed('724060');
+// To do:
+// - Combine thin areas into a single cell
+// - If all islands, then convert one to a window
 
 export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   const { domains, polygon, polygonParts } = generateDomainSystem(
@@ -28,7 +25,9 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     }
   );
 
-  const windows = domains.filter((d) => !isIsland(d));
+  const terminal = domains.find((d) => !d.hasPart);
+  const windows = domains.filter((d) => !isIsland(d) && d.id !== terminal?.id);
+
   const solidParts = polygonParts.filter(
     (part) => part.area.length > 2 && !part.island
   );
@@ -45,20 +44,18 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     // Render macos style windows with top bar,
     // three circular buttons and shadow
     windows.forEach((d) => {
-      context.fillStyle = colors.bg;
-      applyShadow(context, () => {
-        context.beginPath();
-        context.roundRect(d.x, d.y, d.width, d.height, [
-          config.r,
-          config.r,
-          0,
-          0,
-        ]);
-        context.fill();
-        context.restore();
-      });
       drawWindow(context, d.x, d.y, d.width, d.height, d.debug);
     });
+
+    if (terminal) {
+      drawTerminal(
+        context,
+        terminal.x,
+        terminal.y,
+        terminal.width,
+        terminal.height
+      );
+    }
 
     // render solid parts with button style aesthetic
     solidParts.forEach((part, idx) => {

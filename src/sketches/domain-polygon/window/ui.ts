@@ -4,6 +4,7 @@ import { drawPath } from '@daeinc/draw';
 import type { PolygonPart } from '../types';
 import { color } from '../../../colors/radix';
 import { config, colors } from './config';
+import { generateGridSystemLogs } from './mock-logs';
 
 export function applyShadow(
   context: CanvasRenderingContext2D,
@@ -77,6 +78,50 @@ export function drawContextMenu(
   });
 }
 
+export function drawTerminal(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number
+) {
+  drawWindow(context, x, y, width, height);
+
+  const padding = config.terminal.padding;
+  const fontSize = config.terminal.fontSize;
+  const lineHeight = config.terminal.lineHeight;
+
+  const logCount = Math.floor((height - config.window.toolbar) / lineHeight);
+
+  const logs = generateGridSystemLogs({ logCount });
+  console.log(logCount, logs.length);
+  console.log(logs.join('\n'));
+
+  // clip the terminal content
+  context.save();
+  context.beginPath();
+  context.rect(
+    x + padding,
+    y + config.window.toolbar + padding,
+    width - 2 * padding,
+    height - config.window.toolbar - padding * 2
+  );
+  context.clip();
+
+  context.fillStyle = colors.text;
+  context.textBaseline = 'top';
+  context.font = `${fontSize}px SF Mono`;
+  logs.forEach((log, idx) => {
+    context.fillText(
+      log,
+      x + padding,
+      y + config.window.toolbar + padding + idx * lineHeight
+    );
+  });
+
+  context.restore();
+}
+
 export function drawWindow(
   context: CanvasRenderingContext2D,
   x: number,
@@ -85,6 +130,14 @@ export function drawWindow(
   height: number,
   debug?: boolean
 ) {
+  context.fillStyle = colors.bg;
+  applyShadow(context, () => {
+    context.beginPath();
+    context.roundRect(x, y, width, height, [config.r, config.r, 0, 0]);
+    context.fill();
+    context.restore();
+  });
+
   context.lineWidth = 1;
 
   const gradient = context.createLinearGradient(

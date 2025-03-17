@@ -61,6 +61,7 @@ export function generateDomainSystem(
         type:
           r.width === res[0] || r.height === res[1] ? 'full-span' : 'default',
         selected: idx < selectionCount,
+        hasPart: false,
         rect: [
           [gX, gY],
           [gX + gW, gY],
@@ -87,7 +88,13 @@ export function generateDomainSystem(
         { regions: [polygon] },
         { regions: [pIsIsland ? d.rect : d.rectWithInset] }
       );
-      return { area: clip.regions.flat(), island: pIsIsland, domain: d };
+      const area = clip.regions.flat();
+
+      if (area.length > 0) {
+        d.hasPart = true;
+      }
+
+      return { area, island: pIsIsland, domain: d };
     });
 
     return { domains, polygon, chosenDomains, polygonParts };

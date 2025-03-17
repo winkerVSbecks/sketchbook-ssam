@@ -8,6 +8,11 @@ import {
   ColorMode,
 } from '../../../colors/radix';
 
+const seed = Random.getRandomSeed();
+Random.setSeed(seed);
+console.log(seed);
+// Random.setSeed('569999');
+
 export const config = {
   gap: 0.02,
   debug: false,
@@ -22,6 +27,11 @@ export const config = {
     toolbar: 20,
     button: 4,
     buttonSpacing: 15,
+  },
+  terminal: {
+    padding: 10,
+    fontSize: 8,
+    lineHeight: 16,
   },
   inset: 10,
   colorMode: 'light' as ColorMode,
@@ -41,6 +51,7 @@ export const colors = {
     })),
   shadow: 'rgba(0, 0, 0, 0.1)',
   bg: config.colorMode === 'light' ? white.whiteA12 : black.blackA12,
+  text: color('slate', 11, config.colorMode),
   window: {
     background: [
       color('slate', 3, config.colorMode),
