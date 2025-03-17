@@ -35,7 +35,7 @@ export const config = {
   },
   inset: 10,
   colorMode: 'light' as ColorMode,
-};
+} as const;
 
 export const colors = {
   parts: Random.shuffle(keys)

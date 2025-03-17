@@ -1,0 +1,12 @@
+---
+description: 
+globs: 
+---
+
+# Your rule content
+
+- Use TypeScript
+- When refrencing `CanvasRenderingContext2D`, use the variable `context`
+- Use Random utilities from `canvas-sketch-util/random`, instead of using `Math.random`
+- Use math utilities from `canvas-sketch-util/math`
+
