@@ -11,7 +11,7 @@ import {
 const seed = Random.getRandomSeed();
 Random.setSeed(seed);
 console.log(seed);
-// Random.setSeed('569999');
+Random.setSeed('209747');
 
 export const config = {
   gap: 0.02,
