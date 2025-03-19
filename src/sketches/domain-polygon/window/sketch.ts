@@ -2,13 +2,7 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import { drawPath } from '@daeinc/draw';
 import { generateDomainSystem, isIsland } from '../domain-polygon-system';
-import {
-  drawWindow,
-  drawPart,
-  drawVectorNetwork,
-  drawTerminal,
-  drawSidebar,
-} from './ui';
+import { drawWindow, drawPart, drawVectorNetwork, drawToolbar } from './ui';
 import { config, colors } from './config';
 
 // To do:
@@ -54,26 +48,12 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     });
 
     if (terminal) {
-      // drawTerminal(
-      //   context,
-      //   terminal.x,
-      //   terminal.y,
-      //   terminal.width,
-      //   terminal.height
-      // );
-      drawSidebar(
+      drawToolbar(
         context,
         terminal.x,
         terminal.y,
         terminal.width,
-        terminal.height,
-        config,
-        {
-          totalDomains: domains.length,
-          islands: islands.length,
-          windows: windows.length,
-          terminals: 1,
-        }
+        terminal.height
       );
     }
 

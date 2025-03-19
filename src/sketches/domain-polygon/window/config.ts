@@ -11,7 +11,8 @@ import {
 const seed = Random.getRandomSeed();
 Random.setSeed(seed);
 console.log(seed);
-Random.setSeed('209747');
+// Random.setSeed('396727');
+// Random.setSeed('597773');
 
 export const config = {
   gap: 0.02,
@@ -37,10 +38,16 @@ export const config = {
   colorMode: 'light' as ColorMode,
 } as const;
 
+interface PartColor {
+  base: [string, string, string];
+  border: string;
+  accent: string;
+}
+
 export const colors = {
-  parts: Random.shuffle(keys)
+  parts: (Random.shuffle(keys) as typeof keys)
     .slice(0, 3)
-    .map((key: ColorType) => ({
+    .map<PartColor>((key: ColorType) => ({
       base: [
         color(key, 3, config.colorMode),
         color(key, 4, config.colorMode),
@@ -67,6 +74,20 @@ export const colors = {
   vector: {
     fg: color('blue', 8, config.colorMode),
     connector: color('slate', 7, config.colorMode),
+  },
+  toolbar: {
+    background: color('slate', 1, config.colorMode),
+    parts: (['gray', 'mauve', 'slate', 'sage', 'olive', 'sand'] as const)
+      .slice(0, 3)
+      .map<PartColor>((key: ColorType) => ({
+        base: [
+          color(key, 3, config.colorMode),
+          color(key, 4, config.colorMode),
+          color(key, 5, config.colorMode),
+        ],
+        border: color(key, 6, config.colorMode),
+        accent: color(key, 1, config.colorMode),
+      })),
   },
 };
 
