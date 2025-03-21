@@ -176,7 +176,7 @@ export function drawToolbar(
     direction === 'horizontal' ? y + (height - size[1]) / 2 : y + margin;
 
   for (let i = 0; i < count; i++) {
-    drawRaisedButton(
+    drawButton(
       context,
       x0 + (direction === 'horizontal' ? (gap + size[0]) * i : 0),
       y0 + (direction === 'horizontal' ? 0 : (gap + size[1]) * i),
@@ -187,7 +187,7 @@ export function drawToolbar(
   }
 }
 
-export function drawRaisedButton(
+export function drawButton(
   context: CanvasRenderingContext2D,
   x: number,
   y: number,
@@ -243,7 +243,7 @@ export function drawRaisedButton(
   const centreStrokeGradient = context.createLinearGradient(0, y2, 0, y3);
   centreStrokeGradient.addColorStop(0, color.base[2]);
   centreStrokeGradient.addColorStop(1, color.accent);
-  const r = Math.min(width, height) * 0.25;
+  const r = Math.min(width, height) * 0.3;
 
   context.lineWidth = 2;
   context.fillStyle = centreGradient;
@@ -274,7 +274,7 @@ export function drawControls(
   const gap = (availableLength - count * size) / (count - 1);
 
   for (let i = 0; i < count; i++) {
-    const type = Random.pick([drawKnob, drawRaisedButton]);
+    const type = Random.pick([drawKnob, drawButton]);
 
     type(
       context,
@@ -362,7 +362,19 @@ export function drawKnob(
   context.fill();
   context.restore();
 
+  context.fillStyle = Random.pick(colors.parts).base[2];
+  context.beginPath();
+  context.arc(x + width / 2, y + height / 2, r, 0, Math.PI * 2);
+  context.fill();
+
+  context.fillStyle = color.base[1];
+  context.beginPath();
+  context.arc(x + width / 2, y + height / 2, r * 0.5, 0, Math.PI * 2);
+  context.fill();
+
   context.lineWidth = 2;
   context.strokeStyle = centreStrokeGradient;
+  context.beginPath();
+  context.arc(x + width / 2, y + height / 2, r, 0, Math.PI * 2);
   context.stroke();
 }
