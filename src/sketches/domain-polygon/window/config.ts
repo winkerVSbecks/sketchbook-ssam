@@ -12,7 +12,7 @@ const seed = Random.getRandomSeed();
 Random.setSeed(seed);
 console.log(seed);
 // Random.setSeed('396727');
-// Random.setSeed('597773');
+Random.setSeed('597773');
 
 export const config = {
   gap: 0.02,
@@ -33,6 +33,9 @@ export const config = {
     padding: 10,
     fontSize: 8,
     lineHeight: 16,
+  },
+  knobs: {
+    margin: 2,
   },
   inset: 10,
   colorMode: 'light' as ColorMode,

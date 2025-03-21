@@ -160,27 +160,28 @@ export function drawToolbar(
 
   const direction = width > height ? 'horizontal' : 'vertical';
 
+  const count = 3;
   const margin = config.inset * 2;
   const gap = margin;
   const size = [
     direction === 'horizontal' ? (width - margin * 4) / 3 : width - margin * 2,
     direction === 'horizontal'
       ? height - margin * 2
-      : (height - margin * 4) / 3,
+      : (height - margin * 4) / count,
   ];
   const x0 =
     direction === 'horizontal' ? x + margin : x + (width - size[0]) / 2;
   const y0 =
     direction === 'horizontal' ? y + (height - size[1]) / 2 : y + margin;
 
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < count; i++) {
     drawRaisedButton(
       context,
       x0 + (direction === 'horizontal' ? (gap + size[0]) * i : 0),
       y0 + (direction === 'horizontal' ? 0 : (gap + size[1]) * i),
       size[0],
       size[1],
-      colors.toolbar.parts[i]
+      colors.toolbar.parts[i % colors.toolbar.parts.length]
     );
   }
 }
@@ -241,7 +242,7 @@ export function drawRaisedButton(
   const centreStrokeGradient = context.createLinearGradient(0, y2, 0, y3);
   centreStrokeGradient.addColorStop(0, color.base[2]);
   centreStrokeGradient.addColorStop(1, color.accent);
-  const r = Math.min(width, height) / 4;
+  const r = Math.min(width, height) * 0.25;
 
   context.lineWidth = 2;
   context.fillStyle = centreGradient;
@@ -249,5 +250,116 @@ export function drawRaisedButton(
   context.beginPath();
   context.arc(x + width / 2, y + height / 2, r, 0, Math.PI * 2);
   context.fill();
+  context.stroke();
+}
+
+export function drawKnobs(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number
+) {
+  const direction = width > height ? 'horizontal' : 'vertical';
+
+  const margin = config.knobs.margin;
+  const size = Math.min(width, height) - margin * 2;
+  const x0 = x + margin;
+  const y0 = y + margin;
+
+  const availableLength = Math.max(width, height) - margin * 2;
+  const count = Math.floor(availableLength / (size + margin));
+
+  const gap = (availableLength - count * size) / (count - 1);
+
+  for (let i = 0; i < count; i++) {
+    drawKnob(
+      context,
+      x0 + (direction === 'horizontal' ? (gap + size) * i : 0),
+      y0 + (direction === 'horizontal' ? 0 : (gap + size) * i),
+      size,
+      size,
+      colors.toolbar.parts[i % colors.toolbar.parts.length]
+    );
+  }
+}
+
+export function drawKnob(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  color: {
+    base: [string, string, string];
+    border: string;
+    accent: string;
+  }
+) {
+  const y0 = y;
+  const y1 = y + height;
+
+  const fillGradient = context.createLinearGradient(0, y0, 0, y1);
+  fillGradient.addColorStop(0, color.base[0]);
+  fillGradient.addColorStop(1, color.base[2]);
+
+  const strokeGradient = context.createLinearGradient(0, y0, 0, y1);
+  strokeGradient.addColorStop(0, color.accent);
+  strokeGradient.addColorStop(1, color.base[1]);
+
+  context.fillStyle = fillGradient; // color.base[1];
+
+  applyShadow(context, () => {
+    context.beginPath();
+    context.roundRect(x, y, width, height, config.r);
+
+    context.strokeStyle = color.border;
+    context.lineWidth = 6;
+    context.stroke();
+
+    context.strokeStyle = strokeGradient;
+    context.lineWidth = 3;
+    context.stroke();
+
+    context.strokeStyle = color.accent;
+    context.lineWidth = 2;
+    context.stroke();
+
+    context.fill();
+  });
+
+  const y2 = y + height / 4;
+  const y3 = y + (3 * height) / 4;
+
+  const centreStrokeGradient = context.createLinearGradient(0, y2, 0, y3);
+  centreStrokeGradient.addColorStop(0, color.accent);
+  centreStrokeGradient.addColorStop(0.5, color.base[2]);
+  centreStrokeGradient.addColorStop(1, color.border);
+
+  const r = Math.min(width, height) * 0.25;
+
+  context.fillStyle = color.base[1];
+  context.beginPath();
+  context.arc(x + width / 2, y + height / 2, r, 0, Math.PI * 2);
+
+  context.save();
+  context.shadowColor = 'rgba(0,0,0,0.1)';
+  context.shadowBlur = 20;
+  context.shadowOffsetX = 0;
+  context.shadowOffsetY = 20;
+
+  context.fill();
+  context.restore();
+
+  context.save();
+  context.shadowColor = 'rgba(255, 255, 255,.5)';
+  context.shadowBlur = 20;
+  context.shadowOffsetX = 0;
+  context.shadowOffsetY = -20;
+  context.fill();
+  context.restore();
+
+  context.lineWidth = 2;
+  context.strokeStyle = centreStrokeGradient;
   context.stroke();
 }
