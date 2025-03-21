@@ -2,7 +2,7 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import { drawPath } from '@daeinc/draw';
 import { generateDomainSystem, isIsland } from '../domain-polygon-system';
-import { drawWindow, drawPart, drawVectorNetwork, drawKnobs } from './ui';
+import { drawWindow, drawPart, drawVectorNetwork, drawControls } from './ui';
 import { config, colors } from './config';
 
 // To do:
@@ -48,7 +48,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     });
 
     if (terminal) {
-      drawKnobs(
+      drawControls(
         context,
         terminal.x,
         terminal.y,

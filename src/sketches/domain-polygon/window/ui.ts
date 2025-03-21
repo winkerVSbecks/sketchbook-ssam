@@ -1,3 +1,4 @@
+import Random from 'canvas-sketch-util/random';
 import { drawPath } from '@daeinc/draw';
 import type { PolygonPart } from '../types';
 import { config, colors } from './config';
@@ -253,7 +254,7 @@ export function drawRaisedButton(
   context.stroke();
 }
 
-export function drawKnobs(
+export function drawControls(
   context: CanvasRenderingContext2D,
   x: number,
   y: number,
@@ -273,7 +274,9 @@ export function drawKnobs(
   const gap = (availableLength - count * size) / (count - 1);
 
   for (let i = 0; i < count; i++) {
-    drawKnob(
+    const type = Random.pick([drawKnob, drawRaisedButton]);
+
+    type(
       context,
       x0 + (direction === 'horizontal' ? (gap + size) * i : 0),
       y0 + (direction === 'horizontal' ? 0 : (gap + size) * i),
