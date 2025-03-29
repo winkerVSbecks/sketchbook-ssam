@@ -34,7 +34,7 @@ export function drawWindow(
   height: number,
   debug?: boolean
 ) {
-  context.fillStyle = colors.bg;
+  context.fillStyle = colors.window.background;
   context.strokeStyle = debug ? '#f00' : colors.window.outline;
   applyShadow(context, () => {
     context.beginPath();
@@ -52,8 +52,8 @@ export function drawWindow(
     x,
     y + config.window.toolbar
   );
-  gradient.addColorStop(0, colors.window.background[0]);
-  gradient.addColorStop(1, colors.window.background[1]);
+  gradient.addColorStop(0, colors.window.topbar[0]);
+  gradient.addColorStop(1, colors.window.topbar[1]);
 
   context.fillStyle = gradient;
   context.beginPath();
@@ -103,8 +103,8 @@ export function drawTopBar(
     x,
     y + config.window.toolbar
   );
-  gradient.addColorStop(0, colors.window.background[0]);
-  gradient.addColorStop(1, colors.window.background[1]);
+  gradient.addColorStop(0, colors.window.topbar[0]);
+  gradient.addColorStop(1, colors.window.topbar[1]);
 
   applyShadow(
     context,
@@ -179,7 +179,7 @@ export function drawVectorNetwork(
   context: CanvasRenderingContext2D,
   part: PolygonPart,
   fg = colors.vector.fg,
-  bg = colors.bg
+  bg = colors.window.background
 ) {
   context.fillStyle = bg;
   context.strokeStyle = colors.vector.connector;

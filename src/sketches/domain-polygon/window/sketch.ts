@@ -60,7 +60,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   );
 
   wrap.render = ({ width, height }: SketchProps) => {
-    context.fillStyle = colors.bg;
+    context.fillStyle = colors.background;
     context.fillRect(0, 0, width, height);
 
     context.lineJoin = 'round';

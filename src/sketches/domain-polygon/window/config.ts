@@ -15,6 +15,7 @@ console.log(seed);
 // Random.setSeed('597773');
 // Random.setSeed('715718');
 // Random.setSeed('340387');
+// Random.setSeed('791272');
 
 export const config = {
   gap: 0.02,
@@ -59,10 +60,11 @@ export const colors = {
     })),
   shadow: config.colorMode === 'light' ? black.blackA2 : black.blackA11,
   highlight: config.colorMode === 'light' ? white.whiteA7 : white.whiteA2,
-  bg: config.colorMode === 'light' ? white.whiteA12 : black.blackA12,
+  background: config.colorMode === 'light' ? '#fff' : '#070707',
   text: color('slate', 11, config.colorMode),
   window: {
-    background: [
+    background: config.colorMode === 'light' ? white.whiteA12 : black.blackA12,
+    topbar: [
       color('slate', 3, config.colorMode),
       color('slate', 5, config.colorMode),
     ],
