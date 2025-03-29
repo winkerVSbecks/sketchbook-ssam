@@ -45,6 +45,63 @@ export function generateDomainSystem(
       regions = combineSmallRegions(regions);
     }
 
+    if (regions.length > 3) {
+      regions = combineNarrowRegions(regions);
+    }
+
+    // // Combine narrow regions that have the same width and height
+    // const narrowRegions = regions.filter(
+    //   (r) => r.width === 1 || r.height === 1
+    // );
+
+    // for (let i = 0; i < narrowRegions.length; i++) {
+    //   const current = narrowRegions[i];
+
+    //   // Skip if this region has already been merged
+    //   if (!regions.includes(current)) continue;
+
+    //   for (let j = i + 1; j < narrowRegions.length; j++) {
+    //     const other = narrowRegions[j];
+
+    //     // Skip if this region has already been merged
+    //     if (!regions.includes(other)) continue;
+
+    //     // Check if regions have the same dimensions and are neighbors
+    //     if (current.width === other.width && current.height === other.height) {
+    //       // Check if they are adjacent (sharing an edge)
+    //       const isHorizontalNeighbor =
+    //         current.y === other.y &&
+    //         (current.x + current.width === other.x ||
+    //           other.x + other.width === current.x);
+
+    //       const isVerticalNeighbor =
+    //         current.x === other.x &&
+    //         (current.y + current.height === other.y ||
+    //           other.y + other.height === current.y);
+
+    //       if (isHorizontalNeighbor || isVerticalNeighbor) {
+    //         // Merge the regions by removing the second one
+    //         regions = regions.filter((r) => r.id !== other.id);
+    //         regions = regions.filter((r) => r.id !== current.id);
+
+    //         regions.push({
+    //           id: regions.length,
+    //           x: Math.min(current.x, other.x),
+    //           y: Math.min(current.y, other.y),
+    //           width: isHorizontalNeighbor
+    //             ? current.width + other.width
+    //             : current.width,
+    //           height: isVerticalNeighbor
+    //             ? current.height + other.height
+    //             : current.height,
+    //         });
+
+    //         break;
+    //       }
+    //     }
+    //   }
+    // }
+
     const domains: Domain[] = regions.map((r, idx) => {
       const gW = r.width * w - gap;
       const gH = r.height * h - gap;
@@ -211,6 +268,97 @@ function combineSmallRegions(regions: Region[]): Region[] {
         );
       }
       skipIds.push(region.id);
+    }
+  }
+
+  return regions;
+}
+
+function combineNarrowRegions(regions: Region[]): Region[] {
+  const skipIds: number[] = [];
+  let hasChanges = true;
+
+  // Keep combining regions until no more combinations are possible
+  while (hasChanges) {
+    hasChanges = false;
+
+    // Find narrow regions (width or height = 1)
+    const narrowRegions = regions.filter(
+      (r) => !skipIds.includes(r.id) && (r.width === 1 || r.height === 1)
+    );
+
+    if (narrowRegions.length === 0) break;
+
+    for (const region of narrowRegions) {
+      // Skip if this region has already been processed
+      if (skipIds.includes(region.id)) continue;
+
+      const neighbours = regions.filter(
+        (r) => isNeighbour(region, r) && !skipIds.includes(r.id)
+      );
+
+      // Find suitable neighbors that are also narrow or have matching dimensions
+      const suitableNeighbours = neighbours.filter((n) => {
+        const isNarrow = n.width === 1 || n.height === 1;
+
+        // Check if they can be combined horizontally (same height)
+        const canCombineHorizontally =
+          region.y === n.y &&
+          region.height === n.height &&
+          (region.x + region.width === n.x || n.x + n.width === region.x);
+
+        // Check if they can be combined vertically (same width)
+        const canCombineVertically =
+          region.x === n.x &&
+          region.width === n.width &&
+          (region.y + region.height === n.y || n.y + n.height === region.y);
+
+        return isNarrow && (canCombineHorizontally || canCombineVertically);
+      });
+
+      if (debug) {
+        console.log({ region, neighbours, suitableNeighbours });
+      }
+
+      if (suitableNeighbours.length > 0) {
+        const neighbour = suitableNeighbours[0];
+
+        // Remove both regions from the array
+        regions = regions.filter(
+          (r) => r.id !== neighbour.id && r.id !== region.id
+        );
+
+        // Create a new combined region
+        const newRegion = {
+          id: region.id,
+          x: Math.min(region.x, neighbour.x),
+          y: Math.min(region.y, neighbour.y),
+          width:
+            Math.max(region.x + region.width, neighbour.x + neighbour.width) -
+            Math.min(region.x, neighbour.x),
+          height:
+            Math.max(region.y + region.height, neighbour.y + neighbour.height) -
+            Math.min(region.y, neighbour.y),
+        };
+
+        regions.push(newRegion);
+
+        if (debug) {
+          console.log('Combining', region, neighbour, 'into', newRegion);
+        }
+
+        hasChanges = true;
+        break; // Start over with the new set of regions
+      } else {
+        if (debug) {
+          console.log(
+            'No suitable neighbours found for',
+            region.id,
+            'so skipping it'
+          );
+        }
+        skipIds.push(region.id);
+      }
     }
   }
 

@@ -14,6 +14,7 @@ console.log(seed);
 // Random.setSeed('396727');
 // Random.setSeed('597773');
 // Random.setSeed('715718');
+// Random.setSeed('340387');
 
 export const config = {
   gap: 0.02,
