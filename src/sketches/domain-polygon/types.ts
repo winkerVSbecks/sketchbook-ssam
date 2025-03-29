@@ -20,6 +20,7 @@ export interface Domain {
   hasPart?: boolean;
   rect: Point[];
   rectWithInset: Point[];
+  region: Region;
 }
 
 export interface PolygonPart {

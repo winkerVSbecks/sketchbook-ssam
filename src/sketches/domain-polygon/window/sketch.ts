@@ -2,7 +2,13 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import { drawPath } from '@daeinc/draw';
 import { generateDomainSystem, isIsland } from '../domain-polygon-system';
-import { drawWindow, drawPart, drawVectorNetwork, drawControls } from './ui';
+import {
+  drawWindow,
+  drawPart,
+  drawVectorNetwork,
+  drawControls,
+  drawTopBar,
+} from './ui';
 import { config, colors } from './config';
 
 // To do:
@@ -10,6 +16,13 @@ import { config, colors } from './config';
 // - If all islands, then convert one to a window
 
 export const sketch = ({ wrap, context, width, height }: SketchProps) => {
+  const grid = {
+    w: width * 0.75,
+    h: height * 0.75,
+    x: width * 0.125,
+    y: height * 0.125,
+  };
+
   const { domains, polygon, polygonParts } = generateDomainSystem(
     config.res,
     config.gap,
@@ -22,11 +35,22 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
         config.inset,
         config.inset,
       ],
-    }
+    },
+    grid
   );
 
-  const terminal = domains.find((d) => !d.hasPart);
-  const windows = domains.filter((d) => !isIsland(d) && d.id !== terminal?.id);
+  const toolbar = domains.find((d) => {
+    const isNarrow =
+      (d.region.width === 1 && d.region.height <= 3) ||
+      (d.region.height === 1 && d.region.width <= 3);
+    const isEdgeAligned =
+      d.region.x === 0 ||
+      d.region.y === 0 ||
+      d.region.x + d.region.width === config.res[0] ||
+      d.region.y + d.region.height === config.res[1];
+    return isNarrow && isEdgeAligned && !d.hasPart;
+  });
+  const windows = domains.filter((d) => !isIsland(d) && d.id !== toolbar?.id);
 
   const solidParts = polygonParts.filter(
     (part) => part.area.length > 2 && !part.island
@@ -41,19 +65,23 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
 
     context.lineJoin = 'round';
 
+    if (solidParts.length === 0) {
+      drawTopBar(context, grid.x, grid.y, grid.w);
+    }
+
     // Render macos style windows with top bar,
     // three circular buttons and shadow
     windows.forEach((d) => {
       drawWindow(context, d.x, d.y, d.width, d.height, d.debug);
     });
 
-    if (terminal) {
+    if (toolbar) {
       drawControls(
         context,
-        terminal.x,
-        terminal.y,
-        terminal.width,
-        terminal.height
+        toolbar.x,
+        toolbar.y,
+        toolbar.width,
+        toolbar.height
       );
     }
 

@@ -18,6 +18,12 @@ export function generateDomainSystem(
   options: { inset: [number, number, number, number] } = {
     inset: [0, 0, 0, 0],
   },
+  grid: { w: number; h: number; x: number; y: number } = {
+    w: width * 0.75,
+    h: height * 0.75,
+    x: width * 0.125,
+    y: height * 0.125,
+  },
   attempts: number = 0
 ): {
   domains: Domain[];
@@ -26,13 +32,6 @@ export function generateDomainSystem(
   polygonParts: PolygonPart[];
 } {
   const { inset } = options;
-
-  const grid = {
-    w: width * 0.75,
-    h: height * 0.75,
-    x: width * 0.125,
-    y: height * 0.125,
-  };
 
   const gap = Math.min(grid.w, grid.h) * gapScale;
   const w = (grid.w - gap) / res[0];
@@ -58,6 +57,7 @@ export function generateDomainSystem(
         width: gW,
         height: gH,
         debug: r.debug,
+        region: r,
         type:
           r.width === res[0] || r.height === res[1] ? 'full-span' : 'default',
         selected: idx < selectionCount,
@@ -116,6 +116,7 @@ export function generateDomainSystem(
         width,
         height,
         options,
+        grid,
         attempts + 1
       );
     }

@@ -13,6 +13,7 @@ Random.setSeed(seed);
 console.log(seed);
 // Random.setSeed('396727');
 // Random.setSeed('597773');
+// Random.setSeed('715718');
 
 export const config = {
   gap: 0.02,
@@ -29,12 +30,8 @@ export const config = {
     button: 4,
     buttonSpacing: 15,
   },
-  terminal: {
-    padding: 10,
-    fontSize: 8,
-    lineHeight: 16,
-  },
-  knobs: {
+  toolbar: {
+    type: Random.pick(['button', 'knobs']),
     margin: 2,
   },
   inset: 10,
@@ -59,7 +56,8 @@ export const colors = {
       border: color(key, 6, config.colorMode),
       accent: color(key, 1, config.colorMode),
     })),
-  shadow: 'rgba(0, 0, 0, 0.1)',
+  shadow: config.colorMode === 'light' ? black.blackA2 : black.blackA11,
+  highlight: config.colorMode === 'light' ? white.whiteA7 : white.whiteA2,
   bg: config.colorMode === 'light' ? white.whiteA12 : black.blackA12,
   text: color('slate', 11, config.colorMode),
   window: {
@@ -84,12 +82,16 @@ export const colors = {
       .slice(0, 3)
       .map<PartColor>((key: ColorType) => ({
         base: [
-          color(key, 3, config.colorMode),
+          color(key, config.colorMode === 'light' ? 3 : 5, config.colorMode),
           color(key, 4, config.colorMode),
-          color(key, 5, config.colorMode),
-        ],
+          color(key, config.colorMode === 'light' ? 5 : 3, config.colorMode),
+        ] as [string, string, string],
         border: color(key, 6, config.colorMode),
-        accent: color(key, 1, config.colorMode),
+        accent: color(
+          key,
+          config.colorMode === 'light' ? 1 : 8,
+          config.colorMode
+        ),
       })),
   },
 };
