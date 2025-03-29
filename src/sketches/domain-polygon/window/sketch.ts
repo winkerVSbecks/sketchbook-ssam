@@ -66,7 +66,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     context.lineJoin = 'round';
 
     if (solidParts.length === 0) {
-      drawTopBar(context, grid.x, grid.y, grid.w);
+      drawTopBar(context, grid.x, grid.y - config.window.toolbar, grid.w);
     }
 
     // Render macos style windows with top bar,
