@@ -1,13 +1,15 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
+import rough from 'roughjs';
 import { generateDomainSystem } from './domain-polygon-system';
 
 const seed = Random.getRandomSeed();
 Random.setSeed(seed);
 console.log(seed);
 // Random.setSeed('697379');
-Random.setSeed('792545');
+// Random.setSeed('792545');
+// Random.setSeed('81889');
 
 const outline = '#333';
 const gridLines = '#aaa';
@@ -25,7 +27,14 @@ const config = {
   ]),
 };
 
-export const sketch = ({ wrap, context, width, height }: SketchProps) => {
+export const sketch = ({
+  wrap,
+  context,
+  width,
+  height,
+  canvas,
+}: SketchProps) => {
+  const rc = rough.canvas(canvas);
   const { domains, grid } = generateDomainSystem(
     config.res,
     config.gap,
@@ -43,31 +52,27 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
 
-    context.strokeStyle = outline;
-    context.lineWidth = 2;
-    context.fillStyle = bg;
     domains.forEach((d) => {
-      context.beginPath();
-      context.rect(d.x, d.y, d.width, d.height);
-      context.fill();
-      context.stroke();
+      rc.rectangle(d.x, d.y, d.width, d.height, {
+        stroke: outline,
+        strokeWidth: 2,
+        fill: '#fff',
+        fillStyle: 'solid',
+      });
     });
 
     // Draw grid lines
-    context.strokeStyle = gridLines;
-    context.lineWidth = 1;
-
     for (let x = grid.x; x <= grid.w; x += grid.xRes) {
-      context.beginPath();
-      context.moveTo(x + grid.gap / 2, grid.y);
-      context.lineTo(x + grid.gap / 2, grid.y + grid.h);
-      context.stroke();
+      rc.line(x + grid.gap / 2, grid.y, x + grid.gap / 2, grid.y + grid.h, {
+        stroke: gridLines,
+        strokeWidth: 1,
+      });
     }
     for (let y = grid.y; y <= grid.h; y += grid.yRes) {
-      context.beginPath();
-      context.moveTo(grid.x, y + grid.gap / 2);
-      context.lineTo(grid.x + grid.w, y + grid.gap / 2);
-      context.stroke();
+      rc.line(grid.x, y + grid.gap / 2, grid.x + grid.w, y + grid.gap / 2, {
+        stroke: gridLines,
+        strokeWidth: 1,
+      });
     }
   };
 };
