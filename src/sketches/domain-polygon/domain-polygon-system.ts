@@ -15,8 +15,16 @@ export function generateDomainSystem(
   gapScale: number,
   width: number,
   height: number,
-  options: { inset: [number, number, number, number] } = {
+  options: {
+    inset: [number, number, number, number];
+    doCombineSmallRegions?: boolean;
+    doCombineNarrowRegions?: boolean;
+    doReduceNarrowRegions?: boolean;
+  } = {
     inset: [0, 0, 0, 0],
+    doCombineSmallRegions: true,
+    doCombineNarrowRegions: true,
+    doReduceNarrowRegions: true,
   },
   grid: { w: number; h: number; x: number; y: number } = {
     w: width * 0.75,
@@ -30,8 +38,22 @@ export function generateDomainSystem(
   polygon: Point[];
   chosenDomains: number[];
   polygonParts: PolygonPart[];
+  grid: {
+    w: number;
+    h: number;
+    x: number;
+    y: number;
+    gap: number;
+    xRes: number;
+    yRes: number;
+  };
 } {
-  const { inset } = options;
+  const {
+    inset = [0, 0, 0, 0],
+    doCombineSmallRegions = true,
+    doCombineNarrowRegions = true,
+    doReduceNarrowRegions = true,
+  } = options;
 
   const gap = Math.min(grid.w, grid.h) * gapScale;
   const w = (grid.w - gap) / res[0];
@@ -41,15 +63,15 @@ export function generateDomainSystem(
   try {
     let regions = generateRegions(res[1], res[0]);
 
-    if (regions.length > 3) {
+    if (doCombineSmallRegions && regions.length > 3) {
       regions = combineSmallRegions(regions);
     }
 
-    if (regions.length > 3) {
+    if (doCombineNarrowRegions && regions.length > 3) {
       regions = combineNarrowRegions(regions);
     }
 
-    if (regions.length > 3 && res[0] > 4) {
+    if (doReduceNarrowRegions && regions.length > 3 && res[0] > 4) {
       regions = reduceNarrowRegions(regions);
     }
 
@@ -105,7 +127,13 @@ export function generateDomainSystem(
       return { area, island: pIsIsland, domain: d };
     });
 
-    return { domains, polygon, chosenDomains, polygonParts };
+    return {
+      domains,
+      polygon,
+      chosenDomains,
+      polygonParts,
+      grid: { ...grid, gap, xRes: w, yRes: h },
+    };
   } catch (error: any) {
     if (attempts > 10) {
       const regions = generateRegions(res[1], res[0]);
@@ -114,7 +142,13 @@ export function generateDomainSystem(
         regions,
         combineSmallRegions(regions)
       );
-      return { domains: [], polygon: [], chosenDomains: [], polygonParts: [] };
+      return {
+        domains: [],
+        polygon: [],
+        chosenDomains: [],
+        polygonParts: [],
+        grid: { ...grid, gap, xRes: w, yRes: h },
+      };
     } else {
       console.log(error.message);
       console.log('Retrying…');

@@ -35,6 +35,9 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
         config.inset,
         config.inset,
       ],
+      doCombineSmallRegions: true,
+      doCombineNarrowRegions: true,
+      doReduceNarrowRegions: true,
     },
     grid
   );

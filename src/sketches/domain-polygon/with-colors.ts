@@ -1,7 +1,9 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
+import * as tome from 'chromotome';
 import { drawPath } from '@daeinc/draw';
+import { randomPalette } from '../../colors';
 import { generateDomainSystem, isIsland } from './domain-polygon-system';
 
 const seed = Random.getRandomSeed();
@@ -9,13 +11,16 @@ Random.setSeed(seed);
 console.log(seed);
 // Random.setSeed('772042');
 
+let { colors } = tome.get();
+// let colors = Random.shuffle(randomPalette()).slice(0, 3);
+
+colors = Random.shuffle(randomPalette()).slice(0, 3);
 const outline = '#333';
-const fill = '#333';
-const bg = '#fff';
 
 const config = {
   gap: 0.02,
   debug: false,
+  invert: Random.chance(),
   res: Random.pick([
     [5, 5],
     [4, 4],
@@ -33,21 +38,21 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   );
 
   wrap.render = ({ width, height }: SketchProps) => {
-    context.fillStyle = bg;
+    context.fillStyle = '#fff';
     context.fillRect(0, 0, width, height);
 
     domains.forEach((d) => {
       if (!isIsland(d)) {
-        context.fillStyle = bg;
+        context.fillStyle = config.invert ? Random.pick(colors) : '#fff';
         context.fillRect(d.x, d.y, d.width, d.height);
       }
     });
 
     context.strokeStyle = outline;
     context.lineWidth = 2;
-    context.fillStyle = fill;
     polygonParts.forEach((part) => {
       if (part.area.length < 3) return;
+      context.fillStyle = config.invert ? '#fff' : Random.pick(colors);
       drawPath(context, part.area, true);
 
       if (part.island) {
@@ -67,7 +72,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     });
 
     if (config.debug) {
-      context.fillStyle = fill;
+      context.fillStyle = Random.pick(colors);
       drawPath(context, polygon, true);
       context.fill();
 
