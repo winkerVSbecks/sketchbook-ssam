@@ -2,7 +2,8 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 import rough from 'roughjs';
-import { generateDomainSystem } from './domain-polygon-system';
+import { domainSystemGenerator } from './domain-polygon-system';
+import { Domain } from './types';
 
 const seed = Random.getRandomSeed();
 Random.setSeed(seed);
@@ -35,24 +36,29 @@ export const sketch = ({
   canvas,
 }: SketchProps) => {
   const rc = rough.canvas(canvas);
-  const { domains, grid } = generateDomainSystem(
-    config.res,
-    config.gap,
-    width,
-    height,
-    {
-      inset: [0, 0, 0, 0],
-      doCombineSmallRegions: true,
-      doCombineNarrowRegions: true,
-      doReduceNarrowRegions: true,
+  const dsGen = domainSystemGenerator(config.res, config.gap, width, height, {
+    inset: [0, 0, 0, 0],
+    doCombineSmallRegions: true,
+    doCombineNarrowRegions: true,
+    doReduceNarrowRegions: true,
+  });
+
+  let ds = dsGen.next().value;
+  let optimized = false;
+
+  window.addEventListener('mousedown', () => {
+    if (!optimized) {
+      const next = dsGen.next();
+      ds = next.value;
+      optimized = !!next.done;
     }
-  );
+  });
 
   wrap.render = ({ width, height }: SketchProps) => {
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
 
-    domains.forEach((d) => {
+    ds.domains.forEach((d: Domain) => {
       rc.rectangle(d.x, d.y, d.width, d.height, {
         stroke: outline,
         strokeWidth: 2,
@@ -62,17 +68,29 @@ export const sketch = ({
     });
 
     // Draw grid lines
-    for (let x = grid.x; x <= grid.w; x += grid.xRes) {
-      rc.line(x + grid.gap / 2, grid.y, x + grid.gap / 2, grid.y + grid.h, {
-        stroke: gridLines,
-        strokeWidth: 1,
-      });
+    for (let x = ds.grid.x; x <= ds.grid.w; x += ds.grid.xRes) {
+      rc.line(
+        x + ds.grid.gap / 2,
+        ds.grid.y,
+        x + ds.grid.gap / 2,
+        ds.grid.y + ds.grid.h,
+        {
+          stroke: gridLines,
+          strokeWidth: 1,
+        }
+      );
     }
-    for (let y = grid.y; y <= grid.h; y += grid.yRes) {
-      rc.line(grid.x, y + grid.gap / 2, grid.x + grid.w, y + grid.gap / 2, {
-        stroke: gridLines,
-        strokeWidth: 1,
-      });
+    for (let y = ds.grid.y; y <= ds.grid.h; y += ds.grid.yRes) {
+      rc.line(
+        ds.grid.x,
+        y + ds.grid.gap / 2,
+        ds.grid.x + ds.grid.w,
+        y + ds.grid.gap / 2,
+        {
+          stroke: gridLines,
+          strokeWidth: 1,
+        }
+      );
     }
   };
 };
@@ -80,7 +98,7 @@ export const sketch = ({
 export const settings: SketchSettings = {
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
-  animate: false,
+  animate: true,
 };
 
 ssam(sketch as Sketch<'2d'>, settings);

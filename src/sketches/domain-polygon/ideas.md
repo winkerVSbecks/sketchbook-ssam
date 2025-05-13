@@ -1,0 +1,3 @@
+- Sub pixel style for rects (https://www.vislcd.com/tft-lcd-display-principle/)
+- Gradient boxes like this painting W1siZiIsIjE1OTIxMCJdLFsicCIsImNvbnZlcnQiLCItcXVhbGl0eSA5MCAtcmVzaXplIDIwMDB4MjAwMFx1MDAzZSJdXQ
+- sophie-taeuber-arp_composition_1931_2_aware_women-artists_artistes-femmes-1086x1500.jpg

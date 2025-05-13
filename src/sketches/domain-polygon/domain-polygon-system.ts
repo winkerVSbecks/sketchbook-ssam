@@ -10,159 +10,78 @@ export function isIsland(d: Domain): boolean {
   return d.selected && d.type === 'full-span';
 }
 
-export function generateDomainSystem(
-  res: [number, number],
-  gapScale: number,
-  width: number,
-  height: number,
-  options: {
-    inset: [number, number, number, number];
-    doCombineSmallRegions?: boolean;
-    doCombineNarrowRegions?: boolean;
-    doReduceNarrowRegions?: boolean;
-  } = {
-    inset: [0, 0, 0, 0],
-    doCombineSmallRegions: true,
-    doCombineNarrowRegions: true,
-    doReduceNarrowRegions: true,
-  },
-  grid: { w: number; h: number; x: number; y: number } = {
-    w: width * 0.75,
-    h: height * 0.75,
-    x: width * 0.125,
-    y: height * 0.125,
-  },
-  attempts: number = 0
-): {
-  domains: Domain[];
-  polygon: Point[];
-  chosenDomains: number[];
-  polygonParts: PolygonPart[];
-  grid: {
+function generateDomainData(
+  regions: Region[],
+  params: {
+    gap: number;
     w: number;
     h: number;
-    x: number;
-    y: number;
-    gap: number;
-    xRes: number;
-    yRes: number;
-  };
-} {
-  const {
-    inset = [0, 0, 0, 0],
-    doCombineSmallRegions = true,
-    doCombineNarrowRegions = true,
-    doReduceNarrowRegions = true,
-  } = options;
-
-  const gap = Math.min(grid.w, grid.h) * gapScale;
-  const w = (grid.w - gap) / res[0];
-  const h = (grid.h - gap) / res[1];
-  const selectionCount = 5;
-
-  try {
-    let regions = generateRegions(res[1], res[0]);
-
-    if (doCombineSmallRegions && regions.length > 3) {
-      regions = combineSmallRegions(regions);
-    }
-
-    if (doCombineNarrowRegions && regions.length > 3) {
-      regions = combineNarrowRegions(regions);
-    }
-
-    if (doReduceNarrowRegions && regions.length > 3 && res[0] > 4) {
-      regions = reduceNarrowRegions(regions);
-    }
-
-    const domains: Domain[] = regions.map((r, idx) => {
-      const gW = r.width * w - gap;
-      const gH = r.height * h - gap;
-      const gX = grid.x + gap / 2 + r.x * w + gap / 2;
-      const gY = grid.y + gap / 2 + r.y * h + gap / 2;
-      return {
-        id: r.id,
-        x: gX,
-        y: gY,
-        width: gW,
-        height: gH,
-        debug: r.debug,
-        region: r,
-        type:
-          r.width === res[0] || r.height === res[1] ? 'full-span' : 'default',
-        selected: idx < selectionCount,
-        hasPart: false,
-        rect: [
-          [gX, gY],
-          [gX + gW, gY],
-          [gX + gW, gY + gH],
-          [gX, gY + gH],
-        ] as Point[],
-        rectWithInset: [
-          [gX + inset[3], gY + inset[0]],
-          [gX + gW - inset[3], gY + inset[0]],
-          [gX + gW - inset[3], gY + gH - inset[2]],
-          [gX + inset[3], gY + gH - inset[2]],
-        ] as Point[],
-      };
-    });
-
-    const polygonDomains = domains.slice(0, selectionCount);
-    const polygon = generatePolygon(polygonDomains);
-
-    const chosenDomains = polygonDomains.map((d) => d.id);
-
-    const polygonParts = domains.map((d) => {
-      const pIsIsland = isIsland(d);
-      const clip = PolyBool.intersect(
-        { regions: [polygon] },
-        { regions: [pIsIsland ? d.rect : d.rectWithInset] }
-      );
-      const area = clip.regions.flat();
-
-      if (area.length > 0) {
-        d.hasPart = true;
-      }
-
-      return { area, island: pIsIsland, domain: d };
-    });
-
-    return {
-      domains,
-      polygon,
-      chosenDomains,
-      polygonParts,
-      grid: { ...grid, gap, xRes: w, yRes: h },
-    };
-  } catch (error: any) {
-    if (attempts > 10) {
-      const regions = generateRegions(res[1], res[0]);
-      console.error(
-        'Failed to generate a domain system',
-        regions,
-        combineSmallRegions(regions)
-      );
-      return {
-        domains: [],
-        polygon: [],
-        chosenDomains: [],
-        polygonParts: [],
-        grid: { ...grid, gap, xRes: w, yRes: h },
-      };
-    } else {
-      console.log(error.message);
-      console.log('Retrying…');
-      return generateDomainSystem(
-        res,
-        gapScale,
-        width,
-        height,
-        options,
-        grid,
-        attempts + 1
-      );
-    }
+    selectionCount: number;
+    grid: { w: number; h: number; x: number; y: number };
+    inset: [number, number, number, number];
+    res: [number, number];
   }
+) {
+  const { gap, w, h, selectionCount, grid, inset, res } = params;
+
+  const domains: Domain[] = regions.map((r, idx) => {
+    const gW = r.width * w - gap;
+    const gH = r.height * h - gap;
+    const gX = grid.x + gap / 2 + r.x * w + gap / 2;
+    const gY = grid.y + gap / 2 + r.y * h + gap / 2;
+    return {
+      id: r.id,
+      x: gX,
+      y: gY,
+      width: gW,
+      height: gH,
+      debug: r.debug,
+      region: r,
+      type: r.width === res[0] || r.height === res[1] ? 'full-span' : 'default',
+      selected: idx < selectionCount,
+      hasPart: false,
+      rect: [
+        [gX, gY],
+        [gX + gW, gY],
+        [gX + gW, gY + gH],
+        [gX, gY + gH],
+      ] as Point[],
+      rectWithInset: [
+        [gX + inset[3], gY + inset[0]],
+        [gX + gW - inset[3], gY + inset[0]],
+        [gX + gW - inset[3], gY + gH - inset[2]],
+        [gX + inset[3], gY + gH - inset[2]],
+      ] as Point[],
+    };
+  });
+
+  const polygonDomains = domains.slice(0, selectionCount);
+  const polygon = generatePolygon(polygonDomains);
+
+  const chosenDomains = polygonDomains.map((d) => d.id);
+
+  const polygonParts = domains.map((d) => {
+    const pIsIsland = isIsland(d);
+    const clip = PolyBool.intersect(
+      { regions: [polygon] },
+      { regions: [pIsIsland ? d.rect : d.rectWithInset] }
+    );
+    const area = clip.regions.flat();
+
+    if (area.length > 0) {
+      d.hasPart = true;
+    }
+
+    return { area, island: pIsIsland, domain: d };
+  });
+
+  return {
+    domains,
+    polygon,
+    chosenDomains,
+    polygonParts,
+    grid: { ...grid, gap, xRes: w, yRes: h },
+  };
 }
 
 const hasSmall = (regions: Region[], skipIds: number[]) =>
@@ -522,4 +441,201 @@ function generateRegions(
   }
 
   return regions;
+}
+
+export type DomainSystemState = {
+  domains: Domain[];
+  polygon: Point[];
+  chosenDomains: number[];
+  polygonParts: PolygonPart[];
+  grid: {
+    w: number;
+    h: number;
+    x: number;
+    y: number;
+    gap: number;
+    xRes: number;
+    yRes: number;
+  };
+};
+
+export function* domainSystemGenerator(
+  res: [number, number],
+  gapScale: number,
+  width: number,
+  height: number,
+  options: {
+    inset: [number, number, number, number];
+    doCombineSmallRegions?: boolean;
+    doCombineNarrowRegions?: boolean;
+    doReduceNarrowRegions?: boolean;
+  } = {
+    inset: [0, 0, 0, 0],
+    doCombineSmallRegions: true,
+    doCombineNarrowRegions: true,
+    doReduceNarrowRegions: true,
+  },
+  grid: { w: number; h: number; x: number; y: number } = {
+    w: width * 0.75,
+    h: height * 0.75,
+    x: width * 0.125,
+    y: height * 0.125,
+  },
+  attempts: number = 0
+): Generator<DomainSystemState, DomainSystemState, undefined> {
+  const {
+    inset = [0, 0, 0, 0],
+    doCombineSmallRegions = true,
+    doCombineNarrowRegions = true,
+    doReduceNarrowRegions = true,
+  } = options;
+
+  const gap = Math.min(grid.w, grid.h) * gapScale;
+  const w = (grid.w - gap) / res[0];
+  const h = (grid.h - gap) / res[1];
+  const selectionCount = 5;
+  let state: DomainSystemState = {
+    domains: [],
+    polygon: [],
+    chosenDomains: [],
+    polygonParts: [],
+    grid: { ...grid, gap, xRes: w, yRes: h },
+  };
+
+  try {
+    // Initial unoptimized state
+    let regions = generateRegions(res[1], res[0]);
+    state = generateDomainData(regions, {
+      gap,
+      w,
+      h,
+      selectionCount,
+      grid,
+      inset,
+      res,
+    });
+    yield state;
+
+    // After combining small regions
+    if (doCombineSmallRegions && regions.length > 3) {
+      regions = combineSmallRegions(regions);
+      state = generateDomainData(regions, {
+        gap,
+        w,
+        h,
+        selectionCount,
+        grid,
+        inset,
+        res,
+      });
+      yield state;
+    }
+
+    // After combining narrow regions
+    if (doCombineNarrowRegions && regions.length > 3) {
+      regions = combineNarrowRegions(regions);
+      state = generateDomainData(regions, {
+        gap,
+        w,
+        h,
+        selectionCount,
+        grid,
+        inset,
+        res,
+      });
+      yield state;
+    }
+
+    // After reducing narrow regions
+    if (doReduceNarrowRegions && regions.length > 3 && res[0] > 4) {
+      regions = reduceNarrowRegions(regions);
+      state = generateDomainData(regions, {
+        gap,
+        w,
+        h,
+        selectionCount,
+        grid,
+        inset,
+        res,
+      });
+      yield state;
+    }
+
+    return state;
+  } catch (error: any) {
+    if (attempts > 10) {
+      const regions = generateRegions(res[1], res[0]);
+      console.error(
+        'Failed to generate a domain system',
+        regions,
+        combineSmallRegions(regions)
+      );
+      state = {
+        domains: [],
+        polygon: [],
+        chosenDomains: [],
+        polygonParts: [],
+        grid: { ...grid, gap, xRes: w, yRes: h },
+      };
+      yield state;
+    } else {
+      console.log(error.message);
+      console.log('Retrying…');
+      yield* domainSystemGenerator(
+        res,
+        gapScale,
+        width,
+        height,
+        options,
+        grid,
+        attempts + 1
+      );
+    }
+  }
+
+  return state;
+}
+
+export function generateDomainSystem(
+  res: [number, number],
+  gapScale: number,
+  width: number,
+  height: number,
+  options: {
+    inset: [number, number, number, number];
+    doCombineSmallRegions?: boolean;
+    doCombineNarrowRegions?: boolean;
+    doReduceNarrowRegions?: boolean;
+  } = {
+    inset: [0, 0, 0, 0],
+    doCombineSmallRegions: true,
+    doCombineNarrowRegions: true,
+    doReduceNarrowRegions: true,
+  },
+  grid: { w: number; h: number; x: number; y: number } = {
+    w: width * 0.75,
+    h: height * 0.75,
+    x: width * 0.125,
+    y: height * 0.125,
+  },
+  attempts: number = 0
+): DomainSystemState {
+  // Get the generator
+  const generator = domainSystemGenerator(
+    res,
+    gapScale,
+    width,
+    height,
+    options,
+    grid,
+    attempts
+  );
+
+  // Consume all values and return the last one
+  let result;
+  for (const value of generator) {
+    result = value;
+  }
+
+  return result!;
 }
