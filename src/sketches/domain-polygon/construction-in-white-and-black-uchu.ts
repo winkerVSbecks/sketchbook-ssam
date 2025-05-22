@@ -3,16 +3,14 @@ import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 import { mapRange } from 'canvas-sketch-util/math';
 import { generateDomainSystem } from './domain-polygon-system';
-import { randomPalette } from '../../colors';
+import { uchu, uchuHues, UchuHue } from '../../colors/uchu';
 
 const seed = Random.getRandomSeed();
 Random.setSeed(seed);
 console.log(seed);
-Random.setSeed('257104');
+// Random.setSeed('257104');
 
-const bg = 'white';
-
-const colors = Random.shuffle(randomPalette());
+const bg = uchu.general.yin;
 
 const config = {
   gap: 0, //0.005,
@@ -49,6 +47,10 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     }
   );
 
+  const hue = (x: number) => {
+    return uchuHues[Math.floor(mapRange(x, 0, width, 0, uchuHues.length - 1))];
+  };
+
   wrap.render = ({ width, height }: SketchProps) => {
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
@@ -63,11 +65,13 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       const y1 = d.y;
       const gradient = context.createLinearGradient(x0, y0, x1, y1);
 
-      const c1 = colors[Math.floor(x0 % colors.length)];
-      const c2 = colors[Math.floor(x1 % colors.length)];
+      const h1 = hue(x0);
+      const h2 = hue(x1);
+      const c1 = uchu[h1 as UchuHue];
+      const c2 = uchu[h2 as UchuHue];
 
-      gradient.addColorStop(0, c1);
-      gradient.addColorStop(1, c2);
+      gradient.addColorStop(0, c1.base);
+      gradient.addColorStop(1, c2.base);
 
       context.fillStyle = gradient;
       context.beginPath();

@@ -52,6 +52,12 @@ function generateDomainData(
         [gX + gW - inset[3], gY + gH - inset[2]],
         [gX + inset[3], gY + gH - inset[2]],
       ] as Point[],
+      raw: {
+        x: r.x,
+        y: r.y,
+        width: r.width,
+        height: r.height,
+      },
     };
   });
 

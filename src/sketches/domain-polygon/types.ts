@@ -21,6 +21,12 @@ export interface Domain {
   rect: Point[];
   rectWithInset: Point[];
   region: Region;
+  raw: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
 }
 
 export interface PolygonPart {
