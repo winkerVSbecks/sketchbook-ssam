@@ -3,21 +3,24 @@ import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 import { mapRange, lerp } from 'canvas-sketch-util/math';
 import eases from 'eases';
+import * as tome from 'chromotome';
 import { generateDomainSystem } from './domain-polygon-system';
 import { randomPalette } from '../../colors';
-import { uchu, uchuHues, UchuHue } from '../../colors/uchu';
+import { uchu, uchuHues } from '../../colors/uchu';
 
 const seed = Random.getRandomSeed();
 Random.setSeed(seed);
 console.log(seed);
-// Random.setSeed('257104');
+// Random.setSeed('598565');
+
+type ColorMode = 'uchu' | 'random' | 'tome';
 
 const config = {
   gap: 0,
   debug: false,
   cycles: 12,
   blocks: Random.rangeFloor(1, 4),
-  colorMode: 'uchu', //Random.pick(['uchu', 'random']),
+  colorMode: Random.pick(['uchu', 'random', 'tome']),
   outline: 0,
   padding: 10,
   res: Random.pick([
@@ -31,17 +34,27 @@ const config = {
   ]),
 };
 
-const colors =
-  config.colorMode === 'uchu'
-    ? Random.shuffle(uchuHues.map((hue) => uchu[hue].base)).slice(
-        0,
-        config.blocks
-      )
-    : Random.shuffle(randomPalette()).slice(0, config.blocks + 1);
-const bg =
-  config.colorMode === 'uchu'
-    ? Random.pick([uchu.general.yin, uchu.general.yang])
-    : colors.shift();
+let tomePalette = tome.get();
+console.log(tomePalette);
+
+const colorModes = {
+  uchu: Random.shuffle(uchuHues.map((hue) => uchu[hue].base)).slice(
+    0,
+    config.blocks
+  ),
+  random: Random.shuffle(randomPalette()).slice(0, config.blocks + 1),
+  tome: tomePalette.colors.slice(0, config.blocks),
+};
+const colors = colorModes[config.colorMode as ColorMode];
+
+const bgModes = {
+  uchu: Random.pick([uchu.general.yin, uchu.general.yang]),
+  random: colors[0],
+  tome: tomePalette.background || '#fff',
+};
+const bg = bgModes[config.colorMode as ColorMode];
+
+console.log({ ...config, colors, bg });
 
 export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   const { domains } = generateDomainSystem(
@@ -94,8 +107,6 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   const grids = Array.from({ length: config.cycles - 1 }, () => distort());
   grids.unshift(baseGrid);
   grids.push(baseGrid);
-  console.log(config.res);
-  console.log(grids);
 
   const distortX = (
     currG: number[][],
@@ -147,7 +158,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     const currentGrid = grids[gridIndex];
     const nextGrid = grids[gridIndex + 1];
 
-    const t = eases.cubicInOut((playhead * config.cycles) % 1);
+    const t = eases.expoInOut((playhead * config.cycles) % 1);
 
     // TODO
     // shift across domains (using chance)
@@ -173,7 +184,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
 
     if (config.outline > 0) {
       context.lineWidth = config.outline;
-      context.strokeStyle = colors[0];
+      context.strokeStyle = bg;
       domains.forEach((d) => {
         const x0 = distortX(currentGrid, nextGrid, d.raw.x, t);
         const y0 = distortY(currentGrid, nextGrid, d.raw.y, t);
