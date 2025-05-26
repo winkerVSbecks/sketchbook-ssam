@@ -16,23 +16,32 @@ const config = {
   gap: 0,
   debug: false,
   cycles: 12,
-  gradientMode: Random.pick(['uchu', 'random']),
+  blocks: Random.rangeFloor(1, 4),
+  colorMode: 'uchu', //Random.pick(['uchu', 'random']),
+  outline: 0,
+  padding: 10,
   res: Random.pick([
-    // [32, 32],
-    // [24, 24],
-    // [16, 16],
-    // [12, 12],
-    // [8, 8],
-    // [6, 6],
-    // [4, 4],
-    // [2, 2],
-    [8, 6],
-    [4, 3],
+    [32, 32],
+    [24, 24],
+    [16, 16],
+    [12, 12],
+    [8, 8],
+    [6, 6],
+    [4, 4],
   ]),
 };
 
-const colors = Random.shuffle(randomPalette()).slice(0, config.res[0]);
-const bg = colors[0];
+const colors =
+  config.colorMode === 'uchu'
+    ? Random.shuffle(uchuHues.map((hue) => uchu[hue].base)).slice(
+        0,
+        config.blocks
+      )
+    : Random.shuffle(randomPalette()).slice(0, config.blocks + 1);
+const bg =
+  config.colorMode === 'uchu'
+    ? Random.pick([uchu.general.yin, uchu.general.yang])
+    : colors.shift();
 
 export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   const { domains } = generateDomainSystem(
@@ -95,7 +104,13 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     t: number
   ) => {
     const idx = lerp(currG[0][x], nextG[0][x], t);
-    return mapRange(idx, 0, config.res[0], 0, width);
+    return mapRange(
+      idx,
+      0,
+      config.res[0],
+      config.padding / 2,
+      width - config.padding / 2
+    );
   };
 
   const distortY = (
@@ -105,39 +120,23 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     t: number
   ) => {
     const idx = lerp(currG[1][y], nextG[1][y], t);
-    return mapRange(idx, 0, config.res[1], 0, height);
+    return mapRange(
+      idx,
+      0,
+      config.res[1],
+      config.padding / 2,
+      height - config.padding / 2
+    );
   };
 
-  const hue = (x: number) => {
-    return uchuHues[Math.floor(mapRange(x, 0, width, 0, uchuHues.length - 1))];
-  };
+  const sortedDomains = domains.sort(
+    (a, b) => b.raw.width * b.raw.height - a.raw.width * a.raw.height
+  );
 
-  function gradient(
-    idx1: number,
-    idx2: number,
-    x0: number,
-    y0: number,
-    x1: number,
-    context: CanvasRenderingContext2D
-  ): CanvasGradient {
-    if (config.gradientMode === 'uchu') {
-      const gradient = context.createLinearGradient(x0, y0, x1, y0);
-      const h1 = uchuHues[Math.floor(idx1 % uchuHues.length)];
-      const h2 = uchuHues[Math.floor(idx2 % uchuHues.length)];
-      const c1 = uchu[h1 as UchuHue];
-      const c2 = uchu[h2 as UchuHue];
-      gradient.addColorStop(0, c1.base);
-      gradient.addColorStop(1, c2.base);
-      return gradient;
-    } else {
-      const gradient = context.createLinearGradient(x0, y0, x1, y0);
-      const c1 = colors[Math.floor(idx1 % colors.length)];
-      const c2 = colors[Math.floor(idx2 % colors.length)];
-      gradient.addColorStop(0, c1);
-      gradient.addColorStop(1, c2);
-      return gradient;
-    }
-  }
+  const blocks = Array.from({ length: config.blocks }, (_, idx) => ({
+    domain: sortedDomains[idx], //Random.pick(domains),
+    color: Random.pick(colors),
+  }));
 
   wrap.render = ({ width, height, playhead }: SketchProps) => {
     context.fillStyle = bg;
@@ -150,27 +149,46 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
 
     const t = eases.cubicInOut((playhead * config.cycles) % 1);
 
-    domains.forEach((d) => {
+    // TODO
+    // shift across domains (using chance)
+
+    context.strokeStyle = bg;
+    context.lineWidth = config.padding;
+    blocks.forEach(({ domain: d, color }) => {
       const x0 = distortX(currentGrid, nextGrid, d.raw.x, t);
       const y0 = distortY(currentGrid, nextGrid, d.raw.y, t);
       const x1 = distortX(currentGrid, nextGrid, d.raw.x + d.raw.width, t);
       const y1 = distortY(currentGrid, nextGrid, d.raw.y + d.raw.height, t);
 
-      context.fillStyle = gradient(
-        d.raw.x,
-        d.raw.x + d.raw.width,
-        x0,
-        y0,
-        x1,
-        context
-      );
+      context.fillStyle = color;
       context.beginPath();
       context.moveTo(x0, y0);
       context.lineTo(x1, y0);
       context.lineTo(x1, y1);
       context.lineTo(x0, y1);
+      context.closePath();
       context.fill();
+      context.stroke();
     });
+
+    if (config.outline > 0) {
+      context.lineWidth = config.outline;
+      context.strokeStyle = colors[0];
+      domains.forEach((d) => {
+        const x0 = distortX(currentGrid, nextGrid, d.raw.x, t);
+        const y0 = distortY(currentGrid, nextGrid, d.raw.y, t);
+        const x1 = distortX(currentGrid, nextGrid, d.raw.x + d.raw.width, t);
+        const y1 = distortY(currentGrid, nextGrid, d.raw.y + d.raw.height, t);
+
+        context.beginPath();
+        context.moveTo(x0, y0);
+        context.lineTo(x1, y0);
+        context.lineTo(x1, y1);
+        context.lineTo(x0, y1);
+        context.closePath();
+        context.stroke();
+      });
+    }
 
     if (config.debug) {
       // Un-distorted grid
