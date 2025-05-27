@@ -11,7 +11,7 @@ import { uchu, uchuHues } from '../../colors/uchu';
 const seed = Random.getRandomSeed();
 Random.setSeed(seed);
 console.log(seed);
-// Random.setSeed('598565');
+// Random.setSeed('625573');
 
 type ColorMode = 'uchu' | 'random' | 'tome';
 
@@ -20,6 +20,7 @@ const config = {
   debug: false,
   cycles: 12,
   blocks: Random.rangeFloor(1, 4),
+  shift: false,
   colorMode: Random.pick(['uchu', 'random', 'tome']),
   outline: 0,
   padding: 10,
@@ -149,6 +150,18 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     color: Random.pick(colors),
   }));
 
+  const blockEvolutions = Array.from({ length: config.cycles - 1 }, () => {
+    const ids = Random.shuffle(domains.map((_, idx) => idx));
+
+    return blocks.map((b) => ({
+      domain:
+        Random.chance(0.1) && config.shift ? domains[ids.pop()] : b.domain,
+      color: b.color,
+    }));
+  });
+  blockEvolutions.unshift(blocks);
+  blockEvolutions.push(blocks);
+
   wrap.render = ({ width, height, playhead }: SketchProps) => {
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
@@ -158,18 +171,28 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     const currentGrid = grids[gridIndex];
     const nextGrid = grids[gridIndex + 1];
 
+    const currentBlocks = blockEvolutions[gridIndex];
+    const nextBlocks = blockEvolutions[gridIndex + 1];
+
     const t = eases.expoInOut((playhead * config.cycles) % 1);
 
-    // TODO
-    // shift across domains (using chance)
+    currentBlocks.forEach(({ domain: d, color }, idx) => {
+      const nD = nextBlocks[idx].domain;
 
-    context.strokeStyle = bg;
-    context.lineWidth = config.padding;
-    blocks.forEach(({ domain: d, color }) => {
-      const x0 = distortX(currentGrid, nextGrid, d.raw.x, t);
-      const y0 = distortY(currentGrid, nextGrid, d.raw.y, t);
-      const x1 = distortX(currentGrid, nextGrid, d.raw.x + d.raw.width, t);
-      const y1 = distortY(currentGrid, nextGrid, d.raw.y + d.raw.height, t);
+      const x0A = distortX(currentGrid, nextGrid, d.raw.x, t);
+      const y0A = distortY(currentGrid, nextGrid, d.raw.y, t);
+      const x1A = distortX(currentGrid, nextGrid, d.raw.x + d.raw.width, t);
+      const y1A = distortY(currentGrid, nextGrid, d.raw.y + d.raw.height, t);
+
+      const x0B = distortX(currentGrid, nextGrid, nD.raw.x, t);
+      const y0B = distortY(currentGrid, nextGrid, nD.raw.y, t);
+      const x1B = distortX(currentGrid, nextGrid, nD.raw.x + nD.raw.width, t);
+      const y1B = distortY(currentGrid, nextGrid, nD.raw.y + nD.raw.height, t);
+
+      const x0 = lerp(x0A, x0B, t) + config.padding / 2;
+      const y0 = lerp(y0A, y0B, t) + config.padding / 2;
+      const x1 = lerp(x1A, x1B, t) - config.padding / 2;
+      const y1 = lerp(y1A, y1B, t) - config.padding / 2;
 
       context.fillStyle = color;
       context.beginPath();
@@ -179,7 +202,6 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       context.lineTo(x0, y1);
       context.closePath();
       context.fill();
-      context.stroke();
     });
 
     if (config.outline > 0) {
