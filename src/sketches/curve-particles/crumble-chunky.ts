@@ -7,6 +7,7 @@ import { formatCss, interpolate } from 'culori';
 import { randomPalette } from '../../colors';
 import { scaleCanvasAndApplyDither } from '../../scale-canvas-dither';
 import { dither } from '../../dither';
+import { wcagContrast } from 'culori';
 
 const config = {
   // Particles
@@ -14,13 +15,13 @@ const config = {
   colorMode: Random.pick(['tome', 'random']),
   length: 120,
   // Crumble
-  resolution: 100,
+  resolution: Random.rangeFloor(5, 50),
   margin: 0.2,
   numWarps: 5,
   warpSize: 1.2,
   falloff: 0.5, // Should be between 0 and 1
   scale: 1,
-  frequency: 0.05,
+  frequency: Random.range(0.05, 0.1),
   amplitude: 1,
 };
 
@@ -31,6 +32,26 @@ const bg =
   config.colorMode === 'tome'
     ? tomeColors.background || '#fff'
     : colors.shift()!;
+// highest contrast color to bg
+const [textColor1, textColor2] = colors
+  .reduce((acc: { color: string; contrast: number }[], color: string) => {
+    const contrast = wcagContrast(color, bg);
+    if (contrast > 1) {
+      acc.push({ color, contrast });
+    }
+    return acc;
+  }, [])
+  .sort(
+    (a: { contrast: number }, b: { contrast: number }) =>
+      b.contrast - a.contrast
+  )
+  .map((color: { color: string }) => color.color);
+
+// colors;
+// .map((color: string) => wcagContrast(color, bg))
+// .filter((contrast: number) => contrast > 1)
+// .sort((a: number, b: number) => b - a)[0];
+
 const colorSale = interpolate(colors);
 const colormap = (t: number) => formatCss(colorSale(t));
 
@@ -44,6 +65,32 @@ interface Particle {
   colorMap: (t: number) => string;
   curviness: number;
 }
+
+const onomatopoeia = [
+  'Bam',
+  'Bark',
+  'Beep',
+  'Ahem',
+  'Hiss',
+  'Meow',
+  'Quack',
+  'Baa',
+  'Bang',
+  'Bash',
+  'Bawl',
+  'Belch',
+  'Blab',
+  'Blare',
+  'Chirp',
+  'Fizz',
+  'Gobble',
+  'Hiccup',
+  'Hum',
+  'Moo',
+  'Oink',
+  'Pop',
+  'Roar',
+];
 
 function createParticle(x: number, y: number, color: string): Particle {
   const start = new Vector(x, y);
@@ -63,6 +110,53 @@ function createParticle(x: number, y: number, color: string): Particle {
 
 function signedNoise(x: number, y: number, t: number) {
   return Random.noise3D(x, y, t) - Random.noise3D(x, y, t + 12345.6789);
+}
+
+function drawParticle(
+  context: CanvasRenderingContext2D,
+  bounds: number[][],
+  particle: Particle,
+  t: number
+) {
+  for (let i = 1; i < particle.points.length; i++) {
+    context.lineWidth = mapRange(
+      i,
+      0,
+      particle.points.length,
+      1,
+      particle.size
+    );
+    context.strokeStyle = particle.colorMap(i / particle.points.length);
+
+    const p1 = particle.points[i - 1];
+    const p2 = particle.points[i];
+    context.beginPath();
+    context.moveTo(p1.x, p1.y);
+    context.lineTo(p2.x, p2.y);
+    context.stroke();
+  }
+
+  if (
+    particle.position.x < bounds[0][0] ||
+    particle.position.x > bounds[1][0] ||
+    particle.position.y < bounds[0][1] ||
+    particle.position.y > bounds[1][1]
+  ) {
+    particle.state = 'inactive';
+  }
+
+  if (particle.points.length > config.length) {
+    particle.state = 'inactive';
+  }
+
+  if (particle.state === 'active') {
+    particle.points.push(particle.position.copy());
+    particle.position.add(particle.velocity);
+
+    const p = particle.position.copy().normalize();
+    const rotation = signedNoise(p.x, p.y, t) * particle.curviness;
+    particle.velocity.rotate(rotation);
+  }
 }
 
 function getWarpedPosition(x: number, y: number, t: number) {
@@ -117,8 +211,37 @@ function drawCrumble(
     }
   }
 
+  const gradient = context.createLinearGradient(0, 0, 0, height);
+  colors.forEach((color: string, idx: number) => {
+    gradient.addColorStop(
+      idx / colors.length,
+      `rgb(from ${color} r g b / 0.9)`
+    );
+  });
+  context.fillStyle = gradient;
+  // link points to faces and use getColorAtPosition(i, j); for the fill style
+  for (let i = 0; i < config.resolution; i++) {
+    for (let j = 0; j < config.resolution; j++) {
+      // Draw horizontal line to next point
+      if (j < config.resolution - 1 && i < config.resolution - 1) {
+        const p1 = points[i][j];
+        const p2 = points[i][j + 1];
+        const p3 = points[i + 1][j];
+        const p4 = points[i + 1][j + 1];
+
+        context.beginPath();
+        context.moveTo(p1.x, p1.y);
+        context.lineTo(p2.x, p2.y);
+        context.lineTo(p4.x, p4.y);
+        context.lineTo(p3.x, p3.y);
+        context.lineTo(p1.x, p1.y);
+        context.fill();
+      }
+    }
+  }
+
   // Draw horizontal and vertical lines to create the mesh
-  context.lineWidth = 1;
+  context.lineWidth = 2;
   for (let i = 0; i < config.resolution; i++) {
     for (let j = 0; j < config.resolution; j++) {
       const point = points[i][j];
@@ -171,47 +294,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     );
   });
 
-  function drawParticle(particle: Particle, t: number) {
-    for (let i = 1; i < particle.points.length; i++) {
-      context.lineWidth = mapRange(
-        i,
-        0,
-        particle.points.length,
-        1,
-        particle.size
-      );
-      context.strokeStyle = particle.colorMap(i / particle.points.length);
-
-      const p1 = particle.points[i - 1];
-      const p2 = particle.points[i];
-      context.beginPath();
-      context.moveTo(p1.x, p1.y);
-      context.lineTo(p2.x, p2.y);
-      context.stroke();
-    }
-
-    if (
-      particle.position.x < bounds[0][0] ||
-      particle.position.x > bounds[1][0] ||
-      particle.position.y < bounds[0][1] ||
-      particle.position.y > bounds[1][1]
-    ) {
-      particle.state = 'inactive';
-    }
-
-    if (particle.points.length > config.length) {
-      particle.state = 'inactive';
-    }
-
-    if (particle.state === 'active') {
-      particle.points.push(particle.position.copy());
-      particle.position.add(particle.velocity);
-
-      const p = particle.position.copy().normalize();
-      const rotation = signedNoise(p.x, p.y, t) * particle.curviness;
-      particle.velocity.rotate(rotation);
-    }
-  }
+  const word = Random.pick(onomatopoeia).toUpperCase();
 
   wrap.render = ({ frame, canvas }: SketchProps) => {
     context.fillStyle = bg;
@@ -222,7 +305,9 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     context.lineWidth = 2;
     context.lineCap = 'round';
     context.lineJoin = 'round';
-    particlesLayer1.forEach((particle) => drawParticle(particle, t));
+    particlesLayer1.forEach((particle) =>
+      drawParticle(context, bounds, particle, t)
+    );
 
     // context.fillStyle = gradient;
     // context.fillRect(
@@ -234,7 +319,20 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
 
     drawCrumble(context, width, height);
 
-    particlesLayer2.forEach((particle) => drawParticle(particle, t));
+    // Draw the word
+    context.fillStyle = textColor1;
+    context.strokeStyle = textColor2;
+    context.lineWidth = 8;
+    // context.font = '900 200px Futura, sans-serif';
+    context.font = 'bold 200px "Operator Mono", sans-serif';
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.strokeText(word, width / 2, height / 2);
+    context.fillText(word, width / 2, height / 2);
+
+    particlesLayer2.forEach((particle) =>
+      drawParticle(context, bounds, particle, t)
+    );
 
     const allInactive = particles.every(
       (particle) => particle.state === 'inactive'

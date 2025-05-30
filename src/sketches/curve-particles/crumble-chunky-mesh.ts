@@ -14,13 +14,13 @@ const config = {
   colorMode: Random.pick(['tome', 'random']),
   length: 120,
   // Crumble
-  resolution: 100,
+  resolution: 25,
   margin: 0.2,
   numWarps: 5,
   warpSize: 1.2,
   falloff: 0.5, // Should be between 0 and 1
   scale: 1,
-  frequency: 0.05,
+  frequency: 0.1,
   amplitude: 1,
 };
 
@@ -117,12 +117,35 @@ function drawCrumble(
     }
   }
 
+  // link points to faces and use getColorAtPosition(i, j); for the fill style
+  for (let i = 0; i < config.resolution; i++) {
+    for (let j = 0; j < config.resolution; j++) {
+      context.fillStyle = getColorAtPosition(i, j);
+
+      // Draw horizontal line to next point
+      if (j < config.resolution - 1 && i < config.resolution - 1) {
+        const p1 = points[i][j];
+        const p2 = points[i][j + 1];
+        const p3 = points[i + 1][j];
+        const p4 = points[i + 1][j + 1];
+
+        context.beginPath();
+        context.moveTo(p1.x, p1.y);
+        context.lineTo(p2.x, p2.y);
+        context.lineTo(p4.x, p4.y);
+        context.lineTo(p3.x, p3.y);
+        context.lineTo(p1.x, p1.y);
+        context.fill();
+      }
+    }
+  }
+
   // Draw horizontal and vertical lines to create the mesh
-  context.lineWidth = 1;
+  context.lineWidth = 2;
+  context.strokeStyle = '#000';
   for (let i = 0; i < config.resolution; i++) {
     for (let j = 0; j < config.resolution; j++) {
       const point = points[i][j];
-      context.strokeStyle = getColorAtPosition(i, j);
 
       // Draw horizontal line to next point
       if (j < config.resolution - 1) {
