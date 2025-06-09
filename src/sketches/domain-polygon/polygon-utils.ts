@@ -1,5 +1,6 @@
 import Random from 'canvas-sketch-util/random';
-import { Domain } from './types';
+import { mapRange } from 'canvas-sketch-util/math';
+import { Domain, RelativePolygon } from './types';
 
 /**
  * Generates a convex polygon from a set of regions.
@@ -35,6 +36,53 @@ export function generatePolygon(
   return isConvexPolygon(polygon)
     ? polygon
     : generatePolygon(regions, attempts + 1);
+}
+
+export function generateRelativePolygon(
+  regions: Domain[],
+  attempts: number = 0
+): RelativePolygon[] {
+  if (attempts > 100) {
+    throw new Error('Failed to generate a convex polygon');
+  }
+
+  let polygon: RelativePolygon[] = regions.map((r) => {
+    return {
+      domain: r,
+      point: [
+        Random.range(r.x, r.x + r.width),
+        Random.range(r.y, r.y + r.height),
+      ],
+    };
+  });
+
+  // Calculate centroid
+  const centroid = polygon
+    .reduce((acc, p) => [acc[0] + p.point[0], acc[1] + p.point[1]], [0, 0])
+    .map((coord) => coord / polygon.length);
+
+  // Sort points clockwise
+  polygon = polygon.sort((a, b) => {
+    const angleA = Math.atan2(
+      a.point[1] - centroid[1],
+      a.point[0] - centroid[0]
+    );
+    const angleB = Math.atan2(
+      b.point[1] - centroid[1],
+      b.point[0] - centroid[0]
+    );
+    return angleA - angleB; // Clockwise sorting
+  });
+
+  return isConvexPolygon(polygon.map((p) => p.point))
+    ? polygon.map(({ domain, point }: RelativePolygon) => ({
+        domain,
+        point: [
+          mapRange(point[0], domain.x, domain.x + domain.width, 0, 1),
+          mapRange(point[1], domain.y, domain.y + domain.height, 0, 1),
+        ] as Point,
+      }))
+    : generateRelativePolygon(regions, attempts + 1);
 }
 
 /**

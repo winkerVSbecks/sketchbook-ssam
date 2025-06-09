@@ -1,13 +1,72 @@
 import Random from 'canvas-sketch-util/random';
 import PolyBool from 'polybooljs';
-import { Domain, Grid, PolygonPart, Region } from './types';
-import { generatePolygon } from './polygon-utils';
+import { mapRange, lerp } from 'canvas-sketch-util/math';
+import { Domain, Grid, PolygonPart, Region, RelativePolygon } from './types';
+import { generatePolygon, generateRelativePolygon } from './polygon-utils';
 
 const url = new URL(import.meta.url);
 const debug = url.searchParams.get('debug');
 
 export function isIsland(d: Domain): boolean {
   return d.selected && d.type === 'full-span';
+}
+
+const rect = (x: number, y: number, w: number, h: number): Point[] => [
+  [x, y],
+  [x + w, y],
+  [x + w, y + h],
+  [x, y + h],
+];
+
+const rectWithInset = (
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  inset: number[]
+): Point[] =>
+  [
+    [x + inset[3], y + inset[0]],
+    [x + w - inset[3], y + inset[0]],
+    [x + w - inset[3], y + h - inset[2]],
+    [x + inset[3], y + h - inset[2]],
+  ] as Point[];
+
+export function relativePolygonToPolygon(
+  relativePolygon: RelativePolygon[],
+  currentGrid: number[][],
+  nextGrid: number[][],
+  t: number
+): Point[] {
+  return relativePolygon.map((p) => {
+    const { x, y, width, height } = p.domain.scale(currentGrid, nextGrid, t);
+
+    return [
+      mapRange(p.point[0], 0, 1, x, x + width),
+      mapRange(p.point[1], 0, 1, y, y + height),
+    ];
+  });
+}
+
+export function polygonToParts(domains: Domain[], polygon: Point[]) {
+  return domains.map((d) => {
+    const pIsIsland = isIsland(d);
+    const clip = PolyBool.intersect(
+      { regions: [polygon] },
+      { regions: [pIsIsland ? d.rect : d.rectWithInset] }
+    );
+    const area = clip.regions.flat();
+
+    if (area.length > 0) {
+      d.hasPart = true;
+    }
+
+    return {
+      area,
+      island: pIsIsland,
+      domain: d,
+    };
+  });
 }
 
 function generateDomainData(
@@ -24,11 +83,32 @@ function generateDomainData(
 ) {
   const { gap, w, h, selectionCount, grid, inset, res } = params;
 
+  const distortX = (
+    currG: number[][],
+    nextG: number[][],
+    x: number,
+    t: number
+  ) => {
+    const idx = lerp(currG[0][x], nextG[0][x], t);
+    return idx * w;
+  };
+
+  const distortY = (
+    currG: number[][],
+    nextG: number[][],
+    y: number,
+    t: number
+  ) => {
+    const idx = lerp(currG[1][y], nextG[1][y], t);
+    return idx * h;
+  };
+
   const domains: Domain[] = regions.map((r, idx) => {
     const gW = r.width * w - gap;
     const gH = r.height * h - gap;
     const gX = grid.x + gap / 2 + r.x * w + gap / 2;
     const gY = grid.y + gap / 2 + r.y * h + gap / 2;
+
     return {
       id: r.id,
       x: gX,
@@ -40,50 +120,49 @@ function generateDomainData(
       type: r.width === res[0] || r.height === res[1] ? 'full-span' : 'default',
       selected: idx < selectionCount,
       hasPart: false,
-      rect: [
-        [gX, gY],
-        [gX + gW, gY],
-        [gX + gW, gY + gH],
-        [gX, gY + gH],
-      ] as Point[],
-      rectWithInset: [
-        [gX + inset[3], gY + inset[0]],
-        [gX + gW - inset[3], gY + inset[0]],
-        [gX + gW - inset[3], gY + gH - inset[2]],
-        [gX + inset[3], gY + gH - inset[2]],
-      ] as Point[],
+      rect: rect(gX, gY, gW, gH),
+      rectWithInset: rectWithInset(gX, gY, gW, gH, inset),
       raw: {
         x: r.x,
         y: r.y,
         width: r.width,
         height: r.height,
       },
+      scale(currentGrid: number[][], nextGrid: number[][], t: number) {
+        const x0 = distortX(currentGrid, nextGrid, r.x, t);
+        const y0 = distortY(currentGrid, nextGrid, r.y, t);
+        const x1 = distortX(currentGrid, nextGrid, r.x + r.width, t);
+        const y1 = distortY(currentGrid, nextGrid, r.y + r.height, t);
+
+        const gW = x1 - x0 - gap;
+        const gH = y1 - y0 - gap;
+        const gX = grid.x + gap / 2 + x0 + gap / 2;
+        const gY = grid.y + gap / 2 + y0 + gap / 2;
+
+        return {
+          x: gX,
+          y: gY,
+          width: gW,
+          height: gH,
+          rect: rect(gX, gY, gW, gH),
+          rectWithInset: rectWithInset(gX, gY, gW, gH, inset),
+        };
+      },
     };
   });
 
   const polygonDomains = domains.slice(0, selectionCount);
   const polygon = generatePolygon(polygonDomains);
+  const relativePolygon = generateRelativePolygon(polygonDomains);
 
   const chosenDomains = polygonDomains.map((d) => d.id);
 
-  const polygonParts = domains.map((d) => {
-    const pIsIsland = isIsland(d);
-    const clip = PolyBool.intersect(
-      { regions: [polygon] },
-      { regions: [pIsIsland ? d.rect : d.rectWithInset] }
-    );
-    const area = clip.regions.flat();
-
-    if (area.length > 0) {
-      d.hasPart = true;
-    }
-
-    return { area, island: pIsIsland, domain: d };
-  });
+  const polygonParts = polygonToParts(domains, polygon);
 
   return {
     domains,
     polygon,
+    relativePolygon,
     chosenDomains,
     polygonParts,
     grid: { ...grid, gap, xRes: w, yRes: h },
@@ -452,6 +531,7 @@ function generateRegions(
 export type DomainSystemState = {
   domains: Domain[];
   polygon: Point[];
+  relativePolygon: RelativePolygon[];
   chosenDomains: number[];
   polygonParts: PolygonPart[];
   grid: {
@@ -503,6 +583,7 @@ export function* domainSystemGenerator(
   let state: DomainSystemState = {
     domains: [],
     polygon: [],
+    relativePolygon: [],
     chosenDomains: [],
     polygonParts: [],
     grid: { ...grid, gap, xRes: w, yRes: h },
@@ -579,6 +660,7 @@ export function* domainSystemGenerator(
       state = {
         domains: [],
         polygon: [],
+        relativePolygon: [],
         chosenDomains: [],
         polygonParts: [],
         grid: { ...grid, gap, xRes: w, yRes: h },

@@ -1,4 +1,3 @@
-import Random from 'canvas-sketch-util/random';
 import { drawPath } from '@daeinc/draw';
 import type { PolygonPart } from '../types';
 import { config, colors } from './config';
@@ -93,7 +92,7 @@ export function drawTopBar(
   y: number,
   width: number
 ) {
-  context.strokeStyle = colors.window.outline;
+  context.strokeStyle = 'red'; // colors.window.outline;
 
   context.lineWidth = 1;
 

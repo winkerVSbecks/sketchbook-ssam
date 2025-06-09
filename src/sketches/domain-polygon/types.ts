@@ -27,6 +27,23 @@ export interface Domain {
     width: number;
     height: number;
   };
+  scale: (
+    currentGrid: number[][],
+    nextGrid: number[][],
+    t: number
+  ) => {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    rect: Point[];
+    rectWithInset: Point[];
+  };
+}
+
+export interface RelativePolygon {
+  domain: Domain;
+  point: Point;
 }
 
 export interface PolygonPart {
