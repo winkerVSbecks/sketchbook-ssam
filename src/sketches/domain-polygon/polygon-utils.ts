@@ -1,6 +1,7 @@
 import Random from 'canvas-sketch-util/random';
 import { mapRange } from 'canvas-sketch-util/math';
-import { Domain, RelativePolygon } from './types';
+import { Delaunay } from 'd3-delaunay';
+import { Domain, RelativePolygon, RelativePolygonVertex } from './types';
 
 /**
  * Generates a convex polygon from a set of regions.
@@ -41,12 +42,12 @@ export function generatePolygon(
 export function generateRelativePolygon(
   regions: Domain[],
   attempts: number = 0
-): RelativePolygon[] {
+): RelativePolygon {
   if (attempts > 100) {
     throw new Error('Failed to generate a convex polygon');
   }
 
-  let polygon: RelativePolygon[] = regions.map((r) => {
+  let polygon: RelativePolygon = regions.map((r) => {
     return {
       domain: r,
       point: [
@@ -75,7 +76,7 @@ export function generateRelativePolygon(
   });
 
   return isConvexPolygon(polygon.map((p) => p.point))
-    ? polygon.map(({ domain, point }: RelativePolygon) => ({
+    ? polygon.map(({ domain, point }: RelativePolygonVertex) => ({
         domain,
         point: [
           mapRange(point[0], domain.x, domain.x + domain.width, 0, 1),
@@ -126,4 +127,93 @@ function isConvexPolygon(vertices: Point[]): boolean {
   }
 
   return true;
+}
+
+export function generateTessellatedPolygon(
+  regions: Domain[]
+): RelativePolygon[] {
+  const points = regions
+    .map((r) => {
+      const pts = [];
+      for (let index = 0; index < 1; index++) {
+        pts.push({
+          domain: r,
+          point: [
+            Random.range(r.x, r.x + r.width),
+            Random.range(r.y, r.y + r.height),
+          ],
+        });
+      }
+      return pts;
+    })
+    .flat();
+
+  const delaunay = new Delaunay(points.map((p) => p.point).flat());
+
+  let triangles: [number, number, number][] = [];
+
+  for (let i = 0; i < delaunay.triangles.length; i += 3) {
+    const t0 = delaunay.triangles[i];
+    const t1 = delaunay.triangles[i + 1];
+    const t2 = delaunay.triangles[i + 2];
+    triangles.push([t0, t1, t2]);
+  }
+
+  const polygons: RelativePolygon[] = triangles.map((triangle) => {
+    return triangle.map((point) => {
+      const pt = points[point];
+      const domain = pt.domain;
+
+      return {
+        domain,
+        point: [
+          mapRange(pt.point[0], domain.x, domain.x + domain.width, 0, 1),
+          mapRange(pt.point[1], domain.y, domain.y + domain.height, 0, 1),
+        ],
+      };
+    });
+  });
+
+  return polygons;
+}
+
+export function addPaddingToPolygon(
+  vertices: Point[],
+  padding: number
+): Point[] {
+  const result = [];
+  const n = vertices.length;
+
+  for (let i = 0; i < n; i++) {
+    const prev = vertices[(i - 1 + n) % n];
+    const curr = vertices[i];
+    const next = vertices[(i + 1) % n];
+
+    // Calculate inward normal direction
+    const edge1 = [curr[0] - prev[0], curr[1] - prev[1]];
+    const edge2 = [next[0] - curr[0], next[1] - curr[1]];
+
+    // Average the normals of adjacent edges
+    const normal1 = [-edge1[1], edge1[0]]; // perpendicular
+    const normal2 = [-edge2[1], edge2[0]];
+
+    // Normalize and average
+    const len1 = Math.sqrt(normal1[0] ** 2 + normal1[1] ** 2);
+    const len2 = Math.sqrt(normal2[0] ** 2 + normal2[1] ** 2);
+
+    const avgNormal = [
+      (normal1[0] / len1 + normal2[0] / len2) / 2,
+      (normal1[1] / len1 + normal2[1] / len2) / 2,
+    ];
+
+    const avgLen = Math.sqrt(avgNormal[0] ** 2 + avgNormal[1] ** 2);
+
+    // Move vertex inward by padding amount
+    result.push([
+      curr[0] - (avgNormal[0] / avgLen) * padding,
+      curr[1] - (avgNormal[1] / avgLen) * padding,
+    ] as Point);
+  }
+
+  return result;
 }

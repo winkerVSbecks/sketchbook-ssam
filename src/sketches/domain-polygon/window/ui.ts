@@ -144,6 +144,10 @@ export function drawPart(
     accent: string;
   }
 ) {
+  if (area.length < 3) {
+    return;
+  }
+
   const ys = area.map((p) => p[1]);
   const y0 = Math.min(...ys);
   const y1 = Math.max(...ys);

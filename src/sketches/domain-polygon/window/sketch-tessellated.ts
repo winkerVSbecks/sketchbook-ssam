@@ -2,21 +2,26 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 import eases from 'eases';
-import { drawPath } from '@daeinc/draw';
 import {
   generateDomainSystem,
-  isIsland,
   polygonToParts,
   relativePolygonToPolygon,
 } from '../domain-polygon-system';
-import { drawWindow, drawPart, drawVectorNetwork, drawTopBar } from './ui';
-import { config, colors } from './config';
+import {
+  generateTessellatedPolygon,
+  addPaddingToPolygon,
+} from '../polygon-utils';
+import { drawPart } from './ui';
+import { config as defaultConfig, colors } from './config';
+
+const config = {
+  ...defaultConfig,
+  gap: 0,
+  inset: 10,
+  res: [5, 5] as any,
+};
 
 const cycles = 12;
-
-// To do:
-// - Combine thin areas into a single cell
-// - If all islands, then convert one to a window
 
 const distort = () => {
   const xs = [0];
@@ -52,24 +57,19 @@ grids.push(baseGrid);
 
 export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   const grid = {
-    w: width * 0.75,
-    h: height * 0.75,
-    x: width * 0.125,
-    y: height * 0.125,
+    w: width * 0.9,
+    h: height * 0.9,
+    x: width * 0.05,
+    y: height * 0.05,
   };
 
-  const { domains, relativePolygon } = generateDomainSystem(
+  const { domains } = generateDomainSystem(
     config.res,
     config.gap,
     width,
     height,
     {
-      inset: [
-        config.window.toolbar + config.inset,
-        config.inset,
-        config.inset,
-        config.inset,
-      ],
+      inset: [config.inset, config.inset, config.inset, config.inset],
       doCombineSmallRegions: true,
       doCombineNarrowRegions: true,
       doReduceNarrowRegions: true,
@@ -77,7 +77,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     grid
   );
 
-  const windows = domains.filter((d) => !isIsland(d));
+  const tessellatedPolygons = generateTessellatedPolygon(domains);
 
   wrap.render = ({ width, height, playhead }: SketchProps) => {
     context.fillStyle = colors.background;
@@ -90,60 +90,39 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
 
     const t = eases.cubicInOut((playhead * cycles) % 1);
 
-    const polygon = relativePolygonToPolygon(
-      relativePolygon,
-      currentGrid,
-      nextGrid,
-      t
-    );
     const scaledDomains = domains.map((d) => {
       const { rect, rectWithInset } = d.scale(currentGrid, nextGrid, t);
       return { ...d, rect, rectWithInset };
     });
-    const polygonParts = polygonToParts(scaledDomains, polygon);
-
-    const solidParts = polygonParts.filter(
-      (part) => part.area.length > 2 && !part.island
-    );
-    const islands = polygonParts.filter(
-      (part) => part.area.length > 2 && part.island
-    );
 
     context.lineJoin = 'round';
 
-    if (solidParts.length === 0) {
-      drawTopBar(context, grid.x, grid.y - config.window.toolbar, grid.w);
-    }
+    tessellatedPolygons.forEach((relativePolygon, dx) => {
+      let polygon = relativePolygonToPolygon(
+        relativePolygon,
+        currentGrid,
+        nextGrid,
+        t
+      );
+      polygon = addPaddingToPolygon(polygon, config.inset * 2);
 
-    // Render macos style windows with top bar,
-    // three circular buttons and shadow
-    windows.forEach((d) => {
-      const { x, y, width, height } = d.scale(currentGrid, nextGrid, t);
-      drawWindow(context, x, y, width, height, d.debug);
-    });
+      const polygonParts = polygonToParts(scaledDomains, polygon, true);
 
-    // render solid parts with button style aesthetic
-    solidParts.forEach((part, idx) => {
-      drawPart(context, part.area, colors.parts[idx % colors.parts.length]);
-    });
+      // domains.forEach((d) => {
+      //   const { x, y, width, height } = d.scale(currentGrid, nextGrid, t);
+      //   context.strokeStyle = colors.window.outline;
+      //   context.strokeRect(x, y, width, height);
+      // });
 
-    // render islands with vector network aesthetic
-    islands.forEach((part) => {
-      drawVectorNetwork(context, part /* { ...part, area: scaledArea } */);
-    });
-
-    if (config.debug) {
-      context.fillStyle = 'red';
-      drawPath(context, polygon, true);
-      context.fill();
-
-      context.fillStyle = 'red';
-      polygon.forEach((point) => {
-        context.beginPath();
-        context.arc(point[0], point[1], 3, 0, Math.PI * 2);
-        context.fill();
+      // render solid parts with button style aesthetic
+      polygonParts.forEach((part, idx) => {
+        drawPart(
+          context,
+          part.area,
+          colors.parts[(idx + dx) % colors.parts.length]
+        );
       });
-    }
+    });
   };
 };
 

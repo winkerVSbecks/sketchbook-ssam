@@ -48,7 +48,7 @@ interface PartColor {
 
 export const colors = {
   parts: (Random.shuffle(keys) as typeof keys)
-    .slice(0, 3)
+    // .slice(0, 3)
     .map<PartColor>((key: ColorType) => ({
       base: [
         color(key, 3, config.colorMode),

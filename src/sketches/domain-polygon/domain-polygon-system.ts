@@ -33,7 +33,7 @@ const rectWithInset = (
   ] as Point[];
 
 export function relativePolygonToPolygon(
-  relativePolygon: RelativePolygon[],
+  relativePolygon: RelativePolygon,
   currentGrid: number[][],
   nextGrid: number[][],
   t: number
@@ -48,12 +48,16 @@ export function relativePolygonToPolygon(
   });
 }
 
-export function polygonToParts(domains: Domain[], polygon: Point[]) {
+export function polygonToParts(
+  domains: Domain[],
+  polygon: Point[],
+  insetAll: boolean = false
+): PolygonPart[] {
   return domains.map((d) => {
     const pIsIsland = isIsland(d);
     const clip = PolyBool.intersect(
       { regions: [polygon] },
-      { regions: [pIsIsland ? d.rect : d.rectWithInset] }
+      { regions: [pIsIsland && !insetAll ? d.rect : d.rectWithInset] }
     );
     const area = clip.regions.flat();
 
@@ -531,7 +535,7 @@ function generateRegions(
 export type DomainSystemState = {
   domains: Domain[];
   polygon: Point[];
-  relativePolygon: RelativePolygon[];
+  relativePolygon: RelativePolygon;
   chosenDomains: number[];
   polygonParts: PolygonPart[];
   grid: {

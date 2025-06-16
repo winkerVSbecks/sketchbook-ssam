@@ -41,10 +41,12 @@ export interface Domain {
   };
 }
 
-export interface RelativePolygon {
+export interface RelativePolygonVertex {
   domain: Domain;
   point: Point;
 }
+
+export type RelativePolygon = RelativePolygonVertex[];
 
 export interface PolygonPart {
   area: Point[];
