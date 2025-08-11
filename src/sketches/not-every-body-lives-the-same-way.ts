@@ -1,0 +1,346 @@
+import { ssam } from 'ssam';
+import type { Sketch, SketchProps, SketchSettings } from 'ssam';
+import Random from 'canvas-sketch-util/random';
+import { wcagContrast } from 'culori';
+import { generateColors } from '../colors/subtractive-hue';
+
+Random.setSeed(Random.getRandomSeed());
+// Random.setSeed('test');
+console.log(Random.getSeed());
+
+// const colors = ['#B4B0CD', '#282665'];
+const colors = generateColors('srgb', 145);
+const bg = Random.pick(colors);
+
+const [fg] = colors
+  .reduce((acc: { color: string; contrast: number }[], color: string) => {
+    const contrast = wcagContrast(color, bg);
+    if (contrast > 1) {
+      acc.push({ color, contrast });
+    }
+    return acc;
+  }, [])
+  .sort(
+    (a: { contrast: number }, b: { contrast: number }) =>
+      b.contrast - a.contrast
+  )
+  .map((color: { color: string }) => color.color);
+
+const config = {
+  res: [40, 40],
+  debug: false,
+  margin: 0.04,
+  state: 'active',
+  maxLength: [5 * 2, 25 * 2],
+};
+
+interface Cell {
+  x: number;
+  y: number;
+  coords: Point;
+  occupied: boolean;
+  variant: 'available' | 'occupied' | 'empty';
+}
+
+interface Node extends Cell {
+  type: keyof typeof nodeTypes;
+}
+
+interface Trail {
+  direction: [number, number];
+  x: number;
+  y: number;
+  nodes: Node[];
+  state: 'active' | 'dead';
+  maxLength: number;
+}
+
+function initTrail(grid: Cell[]): Trail {
+  const start = Random.pick(grid);
+
+  return {
+    direction: [Random.pick([-1, 1]), Random.pick([-1, 1])],
+    x: start.x,
+    y: start.y,
+    nodes: [{ ...start, type: 'base' }],
+    state: 'active',
+    maxLength: Random.rangeFloor(config.maxLength[0], config.maxLength[1]),
+  };
+}
+
+function outOfBounds(next: [number, number]) {
+  return (
+    next[0] < 0 ||
+    next[1] < 0 ||
+    next[0] >= config.res[0] ||
+    next[1] >= config.res[1]
+  );
+}
+
+function isAligned(curr: Cell, next: Cell) {
+  return curr.x === next.x || curr.y === next.y;
+}
+
+function stepTrail(trail: Trail, grid: Cell[]) {
+  const step = [
+    Random.pick([trail.direction[0], 0]),
+    Random.pick([trail.direction[1], 0]),
+  ];
+  if (step[0] === 0 && step[1] === 0) {
+    const axes = Random.pick([0, 1]);
+    step[axes] = trail.direction[axes];
+  }
+
+  const next = [trail.x + step[0], trail.y + step[1]] as [number, number];
+
+  const idx = xyToIndex(next[0], next[1]);
+
+  if (outOfBounds(next)) {
+    trail.state = 'dead';
+  } else if (grid[idx]) {
+    const isAvailable = !grid[idx].occupied;
+
+    if (isAvailable) {
+      const curr = trail.nodes.at(-1)!;
+
+      const cell = grid[idx];
+
+      const type = isAligned(curr, cell)
+        ? curr.type
+        : Random.pick(['base', 'chequered', 'fives']);
+
+      cell.occupied = true;
+      trail.nodes.push({
+        ...cell,
+        type,
+      });
+      trail.x = cell.x;
+      trail.y = cell.y;
+    } else {
+      trail.state = 'dead';
+    }
+  }
+
+  if (trail.nodes.length >= trail.maxLength) {
+    trail.state = 'dead';
+  }
+}
+
+const nodeTypes = {
+  base: (context: CanvasRenderingContext2D, cell: Cell, size: number[]) => {
+    context.fillStyle = fg;
+    context.fillRect(cell.coords[0], cell.coords[1], size[0], size[1]);
+  },
+  chequered: (
+    context: CanvasRenderingContext2D,
+    cell: Cell,
+    size: number[]
+  ) => {
+    const cellWidth = size[0] / 5;
+    const cellHeight = size[1] / 5;
+
+    for (let i = 0; i < 5; i++) {
+      for (let j = 0; j < 5; j++) {
+        const isEven = (cell.x + cell.y + i + j) % 2 === 0;
+        context.fillStyle = isEven ? bg : fg;
+        context.fillRect(
+          cell.coords[0] + i * cellWidth,
+          cell.coords[1] + j * cellHeight,
+          cellWidth,
+          cellHeight
+        );
+      }
+    }
+  },
+  fives: (context: CanvasRenderingContext2D, cell: Cell, size: number[]) => {
+    const cellWidth = size[0] / 5;
+    const cellHeight = size[1] / 5;
+
+    for (let i = 0; i < 5; i++) {
+      for (let j = 0; j < 5; j++) {
+        const isEven = (i + j) % 2 === 0;
+        context.fillStyle =
+          i === 0 || j === 0 || i === 4 || j === 4 ? fg : isEven ? bg : fg;
+        context.fillRect(
+          cell.coords[0] + i * cellWidth,
+          cell.coords[1] + j * cellHeight,
+          cellWidth,
+          cellHeight
+        );
+      }
+    }
+  },
+};
+
+function drawTrail(
+  context: CanvasRenderingContext2D,
+  size: number[],
+  trail: Trail
+) {
+  trail.nodes.forEach((cell) => {
+    nodeTypes[cell.type](context, cell, size);
+  });
+}
+
+function xyToIndex(x: number, y: number): number {
+  return y * config.res[0] + x;
+}
+
+function getNeighbours(
+  cell: Cell,
+  grid: Cell[],
+  directions = [
+    [-1, 0],
+    [1, 0],
+    [0, -1],
+    [0, 1],
+    [1, 1],
+    [1, -1],
+    [-1, -1],
+    [-1, 1],
+  ]
+): Cell[] {
+  const neighbours = [];
+
+  directions.push(...directions.map((d) => [d[0] * 2, d[1] * 2]));
+
+  for (const [dx, dy] of directions) {
+    const nx = cell.x + dx;
+    const ny = cell.y + dy;
+    const idx = xyToIndex(nx, ny);
+    if (grid[idx]) {
+      neighbours.push(grid[idx]);
+    }
+  }
+
+  return neighbours;
+}
+
+export const sketch = ({
+  wrap,
+  context,
+  width,
+  height,
+  render,
+}: SketchProps) => {
+  if (import.meta.hot) {
+    import.meta.hot.dispose(() => wrap.dispose());
+    import.meta.hot.accept(() => wrap.hotReload());
+  }
+
+  if (config.debug) {
+    window.addEventListener('click', () => {
+      render();
+    });
+  }
+
+  const margin = [config.margin * width, config.margin * height];
+  const w = width - margin[0] * 2;
+  const h = height - margin[1] * 2;
+  const grid: Cell[] = [];
+
+  for (let y = 0; y < config.res[1]; y++) {
+    for (let x = 0; x < config.res[0]; x++) {
+      const coords = [
+        (x * w) / config.res[0],
+        (y * h) / config.res[1],
+      ] as Point;
+      grid.push({
+        x,
+        y,
+        coords,
+        occupied: false,
+        variant: 'available',
+      });
+    }
+  }
+
+  const trails: Trail[] = Array.from({ length: 10 }, () => initTrail(grid));
+  const size = [w / config.res[0], h / config.res[1]];
+  console.clear();
+
+  wrap.render = ({ width, height }: SketchProps) => {
+    context.fillStyle = bg;
+    context.fillRect(0, 0, width, height);
+
+    context.save();
+    context.translate(margin[0], margin[1]);
+
+    if (config.debug) {
+      grid.forEach((cell) => {
+        context.strokeStyle = '#000';
+        context.strokeRect(cell.coords[0], cell.coords[1], size[0], size[1]);
+
+        // draw cell number
+        context.fillStyle = '#000';
+        context.font = '10px sans-serif';
+        context.fillText(
+          `${cell.x},${cell.y}`,
+          cell.coords[0] + 2,
+          cell.coords[1] + 12
+        );
+      });
+    }
+
+    trails.forEach((trail) => {
+      if (trail.state === 'active') {
+        stepTrail(trail, grid);
+      }
+    });
+
+    trails.forEach((trail) => {
+      drawTrail(context, size, trail);
+    });
+
+    const complete = trails.every((trail) => trail.state === 'dead');
+
+    if (complete) {
+      grid.forEach((cell) => {
+        if (cell.occupied) {
+          cell.variant = 'occupied';
+        }
+      });
+
+      grid.forEach((cell) => {
+        if (cell.variant === 'occupied') {
+          const neighbours = getNeighbours(cell, grid);
+          neighbours.forEach((n) => {
+            n.variant = n.variant === 'occupied' ? n.variant : 'empty';
+          });
+        }
+      });
+
+      const unOccupiedCells = grid.filter(
+        (cell) => cell.variant === 'available'
+      );
+
+      unOccupiedCells.forEach((cell) => {
+        context.strokeStyle = fg;
+        context.beginPath();
+        context.moveTo(cell.coords[0], cell.coords[1]);
+        context.lineTo(cell.coords[0] + size[0], cell.coords[1]);
+        context.moveTo(cell.coords[0], cell.coords[1] + size[1] / 2);
+        context.lineTo(cell.coords[0] + size[0], cell.coords[1] + size[1] / 2);
+        context.moveTo(cell.coords[0], cell.coords[1] + size[1]);
+        context.lineTo(cell.coords[0] + size[0], cell.coords[1] + size[1]);
+        context.stroke();
+      });
+    }
+
+    context.restore();
+  };
+};
+
+export const settings: SketchSettings = {
+  mode: '2d',
+  // dimensions: [600, 800],
+  dimensions: [1080, 1080],
+  pixelRatio: window.devicePixelRatio,
+  animate: true,
+  duration: 1_000,
+  playFps: 60,
+  exportFps: 60,
+  framesFormat: ['mp4'],
+};
+
+ssam(sketch as Sketch<'2d'>, settings);

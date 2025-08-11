@@ -6,13 +6,16 @@ import { drawClixo, drawClixoOutline } from './draw-clixo';
 
 // Random.setSeed('clixo');
 
-const colors = Random.pick(clrs);
+// const colors = Random.pick(clrs);
+// const bg = colors.pop();
+
+const colors = ['#fff', '#000', '#fff'];
 const bg = colors.pop();
 const [ring, inner, ...bases] = Random.shuffle(colors);
 
 const config = {
-  xCount: 7,
-  yCount: 7,
+  xCount: 3,
+  yCount: 3,
   trim: true,
 };
 
