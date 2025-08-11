@@ -27,11 +27,12 @@ const [fg] = colors
   .map((color: { color: string }) => color.color);
 
 const config = {
-  res: [40, 40],
+  res: 40,
   debug: false,
   margin: 0.04,
   state: 'active',
   maxLength: [5 * 2, 25 * 2],
+  count: 10,
 };
 
 interface Cell {
@@ -55,6 +56,155 @@ interface Trail {
   maxLength: number;
 }
 
+let res: [number, number];
+
+export const sketch = ({
+  wrap,
+  context,
+  width,
+  height,
+  render,
+}: SketchProps) => {
+  if (import.meta.hot) {
+    import.meta.hot.dispose(() => wrap.dispose());
+    import.meta.hot.accept(() => wrap.hotReload());
+  }
+
+  if (config.debug) {
+    window.addEventListener('click', () => {
+      render();
+    });
+  }
+
+  const s = Math.min(width, height) / config.res;
+  const margin = s;
+  const w = width - margin * 2;
+  const h = height - margin * 2;
+  const grid: Cell[] = [];
+
+  const size = [s, s];
+
+  res = [Math.floor(w / size[0]), Math.floor(h / size[1])];
+
+  for (let y = 0; y < res[1]; y++) {
+    for (let x = 0; x < res[0]; x++) {
+      const coords = [(x * w) / res[0], (y * h) / res[1]] as Point;
+      grid.push({
+        x,
+        y,
+        coords,
+        occupied: false,
+        variant: 'available',
+      });
+    }
+  }
+
+  const trails: Trail[] = Array.from({ length: config.count }, () =>
+    initTrail(grid)
+  );
+  console.clear();
+
+  wrap.render = ({ width, height }: SketchProps) => {
+    context.fillStyle = bg;
+    context.fillRect(0, 0, width, height);
+
+    context.save();
+    context.translate(margin, margin);
+
+    if (config.debug) {
+      grid.forEach((cell) => {
+        context.strokeStyle = '#000';
+        context.strokeRect(cell.coords[0], cell.coords[1], size[0], size[1]);
+
+        // draw cell number
+        context.fillStyle = '#000';
+        context.font = '10px sans-serif';
+        context.fillText(
+          `${cell.x},${cell.y}`,
+          cell.coords[0] + 2,
+          cell.coords[1] + 12
+        );
+      });
+    }
+
+    trails.forEach((trail) => {
+      if (trail.state === 'active') {
+        stepTrail(trail, grid);
+      }
+    });
+
+    trails.forEach((trail) => {
+      drawTrail(context, size, trail);
+    });
+
+    const complete = trails.every((trail) => trail.state === 'dead');
+
+    if (complete) {
+      // Mark all occupied cells
+      grid.forEach((cell) => {
+        if (cell.occupied) {
+          cell.variant = 'occupied';
+        }
+      });
+
+      // Mark all neighbours of occupied cells as empty
+      grid.forEach((cell) => {
+        if (cell.variant === 'occupied') {
+          const neighbours = getNeighbours(cell, grid);
+          neighbours.forEach((n) => {
+            n.variant = n.variant === 'occupied' ? n.variant : 'empty';
+          });
+        }
+      });
+
+      // Mark loners as empty
+      // if the previous or next cell not empty then mark the cell as empty
+      grid.forEach((cell) => {
+        if (cell.variant === 'available') {
+          const prev = grid[xyToIndex(cell.x - 1, cell.y)];
+          const next = grid[xyToIndex(cell.x + 1, cell.y)];
+          if (prev?.variant !== 'available' && next?.variant !== 'available') {
+            cell.variant = 'empty';
+          }
+        }
+      });
+
+      const unOccupiedCells = grid.filter(
+        (cell) => cell.variant === 'available'
+      );
+
+      unOccupiedCells.forEach((cell) => {
+        context.strokeStyle = fg;
+        context.beginPath();
+        context.moveTo(cell.coords[0], cell.coords[1]);
+        context.lineTo(cell.coords[0] + size[0], cell.coords[1]);
+        context.moveTo(cell.coords[0], cell.coords[1] + size[1] / 2);
+        context.lineTo(cell.coords[0] + size[0], cell.coords[1] + size[1] / 2);
+        context.moveTo(cell.coords[0], cell.coords[1] + size[1]);
+        context.lineTo(cell.coords[0] + size[0], cell.coords[1] + size[1]);
+        context.stroke();
+      });
+    }
+
+    context.restore();
+  };
+};
+
+export const settings: SketchSettings = {
+  mode: '2d',
+  // dimensions: [600, 800],
+  dimensions: [800, 600],
+  // dimensions: [1080, 1080],
+  pixelRatio: window.devicePixelRatio,
+  animate: true,
+  duration: 1_000,
+  playFps: 60,
+  exportFps: 60,
+  framesFormat: ['mp4'],
+};
+
+ssam(sketch as Sketch<'2d'>, settings);
+
 function initTrail(grid: Cell[]): Trail {
   const start = Random.pick(grid);
 
@@ -69,12 +219,7 @@ function initTrail(grid: Cell[]): Trail {
 }
 
 function outOfBounds(next: [number, number]) {
-  return (
-    next[0] < 0 ||
-    next[1] < 0 ||
-    next[0] >= config.res[0] ||
-    next[1] >= config.res[1]
-  );
+  return next[0] < 0 || next[1] < 0 || next[0] >= res[0] || next[1] >= res[1];
 }
 
 function isAligned(curr: Cell, next: Cell) {
@@ -156,17 +301,23 @@ const nodeTypes = {
     const cellWidth = size[0] / 5;
     const cellHeight = size[1] / 5;
 
+    context.fillStyle = fg;
+    context.fillRect(cell.coords[0], cell.coords[1], size[0], size[1]);
+
     for (let i = 0; i < 5; i++) {
       for (let j = 0; j < 5; j++) {
         const isEven = (i + j) % 2 === 0;
-        context.fillStyle =
-          i === 0 || j === 0 || i === 4 || j === 4 ? fg : isEven ? bg : fg;
-        context.fillRect(
-          cell.coords[0] + i * cellWidth,
-          cell.coords[1] + j * cellHeight,
-          cellWidth,
-          cellHeight
-        );
+        if (i === 0 || j === 0 || i === 4 || j === 4) {
+          // do nothing
+        } else if (isEven) {
+          context.fillStyle = bg;
+          context.fillRect(
+            cell.coords[0] + i * cellWidth,
+            cell.coords[1] + j * cellHeight,
+            cellWidth,
+            cellHeight
+          );
+        }
       }
     }
   },
@@ -183,7 +334,7 @@ function drawTrail(
 }
 
 function xyToIndex(x: number, y: number): number {
-  return y * config.res[0] + x;
+  return y * res[0] + x;
 }
 
 function getNeighbours(
@@ -215,132 +366,3 @@ function getNeighbours(
 
   return neighbours;
 }
-
-export const sketch = ({
-  wrap,
-  context,
-  width,
-  height,
-  render,
-}: SketchProps) => {
-  if (import.meta.hot) {
-    import.meta.hot.dispose(() => wrap.dispose());
-    import.meta.hot.accept(() => wrap.hotReload());
-  }
-
-  if (config.debug) {
-    window.addEventListener('click', () => {
-      render();
-    });
-  }
-
-  const margin = [config.margin * width, config.margin * height];
-  const w = width - margin[0] * 2;
-  const h = height - margin[1] * 2;
-  const grid: Cell[] = [];
-
-  for (let y = 0; y < config.res[1]; y++) {
-    for (let x = 0; x < config.res[0]; x++) {
-      const coords = [
-        (x * w) / config.res[0],
-        (y * h) / config.res[1],
-      ] as Point;
-      grid.push({
-        x,
-        y,
-        coords,
-        occupied: false,
-        variant: 'available',
-      });
-    }
-  }
-
-  const trails: Trail[] = Array.from({ length: 10 }, () => initTrail(grid));
-  const size = [w / config.res[0], h / config.res[1]];
-  console.clear();
-
-  wrap.render = ({ width, height }: SketchProps) => {
-    context.fillStyle = bg;
-    context.fillRect(0, 0, width, height);
-
-    context.save();
-    context.translate(margin[0], margin[1]);
-
-    if (config.debug) {
-      grid.forEach((cell) => {
-        context.strokeStyle = '#000';
-        context.strokeRect(cell.coords[0], cell.coords[1], size[0], size[1]);
-
-        // draw cell number
-        context.fillStyle = '#000';
-        context.font = '10px sans-serif';
-        context.fillText(
-          `${cell.x},${cell.y}`,
-          cell.coords[0] + 2,
-          cell.coords[1] + 12
-        );
-      });
-    }
-
-    trails.forEach((trail) => {
-      if (trail.state === 'active') {
-        stepTrail(trail, grid);
-      }
-    });
-
-    trails.forEach((trail) => {
-      drawTrail(context, size, trail);
-    });
-
-    const complete = trails.every((trail) => trail.state === 'dead');
-
-    if (complete) {
-      grid.forEach((cell) => {
-        if (cell.occupied) {
-          cell.variant = 'occupied';
-        }
-      });
-
-      grid.forEach((cell) => {
-        if (cell.variant === 'occupied') {
-          const neighbours = getNeighbours(cell, grid);
-          neighbours.forEach((n) => {
-            n.variant = n.variant === 'occupied' ? n.variant : 'empty';
-          });
-        }
-      });
-
-      const unOccupiedCells = grid.filter(
-        (cell) => cell.variant === 'available'
-      );
-
-      unOccupiedCells.forEach((cell) => {
-        context.strokeStyle = fg;
-        context.beginPath();
-        context.moveTo(cell.coords[0], cell.coords[1]);
-        context.lineTo(cell.coords[0] + size[0], cell.coords[1]);
-        context.moveTo(cell.coords[0], cell.coords[1] + size[1] / 2);
-        context.lineTo(cell.coords[0] + size[0], cell.coords[1] + size[1] / 2);
-        context.moveTo(cell.coords[0], cell.coords[1] + size[1]);
-        context.lineTo(cell.coords[0] + size[0], cell.coords[1] + size[1]);
-        context.stroke();
-      });
-    }
-
-    context.restore();
-  };
-};
-
-export const settings: SketchSettings = {
-  mode: '2d',
-  // dimensions: [600, 800],
-  dimensions: [1080, 1080],
-  pixelRatio: window.devicePixelRatio,
-  animate: true,
-  duration: 1_000,
-  playFps: 60,
-  exportFps: 60,
-  framesFormat: ['mp4'],
-};
-
-ssam(sketch as Sketch<'2d'>, settings);
