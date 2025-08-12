@@ -102,7 +102,49 @@ export const sketch = ({
   const trails: Trail[] = Array.from({ length: config.count }, () =>
     initTrail(grid)
   );
-  console.clear();
+
+  do {
+    trails.forEach((trail) => {
+      if (trail.state === 'active') {
+        stepTrail(trail, grid);
+      }
+    });
+  } while (trails.some((trail) => trail.state === 'active'));
+
+  // Mark all occupied cells
+  grid.forEach((cell) => {
+    if (cell.occupied) {
+      cell.variant = 'occupied';
+    }
+  });
+
+  // Mark all neighbours of occupied cells as empty
+  grid.forEach((cell) => {
+    if (cell.variant === 'occupied') {
+      const neighbours = getNeighbours(cell, grid);
+      neighbours.forEach((n) => {
+        n.variant = n.variant === 'occupied' ? n.variant : 'empty';
+      });
+    }
+  });
+
+  // Mark loners as empty
+  // if the previous or next cell not empty then mark the cell as empty
+  grid.forEach((cell) => {
+    if (cell.variant === 'available') {
+      const prev = grid[xyToIndex(cell.x - 1, cell.y)];
+      const next = grid[xyToIndex(cell.x + 1, cell.y)];
+      if (prev?.variant !== 'available' && next?.variant !== 'available') {
+        cell.variant = 'empty';
+      }
+    }
+  });
+
+  const unOccupiedCells = grid.filter((cell) => cell.variant === 'available');
+
+  let limit = 0;
+  let limit2 = 0;
+  const maxLimit = Math.max(...trails.map((trail) => trail.nodes.length));
 
   wrap.render = ({ width, height }: SketchProps) => {
     context.fillStyle = bg;
@@ -128,52 +170,12 @@ export const sketch = ({
     }
 
     trails.forEach((trail) => {
-      if (trail.state === 'active') {
-        stepTrail(trail, grid);
-      }
+      drawTrail(context, size, trail, limit);
     });
 
-    trails.forEach((trail) => {
-      drawTrail(context, size, trail);
-    });
-
-    const complete = trails.every((trail) => trail.state === 'dead');
-
-    if (complete) {
-      // Mark all occupied cells
-      grid.forEach((cell) => {
-        if (cell.occupied) {
-          cell.variant = 'occupied';
-        }
-      });
-
-      // Mark all neighbours of occupied cells as empty
-      grid.forEach((cell) => {
-        if (cell.variant === 'occupied') {
-          const neighbours = getNeighbours(cell, grid);
-          neighbours.forEach((n) => {
-            n.variant = n.variant === 'occupied' ? n.variant : 'empty';
-          });
-        }
-      });
-
-      // Mark loners as empty
-      // if the previous or next cell not empty then mark the cell as empty
-      grid.forEach((cell) => {
-        if (cell.variant === 'available') {
-          const prev = grid[xyToIndex(cell.x - 1, cell.y)];
-          const next = grid[xyToIndex(cell.x + 1, cell.y)];
-          if (prev?.variant !== 'available' && next?.variant !== 'available') {
-            cell.variant = 'empty';
-          }
-        }
-      });
-
-      const unOccupiedCells = grid.filter(
-        (cell) => cell.variant === 'available'
-      );
-
-      unOccupiedCells.forEach((cell) => {
+    if (limit > maxLimit) {
+      unOccupiedCells.forEach((cell, idx) => {
+        if (idx > limit2) return;
         context.strokeStyle = fg;
         context.beginPath();
         context.moveTo(cell.coords[0], cell.coords[1]);
@@ -184,9 +186,11 @@ export const sketch = ({
         context.lineTo(cell.coords[0] + size[0], cell.coords[1] + size[1]);
         context.stroke();
       });
+      limit2 += config.res / 2;
     }
 
     context.restore();
+    limit++;
   };
 };
 
@@ -326,9 +330,11 @@ const nodeTypes = {
 function drawTrail(
   context: CanvasRenderingContext2D,
   size: number[],
-  trail: Trail
+  trail: Trail,
+  limit: number
 ) {
-  trail.nodes.forEach((cell) => {
+  trail.nodes.forEach((cell, idx) => {
+    if (idx > limit) return;
     nodeTypes[cell.type](context, cell, size);
   });
 }
