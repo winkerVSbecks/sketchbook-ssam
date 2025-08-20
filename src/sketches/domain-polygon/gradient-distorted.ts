@@ -4,6 +4,8 @@ import Random from 'canvas-sketch-util/random';
 import { mapRange, lerp } from 'canvas-sketch-util/math';
 import eases from 'eases';
 import { generateDomainSystem } from './domain-polygon-system';
+import { randomPalette } from '../../colors';
+import { uchu, uchuHues, UchuHue } from '../../colors/uchu';
 
 const seed = Random.getRandomSeed();
 Random.setSeed(seed);
@@ -28,6 +30,9 @@ const config = {
     [4, 3],
   ]),
 };
+
+const colors = Random.shuffle(randomPalette()).slice(0, config.res[0]);
+const bg = colors[0];
 
 export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   const { domains } = generateDomainSystem(
@@ -103,12 +108,40 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     return mapRange(idx, 0, config.res[1], 0, height);
   };
 
-  wrap.render = ({ width, height, playhead }: SketchProps) => {
-    context.fillStyle = '#fff';
-    context.fillRect(0, 0, width, height);
+  const hue = (x: number) => {
+    return uchuHues[Math.floor(mapRange(x, 0, width, 0, uchuHues.length - 1))];
+  };
 
-    context.strokeStyle = '#000';
-    context.strokeRect(1, 1, width - 2, height - 2);
+  function gradient(
+    idx1: number,
+    idx2: number,
+    x0: number,
+    y0: number,
+    x1: number,
+    context: CanvasRenderingContext2D
+  ): CanvasGradient {
+    if (config.gradientMode === 'uchu') {
+      const gradient = context.createLinearGradient(x0, y0, x1, y0);
+      const h1 = uchuHues[Math.floor(idx1 % uchuHues.length)];
+      const h2 = uchuHues[Math.floor(idx2 % uchuHues.length)];
+      const c1 = uchu[h1 as UchuHue];
+      const c2 = uchu[h2 as UchuHue];
+      gradient.addColorStop(0, c1.base);
+      gradient.addColorStop(1, c2.base);
+      return gradient;
+    } else {
+      const gradient = context.createLinearGradient(x0, y0, x1, y0);
+      const c1 = colors[Math.floor(idx1 % colors.length)];
+      const c2 = colors[Math.floor(idx2 % colors.length)];
+      gradient.addColorStop(0, c1);
+      gradient.addColorStop(1, c2);
+      return gradient;
+    }
+  }
+
+  wrap.render = ({ width, height, playhead }: SketchProps) => {
+    context.fillStyle = bg;
+    context.fillRect(0, 0, width, height);
 
     const gridIndex = Math.floor(playhead * config.cycles);
 
@@ -123,13 +156,20 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       const x1 = distortX(currentGrid, nextGrid, d.raw.x + d.raw.width, t);
       const y1 = distortY(currentGrid, nextGrid, d.raw.y + d.raw.height, t);
 
-      context.strokeStyle = '#000';
+      context.fillStyle = gradient(
+        d.raw.x,
+        d.raw.x + d.raw.width,
+        x0,
+        y0,
+        x1,
+        context
+      );
       context.beginPath();
       context.moveTo(x0, y0);
       context.lineTo(x1, y0);
       context.lineTo(x1, y1);
       context.lineTo(x0, y1);
-      context.stroke();
+      context.fill();
     });
 
     if (config.debug) {

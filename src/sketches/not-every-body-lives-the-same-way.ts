@@ -5,14 +5,25 @@ import { wcagContrast } from 'culori';
 import { generateColors } from '../colors/subtractive-hue';
 
 Random.setSeed(Random.getRandomSeed());
-// Random.setSeed('test');
+// Random.setSeed('134206');
 console.log(Random.getSeed());
+
+const config = {
+  res: 40,
+  debug: false,
+  margin: 0.04,
+  state: 'active',
+  maxLength: [5 * 2, 25 * 2],
+  count: 10,
+};
+
+let state: 'stepping_trails' | 'filling_space' | 'shifting' = 'stepping_trails';
 
 // const colors = ['#B4B0CD', '#282665'];
 const colors = generateColors('srgb', 145);
-const bg = Random.pick(colors);
+let bg = Random.pick(colors);
 
-const [fg] = colors
+let [fg] = colors
   .reduce((acc: { color: string; contrast: number }[], color: string) => {
     const contrast = wcagContrast(color, bg);
     if (contrast > 1) {
@@ -26,15 +37,6 @@ const [fg] = colors
   )
   .map((color: { color: string }) => color.color);
 
-const config = {
-  res: 40,
-  debug: false,
-  margin: 0.04,
-  state: 'active',
-  maxLength: [5 * 2, 25 * 2],
-  count: 10,
-};
-
 interface Cell {
   x: number;
   y: number;
@@ -45,6 +47,8 @@ interface Cell {
 
 interface Node extends Cell {
   type: keyof typeof nodeTypes;
+  direction: [number, number];
+  speed: number;
 }
 
 interface Trail {
@@ -82,7 +86,7 @@ export const sketch = ({
   const h = height - margin * 2;
   const grid: Cell[] = [];
 
-  const size = [s, s];
+  const size: [number, number] = [s, s];
 
   res = [Math.floor(w / size[0]), Math.floor(h / size[1])];
 
@@ -146,34 +150,31 @@ export const sketch = ({
   let limit2 = 0;
   const maxLimit = Math.max(...trails.map((trail) => trail.nodes.length));
 
-  wrap.render = ({ width, height }: SketchProps) => {
-    context.fillStyle = bg;
-    context.fillRect(0, 0, width, height);
+  wrap.render = ({ width, height, frame }: SketchProps) => {
+    // if (frame === 0) {
+    //   limit = 0;
+    //   limit2 = 0;
+    // }
+
+    if (state !== 'shifting') {
+      context.fillStyle = bg;
+      context.fillRect(0, 0, width, height);
+    } else {
+      // [fg, bg] = [bg, fg];
+    }
 
     context.save();
     context.translate(margin, margin);
-
-    if (config.debug) {
-      grid.forEach((cell) => {
-        context.strokeStyle = '#000';
-        context.strokeRect(cell.coords[0], cell.coords[1], size[0], size[1]);
-
-        // draw cell number
-        context.fillStyle = '#000';
-        context.font = '10px sans-serif';
-        context.fillText(
-          `${cell.x},${cell.y}`,
-          cell.coords[0] + 2,
-          cell.coords[1] + 12
-        );
-      });
-    }
 
     trails.forEach((trail) => {
       drawTrail(context, size, trail, limit);
     });
 
     if (limit > maxLimit) {
+      if (state === 'stepping_trails') {
+        state = 'filling_space';
+      }
+
       unOccupiedCells.forEach((cell, idx) => {
         if (idx > limit2) return;
         context.strokeStyle = fg;
@@ -187,6 +188,33 @@ export const sketch = ({
         context.stroke();
       });
       limit2 += config.res / 2;
+
+      if (limit2 > unOccupiedCells.length) {
+        if (state === 'filling_space') {
+          state = 'shifting';
+        }
+      }
+    }
+    if (state === 'shifting') {
+      trails.forEach((trail) => {
+        shiftNodes(trail, size);
+      });
+    }
+
+    if (config.debug) {
+      grid.forEach((cell) => {
+        context.strokeStyle = fg;
+        context.strokeRect(cell.coords[0], cell.coords[1], size[0], size[1]);
+
+        // draw cell number
+        context.fillStyle = cell.occupied ? bg : fg;
+        context.font = '5px sans-serif';
+        context.fillText(
+          `${cell.x},${cell.y}`,
+          cell.coords[0] + 2,
+          cell.coords[1] + 12
+        );
+      });
     }
 
     context.restore();
@@ -201,7 +229,7 @@ export const settings: SketchSettings = {
   // dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
   animate: true,
-  duration: 1_000,
+  duration: 3_000,
   playFps: 60,
   exportFps: 60,
   framesFormat: ['mp4'],
@@ -209,25 +237,28 @@ export const settings: SketchSettings = {
 
 ssam(sketch as Sketch<'2d'>, settings);
 
+/**
+ * Trail
+ */
 function initTrail(grid: Cell[]): Trail {
   const start = Random.pick(grid);
+  start.occupied = true;
 
   return {
     direction: [Random.pick([-1, 1]), Random.pick([-1, 1])],
     x: start.x,
     y: start.y,
-    nodes: [{ ...start, type: 'base' }],
+    nodes: [
+      {
+        ...start,
+        type: 'base',
+        direction: randomDirection(),
+        speed: Random.range(0.25, 1),
+      },
+    ],
     state: 'active',
     maxLength: Random.rangeFloor(config.maxLength[0], config.maxLength[1]),
   };
-}
-
-function outOfBounds(next: [number, number]) {
-  return next[0] < 0 || next[1] < 0 || next[0] >= res[0] || next[1] >= res[1];
-}
-
-function isAligned(curr: Cell, next: Cell) {
-  return curr.x === next.x || curr.y === next.y;
 }
 
 function stepTrail(trail: Trail, grid: Cell[]) {
@@ -262,6 +293,8 @@ function stepTrail(trail: Trail, grid: Cell[]) {
       trail.nodes.push({
         ...cell,
         type,
+        direction: randomDirection(),
+        speed: Random.range(0.25, 1),
       });
       trail.x = cell.x;
       trail.y = cell.y;
@@ -273,6 +306,15 @@ function stepTrail(trail: Trail, grid: Cell[]) {
   if (trail.nodes.length >= trail.maxLength) {
     trail.state = 'dead';
   }
+}
+
+function shiftNodes(trail: Trail, size: [number, number]) {
+  trail.nodes.forEach((node) => {
+    node.coords = [
+      node.coords[0] + size[0] * node.speed * node.direction[0],
+      node.coords[1] + size[1] * node.speed * node.direction[1],
+    ];
+  });
 }
 
 const nodeTypes = {
@@ -335,8 +377,30 @@ function drawTrail(
 ) {
   trail.nodes.forEach((cell, idx) => {
     if (idx > limit) return;
+
+    if (state === 'shifting' && idx % 2 === 0) {
+      context.fillStyle = bg;
+      context.fillRect(
+        cell.coords[0] - cell.direction[0] * size[0],
+        cell.coords[1] - cell.direction[1] * size[1],
+        size[0],
+        size[1]
+      );
+    }
+
     nodeTypes[cell.type](context, cell, size);
   });
+}
+
+/**
+ * Utils
+ */
+function outOfBounds(next: [number, number]) {
+  return next[0] < 0 || next[1] < 0 || next[0] >= res[0] || next[1] >= res[1];
+}
+
+function isAligned(curr: Cell, next: Cell) {
+  return curr.x === next.x || curr.y === next.y;
 }
 
 function xyToIndex(x: number, y: number): number {
@@ -371,4 +435,13 @@ function getNeighbours(
   }
 
   return neighbours;
+}
+
+function randomDirection() {
+  return Random.pick([
+    [-1, 0],
+    [1, 0],
+    [0, -1],
+    [0, 1],
+  ]);
 }
