@@ -61,7 +61,7 @@ export function createNaleeSystem(
     );
   }
   // Spawn a bunch of random walkers
-  new Array(config.walkerCount).fill(null).forEach(() => spawnWalker(colors));
+  Array.from({ length: config.walkerCount }).forEach(() => spawnWalker(colors));
 
   // function middleOutCross() {
   //   // middle out cross style
