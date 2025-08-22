@@ -43,26 +43,26 @@ export const sketch = ({
   }
 
   const margin = [0.02 * height, 0.02 * height];
-  const initOrigin: Point = [
+  const initialOrigin: Point = [
     Math.round(width * config.origin[0]),
     Math.round(height * config.origin[1]),
   ];
-
-  let origin: Point = [...initOrigin];
+  const gridOrigin: Point = [...initialOrigin];
+  let cellsOrigin: Point = [...initialOrigin];
 
   const targets = Array.from({ length: config.targets - 1 })
     .map(() => [
       Random.range(0.2, 0.8) * width,
       Random.range(0.2, 0.8) * height,
     ])
-    .concat([initOrigin]);
+    .concat([initialOrigin]);
 
   wrap.render = ({ playhead, frame }: SketchProps) => {
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
 
     if (frame === 0) {
-      origin = [...initOrigin];
+      cellsOrigin = [...initialOrigin];
     }
 
     // Choose one of the N targets based on loop time
@@ -71,21 +71,21 @@ export const sketch = ({
 
     const t = (playhead * targets.length) % 1;
 
-    origin[0] = Math.round(lerp(origin[0], target[0], t));
-    origin[1] = Math.round(lerp(origin[1], target[1], t));
+    cellsOrigin[0] = Math.round(lerp(cellsOrigin[0], target[0], t));
+    cellsOrigin[1] = Math.round(lerp(cellsOrigin[1], target[1], t));
 
     const xLines = generateFractalGrid(
       [margin[0], width - margin[0]],
-      origin[0],
+      gridOrigin[0],
       Math.round(width / 100)
     );
     const yLines = generateFractalGrid(
       [margin[1], height - margin[1]],
-      origin[1],
+      gridOrigin[1],
       Math.round(height / 100)
     );
 
-    const cells = createCells(xLines, yLines, origin);
+    const cells = createCells(xLines, yLines, cellsOrigin);
 
     if (config.debug) {
       context.strokeStyle = '#f0f';
@@ -99,6 +99,17 @@ export const sketch = ({
       context.stroke();
     }
 
+    context.strokeStyle = stroke;
+    xLines.forEach((x) => {
+      drawLine(context, [x, 0], [x, height]);
+      context.stroke();
+    });
+
+    yLines.forEach((y) => {
+      drawLine(context, [0, y], [width, y]);
+      context.stroke();
+    });
+
     cells.forEach((cell) => {
       const { from, to } = cell;
 
@@ -111,28 +122,12 @@ export const sketch = ({
       context.fill();
     });
 
-    context.strokeStyle = stroke;
-
-    const closestXLine = xLines.reduce((prev, curr) =>
-      Math.abs(curr - origin[0]) < Math.abs(prev - origin[0]) ? curr : prev
-    );
-
-    xLines.splice(xLines.indexOf(closestXLine) + 1, 1);
-
-    const closestYLine = yLines.reduce((prev, curr) =>
-      Math.abs(curr - origin[1]) < Math.abs(prev - origin[1]) ? curr : prev
-    );
-    yLines.splice(yLines.indexOf(closestYLine) + 1, 1);
-
-    xLines.forEach((x) => {
-      drawLine(context, [x, 0], [x, height]);
-      context.stroke();
-    });
-
-    yLines.forEach((y) => {
-      drawLine(context, [0, y], [width, y]);
-      context.stroke();
-    });
+    if (config.debug) {
+      context.fillStyle = '#f0f';
+      context.beginPath();
+      context.arc(cellsOrigin[0], cellsOrigin[1], 5, 0, Math.PI * 2);
+      context.fill();
+    }
 
     const outputData = applyNoise(
       context,

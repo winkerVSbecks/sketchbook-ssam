@@ -1,7 +1,6 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-import { lerp } from 'canvas-sketch-util/math';
 import { drawLine } from '@daeinc/draw';
 import { generateFractalGrid, createCells } from './system';
 import { applyNoise } from '../../noise-texture';
@@ -9,7 +8,9 @@ import { applyNoise } from '../../noise-texture';
 const config = {
   debug: false,
   origin: [Random.range(0.2, 0.8), Random.range(0.3, 0.7)],
-  targets: Random.rangeFloor(3, 6),
+  shift: 'both', // Random.pick(['horizontal', 'vertical', 'both']),
+  xDir: Random.sign(),
+  yDir: Random.sign(),
 };
 
 const randomLCH = (l: number, c: [number, number]) =>
@@ -50,13 +51,6 @@ export const sketch = ({
 
   let origin: Point = [...initOrigin];
 
-  const targets = Array.from({ length: config.targets - 1 })
-    .map(() => [
-      Random.range(0.2, 0.8) * width,
-      Random.range(0.2, 0.8) * height,
-    ])
-    .concat([initOrigin]);
-
   wrap.render = ({ playhead, frame }: SketchProps) => {
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
@@ -65,14 +59,21 @@ export const sketch = ({
       origin = [...initOrigin];
     }
 
-    // Choose one of the N targets based on loop time
-    const targetIndex = Math.floor(playhead * targets.length);
-    const target = targets[targetIndex];
+    if (config.shift === 'horizontal' || config.shift === 'both') {
+      origin[0] = Math.round(
+        margin[0] +
+          ((initOrigin[0] + config.xDir * playhead * width) %
+            (width - margin[0]))
+      );
+    }
 
-    const t = (playhead * targets.length) % 1;
-
-    origin[0] = Math.round(lerp(origin[0], target[0], t));
-    origin[1] = Math.round(lerp(origin[1], target[1], t));
+    if (config.shift === 'vertical' || config.shift === 'both') {
+      origin[1] = Math.round(
+        margin[1] +
+          ((initOrigin[1] + config.yDir * playhead * height) %
+            (height - margin[1]))
+      );
+    }
 
     const xLines = generateFractalGrid(
       [margin[0], width - margin[0]],
@@ -113,16 +114,20 @@ export const sketch = ({
 
     context.strokeStyle = stroke;
 
-    const closestXLine = xLines.reduce((prev, curr) =>
-      Math.abs(curr - origin[0]) < Math.abs(prev - origin[0]) ? curr : prev
-    );
+    if (xLines.length > 0) {
+      const closestXLine = xLines.reduce((prev, curr) =>
+        Math.abs(curr - origin[0]) < Math.abs(prev - origin[0]) ? curr : prev
+      );
 
-    xLines.splice(xLines.indexOf(closestXLine) + 1, 1);
+      xLines.splice(xLines.indexOf(closestXLine) + 1, 1);
+    }
 
-    const closestYLine = yLines.reduce((prev, curr) =>
-      Math.abs(curr - origin[1]) < Math.abs(prev - origin[1]) ? curr : prev
-    );
-    yLines.splice(yLines.indexOf(closestYLine) + 1, 1);
+    if (yLines.length > 0) {
+      const closestYLine = yLines.reduce((prev, curr) =>
+        Math.abs(curr - origin[1]) < Math.abs(prev - origin[1]) ? curr : prev
+      );
+      yLines.splice(yLines.indexOf(closestYLine) + 1, 1);
+    }
 
     xLines.forEach((x) => {
       drawLine(context, [x, 0], [x, height]);
@@ -160,7 +165,7 @@ export const settings: SketchSettings = {
   // dimensions: [1920, 1080],
   pixelRatio: window.devicePixelRatio,
   animate: true,
-  duration: 4_000 * config.targets,
+  duration: 4_000,
   playFps: 60,
   exportFps: 60,
   framesFormat: ['mp4'],
