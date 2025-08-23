@@ -21,30 +21,6 @@ export function makeDomain(
   return domain;
 }
 
-export function makePolarDomain(
-  radiusRes: number,
-  thetaRes: number,
-  domainToWorld: DomainToWorld
-): Node[] {
-  const domain = [];
-
-  for (let theta = 0; theta < thetaRes; theta++) {
-    for (let r = 10; r <= radiusRes; r++) {
-      const [worldX, worldY] = domainToWorld(r, theta);
-      domain.push({
-        x: r,
-        y: theta,
-        occupied: false,
-        id: xyToId(r, theta),
-        worldX,
-        worldY,
-      });
-    }
-  }
-
-  return domain;
-}
-
 export function clipDomain(domain: Node[], polygon: Point[]) {
   return domain.filter(({ x, y }) => {
     return classifyPoint(polygon, [x, y]) <= 0;

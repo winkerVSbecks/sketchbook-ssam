@@ -1,7 +1,11 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import { createNaleeSystem } from '../nalee-system';
-import { makePolarDomain } from '../polar-utils';
+import {
+  clipPolarDomainWithWorldCoords,
+  makePolarDomain,
+  polarDomainToWorld,
+} from '../polar-utils';
 import { Config, DomainToWorld } from '../types';
 import { randomPalette } from '../../../colors/riso';
 
@@ -41,31 +45,54 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
     flat: true,
   } satisfies Config;
 
-  const radius = width * 0.3;
-  const [cx, cy] = [width / 2, height / 2];
-
   const radiusRes = config.resolution[0] / 5; //20;
   const thetaRes = config.resolution[1]; //100;
 
-  const domainToWorld: DomainToWorld = (r: number, theta: number) => {
-    const worldX =
-      cx +
-      ((radius * r) / radiusRes) * Math.cos((theta * Math.PI * 2) / thetaRes);
-    const worldY =
-      cy +
-      ((radius * r) / radiusRes) * Math.sin((theta * Math.PI * 2) / thetaRes);
-    return [worldX, worldY];
-  };
+  const radius = width * 0.3;
+  const [cx, cy] = [width * 0.4, height * 0.5];
+  const radius2 = width * 0.25;
+  const [cx2, cy2] = [width * 0.6, height * 0.5];
 
+  const domainToWorld1: DomainToWorld = polarDomainToWorld(
+    radiusRes,
+    thetaRes,
+    [cx, cy],
+    radius
+  );
   const domain = makePolarDomain(
     [10, radiusRes],
-    [22, thetaRes],
-    domainToWorld
+    [0, thetaRes],
+    domainToWorld1
+  );
+  const clippedDomain = clipPolarDomainWithWorldCoords(
+    domain,
+    [cx2, cy2],
+    radius2 + size * 1.5,
+    true
   );
   const naleeSystem = createNaleeSystem(
-    domain,
+    clippedDomain,
     config,
-    domainToWorld,
+    domainToWorld1,
+    colors,
+    bg
+  );
+
+  const domainToWorld2: DomainToWorld = polarDomainToWorld(
+    radiusRes,
+    thetaRes,
+    [cx2, cy2],
+    radius2
+  );
+  const domain2 = makePolarDomain(
+    [10, radiusRes],
+    [0, thetaRes],
+    domainToWorld2
+  );
+  const naleeSystem2 = createNaleeSystem(
+    domain2,
+    config,
+    domainToWorld2,
     colors,
     bg
   );
@@ -77,6 +104,7 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
     context.fillRect(0, 0, width, height);
 
     naleeSystem(props);
+    naleeSystem2(props);
   };
 };
 
