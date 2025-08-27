@@ -148,6 +148,28 @@ export function createNaleeSystem(
     //   }
     // });
 
+    for (const walker of state.walkers) {
+      // if any point in walker.path is not in domain
+      // then reset walker to [] and recompute walker
+      if (
+        walker.path.some(
+          (point) =>
+            !state.domain.some(
+              (cell) => cell.x === point.x && cell.y === point.y
+            )
+        )
+      ) {
+        walker.path = [];
+        // recompute walker
+        while (walker.state === 'alive') {
+          const next = step(walker);
+          if (next) {
+            state.setOccupied(next);
+          }
+        }
+      }
+    }
+
     // Mark all cells that have walker paths as occupied
     state.domain.forEach((cell) => {
       cell.occupied = state.walkers.some((walker) =>

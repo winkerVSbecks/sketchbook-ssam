@@ -1,6 +1,6 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
-import { lerpFrames } from 'canvas-sketch-util/math';
+import { mapRange } from 'canvas-sketch-util/math';
 import { createNaleeSystem } from '../nalee-system';
 import { makeDomain, clipDomain } from '../domain';
 import { Config } from '../types';
@@ -46,23 +46,13 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
     height
   );
 
-  const initialShape: Point[] = [
-    [20, 10],
-    [40, 10],
-    [50, 10],
-    [50, 20],
-    [50, 40],
-    [70, 40],
-    [70, 50],
-    [60, 50],
-    [60, 50],
-    [40, 50],
-    [40, 20],
-    [20, 20],
-  ];
-
   const domain = makeDomain(config.resolution, domainToWorld);
-  const clippedDomain = clipDomain(domain, initialShape);
+  const clippedDomain = clipDomain(domain, [
+    [10, 10],
+    [80, 10],
+    [80, 80],
+    [10, 80],
+  ]);
   const naleeSystem = createNaleeSystem(
     clippedDomain,
     config,
@@ -70,8 +60,6 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
     colors,
     bg
   );
-
-  let shape = [...initialShape];
 
   wrap.render = (props: SketchProps) => {
     const { width, height, playhead, frame } = props;
@@ -84,20 +72,17 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
 
-    shape[0] = lerpFrames([initialShape[0], [40, 10]], playhead);
-    shape[1] = lerpFrames([initialShape[1], [40, 10]], playhead);
-    shape[2] = lerpFrames([initialShape[2], [50, 10]], playhead);
-    shape[3] = lerpFrames([initialShape[3], [50, 20]], playhead);
-    shape[4] = lerpFrames([initialShape[4], [50, 40]], playhead);
-    shape[5] = lerpFrames([initialShape[5], [70, 40]], playhead);
-    shape[6] = lerpFrames([initialShape[6], [70, 80]], playhead);
-    shape[7] = lerpFrames([initialShape[7], [60, 80]], playhead);
-    shape[8] = lerpFrames([initialShape[8], [60, 50]], playhead);
-    shape[9] = lerpFrames([initialShape[9], [40, 50]], playhead);
-    shape[10] = lerpFrames([initialShape[10], [40, 20]], playhead);
-    shape[11] = lerpFrames([initialShape[11], [40, 20]], playhead);
+    const w = 80; //Math.round(mapRange(playhead, 0, 1, 80, 40, true));
+    const h = Math.round(mapRange(playhead, 0, 1, 80, 40, true));
 
-    const newDomain = clipDomain(domain, shape);
+    const newDomain = clipDomain(domain, [
+      [10, 10],
+      [w, 10],
+      [w, h],
+      [10, h],
+    ]);
+    // console.log(newDomain.length);
+
     naleeSystem.grow(newDomain);
 
     naleeSystem(props);
