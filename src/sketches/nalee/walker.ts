@@ -107,7 +107,7 @@ export function makeWalker(
 export function step(walker: Walker): Coord | void {
   let currentIndex = walker.path.length - 1;
   let current = walker.path[currentIndex];
-  let next = walker.nextStep(current);
+  let next = current ? walker.nextStep(current) : undefined;
 
   if (next) {
     walker.path.push(next);
@@ -121,7 +121,7 @@ export function walkerToPaths(walker: Walker): Line[] {
   const paths = walker.path.reduce<Coord[][]>((acc, { x, y, moveTo }) => {
     if (moveTo) {
       acc.push([{ x, y }]);
-    } else {
+    } else if (acc[acc.length - 1]) {
       acc[acc.length - 1].push({ x, y });
     }
     return acc;

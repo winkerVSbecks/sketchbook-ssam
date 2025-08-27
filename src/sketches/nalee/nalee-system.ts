@@ -63,31 +63,6 @@ export function createNaleeSystem(
   // Spawn a bunch of random walkers
   Array.from({ length: config.walkerCount }).forEach(() => spawnWalker(colors));
 
-  // function middleOutCross() {
-  //   // middle out cross style
-  //   spawnWalker(colors, { x: 0, y: 0 });
-  //   spawnWalker(colors, { x: config.resolution[0], y: 0 });
-  //   for (let x = 0; x < config.resolution[0]; x++) {
-  //     spawnWalker(colors, { x: x, y: x % 2 === 0 ? config.resolution[1] : 0 });
-  //   }
-  //   for (let y = 0; y < config.resolution[1]; y++) {
-  //     spawnWalker(colors, { x: y % 2 === 0 ? config.resolution[1] : 0, y: y });
-  //   }
-  //   spawnWalker(colors, { x: 0, y: config.resolution[1] });
-  //   spawnWalker(colors, { x: config.resolution[0], y: config.resolution[1] });
-
-  //   // spawnWalker({ x: 0, y: 0 });
-  //   // spawnWalker({ x: 90, y: 0 });
-  //   // for (let index = 0; index < 90; index++) {
-  //   //   spawnWalker({ x: index, y: index % 2 === 0 ? 90 : 0 });
-  //   //   spawnWalker({ x: index % 2 === 0 ? 90 : 0, y: index });
-  //   // }
-  //   // spawnWalker({ x: 0, y: 90 });
-  //   // spawnWalker({ x: 90, y: 90 });
-  // }
-
-  // middleOutCross();
-
   let initialWalkers = true;
 
   console.table({
@@ -99,35 +74,40 @@ export function createNaleeSystem(
   });
 
   // Run the simulation to fill the grid with walkers
-  while (state.mode !== 'complete') {
-    state.walkers.forEach((walker) => {
-      if (walker.state === 'alive') {
-        const next = step(walker);
-        if (next) {
-          state.setOccupied(next);
+  function runSimulation() {
+    // Run the simulation to fill the grid with walkers
+    while (state.mode !== 'complete') {
+      state.walkers.forEach((walker) => {
+        if (walker.state === 'alive') {
+          const next = step(walker);
+          if (next) {
+            state.setOccupied(next);
+          }
         }
+      });
+
+      // spawn new walkers if there are dead ones
+      const activeWalkers = state.walkers.filter(
+        (walker) => walker.state === 'alive'
+      );
+
+      if (activeWalkers.length === 0 && initialWalkers) {
+        initialWalkers = false;
       }
-    });
 
-    // spawn new walkers if there are dead ones
-    const activeWalkers = state.walkers.filter(
-      (walker) => walker.state === 'alive'
-    );
+      if (activeWalkers.length === 0 && !initialWalkers) {
+        spawnWalker(colors);
+      }
 
-    if (activeWalkers.length === 0 && initialWalkers) {
-      initialWalkers = false;
-    }
-
-    if (activeWalkers.length === 0 && !initialWalkers) {
-      spawnWalker(colors);
-    }
-
-    if (state.domain.every((cell) => cell.occupied)) {
-      state.mode = 'complete';
+      if (state.domain.every((cell) => cell.occupied)) {
+        state.mode = 'complete';
+      }
     }
   }
 
-  return ({ context, playhead }: SketchProps) => {
+  runSimulation();
+
+  function render({ context, playhead }: SketchProps) {
     state.walkers.forEach((walker) => {
       const paths = walkerToPaths(walker);
 
@@ -141,5 +121,46 @@ export function createNaleeSystem(
     if (debugGrid) {
       drawDomain(context, state.domain, '#000', config.size);
     }
+  }
+
+  render.reset = () => {
+    state.walkers = [];
+    state.domain.forEach((cell) => {
+      cell.occupied = false;
+    });
+    Array.from({ length: config.walkerCount }).forEach(() =>
+      spawnWalker(colors)
+    );
   };
+
+  render.grow = (domain: Node[]) => {
+    state.domain = domain;
+    state.mode = 'draw';
+
+    // // Prune points from path that were removed from domain
+    // state.walkers.forEach((walker) => {
+    //   walker.path = walker.path.filter((point) =>
+    //     state.domain.some((cell) => cell.x === point.x && cell.y === point.y)
+    //   );
+
+    //   if (walker.path.length < 2) {
+    //     walker.state = 'dead';
+    //   }
+    // });
+
+    // Mark all cells that have walker paths as occupied
+    state.domain.forEach((cell) => {
+      cell.occupied = state.walkers.some((walker) =>
+        walker.path.some((point) => point.x === cell.x && point.y === cell.y)
+      );
+    });
+
+    state.walkers.forEach((walker) => {
+      walker.state = Random.pick(['alive', 'dead']);
+    });
+
+    runSimulation();
+  };
+
+  return render;
 }

@@ -130,19 +130,29 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
     .reverse();
 
   wrap.render = (props: SketchProps) => {
-    const { width, height } = props;
+    const { width, height, playhead } = props;
     context.clearRect(0, 0, width, height);
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
 
     baseSystem(props);
-
-    systems.forEach(({ system, circle, color }) => {
+    systems.forEach(({ system, circle, color }, idx) => {
       context.fillStyle = color;
       context.beginPath();
       context.arc(circle.cx, circle.cy, circle.radius + size, 0, Math.PI * 2);
       context.fill();
+
+      context.save();
+      // Move origin to the center of the circle
+      context.translate(circle.cx, circle.cy);
+      // Rotate around the new origin
+      context.rotate(Math.PI * 2 * playhead * (idx % 2 === 0 ? 1 : -1));
+      // Translate back so the system draws in the right place
+      context.translate(-circle.cx, -circle.cy);
+
+      // Call system with the rotated context
       system(props);
+      context.restore();
     });
   };
 };
@@ -153,7 +163,7 @@ export const settings: SketchSettings = {
   // dimensions: [1920, 1080],
   pixelRatio: window.devicePixelRatio,
   animate: true,
-  duration: 4_000,
+  duration: 8_000,
   playFps: 60,
   exportFps: 60,
   framesFormat: ['mp4'],
