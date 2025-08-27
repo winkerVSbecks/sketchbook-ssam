@@ -2,9 +2,7 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import { mapRange } from 'canvas-sketch-util/math';
 import { createNaleeSystem } from '../nalee-system';
-import { makeDomain, clipDomain } from '../domain';
 import { Config, DomainToWorld } from '../types';
-import { xyToCoords } from '../utils';
 import { makePolarDomain, polarDomainToWorld } from '../polar-utils';
 
 const bg = '#201c1d';
@@ -53,7 +51,6 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
     radius
   );
   let startAngle = 10;
-  let angle = startAngle;
   let domain = makePolarDomain([10, radiusRes], [0, startAngle], domainToWorld);
   const naleeSystem = createNaleeSystem(
     domain,
