@@ -57,7 +57,6 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
 
   const radiusRes = config.resolution[0] / 5; //20;
   const thetaRes = 80; //config.resolution[1] * 0.75; //100;
-  console.log(thetaRes);
 
   const circles = Array.from({ length: count }).map(() => {
     const cx = Math.round(Random.range(0.4, 0.6) * width);
@@ -142,17 +141,17 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
       context.arc(circle.cx, circle.cy, circle.radius + size, 0, Math.PI * 2);
       context.fill();
 
-      context.save();
-      // Move origin to the center of the circle
-      context.translate(circle.cx, circle.cy);
-      // Rotate around the new origin
-      context.rotate(Math.PI * 2 * playhead * (idx % 2 === 0 ? 1 : -1));
-      // Translate back so the system draws in the right place
-      context.translate(-circle.cx, -circle.cy);
+      // context.save();
+      // // Move origin to the center of the circle
+      // context.translate(circle.cx, circle.cy);
+      // // Rotate around the new origin
+      // context.rotate(Math.PI * 2 * playhead * (idx % 2 === 0 ? 1 : -1));
+      // // Translate back so the system draws in the right place
+      // context.translate(-circle.cx, -circle.cy);
 
       // Call system with the rotated context
       system(props);
-      context.restore();
+      // context.restore();
     });
   };
 };
