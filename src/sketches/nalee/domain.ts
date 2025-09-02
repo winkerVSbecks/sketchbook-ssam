@@ -21,9 +21,14 @@ export function makeDomain(
   return domain;
 }
 
-export function clipDomain(domain: Node[], polygon: Point[]) {
+export function clipDomain(
+  domain: Node[],
+  polygon: Point[],
+  inverse?: boolean
+) {
   return domain.filter(({ x, y }) => {
-    return classifyPoint(polygon, [x, y]) <= 0;
+    const result = classifyPoint(polygon, [x, y]);
+    return inverse ? result > 0 : result <= 0;
   });
 }
 
