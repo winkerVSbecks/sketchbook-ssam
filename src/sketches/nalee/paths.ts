@@ -19,14 +19,18 @@ export function drawPath(
   const [l1, l2] = walker.lengths;
 
   paths.forEach((pts) => {
-    pathStyles[walker.pathStyle](
-      context,
-      walker,
-      pts,
-      [l1, l2],
-      t,
-      backgroundColor
-    );
+    if (typeof walker.pathStyle === 'function') {
+      walker.pathStyle(context, walker, pts);
+    } else {
+      pathStyles[walker.pathStyle](
+        context,
+        walker,
+        pts,
+        [l1, l2],
+        t,
+        backgroundColor
+      );
+    }
   });
 }
 
@@ -37,6 +41,15 @@ function solidStyle(
 ) {
   context.lineCap = 'round';
   context.lineJoin = 'round';
+
+  // outer
+  context.save();
+  context.translate(4, 4);
+  context.strokeStyle = '#CEFF00';
+  context.lineWidth = walker.size - walker.stepSize;
+  drawShape(context, pts, false);
+  context.stroke();
+  context.restore();
 
   // outer
   context.strokeStyle = walker.color;
@@ -326,7 +339,7 @@ function dimpleLine(
   context.restore();
 }
 
-function drawShape(
+export function drawShape(
   context: CanvasRenderingContext2D,
   [start, ...pts]: Point[],
   closed = true

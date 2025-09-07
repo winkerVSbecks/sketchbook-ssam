@@ -1,14 +1,15 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
-import { createNaleeSystem } from '../nalee-system';
+import { createNaleeSystem } from '../nalee/nalee-system';
 import { generateColorRamp, colorToCSS } from 'rampensau';
 import Random from 'canvas-sketch-util/random';
 import { formatHex } from 'culori';
-import { makeDomain, clipDomain } from '../domain';
-import { Config } from '../types';
-import { xyToCoords } from '../utils';
+import { makeDomain, clipDomain } from '../nalee/domain';
+import { Config } from '../nalee/types';
+import { xyToCoords } from '../nalee/utils';
 // import { randomPalette } from '../../../colors';
-import { randomPalette } from '../../../colors/riso';
+import { randomPalette } from '../../colors/riso';
+import { carmen } from '../../colors/found';
 
 function generateColors(count: number) {
   const colors = generateColorRamp({
@@ -24,8 +25,19 @@ function generateColors(count: number) {
 // const colors = generateColors(5);
 // const bg = colors.shift()!;
 
-const colors = ['#fff'];
-const bg = '#000';
+const colors = [
+  '#FDFCF3',
+  '#002500',
+  '#2A42FF',
+  '#2B0404',
+  '#AB2A00',
+  '#C15F3D',
+  '#EB562F',
+];
+const bg = colors.shift()!;
+
+// const colors = ['#fff'];
+// const bg = '#000';
 
 // const { bg, inkColors: colors } = randomPalette();
 // const colors = randomPalette();
@@ -103,12 +115,24 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
 
   const systems = triangles.map((t, idx) => {
     const cd = clipDomain(domain, t);
+    const color = Random.pick([
+      [['#002500'], '#CEFF00'],
+      [['#2A42FF'], '#CEFF00'],
+      [['#EB562F'], '#ECE5F0'],
+      [['#002500'], '#ECE5F0'],
+    ]);
+
     return createNaleeSystem(
       cd,
       config,
       domainToWorld,
-      [colors[idx % colors.length], '#ccc'],
-      bg
+      color[0],
+      color[1]
+      // ['#002500', '#2B0404'],
+      // Random.pick(['#CEFF00', '#ECE5F0', '#2A42FF', '#AB2A00'])
+      // [colors[idx % colors.length]],
+      // Random.pick(['#CEFF00', '#ECE5F0'])
+      // bg
     );
   });
 
