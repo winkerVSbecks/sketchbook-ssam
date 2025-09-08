@@ -20,7 +20,7 @@ export function drawPath(
 
   paths.forEach((pts) => {
     if (typeof walker.pathStyle === 'function') {
-      walker.pathStyle(context, walker, pts);
+      walker.pathStyle(context, walker, pts, playhead);
     } else {
       pathStyles[walker.pathStyle](
         context,

@@ -2,7 +2,12 @@ import { pathStyles } from './paths';
 
 export type PathStyle =
   | keyof typeof pathStyles
-  | ((context: CanvasRenderingContext2D, walker: Walker, pts: Point[]) => void);
+  | ((
+      context: CanvasRenderingContext2D,
+      walker: Walker,
+      pts: Point[],
+      playhead: number
+    ) => void);
 
 export type SpawnTypes =
   | 'random'
