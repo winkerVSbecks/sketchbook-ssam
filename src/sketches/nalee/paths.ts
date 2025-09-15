@@ -1,5 +1,5 @@
 import Random from 'canvas-sketch-util/random';
-import { mapRange } from 'canvas-sketch-util/math';
+import { mapRange, lerpFrames } from 'canvas-sketch-util/math';
 import eases from 'eases';
 import type { Walker } from './types';
 
@@ -28,7 +28,8 @@ export function drawPath(
         pts,
         [l1, l2],
         t,
-        backgroundColor
+        backgroundColor,
+        playhead
       );
     }
   });
@@ -115,6 +116,47 @@ function pipeStyle(
   context.lineWidth = walker.size - walker.stepSize * 4;
   drawShape(context, pts, false);
   context.stroke();
+}
+
+function infinitePipeStyle(
+  context: CanvasRenderingContext2D,
+  walker: Walker,
+  pts: Point[],
+  _: [number, number],
+  t: number,
+  backgroundColor: string,
+  playhead: number
+) {
+  let l = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i];
+    const b = pts[i - 1];
+
+    l = l + Math.hypot(a[0] - b[0], a[1] - b[1]);
+  }
+
+  context.lineCap = 'round';
+  context.lineJoin = 'round';
+
+  context.strokeStyle = backgroundColor;
+  context.lineWidth = walker.size;
+  drawShape(context, pts, false);
+  context.stroke();
+
+  context.strokeStyle = walker.color;
+  context.lineWidth = walker.size - walker.stepSize;
+  drawShape(context, pts, false);
+  context.stroke();
+
+  context.save();
+  context.setLineDash([l / 2, l]);
+
+  context.lineDashOffset = lerpFrames([0, 1.5 * l], playhead);
+  context.strokeStyle = backgroundColor;
+  context.lineWidth = 1;
+  drawShape(context, pts, false);
+  context.stroke();
+  context.restore();
 }
 
 function highlightStyle(
@@ -357,6 +399,7 @@ export function drawShape(
 export const pathStyles = {
   solidStyle,
   pipeStyle,
+  infinitePipeStyle,
   distressedStyle,
   highlightStyle,
   stitchStyle,
