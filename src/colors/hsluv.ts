@@ -72,16 +72,16 @@ export function kellyInspiredScheme(): string[] {
   // Mid-tone (transitional)
   const mid = new Hsluv();
   mid.hsluv_h = baseHue;
-  mid.hsluv_s = Random.rangeFloor(15, 25);
-  mid.hsluv_l = Random.rangeFloor(bg.hsluv_l - 5, bg.hsluv_l - 10);
+  mid.hsluv_s = Random.rangeFloor(15, 30);
+  mid.hsluv_l = bg.hsluv_l - Random.rangeFloor(5, 10);
   mid.hsluvToHex();
   colors.push(mid.hex);
 
-  // Accent (Kelly's "figure")
+  // Accent (Kelly's "figure") - more vibrant
   const accent = new Hsluv();
   accent.hsluv_h = baseHue + Random.rangeFloor(-20, 20); // Slight hue shift
-  accent.hsluv_s = Random.rangeFloor(60, 85); // High saturation
-  accent.hsluv_l = Random.rangeFloor(25, 45); // Dark enough for contrast
+  accent.hsluv_s = Random.rangeFloor(90, 100); // Max saturation for vibrancy
+  accent.hsluv_l = Random.rangeFloor(45, 60); // Brighter for vibrancy
   accent.hsluvToHex();
   colors.push(accent.hex);
 
