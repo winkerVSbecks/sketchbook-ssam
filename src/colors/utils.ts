@@ -1,6 +1,6 @@
 import { wrap } from 'canvas-sketch-util/math';
 
-function normalizeHue(hue: number): number {
+export function normalizeHue(hue: number): number {
   return wrap(hue, 0, 360);
 }
 

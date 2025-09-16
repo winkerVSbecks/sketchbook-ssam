@@ -7,28 +7,17 @@ import PoissonDiskSampling from 'poisson-disk-sampling';
 import { makeDomain, clipDomain } from '../nalee/domain';
 import { Config } from '../nalee/types';
 import { xyToCoords } from '../nalee/utils';
-import {
-  kellyInspiredScheme,
-  splitComplementary,
-  triadic,
-  complementary,
-  superSaturated,
-} from '../../colors/oklch';
-import { drawPath } from '@daeinc/draw';
+import { complementaryWithVariants } from '../../colors/oklch';
 
-const colorFn = Random.pick([
-  kellyInspiredScheme,
-  splitComplementary,
-  triadic,
-  complementary,
-  superSaturated,
-]);
-
-const [bg, constant, variation] = colorFn();
+const { bg, mid, fg } = complementaryWithVariants();
 // log and visualize the colors in console
 console.log(`%c ${bg}`, `background: ${bg}; color: ${bg}`);
-console.log(`%c ${constant}`, `background: ${constant}; color: ${constant}`);
-console.log(`%c ${variation}`, `background: ${variation}; color: ${variation}`);
+mid.forEach((color) => {
+  console.log(`%c ${color}`, `background: ${color}; color: ${color}`);
+});
+fg.forEach((color) => {
+  console.log(`%c ${color}`, `background: ${color}; color: ${color}`);
+});
 
 export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
   if (import.meta.hot) {
@@ -90,20 +79,14 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
   const paddedHull = padPolygon(hull, 0.02);
 
   const hullCD = clipDomain(domain, hull);
-  const hullSystem = createNaleeSystem(
-    hullCD,
-    config,
-    domainToWorld,
-    [variation],
-    bg
-  );
+  const hullSystem = createNaleeSystem(hullCD, config, domainToWorld, fg, bg);
 
   const bgSystemCD = clipDomain(domain, paddedHull, true);
   const bgSystem = createNaleeSystem(
     bgSystemCD,
-    { ...config, pathStyle: 'solidStyle' },
+    { ...config, pathStyle: 'solidStyle', walkerCount: 150 },
     domainToWorld,
-    [constant],
+    mid,
     bg
   );
 
