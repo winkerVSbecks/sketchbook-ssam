@@ -66,3 +66,93 @@ export function color(
 
 export const black = radixColors.blackP3A;
 export const white = radixColors.whiteP3A;
+
+export const kellyRadixPairs = [
+  // Constants + Variables
+  [
+    { hue: 'gray', level: 9 },
+    { hue: 'red', level: 9 },
+  ],
+  [
+    { hue: 'gray', level: 9 },
+    { hue: 'blue', level: 9 },
+  ],
+  [
+    { hue: 'gray', level: 9 },
+    { hue: 'green', level: 9 },
+  ],
+  [
+    { hue: 'yellow', level: 9 },
+    { hue: 'red', level: 9 },
+  ],
+  [
+    { hue: 'yellow', level: 9 },
+    { hue: 'blue', level: 9 },
+  ],
+  [
+    { hue: 'yellow', level: 9 },
+    { hue: 'green', level: 9 },
+  ],
+
+  // Variable + Variable
+  [
+    { hue: 'red', level: 9 },
+    { hue: 'green', level: 9 },
+  ],
+  [
+    { hue: 'blue', level: 9 },
+    { hue: 'orange', level: 9 },
+  ],
+  [
+    { hue: 'purple', level: 9 },
+    { hue: 'lime', level: 9 },
+  ],
+  [
+    { hue: 'crimson', level: 9 },
+    { hue: 'teal', level: 9 },
+  ],
+  [
+    { hue: 'indigo', level: 9 },
+    { hue: 'amber', level: 9 },
+  ],
+  [
+    { hue: 'violet', level: 9 },
+    { hue: 'grass', level: 9 },
+  ],
+
+  // Pure Constants
+  [
+    { hue: 'gray', level: 1 },
+    { hue: 'gray', level: 12 },
+  ],
+  [
+    { hue: 'gray', level: 9 },
+    { hue: 'yellow', level: 9 },
+  ],
+
+  // Sophisticated Tinted Grays
+  [
+    { hue: 'slate', level: 9 },
+    { hue: 'amber', level: 9 },
+  ],
+  [
+    { hue: 'mauve', level: 9 },
+    { hue: 'jade', level: 9 },
+  ],
+  [
+    { hue: 'sand', level: 9 },
+    { hue: 'indigo', level: 9 },
+  ],
+  [
+    { hue: 'sage', level: 9 },
+    { hue: 'ruby', level: 9 },
+  ],
+  [
+    { hue: 'olive', level: 9 },
+    { hue: 'pink', level: 9 },
+  ],
+  [
+    { hue: 'bronze', level: 9 },
+    { hue: 'sky', level: 9 },
+  ],
+];

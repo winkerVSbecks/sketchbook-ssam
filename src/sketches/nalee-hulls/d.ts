@@ -7,13 +7,13 @@ import PoissonDiskSampling from 'poisson-disk-sampling';
 import { makeDomain, clipDomain } from '../nalee/domain';
 import { Config } from '../nalee/types';
 import { xyToCoords } from '../nalee/utils';
-import { drawShape } from '../nalee/paths';
 import { color, keys, ColorType } from '../../colors/radix';
 
-const bg = color('mauve', 2);
-const colors: [string[], string][] = Random.shuffle(keys).map(
-  (k: ColorType) => [[color(k, 11)], color(k, 3)]
-);
+const hue = Random.pick(keys) as ColorType;
+
+const bg = color(hue, 3);
+const bgFill = color(hue, 8);
+const fg = color(hue, 4);
 
 export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
   if (import.meta.hot) {
@@ -26,8 +26,8 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
     resolution: [Math.floor(width / size), Math.floor(height / size)],
     size: size - 1,
     stepSize: size / 3,
-    walkerCount: 30,
-    padding: 1 / 16,
+    walkerCount: 20,
+    padding: 1 / 64,
     pathStyle: 'infinitePipeStyle',
     flat: true,
   } satisfies Config;
@@ -48,12 +48,26 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
     maxDistance: Math.max(...config.resolution),
   })
     .fill()
-    .concat([
-      [0, 0],
-      [0, config.resolution[1]],
-      [config.resolution[0], 0],
-      [config.resolution[0], config.resolution[1]],
-    ]);
+    .concat(
+      Random.pick([
+        [
+          [0, 0],
+          [config.resolution[0], 0],
+        ],
+        [
+          [0, config.resolution[1]],
+          [config.resolution[0], config.resolution[1]],
+        ],
+        [
+          [0, 0],
+          [0, config.resolution[1]],
+        ],
+        [
+          [config.resolution[0], 0],
+          [config.resolution[0], config.resolution[1]],
+        ],
+      ])
+    );
 
   let delaunay: Delaunay<number[]> = Delaunay.from(points as Point[]);
 
@@ -71,21 +85,27 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
     ]);
   }
 
-  const worldPolygons: { polygon: Point[]; color: string }[] = [];
+  const hull = delaunay.hullPolygon();
+  const paddedHull = padPolygon(hull, 0.02);
+  // const worldCoordsHull = hull.map((p) => domainToWorld(...p));
 
-  const systems = polygons
-    .map((p) => shrinkTriangle(p, 0.05))
-    .map((p, idx) => {
-      const cd = clipDomain(domain, p);
-      const color = colors[idx % colors.length];
+  const hullCD = clipDomain(domain, hull);
+  const hullSystem = createNaleeSystem(
+    hullCD,
+    config,
+    domainToWorld,
+    [bgFill],
+    bg
+  );
 
-      worldPolygons.push({
-        polygon: polygons[idx].map((p) => domainToWorld(...p)),
-        color: color[1],
-      });
-
-      return createNaleeSystem(cd, config, domainToWorld, color[0], color[1]);
-    });
+  const bgSystemCD = clipDomain(domain, paddedHull, true);
+  const bgSystem = createNaleeSystem(
+    bgSystemCD,
+    { ...config, pathStyle: 'solidStyle' },
+    domainToWorld,
+    [fg],
+    bg
+  );
 
   wrap.render = (props: SketchProps) => {
     const { width, height } = props;
@@ -93,33 +113,24 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
 
-    systems.forEach((system, idx) => {
-      const { polygon, color } = worldPolygons[idx];
-      context.strokeStyle = '#002500';
-      context.fillStyle = color;
-      context.lineWidth = 2;
-      context.lineCap = 'round';
-      context.lineJoin = 'round';
-      drawShape(context, polygon);
-      context.stroke();
-      context.fill();
+    context.lineCap = 'round';
+    context.lineJoin = 'round';
 
-      context.save();
-      system(props);
-      context.restore();
-    });
+    bgSystem(props);
+    hullSystem(props);
   };
 };
 
-function shrinkTriangle(triangle: Point[], padding: number): Point[] {
+function padPolygon(polygon: Point[], padding: number): Point[] {
   // Calculate centroid
-  const cx = (triangle[0][0] + triangle[1][0] + triangle[2][0]) / 3;
-  const cy = (triangle[0][1] + triangle[1][1] + triangle[2][1]) / 3;
+  const n = polygon.length;
+  const cx = polygon.reduce((sum, [x]) => sum + x, 0) / n;
+  const cy = polygon.reduce((sum, [, y]) => sum + y, 0) / n;
 
-  // Shrink each vertex toward centroid
-  return triangle.map(([x, y]) => [
-    cx + (x - cx) * (1 - padding),
-    cy + (y - cy) * (1 - padding),
+  // Pad each vertex away from centroid
+  return polygon.map(([x, y]) => [
+    cx + (x - cx) * (1 + padding),
+    cy + (y - cy) * (1 + padding),
   ]);
 }
 

@@ -43,14 +43,14 @@ function solidStyle(
   context.lineCap = 'round';
   context.lineJoin = 'round';
 
-  // outer
-  context.save();
-  context.translate(4, 4);
-  context.strokeStyle = '#CEFF00';
-  context.lineWidth = walker.size - walker.stepSize;
-  drawShape(context, pts, false);
-  context.stroke();
-  context.restore();
+  // // outer
+  // context.save();
+  // context.translate(4, 4);
+  // context.strokeStyle = '#CEFF00';
+  // context.lineWidth = walker.size - walker.stepSize;
+  // drawShape(context, pts, false);
+  // context.stroke();
+  // context.restore();
 
   // outer
   context.strokeStyle = walker.color;
@@ -74,15 +74,6 @@ function pipeStyle(
 
     l = l + Math.hypot(a[0] - b[0], a[1] - b[1]);
   }
-
-  // const noiseHeadT = Random.noise3D(t, pts[0][0], pts[0][1]);
-  // l1 = l1 * noiseHeadT;
-  // const noiseTailT = Random.noise3D(
-  //   t,
-  //   pts[pts.length - 1][0],
-  //   pts[pts.length - 1][1]
-  // );
-  // l2 = l2 * noiseTailT;
 
   context.setLineDash([l, 0]);
   context.lineDashOffset = 0;
@@ -149,9 +140,9 @@ function infinitePipeStyle(
   context.stroke();
 
   context.save();
-  context.setLineDash([l / 2, l]);
+  context.setLineDash([l / 4, l / 2]);
 
-  context.lineDashOffset = lerpFrames([0, 1.5 * l], playhead);
+  context.lineDashOffset = lerpFrames([0, 0.75 * l], playhead);
   context.strokeStyle = backgroundColor;
   context.lineWidth = 1;
   drawShape(context, pts, false);

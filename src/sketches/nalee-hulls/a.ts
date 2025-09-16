@@ -2,7 +2,7 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import { createNaleeSystem } from '../nalee/nalee-system';
 import Random from 'canvas-sketch-util/random';
-import { Delaunay, Voronoi } from 'd3-delaunay';
+import { Delaunay } from 'd3-delaunay';
 import { makeDomain, clipDomain } from '../nalee/domain';
 import { Config } from '../nalee/types';
 import { xyToCoords } from '../nalee/utils';
