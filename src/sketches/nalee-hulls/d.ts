@@ -71,20 +71,6 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
 
   let delaunay: Delaunay<number[]> = Delaunay.from(points as Point[]);
 
-  const { points: dPoints, triangles } = delaunay;
-  const polygons: Point[][] = [];
-
-  for (let i = 0; i < triangles.length / 3; i++) {
-    const t0 = triangles[i * 3 + 0];
-    const t1 = triangles[i * 3 + 1];
-    const t2 = triangles[i * 3 + 2];
-    polygons.push([
-      [dPoints[t0 * 2], dPoints[t0 * 2 + 1]],
-      [dPoints[t1 * 2], dPoints[t1 * 2 + 1]],
-      [dPoints[t2 * 2], dPoints[t2 * 2 + 1]],
-    ]);
-  }
-
   const hull = delaunay.hullPolygon();
   const paddedHull = padPolygon(hull, 0.02);
   // const worldCoordsHull = hull.map((p) => domainToWorld(...p));

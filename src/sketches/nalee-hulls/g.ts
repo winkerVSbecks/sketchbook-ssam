@@ -7,54 +7,28 @@ import PoissonDiskSampling from 'poisson-disk-sampling';
 import { makeDomain, clipDomain } from '../nalee/domain';
 import { Config } from '../nalee/types';
 import { xyToCoords } from '../nalee/utils';
-import { color } from '../../colors/radix';
+import {
+  kellyInspiredScheme,
+  splitComplementary,
+  triadic,
+  complementary,
+  superSaturated,
+} from '../../colors/oklch';
+import { drawPath } from '@daeinc/draw';
 
-// Blacks, whites, and yellows remain constant,
-// while reds, blues, and greens display "crucial hue variations dictated by context"
-
-const colors = {
-  blacks: [color('gray', 12), color('mauve', 12), color('slate', 12)],
-  whites: [color('gray', 3), color('mauve', 3), color('slate', 3)],
-  yellows: [
-    color('amber', 9),
-    color('amber', 10),
-    color('yellow', 5),
-    color('yellow', 9),
-  ],
-  reds: [color('tomato', 9), color('red', 9)],
-  blues: [
-    color('indigo', 9),
-    color('indigo', 10),
-    color('blue', 9),
-    color('blue', 10),
-    color('blue', 11),
-  ],
-  greens: [
-    color('jade', 10),
-    color('jade', 11),
-    color('green', 10),
-    color('green', 11),
-    color('grass', 9),
-  ],
-};
-
-type Hue = keyof typeof colors;
-
-const pair: [Hue, Hue] = Random.pick([
-  ['blacks', 'reds'],
-  ['blacks', 'blues'],
-  ['blacks', 'greens'],
-  ['whites', 'reds'],
-  ['whites', 'blues'],
-  ['whites', 'greens'],
-  ['yellows', 'reds'],
-  ['yellows', 'blues'],
-  ['yellows', 'greens'],
+const colorFn = Random.pick([
+  kellyInspiredScheme,
+  splitComplementary,
+  triadic,
+  complementary,
+  superSaturated,
 ]);
 
-const constant = Random.pick(colors[pair[0]]);
-const variation = Random.pick(colors[pair[1]]);
-const bg = color('gray', 1);
+const [bg, constant, variation] = colorFn();
+// log and visualize the colors in console
+console.log(`%c ${bg}`, `background: ${bg}; color: ${bg}`);
+console.log(`%c ${constant}`, `background: ${constant}; color: ${constant}`);
+console.log(`%c ${variation}`, `background: ${variation}; color: ${variation}`);
 
 export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
   if (import.meta.hot) {
@@ -133,6 +107,8 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
     bg
   );
 
+  const area = paddedHull.map((p) => domainToWorld(...p));
+
   wrap.render = (props: SketchProps) => {
     const { width, height } = props;
     context.clearRect(0, 0, width, height);
@@ -141,6 +117,10 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
 
     context.lineCap = 'round';
     context.lineJoin = 'round';
+
+    context.fillStyle = bg;
+    drawPath(context, area);
+    context.fill();
 
     bgSystem(props);
     hullSystem(props);
