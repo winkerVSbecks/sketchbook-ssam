@@ -1,3 +1,4 @@
+import classifyPoint from 'robust-point-in-polygon';
 import { DomainToWorld, Node } from './types';
 import { xyToId } from './utils';
 
@@ -58,4 +59,15 @@ function pointInCircle(center: Point, radius: number, point: Point) {
   const dx = point[0] - center[0];
   const dy = point[1] - center[1];
   return dx * dx + dy * dy <= radius * radius;
+}
+
+export function clipPolarDomain(
+  domain: Node[],
+  polygon: Point[],
+  inverse?: boolean
+) {
+  return domain.filter(({ worldX, worldY }) => {
+    const result = classifyPoint(polygon, [worldX, worldY]);
+    return inverse ? result > 0 : result <= 0;
+  });
 }

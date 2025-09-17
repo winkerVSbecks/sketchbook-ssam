@@ -1,5 +1,4 @@
 import { mapRange } from 'canvas-sketch-util/math';
-// import { config } from './nalee-system-manager';
 import { Node, Coord, DomainToWorld } from './types';
 
 /**

@@ -80,6 +80,50 @@ export function complementary(): string[] {
   return colors;
 }
 
+export function hexadic(): string[] {
+  const baseHue = Random.rangeFloor(0, 360);
+  const colors = [];
+
+  const hues = colorHarmonies.hexadic(baseHue);
+
+  // Background (Kelly's "ground")
+  const bgL = Random.range(0.85, 0.95); // Oklch lightness (0-1)
+  const bgC = Random.range(0.02, 0.06); // Oklch chroma (very subtle)
+  const bgH = baseHue;
+  colors.push(`oklch(${(bgL * 100).toFixed(1)}% ${bgC} ${bgH})`);
+
+  hues.forEach((h) => {
+    const accentL = Random.range(0.45, 0.6);
+    const accentC = Random.range(0.1, 0.8);
+
+    colors.push(`oklch(${(accentL * 100).toFixed(1)}% ${accentC} ${h})`);
+  });
+
+  return colors;
+}
+
+export function pentadic(): string[] {
+  const baseHue = Random.rangeFloor(0, 360);
+  const colors = [];
+
+  const hues = colorHarmonies.pentadic(baseHue);
+
+  // Background (Kelly's "ground")
+  const bgL = Random.range(0.85, 0.95); // Oklch lightness (0-1)
+  const bgC = Random.range(0.02, 0.06); // Oklch chroma (very subtle)
+  const bgH = baseHue;
+  colors.push(`oklch(${(bgL * 100).toFixed(1)}% ${bgC} ${bgH})`);
+
+  hues.forEach((h) => {
+    const accentL = Random.range(0.45, 0.6);
+    const accentC = Random.range(0.1, 0.8);
+
+    colors.push(`oklch(${(accentL * 100).toFixed(1)}% ${accentC} ${h})`);
+  });
+
+  return colors;
+}
+
 export function triadic(): string[] {
   const colors = [];
 
