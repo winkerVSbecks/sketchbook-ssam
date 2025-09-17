@@ -9,22 +9,33 @@ import { Config, DomainToWorld, Node } from '../nalee/types';
 import { xyToCoords } from '../nalee/utils';
 import { drawShape } from '../nalee/paths';
 
-const [bg, base, ...accents] = [
-  '#FDFCF3',
-  '#ECE5F0',
-  '#002500',
-  '#CEFF00',
-  '#2A42FF',
-  '#2B0404',
-  '#AB2A00',
-  '#C15F3D',
-  '#EB562F',
+// const [bg, base, ...accents] = [
+//   '#FDFCF3',
+//   '#ECE5F0',
+//   '#002500',
+//   '#CEFF00',
+//   '#2A42FF',
+//   '#2B0404',
+//   '#AB2A00',
+//   '#C15F3D',
+//   '#EB562F',
+// ];
+
+const bg = '#FDFCF3';
+const base = '#ECE5F0';
+
+const accentsPairs = [
+  ['#002500', '#CEFF00'],
+  ['#002500', '#C15F3D'],
+  ['#002500', '#EB562F'],
+  ['#CEFF00', '#2A42FF'],
+  ['#CEFF00', '#2B0404'],
+  ['#CEFF00', '#AB2A00'],
+  ['#CEFF00', '#C15F3D'],
+  ['#CEFF00', '#EB562F'],
+  ['#2B0404', '#C15F3D'],
+  ['#2B0404', '#EB562F'],
 ];
-// log and visualize the colors in console
-console.log(`%c ${bg}`, `background: ${bg}; color: ${bg}`);
-accents.forEach((color) => {
-  console.log(`%c ${color}`, `background: ${color}; color: ${color}`);
-});
 
 export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
   if (import.meta.hot) {
@@ -52,12 +63,19 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
 
   const domain = makeDomain(config.resolution, domainToWorld);
 
-  const clrs = Random.shuffle(accents);
-  const hullSystems = Array.from({ length: accents.length }).map((_, i) => {
-    return createHullSystem(config, domain, domainToWorld, clrs[i], bg);
-  });
+  const clrs = Random.shuffle(accentsPairs);
+  const hullSystems = Array.from({ length: accentsPairs.length }).map(
+    (_, i) => {
+      return createHullSystem(
+        config,
+        domain,
+        domainToWorld,
+        clrs[i][0],
+        clrs[i][1]
+      );
+    }
+  );
 
-  // const paddedHulls = hullSystems.map(({ hull }) => padPolygon(hull, 0.02));
   const hulls = hullSystems.map(({ hull }) => hull);
 
   const bgSystemCD = hulls.reduce((d, c) => {
@@ -140,7 +158,7 @@ function createHullSystem(
   return {
     system,
     hull,
-    color: fg,
+    color: bg,
   };
 }
 
