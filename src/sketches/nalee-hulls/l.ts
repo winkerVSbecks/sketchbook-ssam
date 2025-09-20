@@ -4,64 +4,38 @@ import { createNaleeSystem } from '../nalee/nalee-system';
 import Random from 'canvas-sketch-util/random';
 import { Delaunay } from 'd3-delaunay';
 import PoissonDiskSampling from 'poisson-disk-sampling';
-import { wcagContrast } from 'culori';
 import { makeDomain, clipDomain } from '../nalee/domain';
 import { Config, DomainToWorld, Node } from '../nalee/types';
 import { xyToCoords } from '../nalee/utils';
 import { drawShape } from '../nalee/paths';
 
+// const [bg, base, ...accents] = [
+//   '#FDFCF3',
+//   '#ECE5F0',
+//   '#002500',
+//   '#CEFF00',
+//   '#2A42FF',
+//   '#2B0404',
+//   '#AB2A00',
+//   '#C15F3D',
+//   '#EB562F',
+// ];
+
 const bg = '#FDFCF3';
 const base = '#ECE5F0';
-const accents = [
-  '#002500',
-  '#CEFF00',
-  '#2A42FF',
-  '#2B0404',
-  '#AB2A00',
-  '#C15F3D',
-  '#EB562F',
+
+const accentsPairs = [
+  ['#002500', '#CEFF00'],
+  ['#002500', '#C15F3D'],
+  ['#002500', '#EB562F'],
+  ['#CEFF00', '#2A42FF'],
+  ['#CEFF00', '#2B0404'],
+  ['#CEFF00', '#AB2A00'],
+  ['#CEFF00', '#C15F3D'],
+  ['#CEFF00', '#EB562F'],
+  ['#2B0404', '#C15F3D'],
+  ['#2B0404', '#EB562F'],
 ];
-
-function pickColorCombos(
-  colors: string[],
-  minContrast = 3
-): { foregrounds: string[]; backgrounds: string[] } {
-  if (colors.length < 4) {
-    throw new Error('Need at least 4 colors to pick combos');
-  }
-  // Pick 3 random colors from the list
-  const shuffled = Random.shuffle(colors);
-  const backgrounds: string[] = shuffled.slice(0, 3);
-
-  // Find all colors that have min contrast against ALL colors in backgrounds
-  const foregrounds = colors.filter((color) => {
-    // Skip if color is already in backgrounds
-    if (backgrounds.includes(color)) return false;
-
-    // Check if this color has min contrast against all colors in backgrounds
-    return backgrounds.every(
-      (color1) => wcagContrast(color, color1) >= minContrast
-    );
-  });
-
-  return { foregrounds, backgrounds };
-}
-
-const { foregrounds, backgrounds } = pickColorCombos(accents, 2);
-
-// log and visualize the colors in console
-console.log(`%c ${bg}`, `background: ${bg}; color: ${bg}`);
-console.log(`%c ${base}`, `background: ${base}; color: ${base}`);
-console.log('backgrounds');
-console.log(
-  backgrounds.map((color) => `%c ${color}`).join(' '),
-  ...backgrounds.map((color) => `background: ${color}; color: ${color}`)
-);
-console.log('foregrounds');
-console.log(
-  foregrounds.map((color) => `%c ${color}`).join(' '),
-  ...foregrounds.map((color) => `background: ${color}; color: ${color}`)
-);
 
 export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
   if (import.meta.hot) {
@@ -89,17 +63,19 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
 
   const domain = makeDomain(config.resolution, domainToWorld);
 
-  const hullSystems = Array.from({ length: backgrounds.length }).map((_, i) => {
-    return createHullSystem(
-      config,
-      domain,
-      domainToWorld,
-      Random.pick(foregrounds),
-      backgrounds[i]
-    );
-  });
+  const clrs = Random.shuffle(accentsPairs);
+  const hullSystems = Array.from({ length: accentsPairs.length }).map(
+    (_, i) => {
+      return createHullSystem(
+        config,
+        domain,
+        domainToWorld,
+        clrs[i][0],
+        clrs[i][1]
+      );
+    }
+  );
 
-  // const paddedHulls = hullSystems.map(({ hull }) => padPolygon(hull, 0.02));
   const hulls = hullSystems.map(({ hull }) => hull);
 
   const bgSystemCD = hulls.reduce((d, c) => {

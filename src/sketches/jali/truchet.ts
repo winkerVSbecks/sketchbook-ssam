@@ -7,8 +7,6 @@ import { drawPath } from '@daeinc/draw';
 import { clrs } from '../../colors/clrs';
 import { palettes as autoAlbers } from '../../colors/auto-albers';
 import { palettes as mindfulPalettes } from '../../colors/mindful-palettes';
-import { scaleCanvasAndApplyDither } from '../../scale-canvas-dither';
-import { dither } from '../../dither';
 
 const config = {
   resolution: 32,
@@ -159,19 +157,6 @@ export const sketch = async ({ wrap, context, canvas }: SketchProps) => {
     context.lineTo(x2, y2);
     context.fill();
     context.stroke();
-
-    // const ditheredImage = scaleCanvasAndApplyDither(
-    //   width,
-    //   height,
-    //   0.5,
-    //   canvas,
-    //   (data) =>
-    //     dither(data, {
-    //       greyscaleMethod: 'none',
-    //       ditherMethod: 'atkinson',
-    //     })
-    // );
-    // context.drawImage(ditheredImage, 0, 0, width, height);
   };
 };
 

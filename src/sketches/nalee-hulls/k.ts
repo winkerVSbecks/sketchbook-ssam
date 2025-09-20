@@ -4,7 +4,6 @@ import { createNaleeSystem } from '../nalee/nalee-system';
 import Random from 'canvas-sketch-util/random';
 import { Delaunay } from 'd3-delaunay';
 import PoissonDiskSampling from 'poisson-disk-sampling';
-import { wcagContrast } from 'culori';
 import { makeDomain, clipDomain } from '../nalee/domain';
 import { Config, DomainToWorld, Node } from '../nalee/types';
 import { xyToCoords } from '../nalee/utils';
@@ -12,42 +11,9 @@ import { drawShape } from '../nalee/paths';
 
 const bg = '#FDFCF3';
 const base = '#ECE5F0';
-const accents = [
-  '#002500',
-  '#CEFF00',
-  '#2A42FF',
-  '#2B0404',
-  '#AB2A00',
-  '#C15F3D',
-  '#EB562F',
-];
 
-function pickColorCombos(
-  colors: string[],
-  minContrast = 3
-): { foregrounds: string[]; backgrounds: string[] } {
-  if (colors.length < 4) {
-    throw new Error('Need at least 4 colors to pick combos');
-  }
-  // Pick 3 random colors from the list
-  const shuffled = Random.shuffle(colors);
-  const backgrounds: string[] = shuffled.slice(0, 3);
-
-  // Find all colors that have min contrast against ALL colors in backgrounds
-  const foregrounds = colors.filter((color) => {
-    // Skip if color is already in backgrounds
-    if (backgrounds.includes(color)) return false;
-
-    // Check if this color has min contrast against all colors in backgrounds
-    return backgrounds.every(
-      (color1) => wcagContrast(color, color1) >= minContrast
-    );
-  });
-
-  return { foregrounds, backgrounds };
-}
-
-const { foregrounds, backgrounds } = pickColorCombos(accents, 2);
+const backgrounds = ['#2A42FF', '#AB2A00', '#C15F3D', '#EB562F'];
+const foregrounds = ['#002500', '#CEFF00', '#2B0404'];
 
 // log and visualize the colors in console
 console.log(`%c ${bg}`, `background: ${bg}; color: ${bg}`);
@@ -94,12 +60,11 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
       config,
       domain,
       domainToWorld,
-      Random.pick(foregrounds),
+      foregrounds[i % foregrounds.length],
       backgrounds[i]
     );
   });
 
-  // const paddedHulls = hullSystems.map(({ hull }) => padPolygon(hull, 0.02));
   const hulls = hullSystems.map(({ hull }) => hull);
 
   const bgSystemCD = hulls.reduce((d, c) => {
@@ -107,7 +72,7 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
   }, domain);
   const bgSystem = createNaleeSystem(
     bgSystemCD,
-    { ...config, pathStyle: 'solidStyle', walkerCount: 150 },
+    { ...config, pathStyle: 'solidStyle', walkerCount: 1 },
     domainToWorld,
     [base],
     bg
@@ -191,7 +156,7 @@ export const settings: SketchSettings = {
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
   animate: false,
-  duration: 4_000,
+  duration: 1_000,
   playFps: 60,
   exportFps: 60,
   framesFormat: ['mp4'],
