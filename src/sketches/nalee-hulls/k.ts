@@ -12,8 +12,16 @@ import { drawShape } from '../nalee/paths';
 const bg = '#FDFCF3';
 const base = '#ECE5F0';
 
-const backgrounds = ['#2A42FF', '#AB2A00', '#C15F3D', '#EB562F'];
-const foregrounds = ['#002500', '#CEFF00', '#2B0404'];
+const [foregrounds, backgrounds] = Random.pick([
+  [
+    Random.shuffle(['#2A42FF', '#AB2A00', '#C15F3D', '#EB562F']),
+    Random.shuffle(['#002500', '#CEFF00', '#2B0404']),
+  ],
+  [
+    Random.shuffle(['#002500', '#CEFF00', '#2B0404']),
+    Random.shuffle(['#2A42FF', '#AB2A00', '#C15F3D', '#EB562F']),
+  ],
+]) as [string[], string[]];
 
 // log and visualize the colors in console
 console.log(`%c ${bg}`, `background: ${bg}; color: ${bg}`);
@@ -42,7 +50,7 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
     stepSize: size / 2,
     walkerCount: 20,
     padding: 1 / 64,
-    pathStyle: 'solidStyle',
+    pathStyle: 'animatedLine',
     flat: true,
   } satisfies Config;
 
@@ -155,8 +163,8 @@ export const settings: SketchSettings = {
   mode: '2d',
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
-  animate: false,
-  duration: 1_000,
+  animate: true,
+  duration: 4_000,
   playFps: 60,
   exportFps: 60,
   framesFormat: ['mp4'],

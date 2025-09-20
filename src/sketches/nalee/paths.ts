@@ -43,16 +43,39 @@ function solidStyle(
   context.lineCap = 'round';
   context.lineJoin = 'round';
 
-  // // outer
-  // context.save();
-  // context.translate(4, 4);
-  // context.strokeStyle = '#CEFF00';
-  // context.lineWidth = walker.size - walker.stepSize;
-  // drawShape(context, pts, false);
-  // context.stroke();
-  // context.restore();
-
   // outer
+  context.strokeStyle = walker.color;
+  context.lineWidth = walker.size - walker.stepSize;
+  drawShape(context, pts, false);
+  context.stroke();
+}
+
+function animatedLine(
+  context: CanvasRenderingContext2D,
+  walker: Walker,
+  pts: Point[],
+  _: [number, number],
+  t: number,
+  backgroundColor: string,
+  playhead: number
+) {
+  let l = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i];
+    const b = pts[i - 1];
+
+    l = l + Math.hypot(a[0] - b[0], a[1] - b[1]);
+  }
+
+  context.lineCap = 'round';
+  context.lineJoin = 'round';
+
+  const time = lerpFrames([0, 1, 1, 0, 0], playhead);
+
+  // animate the line drawing
+  context.setLineDash([l, l]);
+  context.lineDashOffset = lerpFrames([l, 0], time);
+
   context.strokeStyle = walker.color;
   context.lineWidth = walker.size - walker.stepSize;
   drawShape(context, pts, false);
@@ -389,6 +412,7 @@ export function drawShape(
 
 export const pathStyles = {
   solidStyle,
+  animatedLine,
   pipeStyle,
   infinitePipeStyle,
   distressedStyle,
