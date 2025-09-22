@@ -3,13 +3,7 @@ import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 import { drawPath } from '@daeinc/draw';
 import { generateDomainSystem, isIsland } from '../domain-polygon-system';
-import {
-  drawWindow,
-  drawPart,
-  drawVectorNetwork,
-  drawControls,
-  drawTopBar,
-} from './ui';
+import { drawWindow, drawPart, drawVectorNetwork, drawTopBar } from './ui';
 import { config, colors } from './config';
 import { Domain } from '../types';
 
