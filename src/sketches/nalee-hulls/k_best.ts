@@ -50,7 +50,7 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
     stepSize: size / 2,
     walkerCount: 20,
     padding: 1 / 64,
-    pathStyle: 'animatedLine',
+    pathStyle: 'solidStyle', //'solidStyle', //'animatedLine',
     flat: true,
   } satisfies Config;
 
@@ -163,8 +163,8 @@ export const settings: SketchSettings = {
   mode: '2d',
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
-  animate: true,
-  duration: 4_000,
+  animate: false,
+  duration: 12_000,
   playFps: 60,
   exportFps: 60,
   framesFormat: ['mp4'],
