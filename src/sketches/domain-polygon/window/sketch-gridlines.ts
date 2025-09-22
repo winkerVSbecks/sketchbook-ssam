@@ -49,19 +49,8 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     grid
   );
 
-  const toolbar = domains.find((d) => {
-    const isNarrow =
-      (d.region.width === 1 && d.region.height <= 3) ||
-      (d.region.height === 1 && d.region.width <= 3);
-    const isEdgeAligned =
-      d.region.x === 0 ||
-      d.region.y === 0 ||
-      d.region.x + d.region.width === config.res[0] ||
-      d.region.y + d.region.height === config.res[1];
-    return isNarrow && isEdgeAligned && !d.hasPart;
-  });
   const baseWindows: Domain[] = Random.shuffle(
-    domains.filter((d) => !isIsland(d) && d.id !== toolbar?.id)
+    domains.filter((d) => !isIsland(d))
   );
   const windows: Domain[] = baseWindows.slice(
     0,
@@ -115,16 +104,6 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     windows.forEach((d) => {
       drawWindow(context, d.x, d.y, d.width, d.height, d.debug);
     });
-
-    if (toolbar) {
-      drawControls(
-        context,
-        toolbar.x,
-        toolbar.y,
-        toolbar.width,
-        toolbar.height
-      );
-    }
 
     // render solid parts with button style aesthetic
     solidParts.forEach((part, idx) => {
