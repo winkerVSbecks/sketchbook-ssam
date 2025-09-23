@@ -9,3 +9,15 @@ export const carmen = [
   '#C15F3D',
   '#EB562F',
 ];
+
+export const bless = [
+  '#FFFFFF',
+  '#FBF9F3',
+  '#A8F0E6',
+  '#E5D5FF',
+  '#FFDDDD',
+  '#000000',
+  '#FFA500',
+  '#8F0202',
+  '#042411',
+];
