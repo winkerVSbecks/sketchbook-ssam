@@ -21,6 +21,14 @@ const [foregrounds, backgrounds] = Random.pick([
     Random.shuffle(['#002500', '#CEFF00', '#2B0404']),
     Random.shuffle(['#2A42FF', '#AB2A00', '#C15F3D', '#EB562F']),
   ],
+  [
+    Random.shuffle(['#000000', '#FFA500', '#8F0202', '#042411']),
+    Random.shuffle(['#FBF9F3', '#A8F0E6', '#E5D5FF', '#FFDDDD']),
+  ],
+  [
+    Random.shuffle(['#FBF9F3', '#A8F0E6', '#E5D5FF', '#FFDDDD']),
+    Random.shuffle(['#000000', '#FFA500', '#8F0202', '#042411']),
+  ],
 ]) as [string[], string[]];
 
 // log and visualize the colors in console
