@@ -7,6 +7,7 @@ import { logColor } from '../../colors';
 
 const config = {
   res: 3,
+  debug: false,
 };
 
 const colors = Random.shuffle(Random.pick([carmen, bless]));
@@ -125,23 +126,18 @@ for (let y = 0; y < config.res; y++) {
 
 function createArea(): Area {
   const area: Area = { cells: [], color: Random.pick(colors) };
-  const start = Random.pick(grid);
+  const start = Random.pick(grid.filter((c) => !c.occupied));
   start.occupied = true;
 
   let currentCell: Cell = { ...start, occupied: true, type: '0123' };
   area.cells.push(currentCell);
 
   while (true) {
-    // console.log(currentCell);
     const options = [
       [0, 1],
       [1, 0],
       [0, -1],
       [-1, 0],
-      // [1, 1],
-      // [-1, -1],
-      // [1, -1],
-      // [-1, 1],
     ].filter(([dx, dy]) => {
       const nx = currentCell.x + dx;
       const ny = currentCell.y + dy;
@@ -218,7 +214,6 @@ function createArea(): Area {
     if (nextTypeOptions.length === 0) break;
 
     const nextType = Random.pick(nextTypeOptions);
-    console.log({ type: currentCell.type, nextTypeOptions, dx, dy, nextType });
 
     currentCell = {
       ...next,
@@ -231,19 +226,32 @@ function createArea(): Area {
   return area;
 }
 
-const area = createArea();
-console.log(area);
-logColor(area.color);
+function fillGridWithAreas(): Area[] {
+  let unoccupied = grid.filter((c) => !c.occupied).length;
+  let attempts = 0;
+  const maxAttempts = 100;
+  const areas: Area[] = [];
 
-// there's actually four orientations of split cells
-//  split-left along bottom or top
-//  split-right along bottom or top
+  while (unoccupied > 0 && attempts < maxAttempts) {
+    const area = createArea();
+    if (area.cells.length > 0) {
+      unoccupied = grid.filter((c) => !c.occupied).length;
+      areas.push(area);
+      attempts++;
+    }
+  }
+
+  console.log(`Filled grid with areas in ${attempts} attempts`);
+  return areas;
+}
 
 export const sketch = async ({ wrap, context }: SketchProps) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => wrap.dispose());
     import.meta.hot.accept(() => wrap.hotReload());
   }
+
+  const areas = fillGridWithAreas();
 
   wrap.render = ({ width, height }: SketchProps) => {
     context.fillStyle = bg;
@@ -252,31 +260,37 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
     const w = width / config.res;
     const h = height / config.res;
 
-    area.cells.forEach((cell, idx) => {
-      const x = cell.x * w;
-      const y = cell.y * h;
+    areas.forEach((area) => {
+      area.cells.forEach((cell, idx) => {
+        const x = cell.x * w;
+        const y = cell.y * h;
 
-      context.fillStyle = area.color;
-      cells[cell.type](context, x, y, w, h);
+        context.fillStyle = area.color;
+        cells[cell.type](context, x, y, w, h);
 
-      context.fillStyle = 'green';
-      context.textAlign = 'center';
-      context.textBaseline = 'middle';
-      context.font = `32px monospace`;
-      context.fillText(String(idx), x + w / 2, y + h / 2);
+        if (config.debug) {
+          context.fillStyle = 'green';
+          context.textAlign = 'center';
+          context.textBaseline = 'middle';
+          context.font = `32px monospace`;
+          context.fillText(String(idx), x + w / 2, y + h / 2);
+        }
+      });
     });
 
-    context.strokeStyle = bg;
-    context.lineWidth = 1;
-    grid.forEach((cell, idx) => {
-      const x = cell.x * w;
-      const y = cell.y * h;
-      context.strokeRect(x, y, w, h);
+    if (config.debug) {
+      context.strokeStyle = bg;
+      context.lineWidth = 1;
+      grid.forEach((cell, idx) => {
+        const x = cell.x * w;
+        const y = cell.y * h;
+        context.strokeRect(x, y, w, h);
 
-      // const type: CellType[] = ['0123', '013', '012', '023', '123'];
-      // context.fillStyle = area.color;
-      // cells[type[idx % type.length]](context, x, y, w, h);
-    });
+        // const type: CellType[] = ['0123', '013', '012', '023', '123'];
+        // context.fillStyle = area.color;
+        // cells[type[idx % type.length]](context, x, y, w, h);
+      });
+    }
   };
 };
 
