@@ -20,7 +20,12 @@ interface GridCell {
   x: number;
   y: number;
   occupied: boolean;
-  type?: 'full' | 'split-left' | 'split-right';
+  type?:
+    | 'full'
+    | 'split-left-top'
+    | 'split-left-bottom'
+    | 'split-right-top'
+    | 'split-right-bottom';
 }
 
 interface Area {
@@ -157,18 +162,36 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
 
       if (cell.type === 'full') {
         context.fillRect(x, y, w, h);
-      } else if (cell.type === 'split-left') {
+      } else if (cell.type === 'split-left-top') {
+        // Triangle: top-left, top-right, bottom-left
         context.beginPath();
         context.moveTo(x, y);
         context.lineTo(x + w, y);
         context.lineTo(x, y + h);
         context.closePath();
         context.fill();
-      } else if (cell.type === 'split-right') {
+      } else if (cell.type === 'split-left-bottom') {
+        // Triangle: bottom-left, bottom-right, top-right
+        context.beginPath();
+        context.moveTo(x, y + h);
+        context.lineTo(x + w, y + h);
+        context.lineTo(x + w, y);
+        context.closePath();
+        context.fill();
+      } else if (cell.type === 'split-right-top') {
+        // Triangle: top-left, top-right, bottom-right
         context.beginPath();
         context.moveTo(x, y);
+        context.lineTo(x + w, y);
         context.lineTo(x + w, y + h);
+        context.closePath();
+        context.fill();
+      } else if (cell.type === 'split-right-bottom') {
+        // Triangle: top-left, bottom-left, bottom-right
+        context.beginPath();
+        context.moveTo(x, y);
         context.lineTo(x, y + h);
+        context.lineTo(x + w, y + h);
         context.closePath();
         context.fill();
       }
