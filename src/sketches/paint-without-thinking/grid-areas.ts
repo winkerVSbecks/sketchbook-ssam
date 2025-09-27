@@ -89,11 +89,25 @@ const cells = {
 type CellType = keyof typeof cells;
 const cellTypes = Object.keys(cells) as CellType[];
 
-interface Cell {
+// Define edges for each cell type
+// Edges are defined as [top, right, bottom, left]
+type Edge = [boolean, boolean, boolean, boolean];
+const edges: Record<CellType, Edge> = {
+  '0123': [true, true, true, true],
+  '013': [true, false, false, true],
+  '012': [true, true, false, false],
+  '023': [false, false, true, true],
+  '123': [false, true, true, false],
+};
+
+interface GridCell {
   x: number;
   y: number;
   occupied: boolean;
-  type?: CellType;
+}
+
+interface Cell extends GridCell {
+  type: CellType;
 }
 
 interface Area {
@@ -101,7 +115,7 @@ interface Area {
   color: string;
 }
 
-const grid: Cell[] = [];
+const grid: GridCell[] = [];
 
 for (let y = 0; y < config.res; y++) {
   for (let x = 0; x < config.res; x++) {
@@ -118,16 +132,16 @@ function createArea(): Area {
   area.cells.push(currentCell);
 
   while (true) {
-    console.log(currentCell);
+    // console.log(currentCell);
     const options = [
       [0, 1],
       [1, 0],
       [0, -1],
       [-1, 0],
-      [1, 1],
-      [-1, -1],
-      [1, -1],
-      [-1, 1],
+      // [1, 1],
+      // [-1, -1],
+      // [1, -1],
+      // [-1, 1],
     ].filter(([dx, dy]) => {
       const nx = currentCell.x + dx;
       const ny = currentCell.y + dy;
@@ -152,24 +166,59 @@ function createArea(): Area {
 
     // only acceptable types are those that share an edge with current cell
     const nextTypeOptions = cellTypes.filter((type) => {
-      if (type === currentCell.type) return true; // always allow same type
+      // Compare edges based on next cell position
+      // if moving right, current right edge must match next left edge
+      // if moving left, current left edge must match next right edge
+      // if moving down, current bottom edge must match next top edge
+      // if moving up, current top edge must match next bottom edge
+      const currentEdges = edges[currentCell.type];
+      const nextEdges = edges[type];
 
-      const sharedEdges: Record<CellType, CellType[]> = {
-        '0123': ['0123', '013', '012', '023', '123'],
-        '013': ['0123', '013', '123'],
-        '012': ['0123', '012', '123'],
-        '023': ['0123', '023', '123'],
-        '123': ['0123', '013', '012', '023', '123'],
-      } as const;
+      // moving right
+      if (
+        dx === 1 &&
+        dy === 0 &&
+        currentEdges[1] === nextEdges[3] &&
+        currentEdges[1] &&
+        nextEdges[3]
+      ) {
+        return true;
+        // moving left
+      } else if (
+        dx === -1 &&
+        dy === 0 &&
+        currentEdges[3] === nextEdges[1] &&
+        currentEdges[3] &&
+        nextEdges[1]
+      ) {
+        return true;
+        // moving down
+      } else if (
+        dx === 0 &&
+        dy === 1 &&
+        currentEdges[2] === nextEdges[0] &&
+        currentEdges[2] &&
+        nextEdges[0]
+      ) {
+        return true;
+        // moving up
+      } else if (
+        dx === 0 &&
+        dy === -1 &&
+        currentEdges[0] === nextEdges[2] &&
+        currentEdges[0] &&
+        nextEdges[2]
+      ) {
+        return true;
+      }
 
-      const allowed = sharedEdges[currentCell.type!];
-      return allowed.includes(type);
+      return false;
     });
 
     if (nextTypeOptions.length === 0) break;
 
     const nextType = Random.pick(nextTypeOptions);
-    // let nextType = cellTypes.filter()
+    console.log({ type: currentCell.type, nextTypeOptions, dx, dy, nextType });
 
     currentCell = {
       ...next,
