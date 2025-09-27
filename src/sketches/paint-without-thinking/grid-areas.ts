@@ -33,6 +33,78 @@ interface Area {
   color: string;
 }
 
+// 0-----1
+// |     |
+// 3-----2
+const cells = {
+  '0123': (
+    context: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    w: number,
+    h: number
+  ) => {
+    context.fillRect(x, y, w, h);
+  },
+  '013': (
+    context: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    w: number,
+    h: number
+  ) => {
+    context.beginPath();
+    context.moveTo(x, y);
+    context.lineTo(x + w, y);
+    context.lineTo(x, y + h);
+    context.closePath();
+    context.fill();
+  },
+  '012': (
+    context: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    w: number,
+    h: number
+  ) => {
+    context.beginPath();
+    context.moveTo(x, y);
+    context.lineTo(x + w, y);
+    context.lineTo(x + w, y + h);
+    context.closePath();
+    context.fill();
+  },
+  '023': (
+    context: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    w: number,
+    h: number
+  ) => {
+    context.beginPath();
+    context.moveTo(x, y);
+    context.lineTo(x + w, y + h);
+    context.lineTo(x, y + h);
+    context.closePath();
+    context.fill();
+  },
+  '123': (
+    context: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    w: number,
+    h: number
+  ) => {
+    context.beginPath();
+    context.moveTo(x + w, y);
+    context.lineTo(x + w, y + h);
+    context.lineTo(x, y + h);
+    context.closePath();
+    context.fill();
+  },
+} as const;
+type CellType = keyof typeof cells;
+
 const grid: GridCell[] = [];
 
 for (let y = 0; y < config.res; y++) {
@@ -154,61 +226,65 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
     const w = width / config.res;
     const h = height / config.res;
 
-    area.cells.forEach((cell, idx) => {
-      const x = cell.x * w;
-      const y = cell.y * h;
+    // area.cells.forEach((cell, idx) => {
+    //   const x = cell.x * w;
+    //   const y = cell.y * h;
 
-      context.fillStyle = area.color;
+    //   context.fillStyle = area.color;
 
-      if (cell.type === 'full') {
-        context.fillRect(x, y, w, h);
-      } else if (cell.type === 'split-left-top') {
-        // Triangle: top-left, top-right, bottom-left
-        context.beginPath();
-        context.moveTo(x, y);
-        context.lineTo(x + w, y);
-        context.lineTo(x, y + h);
-        context.closePath();
-        context.fill();
-      } else if (cell.type === 'split-left-bottom') {
-        // Triangle: bottom-left, bottom-right, top-right
-        context.beginPath();
-        context.moveTo(x, y + h);
-        context.lineTo(x + w, y + h);
-        context.lineTo(x + w, y);
-        context.closePath();
-        context.fill();
-      } else if (cell.type === 'split-right-top') {
-        // Triangle: top-left, top-right, bottom-right
-        context.beginPath();
-        context.moveTo(x, y);
-        context.lineTo(x + w, y);
-        context.lineTo(x + w, y + h);
-        context.closePath();
-        context.fill();
-      } else if (cell.type === 'split-right-bottom') {
-        // Triangle: top-left, bottom-left, bottom-right
-        context.beginPath();
-        context.moveTo(x, y);
-        context.lineTo(x, y + h);
-        context.lineTo(x + w, y + h);
-        context.closePath();
-        context.fill();
-      }
+    //   if (cell.type === 'full') {
+    //     context.fillRect(x, y, w, h);
+    //   } else if (cell.type === 'split-left-top') {
+    //     // Triangle: top-left, top-right, bottom-left
+    //     context.beginPath();
+    //     context.moveTo(x, y);
+    //     context.lineTo(x + w, y);
+    //     context.lineTo(x, y + h);
+    //     context.closePath();
+    //     context.fill();
+    //   } else if (cell.type === 'split-left-bottom') {
+    //     // Triangle: bottom-left, bottom-right, top-right
+    //     context.beginPath();
+    //     context.moveTo(x, y + h);
+    //     context.lineTo(x + w, y + h);
+    //     context.lineTo(x + w, y);
+    //     context.closePath();
+    //     context.fill();
+    //   } else if (cell.type === 'split-right-top') {
+    //     // Triangle: top-left, top-right, bottom-right
+    //     context.beginPath();
+    //     context.moveTo(x, y);
+    //     context.lineTo(x + w, y);
+    //     context.lineTo(x + w, y + h);
+    //     context.closePath();
+    //     context.fill();
+    //   } else if (cell.type === 'split-right-bottom') {
+    //     // Triangle: top-left, bottom-left, bottom-right
+    //     context.beginPath();
+    //     context.moveTo(x, y);
+    //     context.lineTo(x, y + h);
+    //     context.lineTo(x + w, y + h);
+    //     context.closePath();
+    //     context.fill();
+    //   }
 
-      context.fillStyle = 'green';
-      context.textAlign = 'center';
-      context.textBaseline = 'middle';
-      context.font = `32px monospace`;
-      context.fillText(String(idx), x + w / 2, y + h / 2);
-    });
+    //   context.fillStyle = 'green';
+    //   context.textAlign = 'center';
+    //   context.textBaseline = 'middle';
+    //   context.font = `32px monospace`;
+    //   context.fillText(String(idx), x + w / 2, y + h / 2);
+    // });
 
     context.strokeStyle = bg;
     context.lineWidth = 1;
-    grid.forEach((cell) => {
+    grid.forEach((cell, idx) => {
       const x = cell.x * w;
       const y = cell.y * h;
       context.strokeRect(x, y, w, h);
+
+      const type: CellType[] = ['0123', '013', '012', '023', '123'];
+      context.fillStyle = area.color;
+      cells[type[idx % type.length]](context, x, y, w, h);
     });
   };
 };
