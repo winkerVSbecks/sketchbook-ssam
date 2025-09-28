@@ -1,9 +1,8 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-import { mapRange } from 'canvas-sketch-util/math';
 import { carmen, bless } from '../../colors/found';
-import { logColor } from '../../colors';
+import { logColors } from '../../colors';
 
 const config = {
   res: 3,
@@ -11,6 +10,7 @@ const config = {
 };
 
 const colors = Random.shuffle(Random.pick([carmen, bless]));
+logColors(colors);
 const bg = colors.pop()!;
 
 function xyToIndex(x: number, y: number) {
