@@ -6,7 +6,7 @@ import { logColors } from '../../colors';
 
 const config = {
   res: 3,
-  debug: false,
+  debug: 0, // 0 = none, 1 = area cells, 2 = all cells
 };
 
 const colors = Random.shuffle(Random.pick([carmen, bless]));
@@ -99,12 +99,17 @@ const cellTypes = Object.keys(cells) as CellType[];
 // Define mirrors for each cell type and edge
 // mirrors[cellType][edgeIndex] = cellType that is a mirror across that edge
 // [top, right, bottom, left]
-const mirrors: Record<CellType, (CellType | null)[]> = {
-  '0123': ['0123', '0123', '0123', '0123'],
-  '013-arc': ['023-arc', null, null, '012-arc'],
-  '012-arc': ['123-arc', '013-arc', null, null],
-  '023-arc': [null, null, '013-arc', '012-arc'],
-  '123-arc': [null, '023-arc', '012-arc', null],
+const mirrors: Record<CellType, (CellType | null)[][]> = {
+  '0123': [
+    ['0123', '023-arc', '123-arc'],
+    ['0123', '013-arc', '023-arc'],
+    ['0123', '012-arc', '013-arc'],
+    ['0123', '012-arc', '123-arc'],
+  ],
+  '013-arc': [['023-arc', '0123'], [null], [null], ['012-arc', '0123']],
+  '012-arc': [['123-arc', '0123'], ['013-arc', '0123'], [null], [null]],
+  '023-arc': [[null], [null], ['013-arc', '0123'], ['123-arc', '0123']],
+  '123-arc': [[null], ['023-arc', '0123'], ['012-arc', '0123'], [null]],
 };
 
 interface GridCell {
@@ -174,22 +179,23 @@ function createArea(): Area {
             const currentType = currentCell.type;
             // moving right: current right edge (1), next left edge (3)
             if (dx === 1 && dy === 0) {
-              return mirrors[currentType][1] === type;
+              return mirrors[currentType][1].indexOf(type) !== -1;
             }
             // moving left: current left edge (3), next right edge (1)
             if (dx === -1 && dy === 0) {
-              return mirrors[currentType][3] === type;
+              return mirrors[currentType][3].indexOf(type) !== -1;
             }
             // moving down: current bottom edge (2), next top edge (0)
             if (dx === 0 && dy === 1) {
-              return mirrors[currentType][2] === type;
+              return mirrors[currentType][2].indexOf(type) !== -1;
             }
             // moving up: current top edge (0), next bottom edge (2)
             if (dx === 0 && dy === -1) {
-              return mirrors[currentType][0] === type;
+              return mirrors[currentType][0].indexOf(type) !== -1;
             }
             return false;
           });
+    // .concat(['0123']);
 
     if (nextTypeOptions.length === 0) break;
 
@@ -240,7 +246,7 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
     const w = width / config.res;
     const h = height / config.res;
 
-    if (!config.debug) {
+    if (config.debug === 0) {
       areas.forEach((area) => {
         area.cells.forEach((cell, idx) => {
           const x = cell.x * w;
@@ -249,18 +255,18 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
           context.fillStyle = area.color;
           cells[cell.type](context, x, y, w, h);
 
-          if (config.debug) {
+          if (config.debug === 1) {
             context.fillStyle = 'green';
             context.textAlign = 'center';
             context.textBaseline = 'middle';
             context.font = `32px monospace`;
-            context.fillText(String(idx), x + w / 2, y + h / 2);
+            context.fillText(`${idx} ${cell.type}`, x + w / 2, y + h / 2);
           }
         });
       });
     }
 
-    if (config.debug) {
+    if (config.debug === 2) {
       context.strokeStyle = bg;
       context.lineWidth = 1;
       grid.forEach((cell, idx) => {
