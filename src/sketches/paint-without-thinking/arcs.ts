@@ -30,7 +30,7 @@ const cells = {
   ) => {
     context.fillRect(x, y, w, h);
   },
-  '013': (
+  '013-arc': (
     context: CanvasRenderingContext2D,
     x: number,
     y: number,
@@ -38,13 +38,15 @@ const cells = {
     h: number
   ) => {
     context.beginPath();
-    context.moveTo(x, y);
-    context.lineTo(x + w, y);
     context.lineTo(x, y + h);
+    context.lineTo(x + w, y);
+    context.moveTo(x, y);
+    context.lineTo(x, y + h);
+    context.arcTo(x + w, y + h, x + w, y, w);
     context.closePath();
     context.fill();
   },
-  '012': (
+  '012-arc': (
     context: CanvasRenderingContext2D,
     x: number,
     y: number,
@@ -55,10 +57,11 @@ const cells = {
     context.moveTo(x, y);
     context.lineTo(x + w, y);
     context.lineTo(x + w, y + h);
+    context.arcTo(x, y + h, x, y, w);
     context.closePath();
     context.fill();
   },
-  '023': (
+  '023-arc': (
     context: CanvasRenderingContext2D,
     x: number,
     y: number,
@@ -69,10 +72,12 @@ const cells = {
     context.moveTo(x, y);
     context.lineTo(x + w, y + h);
     context.lineTo(x, y + h);
+    context.moveTo(x, y);
+    context.arcTo(x + w, y, x + w, y + h, w);
     context.closePath();
     context.fill();
   },
-  '123': (
+  '123-arc': (
     context: CanvasRenderingContext2D,
     x: number,
     y: number,
@@ -83,6 +88,7 @@ const cells = {
     context.moveTo(x + w, y);
     context.lineTo(x + w, y + h);
     context.lineTo(x, y + h);
+    context.arcTo(x, y, x + w, y, w);
     context.closePath();
     context.fill();
   },
@@ -90,15 +96,15 @@ const cells = {
 type CellType = keyof typeof cells;
 const cellTypes = Object.keys(cells) as CellType[];
 
-// Define edges for each cell type
-// Edges are defined as [top, right, bottom, left]
-type Edge = [boolean, boolean, boolean, boolean];
-const edges: Record<CellType, Edge> = {
-  '0123': [true, true, true, true],
-  '013': [true, false, false, true],
-  '012': [true, true, false, false],
-  '023': [false, false, true, true],
-  '123': [false, true, true, false],
+// Define mirrors for each cell type and edge
+// mirrors[cellType][edgeIndex] = cellType that is a mirror across that edge
+// [top, right, bottom, left]
+const mirrors: Record<CellType, (CellType | null)[]> = {
+  '0123': ['0123', '0123', '0123', '0123'],
+  '013-arc': ['023-arc', null, null, '012-arc'],
+  '012-arc': ['123-arc', '013-arc', null, null],
+  '023-arc': [null, null, '013-arc', '012-arc'],
+  '123-arc': [null, '023-arc', '012-arc', null],
 };
 
 interface GridCell {
@@ -160,56 +166,30 @@ function createArea(): Area {
     const next = grid[xyToIndex(nx, ny)];
     next.occupied = true;
 
-    // only acceptable types are those that share an edge with current cell
-    const nextTypeOptions = cellTypes.filter((type) => {
-      // Compare edges based on next cell position
-      // if moving right, current right edge must match next left edge
-      // if moving left, current left edge must match next right edge
-      // if moving down, current bottom edge must match next top edge
-      // if moving up, current top edge must match next bottom edge
-      const currentEdges = edges[currentCell.type];
-      const nextEdges = edges[type];
-
-      // moving right
-      if (
-        dx === 1 &&
-        dy === 0 &&
-        currentEdges[1] === nextEdges[3] &&
-        currentEdges[1] &&
-        nextEdges[3]
-      ) {
-        return true;
-        // moving left
-      } else if (
-        dx === -1 &&
-        dy === 0 &&
-        currentEdges[3] === nextEdges[1] &&
-        currentEdges[3] &&
-        nextEdges[1]
-      ) {
-        return true;
-        // moving down
-      } else if (
-        dx === 0 &&
-        dy === 1 &&
-        currentEdges[2] === nextEdges[0] &&
-        currentEdges[2] &&
-        nextEdges[0]
-      ) {
-        return true;
-        // moving up
-      } else if (
-        dx === 0 &&
-        dy === -1 &&
-        currentEdges[0] === nextEdges[2] &&
-        currentEdges[0] &&
-        nextEdges[2]
-      ) {
-        return true;
-      }
-
-      return false;
-    });
+    // only acceptable types are those that are mirrors across the shared edge
+    const nextTypeOptions =
+      currentCell.type === '0123'
+        ? cellTypes
+        : cellTypes.filter((type) => {
+            const currentType = currentCell.type;
+            // moving right: current right edge (1), next left edge (3)
+            if (dx === 1 && dy === 0) {
+              return mirrors[currentType][1] === type;
+            }
+            // moving left: current left edge (3), next right edge (1)
+            if (dx === -1 && dy === 0) {
+              return mirrors[currentType][3] === type;
+            }
+            // moving down: current bottom edge (2), next top edge (0)
+            if (dx === 0 && dy === 1) {
+              return mirrors[currentType][2] === type;
+            }
+            // moving up: current top edge (0), next bottom edge (2)
+            if (dx === 0 && dy === -1) {
+              return mirrors[currentType][0] === type;
+            }
+            return false;
+          });
 
     if (nextTypeOptions.length === 0) break;
 
@@ -260,23 +240,25 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
     const w = width / config.res;
     const h = height / config.res;
 
-    areas.forEach((area) => {
-      area.cells.forEach((cell, idx) => {
-        const x = cell.x * w;
-        const y = cell.y * h;
+    if (!config.debug) {
+      areas.forEach((area) => {
+        area.cells.forEach((cell, idx) => {
+          const x = cell.x * w;
+          const y = cell.y * h;
 
-        context.fillStyle = area.color;
-        cells[cell.type](context, x, y, w, h);
+          context.fillStyle = area.color;
+          cells[cell.type](context, x, y, w, h);
 
-        if (config.debug) {
-          context.fillStyle = 'green';
-          context.textAlign = 'center';
-          context.textBaseline = 'middle';
-          context.font = `32px monospace`;
-          context.fillText(String(idx), x + w / 2, y + h / 2);
-        }
+          if (config.debug) {
+            context.fillStyle = 'green';
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.font = `32px monospace`;
+            context.fillText(String(idx), x + w / 2, y + h / 2);
+          }
+        });
       });
-    });
+    }
 
     if (config.debug) {
       context.strokeStyle = bg;
@@ -286,8 +268,15 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
         const y = cell.y * h;
         context.strokeRect(x, y, w, h);
 
-        context.fillStyle = colors[idx % colors.length];
-        cells[cellTypes[idx % cellTypes.length]](context, x, y, w, h);
+        context.fillStyle = 'red';
+        const cellType = cellTypes[idx % cellTypes.length];
+        cells[cellType](context, x, y, w, h);
+
+        context.fillStyle = 'white';
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        context.font = `32px monospace`;
+        context.fillText(cellType, x + w / 2, y + h / 2);
       });
     }
   };

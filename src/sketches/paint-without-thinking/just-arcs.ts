@@ -21,16 +21,7 @@ function xyToIndex(x: number, y: number) {
 // |     |
 // 3-----2
 const cells = {
-  '0123': (
-    context: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    w: number,
-    h: number
-  ) => {
-    context.fillRect(x, y, w, h);
-  },
-  '013': (
+  '013-arc': (
     context: CanvasRenderingContext2D,
     x: number,
     y: number,
@@ -38,13 +29,15 @@ const cells = {
     h: number
   ) => {
     context.beginPath();
-    context.moveTo(x, y);
-    context.lineTo(x + w, y);
     context.lineTo(x, y + h);
+    context.lineTo(x + w, y);
+    context.moveTo(x, y);
+    context.lineTo(x, y + h);
+    context.arcTo(x + w, y + h, x + w, y, w);
     context.closePath();
     context.fill();
   },
-  '012': (
+  '012-arc': (
     context: CanvasRenderingContext2D,
     x: number,
     y: number,
@@ -55,10 +48,11 @@ const cells = {
     context.moveTo(x, y);
     context.lineTo(x + w, y);
     context.lineTo(x + w, y + h);
+    context.arcTo(x, y + h, x, y, w);
     context.closePath();
     context.fill();
   },
-  '023': (
+  '023-arc': (
     context: CanvasRenderingContext2D,
     x: number,
     y: number,
@@ -69,10 +63,12 @@ const cells = {
     context.moveTo(x, y);
     context.lineTo(x + w, y + h);
     context.lineTo(x, y + h);
+    context.moveTo(x, y);
+    context.arcTo(x + w, y, x + w, y + h, w);
     context.closePath();
     context.fill();
   },
-  '123': (
+  '123-arc': (
     context: CanvasRenderingContext2D,
     x: number,
     y: number,
@@ -83,6 +79,7 @@ const cells = {
     context.moveTo(x + w, y);
     context.lineTo(x + w, y + h);
     context.lineTo(x, y + h);
+    context.arcTo(x, y, x + w, y, w);
     context.closePath();
     context.fill();
   },
@@ -94,11 +91,10 @@ const cellTypes = Object.keys(cells) as CellType[];
 // Edges are defined as [top, right, bottom, left]
 type Edge = [boolean, boolean, boolean, boolean];
 const edges: Record<CellType, Edge> = {
-  '0123': [true, true, true, true],
-  '013': [true, false, false, true],
-  '012': [true, true, false, false],
-  '023': [false, false, true, true],
-  '123': [false, true, true, false],
+  '013-arc': [true, false, false, true],
+  '012-arc': [true, true, false, false],
+  '023-arc': [false, false, true, true],
+  '123-arc': [false, true, true, false],
 };
 
 interface GridCell {
@@ -129,7 +125,11 @@ function createArea(): Area {
   const start = Random.pick(grid.filter((c) => !c.occupied));
   start.occupied = true;
 
-  let currentCell: Cell = { ...start, occupied: true, type: '0123' };
+  let currentCell: Cell = {
+    ...start,
+    occupied: true,
+    type: Random.pick(cellTypes),
+  };
   area.cells.push(currentCell);
 
   while (true) {
@@ -170,7 +170,6 @@ function createArea(): Area {
       const currentEdges = edges[currentCell.type];
       const nextEdges = edges[type];
 
-      // moving right
       if (
         dx === 1 &&
         dy === 0 &&
@@ -178,6 +177,7 @@ function createArea(): Area {
         currentEdges[1] &&
         nextEdges[3]
       ) {
+        // moving right
         return true;
         // moving left
       } else if (
@@ -260,23 +260,25 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
     const w = width / config.res;
     const h = height / config.res;
 
-    areas.forEach((area) => {
-      area.cells.forEach((cell, idx) => {
-        const x = cell.x * w;
-        const y = cell.y * h;
+    if (!config.debug) {
+      areas.forEach((area) => {
+        area.cells.forEach((cell, idx) => {
+          const x = cell.x * w;
+          const y = cell.y * h;
 
-        context.fillStyle = area.color;
-        cells[cell.type](context, x, y, w, h);
+          context.fillStyle = area.color;
+          cells[cell.type](context, x, y, w, h);
 
-        if (config.debug) {
-          context.fillStyle = 'green';
-          context.textAlign = 'center';
-          context.textBaseline = 'middle';
-          context.font = `32px monospace`;
-          context.fillText(String(idx), x + w / 2, y + h / 2);
-        }
+          if (config.debug) {
+            context.fillStyle = 'green';
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.font = `32px monospace`;
+            context.fillText(String(idx), x + w / 2, y + h / 2);
+          }
+        });
       });
-    });
+    }
 
     if (config.debug) {
       context.strokeStyle = bg;
@@ -286,7 +288,7 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
         const y = cell.y * h;
         context.strokeRect(x, y, w, h);
 
-        context.fillStyle = colors[idx % colors.length];
+        context.fillStyle = 'red'; // colors[idx % colors.length];
         cells[cellTypes[idx % cellTypes.length]](context, x, y, w, h);
       });
     }

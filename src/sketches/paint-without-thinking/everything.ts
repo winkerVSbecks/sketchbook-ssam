@@ -44,6 +44,22 @@ const cells = {
     context.closePath();
     context.fill();
   },
+  '013-arc': (
+    context: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    w: number,
+    h: number
+  ) => {
+    context.beginPath();
+    context.lineTo(x, y + h);
+    context.lineTo(x + w, y);
+    context.moveTo(x, y);
+    context.lineTo(x, y + h);
+    context.arcTo(x + w, y + h, x + w, y, w);
+    context.closePath();
+    context.fill();
+  },
   '012': (
     context: CanvasRenderingContext2D,
     x: number,
@@ -55,6 +71,21 @@ const cells = {
     context.moveTo(x, y);
     context.lineTo(x + w, y);
     context.lineTo(x + w, y + h);
+    context.closePath();
+    context.fill();
+  },
+  '012-arc': (
+    context: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    w: number,
+    h: number
+  ) => {
+    context.beginPath();
+    context.moveTo(x, y);
+    context.lineTo(x + w, y);
+    context.lineTo(x + w, y + h);
+    context.arcTo(x, y + h, x, y, w);
     context.closePath();
     context.fill();
   },
@@ -72,6 +103,22 @@ const cells = {
     context.closePath();
     context.fill();
   },
+  '023-arc': (
+    context: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    w: number,
+    h: number
+  ) => {
+    context.beginPath();
+    context.moveTo(x, y);
+    context.lineTo(x + w, y + h);
+    context.lineTo(x, y + h);
+    context.moveTo(x, y);
+    context.arcTo(x + w, y, x + w, y + h, w);
+    context.closePath();
+    context.fill();
+  },
   '123': (
     context: CanvasRenderingContext2D,
     x: number,
@@ -86,6 +133,21 @@ const cells = {
     context.closePath();
     context.fill();
   },
+  '123-arc': (
+    context: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    w: number,
+    h: number
+  ) => {
+    context.beginPath();
+    context.moveTo(x + w, y);
+    context.lineTo(x + w, y + h);
+    context.lineTo(x, y + h);
+    context.arcTo(x, y, x + w, y, w);
+    context.closePath();
+    context.fill();
+  },
 } as const;
 type CellType = keyof typeof cells;
 const cellTypes = Object.keys(cells) as CellType[];
@@ -96,9 +158,13 @@ type Edge = [boolean, boolean, boolean, boolean];
 const edges: Record<CellType, Edge> = {
   '0123': [true, true, true, true],
   '013': [true, false, false, true],
+  '013-arc': [true, false, false, true],
   '012': [true, true, false, false],
+  '012-arc': [true, true, false, false],
   '023': [false, false, true, true],
+  '023-arc': [false, false, true, true],
   '123': [false, true, true, false],
+  '123-arc': [false, true, true, false],
 };
 
 interface GridCell {
@@ -286,7 +352,7 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
         const y = cell.y * h;
         context.strokeRect(x, y, w, h);
 
-        context.fillStyle = colors[idx % colors.length];
+        context.fillStyle = 'red'; // colors[idx % colors.length];
         cells[cellTypes[idx % cellTypes.length]](context, x, y, w, h);
       });
     }
