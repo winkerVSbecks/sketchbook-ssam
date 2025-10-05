@@ -30,6 +30,7 @@ export const palettes = [
   { bg: '#FDFCF3', ink: ['#AB2A00'] },
   { bg: '#FDFCF3', ink: ['#AB2A00', '#2B0404'] },
   { bg: '#FDFCF3', ink: ['#EB562F'] },
+  { bg: '#EB562F', ink: ['#2B0404'] },
   { bg: '#FDFCF3', ink: ['#EB562F', '#2B0404'] },
   { bg: '#FDFCF3', ink: ['#EB562F', '#2A42FF'] },
   { bg: '#FDFCF3', ink: ['#AB2A00'] },
@@ -56,6 +57,9 @@ export const palettes = [
   { bg: '#FFFFFF', ink: ['#E5D5FF'] },
   { bg: '#FFFFFF', ink: ['#FFDDDD'] },
   { bg: '#FFFFFF', ink: ['#A8F0E6'] },
+  { bg: '#FFDDDD', ink: ['#8F0202'] },
+  { bg: '#E5D5FF', ink: ['#8F0202'] },
+  { bg: '#FFDDDD', ink: ['#8F0202', '#042411'] },
 ];
 
 const { bg, ink: colors } = Random.pick(palettes);
@@ -319,11 +323,11 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
   }
 
   wrap.render = ({ width, height, frame }: SketchProps) => {
-    if (frame % 60 === 0) {
+    if (frame !== 0 /* frame % 60 === 0 */) {
       grid = resetGrid();
       fillGridWithAreas();
       reduce();
-      logColors(grid.map((cell) => cell.color!));
+      // logColors(grid.map((cell) => cell.color!));
     }
 
     context.fillStyle = bg;
@@ -375,11 +379,12 @@ export const settings: SketchSettings = {
   mode: '2d',
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
-  animate: false,
-  duration: 8_000,
-  playFps: 60,
-  exportFps: 60,
+  animate: true,
+  duration: 20_000,
+  playFps: 1,
+  exportFps: 1,
   framesFormat: ['mp4'],
+  prefix: `arcs-reduction-`,
 };
 
 ssam(sketch as Sketch<'2d'>, settings);
