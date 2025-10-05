@@ -3,15 +3,43 @@ import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 import { carmen, bless } from '../../colors/found';
 import { logColors } from '../../colors';
+import { wcagContrast } from 'culori';
+
+Random.setSeed(Random.getRandomSeed());
+// Random.setSeed('308940');
+console.log(`Seed: ${Random.getSeed()}`);
 
 const config = {
   res: 3,
   debug: 0, // 0 = none, 1 = area cells, 2 = all cells
 };
 
-const colors = Random.shuffle(Random.pick([carmen, bless]));
+const baseColors: string[] = Random.shuffle(Random.pick([carmen, bless]));
+const backgroundOptions = baseColors.filter((color) => {
+  const luminance = wcagContrast(color, '#000');
+  return luminance >= 4.0;
+});
+const bg = Random.shuffle(backgroundOptions).pop()!;
+// only pick colors that have sufficient contrast with bg
+const colors = baseColors
+  .filter((color) => {
+    return !backgroundOptions.includes(color);
+  })
+  .filter((color) => {
+    const contrast = wcagContrast(color, bg);
+    return contrast >= 3.0;
+  })
+  // limit to colors that have sufficient contrast with each other
+  .filter((color, index) => {
+    for (let i = 0; i < index; i++) {
+      const otherColor = baseColors[i];
+      const contrast = wcagContrast(color, otherColor);
+      if (contrast < 3.0) return false;
+    }
+    return true;
+  });
+logColors(backgroundOptions);
 logColors(colors);
-const bg = colors.pop()!;
 
 function xyToIndex(x: number, y: number) {
   return y * config.res + x;
@@ -116,32 +144,26 @@ interface GridCell {
   x: number;
   y: number;
   occupied: boolean;
-}
-
-interface Cell extends GridCell {
+  color?: string;
   type: CellType;
-}
-
-interface Area {
-  cells: Cell[];
-  color: string;
+  areaId?: number;
 }
 
 const grid: GridCell[] = [];
 
 for (let y = 0; y < config.res; y++) {
   for (let x = 0; x < config.res; x++) {
-    grid.push({ x, y, occupied: false });
+    grid.push({ x, y, occupied: false, type: '0123' });
   }
 }
 
-function createArea(): Area {
-  const area: Area = { cells: [], color: Random.pick(colors) };
-  const start = Random.pick(grid.filter((c) => !c.occupied));
-  start.occupied = true;
-
-  let currentCell: Cell = { ...start, occupied: true, type: '0123' };
-  area.cells.push(currentCell);
+function createArea(areaId: number) {
+  const color = Random.pick(colors);
+  let currentCell: GridCell = Random.pick(grid.filter((c) => !c.occupied));
+  currentCell.occupied = true;
+  currentCell.color = color;
+  currentCell.areaId = areaId;
+  let count = 1;
 
   while (true) {
     const options = [
@@ -163,13 +185,15 @@ function createArea(): Area {
     });
 
     if (options.length === 0) break;
-    if (area.cells.length > 10) break;
+    if (count > 10) break;
 
     const [dx, dy] = Random.pick(options);
     const nx = currentCell.x + dx;
     const ny = currentCell.y + dy;
     const next = grid[xyToIndex(nx, ny)];
     next.occupied = true;
+    next.color = color;
+    next.areaId = areaId;
 
     // only acceptable types are those that are mirrors across the shared edge
     const nextTypeOptions = cellTypes.filter((type) => {
@@ -196,35 +220,70 @@ function createArea(): Area {
     if (nextTypeOptions.length === 0) break;
 
     const nextType = Random.pick(nextTypeOptions);
+    next.type = nextType;
+    currentCell = next;
 
-    currentCell = {
-      ...next,
-      type: nextType,
-    };
-
-    area.cells.push(currentCell);
+    count++;
   }
-
-  return area;
 }
 
-function fillGridWithAreas(): Area[] {
+function fillGridWithAreas() {
   let unoccupied = grid.filter((c) => !c.occupied).length;
   let attempts = 0;
   const maxAttempts = 100;
-  const areas: Area[] = [];
 
   while (unoccupied > 0 && attempts < maxAttempts) {
-    const area = createArea();
-    if (area.cells.length > 0) {
-      unoccupied = grid.filter((c) => !c.occupied).length;
-      areas.push(area);
-      attempts++;
-    }
+    createArea(attempts);
+    unoccupied = grid.filter((c) => !c.occupied).length;
+    attempts++;
   }
 
   console.log(`Filled grid with areas in ${attempts} attempts`);
-  return areas;
+}
+
+function reduce() {
+  // if a cell doesn't share an edge with same color or
+  // if none of its neighbors have the same color, then
+  // change cell color to the colors that most of its neighbors have
+  grid.forEach((cell) => {
+    const neighbors = [
+      [0, 1],
+      [1, 0],
+      [0, -1],
+      [-1, 0],
+    ]
+      .map(([dx, dy]) => {
+        const nx = cell.x + dx;
+        const ny = cell.y + dy;
+        if (nx >= 0 && nx < config.res && ny >= 0 && ny < config.res) {
+          return grid[xyToIndex(nx, ny)];
+        }
+        return null;
+      })
+      .filter((n) => n !== null) as GridCell[];
+
+    const sameColorNeighbors = neighbors.filter((n) => n.color === cell.color);
+
+    if (cell.x === 2 && cell.y === 2) {
+      console.log({ cell, neighbors, sameColorNeighbors });
+    }
+
+    if (sameColorNeighbors.length === 0) {
+      // find the most common color among neighbors
+      const colorCounts: Record<string, number> = {};
+      neighbors.forEach((n) => {
+        if (n.color) {
+          colorCounts[n.color] = (colorCounts[n.color] || 0) + 1;
+        }
+      });
+      const sortedColors = Object.entries(colorCounts).sort(
+        (a, b) => b[1] - a[1]
+      );
+      if (sortedColors.length > 0) {
+        cell.color = sortedColors[0][0];
+      }
+    }
+  });
 }
 
 export const sketch = async ({ wrap, context }: SketchProps) => {
@@ -233,7 +292,9 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
     import.meta.hot.accept(() => wrap.hotReload());
   }
 
-  const areas = fillGridWithAreas();
+  fillGridWithAreas();
+  reduce();
+  logColors(grid.map((cell) => cell.color!));
 
   wrap.render = ({ width, height }: SketchProps) => {
     context.fillStyle = bg;
@@ -243,22 +304,19 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
     const h = height / config.res;
 
     if (config.debug < 2) {
-      areas.forEach((area) => {
-        area.cells.forEach((cell, idx) => {
-          const x = cell.x * w;
-          const y = cell.y * h;
+      grid.forEach((cell) => {
+        const x = cell.x * w;
+        const y = cell.y * h;
 
-          context.fillStyle = area.color;
-          cells[cell.type](context, x, y, w, h);
-
-          if (config.debug === 1) {
-            context.fillStyle = 'green';
-            context.textAlign = 'center';
-            context.textBaseline = 'middle';
-            context.font = `32px monospace`;
-            context.fillText(`${idx} ${cell.type}`, x + w / 2, y + h / 2);
-          }
-        });
+        context.fillStyle = cell.color!;
+        cells[cell.type](context, x, y, w, h);
+        if (config.debug === 1) {
+          context.fillStyle = `rgb(from ${cell.color} calc(255 - r) calc(255 - g) calc(255 - b))`;
+          context.textAlign = 'center';
+          context.textBaseline = 'middle';
+          context.font = `32px monospace`;
+          context.fillText(`${cell.type}`, x + w / 2, y + h / 2);
+        }
       });
     }
 
