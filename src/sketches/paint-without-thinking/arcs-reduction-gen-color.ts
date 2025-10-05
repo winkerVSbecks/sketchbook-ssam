@@ -1,7 +1,7 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-import { carmen, bless, ellsworthKelly } from '../../colors/found';
+import { carmen, bless } from '../../colors/found';
 import { logColors } from '../../colors';
 import { wcagContrast } from 'culori';
 
@@ -14,51 +14,30 @@ const config = {
   debug: 0, // 0 = none, 1 = area cells, 2 = all cells
 };
 
-export const palettes = [
-  { bg: '#fff', ink: ['#222'] },
-  { bg: '#fff', ink: ['#f13401'] },
-  { bg: '#fff', ink: ['#0769ce'] },
-  { bg: '#fff', ink: ['#f1d93c'] },
-  { bg: '#fff', ink: ['#11804b'] },
-  { bg: '#fff', ink: ['#f13401', '#222'] },
-  { bg: '#fff', ink: ['#0769ce', '#f1d93c'] },
-  { bg: '#fff', ink: ['#f13401', '#0769ce', '#f1d93c'] },
-  { bg: '#fff', ink: ['#f13401', '#11804b'] },
-  { bg: '#fff', ink: ['#f13401', '#11804b', '#0769ce'] },
-  { bg: '#FDFCF3', ink: ['#002500'] },
-  { bg: '#FDFCF3', ink: ['#2A42FF'] },
-  { bg: '#FDFCF3', ink: ['#AB2A00'] },
-  { bg: '#FDFCF3', ink: ['#AB2A00', '#2B0404'] },
-  { bg: '#FDFCF3', ink: ['#EB562F'] },
-  { bg: '#FDFCF3', ink: ['#EB562F', '#2B0404'] },
-  { bg: '#FDFCF3', ink: ['#EB562F', '#2A42FF'] },
-  { bg: '#FDFCF3', ink: ['#AB2A00'] },
-  { bg: '#FDFCF3', ink: ['#AB2A00', '#2A42FF'] },
-  { bg: '#FDFCF3', ink: ['#AB2A00', '#2B0404'] },
-  { bg: '#FDFCF3', ink: ['#AB2A00', '#EB562F'] },
-  { bg: '#FDFCF3', ink: ['#2B0404', '#EB562F'] },
-  { bg: '#FDFCF3', ink: ['#CEFF00', '#2A42FF'] },
-  { bg: '#CEFF00', ink: ['#2B0404'] },
-  { bg: '#CEFF00', ink: ['#002500'] },
-  { bg: '#ECE5F0', ink: ['#002500'] },
-  { bg: '#ECE5F0', ink: ['#2A42FF'] },
-  { bg: '#FDFCF3', ink: ['#EB562F', '#CEFF00', '#2A42FF'] },
-  { bg: '#FDFCF3', ink: ['#AB2A00', '#CEFF00', '#2A42FF'] },
-  { bg: '#FFFFFF', ink: ['#000000'] },
-  { bg: '#FBF9F3', ink: ['#000000'] },
-  { bg: '#FFFFFF', ink: ['#FFA500'] },
-  { bg: '#FFFFFF', ink: ['#8F0202'] },
-  { bg: '#FFFFFF', ink: ['#042411'] },
-  { bg: '#FFFFFF', ink: ['#8F0202', '#FFA500'] },
-  { bg: '#FFFFFF', ink: ['#8F0202', '#FFA500', '#042411'] },
-  { bg: '#FBF9F3', ink: ['#042411'] },
-  { bg: '#E5D5FF', ink: ['#042411'] },
-  { bg: '#FFFFFF', ink: ['#E5D5FF'] },
-  { bg: '#FFFFFF', ink: ['#FFDDDD'] },
-  { bg: '#FFFFFF', ink: ['#A8F0E6'] },
-];
-
-const { bg, ink: colors } = Random.pick(palettes);
+const baseColors: string[] = Random.shuffle(Random.pick([carmen, bless]));
+const backgroundOptions = baseColors.filter((color) => {
+  const luminance = wcagContrast(color, '#000');
+  return luminance >= 4.0;
+});
+const bg = Random.shuffle(backgroundOptions).pop()!;
+// only pick colors that have sufficient contrast with bg
+const colors = baseColors
+  .filter((color) => {
+    return !backgroundOptions.includes(color);
+  })
+  .filter((color) => {
+    const contrast = wcagContrast(color, bg);
+    return contrast >= 3.0;
+  })
+  // limit to colors that have sufficient contrast with each other
+  .filter((color, index) => {
+    for (let i = 0; i < index; i++) {
+      const otherColor = baseColors[i];
+      const contrast = wcagContrast(color, otherColor);
+      if (contrast < 4.0) return false;
+    }
+    return true;
+  });
 
 logColors(colors);
 
