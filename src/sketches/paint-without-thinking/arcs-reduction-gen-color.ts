@@ -269,10 +269,6 @@ function reduce() {
 
     const sameColorNeighbors = neighbors.filter((n) => n.color === cell.color);
 
-    if (cell.x === 2 && cell.y === 2) {
-      console.log({ cell, neighbors, sameColorNeighbors });
-    }
-
     if (sameColorNeighbors.length === 0) {
       // find the most common color among neighbors
       const colorCounts: Record<string, number> = {};

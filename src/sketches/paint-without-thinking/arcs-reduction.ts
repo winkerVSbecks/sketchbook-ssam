@@ -1,20 +1,20 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-import { carmen, bless, ellsworthKelly } from '../../colors/found';
-import { logColors } from '../../colors';
-import { wcagContrast } from 'culori';
+import { logColor, logColors } from '../../colors';
 
 Random.setSeed(Random.getRandomSeed());
-// Random.setSeed('308940');
+// Random.setSeed('238510');
 console.log(`Seed: ${Random.getSeed()}`);
 
 const config = {
-  res: 3,
+  // res: [3, 4],
+  res: [3, 3],
   debug: 0, // 0 = none, 1 = area cells, 2 = all cells
+  edgeAwareReduction: true,
 };
 
-export const palettes = [
+const palettes = [
   { bg: '#fff', ink: ['#222'] },
   { bg: '#fff', ink: ['#f13401'] },
   { bg: '#fff', ink: ['#0769ce'] },
@@ -67,7 +67,7 @@ const { bg, ink: colors } = Random.pick(palettes);
 logColors(colors);
 
 function xyToIndex(x: number, y: number) {
-  return y * config.res + x;
+  return y * config.res[0] + x;
 }
 
 // 0-----1
@@ -165,6 +165,16 @@ const mirrors: Record<CellType, (CellType | null)[][]> = {
   '123-arc': [[null], ['023-arc', '0123'], ['012-arc', '0123'], [null]],
 };
 
+// Edges are defined as [top, right, bottom, left]
+type Edge = { '0-1': boolean; '10': boolean; '01': boolean; '-10': boolean };
+const edges: Record<CellType, Edge> = {
+  '0123': { '0-1': true, '10': true, '01': true, '-10': true },
+  '013-arc': { '0-1': true, '10': false, '01': false, '-10': true },
+  '012-arc': { '0-1': true, '10': true, '01': false, '-10': false },
+  '023-arc': { '0-1': false, '10': false, '01': true, '-10': true },
+  '123-arc': { '0-1': false, '10': true, '01': true, '-10': false },
+};
+
 interface GridCell {
   x: number;
   y: number;
@@ -178,8 +188,8 @@ let grid = resetGrid();
 
 function resetGrid(): GridCell[] {
   const result: GridCell[] = [];
-  for (let y = 0; y < config.res; y++) {
-    for (let x = 0; x < config.res; x++) {
+  for (let y = 0; y < config.res[1]; y++) {
+    for (let x = 0; x < config.res[0]; x++) {
       result.push({ x, y, occupied: false, type: '0123' });
     }
   }
@@ -207,9 +217,9 @@ function createArea(areaId: number) {
       // Only allow unoccupied cells within bounds
       return (
         nx >= 0 &&
-        nx < config.res &&
+        nx < config.res[0] &&
         ny >= 0 &&
-        ny < config.res &&
+        ny < config.res[1] &&
         !grid[xyToIndex(nx, ny)].occupied
       );
     });
@@ -285,18 +295,22 @@ function reduce() {
       .map(([dx, dy]) => {
         const nx = cell.x + dx;
         const ny = cell.y + dy;
-        if (nx >= 0 && nx < config.res && ny >= 0 && ny < config.res) {
-          return grid[xyToIndex(nx, ny)];
+        if (nx >= 0 && nx < config.res[0] && ny >= 0 && ny < config.res[1]) {
+          const n = grid[xyToIndex(nx, ny)];
+          const dir = `${dx * -1}${dy * -1}` as keyof Edge;
+          const color = config.edgeAwareReduction
+            ? edges[n.type][dir]
+              ? n.color
+              : bg
+            : n.color;
+
+          return { ...n, color };
         }
         return null;
       })
       .filter((n) => n !== null) as GridCell[];
 
     const sameColorNeighbors = neighbors.filter((n) => n.color === cell.color);
-
-    if (cell.x === 2 && cell.y === 2) {
-      console.log({ cell, neighbors, sameColorNeighbors });
-    }
 
     if (sameColorNeighbors.length === 0) {
       // find the most common color among neighbors
@@ -322,19 +336,25 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
     import.meta.hot.accept(() => wrap.hotReload());
   }
 
-  wrap.render = ({ width, height, frame }: SketchProps) => {
-    if (frame !== 0 /* frame % 60 === 0 */) {
-      grid = resetGrid();
-      fillGridWithAreas();
-      reduce();
-      // logColors(grid.map((cell) => cell.color!));
-    }
+  const margin = 40;
+
+  wrap.render = ({ width, height }: SketchProps) => {
+    grid = resetGrid();
+    fillGridWithAreas();
+    reduce();
 
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
 
-    const w = width / config.res;
-    const h = height / config.res;
+    const w = (width - margin * 2) / config.res[0];
+    const h = (height - margin * 2) / config.res[1];
+
+    // context.save();
+    // context.translate(margin, margin);
+
+    // context.beginPath();
+    // context.roundRect(0, 0, width - margin * 2, height - margin * 2, [10]);
+    // context.clip();
 
     if (config.debug < 2) {
       grid.forEach((cell) => {
@@ -372,12 +392,15 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
         context.fillText(cellType, x + w / 2, y + h / 2);
       });
     }
+
+    context.restore();
   };
 };
 
 export const settings: SketchSettings = {
   mode: '2d',
   dimensions: [1080, 1080],
+  // dimensions: [600, 800],
   pixelRatio: window.devicePixelRatio,
   animate: true,
   duration: 20_000,
