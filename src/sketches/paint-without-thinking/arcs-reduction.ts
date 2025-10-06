@@ -9,9 +9,11 @@ console.log(`Seed: ${Random.getSeed()}`);
 
 const config = {
   // res: [3, 4],
-  res: [3, 3],
-  debug: 0, // 0 = none, 1 = area cells, 2 = all cells
+  // res: [3, 3],
+  res: [4, 3],
+  debug: 2, // 0 = none, 1 = area cells, 2 = outline cells, 3 = all cells
   edgeAwareReduction: true,
+  margin: 0,
 };
 
 const palettes = [
@@ -336,8 +338,6 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
     import.meta.hot.accept(() => wrap.hotReload());
   }
 
-  const margin = 40;
-
   wrap.render = ({ width, height }: SketchProps) => {
     grid = resetGrid();
     fillGridWithAreas();
@@ -346,17 +346,17 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
 
-    const w = (width - margin * 2) / config.res[0];
-    const h = (height - margin * 2) / config.res[1];
+    const w = (width - config.margin * 2) / config.res[0];
+    const h = (height - config.margin * 2) / config.res[1];
 
-    // context.save();
-    // context.translate(margin, margin);
+    context.save();
+    context.translate(config.margin, config.margin);
 
     // context.beginPath();
     // context.roundRect(0, 0, width - margin * 2, height - margin * 2, [10]);
     // context.clip();
 
-    if (config.debug < 2) {
+    if (config.debug < 3) {
       grid.forEach((cell) => {
         const x = cell.x * w;
         const y = cell.y * h;
@@ -376,6 +376,16 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
     if (config.debug === 2) {
       context.strokeStyle = bg;
       context.lineWidth = 1;
+      grid.forEach((cell) => {
+        const x = cell.x * w;
+        const y = cell.y * h;
+        context.strokeRect(x, y, w, h);
+      });
+    }
+
+    if (config.debug === 3) {
+      context.strokeStyle = bg;
+      context.lineWidth = 1;
       grid.forEach((cell, idx) => {
         const x = cell.x * w;
         const y = cell.y * h;
@@ -393,14 +403,14 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
       });
     }
 
-    context.restore();
+    // context.restore();
   };
 };
 
 export const settings: SketchSettings = {
   mode: '2d',
-  dimensions: [1080, 1080],
-  // dimensions: [600, 800],
+  // dimensions: [1080, 1080],
+  dimensions: [800, 600],
   pixelRatio: window.devicePixelRatio,
   animate: true,
   duration: 20_000,
