@@ -413,37 +413,15 @@ function roundCorners() {
       return grid[xyToIndex(nx, ny)];
     });
 
-    // top left
-    // if there is no top or top edge is open and
-    // if there is no left or left edge is open
-    const tl = !(
-      (top && edges[top.type]['01']) ||
-      (left && edges[left.type]['10'])
-    );
+    // Helper to check if neighbour exists and its edge is closed
+    const isClosed = (neighbour: GridCell | undefined, edge: keyof Edge) =>
+      neighbour && edges[neighbour.type][edge];
 
-    // top right
-    // if there is no top or top edge is open and
-    // if there is no right or right edge is open
-    const tr = !(
-      (top && edges[top.type]['01']) ||
-      (right && edges[right.type]['-10'])
-    );
-
-    // bottom right
-    // if there is no bottom or bottom edge is open and
-    // if there is no right or right edge is open
-    const br = !(
-      (bottom && edges[bottom.type]['0-1']) ||
-      (right && edges[right.type]['-10'])
-    );
-
-    // bottom left
-    // if there is no bottom or bottom edge is open and
-    // if there is no left or left edge is open
-    const bl = !(
-      (bottom && edges[bottom.type]['0-1']) ||
-      (left && edges[left.type]['10'])
-    );
+    // Corners are rounded if both adjacent edges are open (not closed)
+    const tl = !(isClosed(top, '01') || isClosed(left, '10'));
+    const tr = !(isClosed(top, '01') || isClosed(right, '-10'));
+    const br = !(isClosed(bottom, '0-1') || isClosed(right, '-10'));
+    const bl = !(isClosed(bottom, '0-1') || isClosed(left, '10'));
 
     cell.corners = [tl, tr, br, bl];
   });
