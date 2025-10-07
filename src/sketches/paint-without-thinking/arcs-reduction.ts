@@ -69,6 +69,9 @@ const { bg, ink: colors } = Random.pick(palettes);
 logColors(colors);
 
 function xyToIndex(x: number, y: number) {
+  if (x < 0 || x >= config.res[0] || y < 0 || y >= config.res[1]) {
+    return -1;
+  }
   return y * config.res[0] + x;
 }
 

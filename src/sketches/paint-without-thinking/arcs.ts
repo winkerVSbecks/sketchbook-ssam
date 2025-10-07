@@ -14,6 +14,9 @@ logColors(colors);
 const bg = colors.pop()!;
 
 function xyToIndex(x: number, y: number) {
+  if (x < 0 || x >= config.res || y < 0 || y >= config.res) {
+    return -1;
+  }
   return y * config.res + x;
 }
 

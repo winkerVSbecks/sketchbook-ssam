@@ -4,7 +4,13 @@ import Random from 'canvas-sketch-util/random';
 import { logColors } from '../../colors';
 
 Random.setSeed(Random.getRandomSeed());
-Random.setSeed('564840');
+// Random.setSeed('564840');
+// Random.setSeed('221329');
+// Random.setSeed('75148');
+// Random.setSeed('505894');
+// Random.setSeed('33274');
+// Random.setSeed('118456');
+Random.setSeed('933689');
 console.log(`Seed: ${Random.getSeed()}`);
 
 const config = {
@@ -69,6 +75,9 @@ const { bg, ink: colors } = Random.pick(palettes);
 logColors(colors);
 
 function xyToIndex(x: number, y: number) {
+  if (x < 0 || x >= config.res[0] || y < 0 || y >= config.res[1]) {
+    return -1;
+  }
   return y * config.res[0] + x;
 }
 
@@ -78,6 +87,7 @@ type Corners = [boolean, boolean, boolean, boolean]; // TL, TR, BR, BL
 // |     |
 // 3-----2
 const cells = {
+  blank: () => {},
   '0123': (
     context: CanvasRenderingContext2D,
     x: number,
@@ -86,7 +96,6 @@ const cells = {
     h: number,
     corners: Corners
   ) => {
-    // context.fillRect(x, y, w, h);
     context.beginPath();
     context.roundRect(
       x,
@@ -102,14 +111,19 @@ const cells = {
     x: number,
     y: number,
     w: number,
-    h: number
+    h: number,
+    [, tr, , bl]: Corners
   ) => {
     context.beginPath();
-    context.lineTo(x, y + h);
-    context.lineTo(x + w, y);
     context.moveTo(x, y);
-    context.lineTo(x, y + h);
-    context.arcTo(x + w, y + h, x + w, y, w);
+    context.lineTo(x + w - (tr ? 10 : 0), y);
+    if (tr) {
+      context.arcTo(x + w, y, x + w, y + h, 10);
+    }
+    context.arcTo(x + w, y + h, x, y + h, w - (bl ? 10 : 0));
+    if (bl) {
+      context.arcTo(x, y + h, x, y + h - 10, 10);
+    }
     context.closePath();
     context.fill();
   },
@@ -118,14 +132,26 @@ const cells = {
     x: number,
     y: number,
     w: number,
-    h: number
+    h: number,
+    [tl, , br]: Corners
   ) => {
     context.beginPath();
-    context.moveTo(x, y);
+    context.moveTo(x - (tl ? 10 : 0), y);
     context.lineTo(x + w, y);
-    context.lineTo(x + w, y + h);
-    context.arcTo(x, y + h, x, y, w);
-    context.closePath();
+    context.lineTo(x + w, y + h - (br ? 10 : 0));
+    if (br) {
+      context.arcTo(x + w, y + h, x, y + h, 10);
+    }
+    context.arcTo(
+      x,
+      y + h,
+      x,
+      y + (tl ? 10 : 0),
+      w - (br ? 10 : 0) - (tl ? 10 : 0)
+    );
+    if (tl) {
+      context.arcTo(x, y, x + 10, y, 10);
+    }
     context.fill();
   },
   '023-arc': (
@@ -133,14 +159,19 @@ const cells = {
     x: number,
     y: number,
     w: number,
-    h: number
+    h: number,
+    [tl, , br]: Corners
   ) => {
     context.beginPath();
-    context.moveTo(x, y);
-    context.lineTo(x + w, y + h);
+    context.moveTo(x, y + (tl ? 10 : 0));
+    if (tl) {
+      context.arcTo(x, y, x + w, y, 10);
+    }
+    context.arcTo(x + w, y, x + w, y + h - (br ? 10 : 0), w - (br ? 10 : 0));
+    if (br) {
+      context.arcTo(x + w, y + h, x, y + h, 10);
+    }
     context.lineTo(x, y + h);
-    context.moveTo(x, y);
-    context.arcTo(x + w, y, x + w, y + h, w);
     context.closePath();
     context.fill();
   },
@@ -149,14 +180,20 @@ const cells = {
     x: number,
     y: number,
     w: number,
-    h: number
+    h: number,
+    [, tr, , bl]: Corners
   ) => {
     context.beginPath();
-    context.moveTo(x + w, y);
+    context.moveTo(x + w - (tr ? 10 : 0), y);
+    if (tr) {
+      context.arcTo(x + w, y, x + w, y + h, 10);
+    }
     context.lineTo(x + w, y + h);
-    context.lineTo(x, y + h);
-    context.arcTo(x, y, x + w, y, w);
-    context.closePath();
+    context.lineTo(x + (bl ? 10 : 0), y + h);
+    if (bl) {
+      context.arcTo(x, y + h, x, y + h - 10, 10);
+    }
+    context.arcTo(x, y, x + w, y, w - (tr ? 10 : 0));
     context.fill();
   },
 } as const;
@@ -167,6 +204,12 @@ const cellTypes = Object.keys(cells) as CellType[];
 // mirrors[cellType][edgeIndex] = cellType that is a mirror across that edge
 // [top, right, bottom, left]
 const mirrors: Record<CellType, (CellType | null)[][]> = {
+  blank: [
+    ['0123', '023-arc', '123-arc'],
+    ['0123', '013-arc', '023-arc'],
+    ['0123', '012-arc', '013-arc'],
+    ['0123', '012-arc', '123-arc'],
+  ],
   '0123': [
     ['0123', '023-arc', '123-arc'],
     ['0123', '013-arc', '023-arc'],
@@ -182,6 +225,7 @@ const mirrors: Record<CellType, (CellType | null)[][]> = {
 // Edges are defined as [top, right, bottom, left]
 type Edge = { '0-1': boolean; '10': boolean; '01': boolean; '-10': boolean };
 const edges: Record<CellType, Edge> = {
+  blank: { '0-1': false, '10': false, '01': false, '-10': false },
   '0123': { '0-1': true, '10': true, '01': true, '-10': true },
   '013-arc': { '0-1': true, '10': false, '01': false, '-10': true },
   '012-arc': { '0-1': true, '10': true, '01': false, '-10': false },
@@ -346,6 +390,9 @@ function reduce() {
       );
       if (sortedColors.length > 0) {
         cell.color = sortedColors[0][0];
+        if (cell.color === bg) {
+          cell.type = 'blank';
+        }
       }
     }
   });
@@ -366,32 +413,37 @@ function roundCorners() {
       return grid[xyToIndex(nx, ny)];
     });
 
-    // TL, TR, BR, BL
     // top left
     // if there is no top or top edge is open and
     // if there is no left or left edge is open
-    const tl =
-      (!top || !edges[top.type]['01']) && (!left || !edges[left.type]['10']);
+    const tl = !(
+      (top && edges[top.type]['01']) ||
+      (left && edges[left.type]['10'])
+    );
 
     // top right
     // if there is no top or top edge is open and
     // if there is no right or right edge is open
-    const tr =
-      (!top || !edges[top.type]['01']) && (!right || !edges[right.type]['-10']);
+    const tr = !(
+      (top && edges[top.type]['01']) ||
+      (right && edges[right.type]['-10'])
+    );
 
     // bottom right
     // if there is no bottom or bottom edge is open and
     // if there is no right or right edge is open
-    const br =
-      (!bottom || !edges[bottom.type]['0-1']) &&
-      (!right || !edges[right.type]['-10']);
+    const br = !(
+      (bottom && edges[bottom.type]['0-1']) ||
+      (right && edges[right.type]['-10'])
+    );
 
     // bottom left
     // if there is no bottom or bottom edge is open and
     // if there is no left or left edge is open
-    const bl =
-      (!bottom || !edges[bottom.type]['0-1']) &&
-      (!left || !edges[left.type]['10']);
+    const bl = !(
+      (bottom && edges[bottom.type]['0-1']) ||
+      (left && edges[left.type]['10'])
+    );
 
     cell.corners = [tl, tr, br, bl];
   });
@@ -408,6 +460,7 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
     fillGridWithAreas();
     reduce();
     roundCorners();
+    console.log(grid);
 
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
