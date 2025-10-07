@@ -19,7 +19,7 @@ const config = {
   // res: [3, 4],
   // res: [3, 3],
   res: [4, 3],
-  debug: 0, // 0 = none, 1 = area cells, 2 = outline cells, 3 = all cells
+  debug: 2, // 0 = none, 1 = area cells, 2 = outline cells, 3 = all cells
   edgeAwareReduction: true,
   margin: 20,
 };
@@ -416,14 +416,44 @@ function roundCorners() {
     });
 
     // Helper to check if neighbour exists and its edge is closed
-    const isOpen = (neighbour: GridCell | undefined, edge: keyof Edge) =>
-      !(neighbour && edges[neighbour.type][edge]);
+    const isNeighbourOpen = (
+      neighbour: GridCell | undefined,
+      edge: keyof Edge
+    ) => !(neighbour && edges[neighbour.type][edge]);
+    const isCellOpen = (cell: GridCell, edge: keyof Edge) =>
+      !edges[cell.type][edge];
 
-    // Corners are rounded if both adjacent edges are open (not closed)
-    const tl = isOpen(top, '01') && isOpen(left, '10');
-    const tr = isOpen(top, '01') && isOpen(right, '-10');
-    const br = isOpen(bottom, '0-1') && isOpen(right, '-10');
-    const bl = isOpen(bottom, '0-1') && isOpen(left, '10');
+    // For each corner, round if:
+    // - both adjacent edges are open (as before), OR
+    // - one adjacent edge is open (cell side), and the other is closed (neighbour side is closed, but cell side is open)
+    // NOTE: directions are from the POV the neighbour (not the cell itself)
+    // TL: top (01), left (10)
+    const tl =
+      (isNeighbourOpen(top, '01') && isNeighbourOpen(left, '10')) ||
+      (isCellOpen(cell, '0-1') && isNeighbourOpen(left, '10')) ||
+      (isCellOpen(cell, '-10') && isNeighbourOpen(top, '01'));
+    // TR: top (01), right (-10)
+    const tr =
+      (isNeighbourOpen(top, '01') && isNeighbourOpen(right, '-10')) ||
+      (isCellOpen(cell, '0-1') && isNeighbourOpen(right, '-10')) ||
+      (isCellOpen(cell, '10') && isNeighbourOpen(top, '01'));
+    // BR: bottom (0-1), right (-10)
+    const br =
+      (isNeighbourOpen(bottom, '0-1') && isNeighbourOpen(right, '-10')) ||
+      (isCellOpen(cell, '01') && isNeighbourOpen(right, '-10')) ||
+      (isCellOpen(cell, '10') && isNeighbourOpen(bottom, '0-1'));
+    // BL: bottom (0-1), left (10)
+    const bl =
+      (isNeighbourOpen(bottom, '0-1') && isNeighbourOpen(left, '10')) ||
+      (isCellOpen(cell, '01') && isNeighbourOpen(left, '10')) ||
+      (isCellOpen(cell, '-10') && isNeighbourOpen(bottom, '0-1'));
+
+    if (cell.x === 2 && cell.y === 0) {
+      console.log({
+        bottom: !isNeighbourOpen(bottom, '0-1'),
+        left: isCellOpen(cell, '-10'),
+      });
+    }
 
     cell.corners = [tl, tr, br, bl];
   });
