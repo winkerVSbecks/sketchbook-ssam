@@ -3,6 +3,7 @@ import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 import { logColors } from '../../colors';
 
+console.clear();
 Random.setSeed(Random.getRandomSeed());
 // Random.setSeed('564840');
 // Random.setSeed('221329');
@@ -10,7 +11,8 @@ Random.setSeed(Random.getRandomSeed());
 // Random.setSeed('505894');
 // Random.setSeed('33274');
 // Random.setSeed('118456');
-Random.setSeed('933689');
+// Random.setSeed('933689');
+// Random.setSeed('34985');
 console.log(`Seed: ${Random.getSeed()}`);
 
 const config = {
@@ -19,7 +21,7 @@ const config = {
   res: [4, 3],
   debug: 0, // 0 = none, 1 = area cells, 2 = outline cells, 3 = all cells
   edgeAwareReduction: true,
-  margin: 0,
+  margin: 20,
 };
 
 const palettes = [
@@ -414,14 +416,14 @@ function roundCorners() {
     });
 
     // Helper to check if neighbour exists and its edge is closed
-    const isClosed = (neighbour: GridCell | undefined, edge: keyof Edge) =>
-      neighbour && edges[neighbour.type][edge];
+    const isOpen = (neighbour: GridCell | undefined, edge: keyof Edge) =>
+      !(neighbour && edges[neighbour.type][edge]);
 
     // Corners are rounded if both adjacent edges are open (not closed)
-    const tl = !(isClosed(top, '01') || isClosed(left, '10'));
-    const tr = !(isClosed(top, '01') || isClosed(right, '-10'));
-    const br = !(isClosed(bottom, '0-1') || isClosed(right, '-10'));
-    const bl = !(isClosed(bottom, '0-1') || isClosed(left, '10'));
+    const tl = isOpen(top, '01') && isOpen(left, '10');
+    const tr = isOpen(top, '01') && isOpen(right, '-10');
+    const br = isOpen(bottom, '0-1') && isOpen(right, '-10');
+    const bl = isOpen(bottom, '0-1') && isOpen(left, '10');
 
     cell.corners = [tl, tr, br, bl];
   });
@@ -507,7 +509,7 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
 export const settings: SketchSettings = {
   mode: '2d',
   // dimensions: [1080, 1080],
-  dimensions: [800, 600],
+  dimensions: [840, 640],
   pixelRatio: window.devicePixelRatio,
   animate: false,
   duration: 20_000,
