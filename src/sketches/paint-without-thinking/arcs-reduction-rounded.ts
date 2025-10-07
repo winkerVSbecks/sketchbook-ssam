@@ -4,14 +4,14 @@ import Random from 'canvas-sketch-util/random';
 import { logColors } from '../../colors';
 
 Random.setSeed(Random.getRandomSeed());
-// Random.setSeed('238510');
+Random.setSeed('564840');
 console.log(`Seed: ${Random.getSeed()}`);
 
 const config = {
   // res: [3, 4],
   // res: [3, 3],
   res: [4, 3],
-  debug: 2, // 0 = none, 1 = area cells, 2 = outline cells, 3 = all cells
+  debug: 0, // 0 = none, 1 = area cells, 2 = outline cells, 3 = all cells
   edgeAwareReduction: true,
   margin: 0,
 };
@@ -72,6 +72,8 @@ function xyToIndex(x: number, y: number) {
   return y * config.res[0] + x;
 }
 
+type Corners = [boolean, boolean, boolean, boolean]; // TL, TR, BR, BL
+
 // 0-----1
 // |     |
 // 3-----2
@@ -81,9 +83,19 @@ const cells = {
     x: number,
     y: number,
     w: number,
-    h: number
+    h: number,
+    corners: Corners
   ) => {
-    context.fillRect(x, y, w, h);
+    // context.fillRect(x, y, w, h);
+    context.beginPath();
+    context.roundRect(
+      x,
+      y,
+      w,
+      h,
+      corners.map((c) => (c ? 10 : 0))
+    );
+    context.fill();
   },
   '013-arc': (
     context: CanvasRenderingContext2D,
@@ -184,6 +196,7 @@ interface GridCell {
   color?: string;
   type: CellType;
   areaId?: number;
+  corners: Corners;
 }
 
 let grid = resetGrid();
@@ -192,7 +205,13 @@ function resetGrid(): GridCell[] {
   const result: GridCell[] = [];
   for (let y = 0; y < config.res[1]; y++) {
     for (let x = 0; x < config.res[0]; x++) {
-      result.push({ x, y, occupied: false, type: '0123' });
+      result.push({
+        x,
+        y,
+        occupied: false,
+        type: '0123',
+        corners: [false, false, false, false],
+      });
     }
   }
 
@@ -332,6 +351,52 @@ function reduce() {
   });
 }
 
+function roundCorners() {
+  const neighbors = [
+    [0, -1], // top
+    [1, 0], // right
+    [0, 1], // bottom
+    [-1, 0], // left
+  ];
+
+  grid.forEach((cell) => {
+    const [top, right, bottom, left] = neighbors.map(([dx, dy]) => {
+      const nx = cell.x + dx;
+      const ny = cell.y + dy;
+      return grid[xyToIndex(nx, ny)];
+    });
+
+    // TL, TR, BR, BL
+    // top left
+    // if there is no top or top edge is open and
+    // if there is no left or left edge is open
+    const tl =
+      (!top || !edges[top.type]['01']) && (!left || !edges[left.type]['10']);
+
+    // top right
+    // if there is no top or top edge is open and
+    // if there is no right or right edge is open
+    const tr =
+      (!top || !edges[top.type]['01']) && (!right || !edges[right.type]['-10']);
+
+    // bottom right
+    // if there is no bottom or bottom edge is open and
+    // if there is no right or right edge is open
+    const br =
+      (!bottom || !edges[bottom.type]['0-1']) &&
+      (!right || !edges[right.type]['-10']);
+
+    // bottom left
+    // if there is no bottom or bottom edge is open and
+    // if there is no left or left edge is open
+    const bl =
+      (!bottom || !edges[bottom.type]['0-1']) &&
+      (!left || !edges[left.type]['10']);
+
+    cell.corners = [tl, tr, br, bl];
+  });
+}
+
 export const sketch = async ({ wrap, context }: SketchProps) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => wrap.dispose());
@@ -342,6 +407,7 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
     grid = resetGrid();
     fillGridWithAreas();
     reduce();
+    roundCorners();
 
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
@@ -362,7 +428,7 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
         const y = cell.y * h;
 
         context.fillStyle = cell.color!;
-        cells[cell.type](context, x, y, w, h);
+        cells[cell.type](context, x, y, w, h, cell.corners);
         if (config.debug === 1) {
           context.fillStyle = `rgb(from ${cell.color} calc(255 - r) calc(255 - g) calc(255 - b))`;
           context.textAlign = 'center';
@@ -393,7 +459,7 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
 
         context.fillStyle = 'red';
         const cellType = cellTypes[idx % cellTypes.length];
-        cells[cellType](context, x, y, w, h);
+        cells[cellType](context, x, y, w, h, cell.corners);
 
         context.fillStyle = 'white';
         context.textAlign = 'center';
