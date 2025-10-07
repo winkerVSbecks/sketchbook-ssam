@@ -19,7 +19,7 @@ const config = {
   // res: [3, 4],
   // res: [3, 3],
   res: [4, 3],
-  debug: 2, // 0 = none, 1 = area cells, 2 = outline cells, 3 = all cells
+  debug: 0, // 0 = none, 1 = area cells, 2 = outline cells, 3 = all cells
   edgeAwareReduction: true,
   margin: 20,
 };
