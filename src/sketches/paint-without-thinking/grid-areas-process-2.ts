@@ -253,14 +253,18 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
 
   const areas = fillGridWithAreas();
 
-  wrap.render = ({ width, height }: SketchProps) => {
+  wrap.render = ({ width, height, playhead }: SketchProps) => {
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
 
     const w = width / config.res;
     const h = height / config.res;
 
-    areas.forEach((area) => {
+    const limit = -1 + Math.floor(playhead * areas.length);
+
+    areas.forEach((area, aId) => {
+      if (aId > limit) return;
+
       area.cells.forEach((cell, idx) => {
         const x = cell.x * w;
         const y = cell.y * h;
@@ -281,18 +285,13 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
       });
     });
 
-    if (config.debug) {
-      context.strokeStyle = bg;
-      context.lineWidth = 1;
-      grid.forEach((cell, idx) => {
-        const x = cell.x * w;
-        const y = cell.y * h;
-        context.strokeRect(x, y, w, h);
-
-        context.fillStyle = colors[idx % colors.length];
-        cells[cellTypes[idx % cellTypes.length]](context, x, y, w, h);
-      });
-    }
+    context.strokeStyle = '#f0f';
+    context.lineWidth = 1;
+    grid.forEach((cell, idx) => {
+      const x = cell.x * w;
+      const y = cell.y * h;
+      context.strokeRect(x, y, w, h);
+    });
   };
 };
 
@@ -300,7 +299,11 @@ export const settings: SketchSettings = {
   mode: '2d',
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
-  animate: false,
+  animate: true,
+  duration: 4_000,
+  playFps: 60,
+  exportFps: 60,
+  framesFormat: ['mp4'],
 };
 
 ssam(sketch as Sketch<'2d'>, settings);

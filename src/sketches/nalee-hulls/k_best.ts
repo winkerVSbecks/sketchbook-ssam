@@ -169,7 +169,8 @@ function createHullSystem(
 
 export const settings: SketchSettings = {
   mode: '2d',
-  dimensions: [1080, 1080],
+  // dimensions: [1080, 1080],
+  dimensions: [1920, 1080],
   pixelRatio: window.devicePixelRatio,
   animate: false,
   duration: 12_000,

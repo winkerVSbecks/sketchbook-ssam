@@ -6,12 +6,15 @@ import { logColors } from '../../colors';
 
 const config = {
   res: 3,
-  debug: false,
+  debug: true,
 };
 
-const colors = Random.shuffle(Random.pick([carmen, bless]));
-logColors(colors);
-const bg = colors.pop()!;
+// const colors = Random.shuffle(Random.pick([carmen, bless]));
+// logColors(colors);
+// const bg = colors.pop()!;
+
+const colors = ['#fff'];
+const bg = '#000';
 
 function xyToIndex(x: number, y: number) {
   return y * config.res + x;
@@ -253,46 +256,42 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
 
   const areas = fillGridWithAreas();
 
-  wrap.render = ({ width, height }: SketchProps) => {
+  const gridCells = areas.flatMap((a) => a.cells);
+  console.log(cells);
+
+  wrap.render = ({ width, height, playhead }: SketchProps) => {
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
 
     const w = width / config.res;
     const h = height / config.res;
 
-    areas.forEach((area) => {
-      area.cells.forEach((cell, idx) => {
-        const x = cell.x * w;
-        const y = cell.y * h;
+    const limit = Math.floor(playhead * gridCells.length);
 
-        context.fillStyle = area.color;
-        cells[cell.type](context, x, y, w, h);
+    gridCells.forEach((cell, idx) => {
+      const x = cell.x * w;
+      const y = cell.y * h;
 
-        if (config.debug) {
-          context.strokeStyle = '#0f0';
-          context.strokeRect(x, y, w, h);
+      if (idx > limit) return;
 
-          context.fillStyle = '#0f0';
-          context.textAlign = 'center';
-          context.textBaseline = 'middle';
-          context.font = `32px monospace`;
-          context.fillText(String(idx), x + w / 2, y + h / 2);
-        }
-      });
+      context.fillStyle = colors[0];
+      cells[cell.type](context, x, y, w, h);
+
+      if (config.debug) {
+        context.fillStyle = '#f0f';
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        context.font = `32px monospace`;
+        context.fillText(String(idx), x + w / 2, y + h / 2);
+      }
     });
 
-    if (config.debug) {
-      context.strokeStyle = bg;
-      context.lineWidth = 1;
-      grid.forEach((cell, idx) => {
-        const x = cell.x * w;
-        const y = cell.y * h;
-        context.strokeRect(x, y, w, h);
-
-        context.fillStyle = colors[idx % colors.length];
-        cells[cellTypes[idx % cellTypes.length]](context, x, y, w, h);
-      });
-    }
+    context.strokeStyle = '#f0f';
+    grid.forEach((cell) => {
+      const x = cell.x * w;
+      const y = cell.y * h;
+      context.strokeRect(x, y, w, h);
+    });
   };
 };
 
@@ -300,7 +299,11 @@ export const settings: SketchSettings = {
   mode: '2d',
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
-  animate: false,
+  animate: true,
+  duration: 4_000,
+  playFps: 60,
+  exportFps: 60,
+  framesFormat: ['mp4'],
 };
 
 ssam(sketch as Sketch<'2d'>, settings);

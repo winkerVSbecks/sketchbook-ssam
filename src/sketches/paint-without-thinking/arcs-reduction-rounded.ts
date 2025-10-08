@@ -13,15 +13,21 @@ Random.setSeed(Random.getRandomSeed());
 // Random.setSeed('118456');
 // Random.setSeed('933689');
 // Random.setSeed('34985');
+// Random.setSeed('987035');
+// Random.setSeed('465094');
+// Random.setSeed('328181');
+// Random.setSeed('2514');
 console.log(`Seed: ${Random.getSeed()}`);
 
 const config = {
   // res: [3, 4],
-  // res: [3, 3],
-  res: [4, 3],
+  res: [3, 3],
+  // res: [4, 3],
+  // res: [5, 3],
   debug: 0, // 0 = none, 1 = area cells, 2 = outline cells, 3 = all cells
   edgeAwareReduction: true,
   margin: 20,
+  r: 10,
 };
 
 const palettes = [
@@ -104,7 +110,7 @@ const cells = {
       y,
       w,
       h,
-      corners.map((c) => (c ? 10 : 0))
+      corners.map((c) => (c ? config.r : 0))
     );
     context.fill();
   },
@@ -118,13 +124,13 @@ const cells = {
   ) => {
     context.beginPath();
     context.moveTo(x, y);
-    context.lineTo(x + w - (tr ? 10 : 0), y);
+    context.lineTo(x + w - (tr ? config.r : 0), y);
     if (tr) {
-      context.arcTo(x + w, y, x + w, y + h, 10);
+      context.arcTo(x + w, y, x + w, y + h, config.r);
     }
-    context.arcTo(x + w, y + h, x, y + h, w - (bl ? 10 : 0));
+    context.arcTo(x + w, y + h, x, y + h, w - (bl ? config.r : 0));
     if (bl) {
-      context.arcTo(x, y + h, x, y + h - 10, 10);
+      context.arcTo(x, y + h, x, y + h - config.r, config.r);
     }
     context.closePath();
     context.fill();
@@ -138,21 +144,21 @@ const cells = {
     [tl, , br]: Corners
   ) => {
     context.beginPath();
-    context.moveTo(x - (tl ? 10 : 0), y);
+    context.moveTo(x - (tl ? config.r : 0), y);
     context.lineTo(x + w, y);
-    context.lineTo(x + w, y + h - (br ? 10 : 0));
+    context.lineTo(x + w, y + h - (br ? config.r : 0));
     if (br) {
-      context.arcTo(x + w, y + h, x, y + h, 10);
+      context.arcTo(x + w, y + h, x, y + h, config.r);
     }
     context.arcTo(
       x,
       y + h,
       x,
-      y + (tl ? 10 : 0),
-      w - (br ? 10 : 0) - (tl ? 10 : 0)
+      y + (tl ? config.r : 0),
+      w - (br ? config.r : 0) - (tl ? config.r : 0)
     );
     if (tl) {
-      context.arcTo(x, y, x + 10, y, 10);
+      context.arcTo(x, y, x + config.r, y, config.r);
     }
     context.fill();
   },
@@ -165,13 +171,19 @@ const cells = {
     [tl, , br]: Corners
   ) => {
     context.beginPath();
-    context.moveTo(x, y + (tl ? 10 : 0));
+    context.moveTo(x, y + (tl ? config.r : 0));
     if (tl) {
-      context.arcTo(x, y, x + w, y, 10);
+      context.arcTo(x, y, x + w, y, config.r);
     }
-    context.arcTo(x + w, y, x + w, y + h - (br ? 10 : 0), w - (br ? 10 : 0));
+    context.arcTo(
+      x + w,
+      y,
+      x + w,
+      y + h - (br ? config.r : 0),
+      w - (br ? config.r : 0)
+    );
     if (br) {
-      context.arcTo(x + w, y + h, x, y + h, 10);
+      context.arcTo(x + w, y + h, x, y + h, config.r);
     }
     context.lineTo(x, y + h);
     context.closePath();
@@ -186,16 +198,16 @@ const cells = {
     [, tr, , bl]: Corners
   ) => {
     context.beginPath();
-    context.moveTo(x + w - (tr ? 10 : 0), y);
+    context.moveTo(x + w - (tr ? config.r : 0), y);
     if (tr) {
-      context.arcTo(x + w, y, x + w, y + h, 10);
+      context.arcTo(x + w, y, x + w, y + h, config.r);
     }
     context.lineTo(x + w, y + h);
-    context.lineTo(x + (bl ? 10 : 0), y + h);
+    context.lineTo(x + (bl ? config.r : 0), y + h);
     if (bl) {
-      context.arcTo(x, y + h, x, y + h - 10, 10);
+      context.arcTo(x, y + h, x, y + h - config.r, config.r);
     }
-    context.arcTo(x, y, x + w, y, w - (tr ? 10 : 0));
+    context.arcTo(x, y, x + w, y, w - (tr ? config.r : 0));
     context.fill();
   },
 } as const;
@@ -470,7 +482,6 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
     fillGridWithAreas();
     reduce();
     roundCorners();
-    console.log(grid);
 
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
@@ -480,10 +491,6 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
 
     context.save();
     context.translate(config.margin, config.margin);
-
-    // context.beginPath();
-    // context.roundRect(0, 0, width - margin * 2, height - margin * 2, [10]);
-    // context.clip();
 
     if (config.debug < 3) {
       grid.forEach((cell) => {
@@ -522,7 +529,7 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
 
         context.fillStyle = 'red';
         const cellType = cellTypes[idx % cellTypes.length];
-        cells[cellType](context, x, y, w, h, cell.corners);
+        cells[cellType](context, x, y, w, h, [true, true, true, true]);
 
         context.fillStyle = 'white';
         context.textAlign = 'center';
@@ -532,17 +539,18 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
       });
     }
 
-    // context.restore();
+    context.restore();
   };
 };
 
 export const settings: SketchSettings = {
   mode: '2d',
-  // dimensions: [1080, 1080],
-  dimensions: [840, 640],
+  // dimensions: [640, 840],
+  dimensions: [1080, 1080],
+  // dimensions: [1040, 640],
   pixelRatio: window.devicePixelRatio,
   animate: false,
-  duration: 20_000,
+  duration: 40_000,
   playFps: 1,
   exportFps: 1,
   framesFormat: ['mp4'],

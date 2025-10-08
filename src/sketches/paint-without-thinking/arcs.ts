@@ -6,7 +6,7 @@ import { logColors } from '../../colors';
 
 const config = {
   res: 3,
-  debug: 0, // 0 = none, 1 = area cells, 2 = all cells
+  debug: 1, // 0 = none, 1 = area cells, 2 = all cells
 };
 
 const colors = Random.shuffle(Random.pick([carmen, bless]));
@@ -255,11 +255,14 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
           cells[cell.type](context, x, y, w, h);
 
           if (config.debug === 1) {
-            context.fillStyle = 'green';
+            context.fillStyle = '#f0f';
             context.textAlign = 'center';
             context.textBaseline = 'middle';
             context.font = `32px monospace`;
-            context.fillText(`${idx} ${cell.type}`, x + w / 2, y + h / 2);
+            context.fillText(`${idx}-${cell.type}`, x + w / 2, y + h / 2);
+
+            context.strokeStyle = '#f0f';
+            context.strokeRect(x, y, w, h);
           }
         });
       });
