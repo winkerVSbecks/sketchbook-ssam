@@ -21,9 +21,9 @@ console.log(`Seed: ${Random.getSeed()}`);
 
 const config = {
   // res: [3, 4],
-  res: [3, 3],
+  // res: [3, 3],
   // res: [4, 3],
-  // res: [5, 3],
+  res: [5, 3],
   debug: 0, // 0 = none, 1 = area cells, 2 = outline cells, 3 = all cells
   edgeAwareReduction: true,
   margin: 20,
@@ -78,7 +78,7 @@ const palettes = [
   { bg: '#FFDDDD', ink: ['#8F0202', '#042411'] },
 ];
 
-const { bg, ink: colors } = Random.pick(palettes);
+let { bg, ink: colors } = Random.pick(palettes);
 
 logColors(colors);
 
@@ -126,7 +126,7 @@ const cells = {
     context.moveTo(x, y);
     context.lineTo(x + w - (tr ? config.r : 0), y);
     if (tr) {
-      context.arcTo(x + w, y, x + w, y + h, config.r);
+      context.arcTo(x + w, y, x + w, y + config.r, config.r);
     }
     context.arcTo(x + w, y + h, x, y + h, w - (bl ? config.r : 0));
     if (bl) {
@@ -460,13 +460,6 @@ function roundCorners() {
       (isCellOpen(cell, '01') && isNeighbourOpen(left, '10')) ||
       (isCellOpen(cell, '-10') && isNeighbourOpen(bottom, '0-1'));
 
-    if (cell.x === 2 && cell.y === 0) {
-      console.log({
-        bottom: !isNeighbourOpen(bottom, '0-1'),
-        left: isCellOpen(cell, '-10'),
-      });
-    }
-
     cell.corners = [tl, tr, br, bl];
   });
 }
@@ -479,6 +472,9 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
 
   wrap.render = ({ width, height }: SketchProps) => {
     grid = resetGrid();
+    const palette = Random.pick(palettes);
+    bg = palette.bg;
+    colors = palette.ink;
     fillGridWithAreas();
     reduce();
     roundCorners();
@@ -546,8 +542,8 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
 export const settings: SketchSettings = {
   mode: '2d',
   // dimensions: [640, 840],
-  dimensions: [1080, 1080],
-  // dimensions: [1040, 640],
+  // dimensions: [1080, 1080],
+  dimensions: [1040, 640],
   pixelRatio: window.devicePixelRatio,
   animate: false,
   duration: 40_000,

@@ -6,7 +6,7 @@ import { logColors } from '../../colors';
 
 const config = {
   res: 3,
-  debug: false,
+  debug: true,
 };
 
 const colors = Random.shuffle(Random.pick([carmen, bless]));
