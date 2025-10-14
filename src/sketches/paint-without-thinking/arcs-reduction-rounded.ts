@@ -464,11 +464,16 @@ function roundCorners() {
   });
 }
 
-export const sketch = async ({ wrap, context }: SketchProps) => {
+export const sketch = async ({ wrap, context, ...props }: SketchProps) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => wrap.dispose());
     import.meta.hot.accept(() => wrap.hotReload());
   }
+
+  import.meta.hot?.on('mcp:export', () => {
+    console.log('Export triggered from custom server endpoint');
+    props.exportFrame();
+  });
 
   wrap.render = ({ width, height }: SketchProps) => {
     grid = resetGrid();

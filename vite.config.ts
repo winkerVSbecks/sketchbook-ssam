@@ -15,6 +15,18 @@ export default defineConfig({
     ssamGit(),
     ssamFfmpeg(),
     ssamTimelapse(),
+    {
+      name: 'custom-server',
+      configureServer(server) {
+        server.middlewares.use('/export', (req, res) => {
+          res.setHeader('Content-Type', 'application/json');
+          server.hot.send('mcp:export');
+          server.hot.on('ssam:export', (data) => {
+            res.end(JSON.stringify(data));
+          });
+        });
+      },
+    },
   ],
   build: {
     outDir: './dist',
