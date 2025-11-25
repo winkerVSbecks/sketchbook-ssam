@@ -5,7 +5,7 @@ import { mapRange, lerpFrames } from 'canvas-sketch-util/math';
 import { drawPath } from '@daeinc/draw';
 import { generateColorRamp, colorToCSS } from 'rampensau';
 import { logColors } from '../../colors';
-import { carmen } from '../../colors/found';
+import { bless, carmen } from '../../colors/found';
 
 const config = {
   count: 5,
@@ -14,7 +14,7 @@ const config = {
 
 const colors = generateColorRamp({
   total: 5,
-  hStart: 280.7,
+  hStart: Random.range(0, 360), //280.7,
   hStartCenter: 0.5,
   hEasing: (x) => x,
   hCycles: 0.0,
@@ -30,6 +30,17 @@ const colors = generateColorRamp({
 const [light, bg, frame, , shadow] = colors; // Random.shuffle(carmen);
 logColors(colors, true);
 
+// Blues:
+
+// Deep/saturated blue: #2E68C8 (approximately)
+// Medium blue: #6B9FDB (approximately)
+// Light blue/periwinkle: #98B8DC (approximately)
+
+// Neutrals:
+
+// Off-white/cream: #E8E5DC (approximately)
+// Warm gray background: #D4CFC5 (approximately)
+
 export const sketch = async ({ wrap, context }: SketchProps) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => wrap.dispose());
@@ -39,12 +50,14 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
   wrap.render = ({ width, height }: SketchProps) => {
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
-    context.lineWidth = 4;
     context.lineJoin = 'round';
     context.lineCap = 'round';
 
     const frameW = width - 2 * config.margin;
     const frameH = height - 2 * config.margin;
+
+    // const s = frameW / config.count;
+    // const h = (s * Math.sqrt(3)) / 2;
 
     const h = frameH / config.count;
     const s = (2 * h) / Math.sqrt(3);
@@ -80,7 +93,7 @@ export const sketch = async ({ wrap, context }: SketchProps) => {
       context.closePath();
 
       if (type === 'stroke') {
-        context.lineWidth = 6;
+        context.lineWidth = 12;
         context.strokeStyle = color;
         context.stroke();
       } else {
