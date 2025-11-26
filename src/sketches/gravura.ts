@@ -17,8 +17,8 @@ import Random from 'canvas-sketch-util/random';
 const config = {
   columns: 5,
   colors: {
-    bg: '#e8e6e0',
-    fg: '#b8312f',
+    bg: 'color(display-p3 0.9084 0.9022 0.8808)', // '#e8e6e0',
+    fg: 'color(display-p3 0.7465 0.0031 0.0895)', //'#b8312f',
   },
 };
 
@@ -43,8 +43,19 @@ function drawColumn(
   x: number,
   width: number,
   h: number,
-  color: string
+  color: string,
+  rotation: number = 0
 ) {
+  // Clip to column area
+  context.save();
+
+  context.beginPath();
+  context.rect(x, 0, width, h);
+  context.clip();
+
+  context.translate(x + width / 2, h / 2);
+  context.rotate((rotation * Math.PI) / 180);
+  context.translate(-(x + width / 2), -(h / 2));
   columnTypes[type].forEach((val, index) => {
     const y = index * (h / columnTypes[type].length);
     const height = h / columnTypes[type].length;
@@ -54,6 +65,7 @@ function drawColumn(
       context.fillRect(x, y, width, height);
     }
   });
+  context.restore();
 }
 
 export const sketch = ({ wrap, context, width, height }: SketchProps) => {
@@ -77,7 +89,15 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       const x = i * columnWidth;
       const type: ColumnType = i % 2 === 0 ? 'filled' : 'hole';
 
-      drawColumn(type, context, x, columnWidth, height, config.colors.fg);
+      drawColumn(
+        type,
+        context,
+        x,
+        columnWidth,
+        height,
+        config.colors.fg,
+        i === config.columns - 1 ? 0 : Random.rangeFloor(-20, 20)
+      );
     }
   };
 };
