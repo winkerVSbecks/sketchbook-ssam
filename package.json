@@ -67,6 +67,7 @@
     "poisson-disk-sampling": "^2.3.1",
     "polybooljs": "^1.2.2",
     "polyline-normals": "^2.0.2",
+    "pro-color-harmonies": "^0.8.0",
     "rampensau": "^0.10.2",
     "resolve-lygia": "^1.0.4",
     "riso-colors": "^1.0.1",

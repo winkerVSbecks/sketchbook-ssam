@@ -1,24 +1,33 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
+import { drawPath } from '@daeinc/draw';
+import { formatCss, oklch } from 'culori';
+import { ColorPaletteGenerator } from 'pro-color-harmonies';
+import { logColors } from '../colors';
 
-// Blues:
+const palette = ColorPaletteGenerator.generate(
+  { l: Random.range(0, 1), c: Random.range(0, 0.4), h: Random.range(0, 360) },
+  'analogous',
+  {
+    style: Random.pick(['default', 'square', 'triangle', 'circle', 'diamond']),
+    modifiers: {
+      sine: Random.range(-1, 1),
+      wave: Random.range(-1, 1),
+      zap: Random.range(-1, 1),
+      block: Random.range(-1, 1),
+    },
+  }
+).map((c) => formatCss(oklch({ mode: 'oklch', ...c })));
 
-// Deep/saturated blue: #2E68C8 (approximately)
-// Medium blue: #6B9FDB (approximately)
-// Light blue/periwinkle: #98B8DC (approximately)
-
-// Neutrals:
-
-// Off-white/cream: #E8E5DC (approximately)
-// Warm gray background: #D4CFC5 (approximately)
+logColors(palette);
 
 // Configuration
 const config = {
   columns: 5,
   colors: {
-    bg: 'color(display-p3 0.9084 0.9022 0.8808)', // '#e8e6e0',
-    fg: 'color(display-p3 0.7465 0.0031 0.0895)', //'#b8312f',
+    bg: palette.pop()!, //palette[5], //'color(display-p3 0.9084 0.9022 0.8808)', // ,
+    fg: Random.pick(palette), //'color(display-p3 0.7465 0.0031 0.0895)', //'#b8312f',
   },
 };
 
@@ -54,7 +63,7 @@ function drawColumn(
   context.clip();
 
   context.translate(x + width / 2, h / 2);
-  context.rotate((rotation * Math.PI) / 180);
+  context.rotate(rotation);
   context.translate(-(x + width / 2), -(h / 2));
   columnTypes[type].forEach((val, index) => {
     const y = index * (h / columnTypes[type].length);
@@ -66,6 +75,31 @@ function drawColumn(
     }
   });
   context.restore();
+}
+
+function computeTriangle(
+  [x1, y1]: Point,
+  [x2min, x2max]: [number, number],
+  y2: number
+): Point[] {
+  const vertices: Point[] = [[x1, y1]];
+  const x2 = Random.rangeFloor(x2min, x1);
+  vertices.push([x2, y2]);
+  const x3 = Random.rangeFloor(x1, x2max);
+  vertices.push([x3, y2]);
+
+  return vertices;
+}
+
+function computeAngles([p1, p2, p3]: Point[]): number[] {
+  const deltaX1 = p1[0] - p2[0];
+  const deltaX2 = p3[0] - p1[0];
+  const deltaY = p1[1] - p2[1];
+
+  return [
+    Math.PI / 2 + Math.atan2(deltaY, deltaX1),
+    Math.PI / 2 - Math.atan2(deltaY, deltaX2),
+  ];
 }
 
 export const sketch = ({ wrap, context, width, height }: SketchProps) => {
@@ -81,9 +115,27 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
 
   const columnWidth = width / config.columns;
 
+  const triangleA = computeTriangle(
+    [columnWidth, 0],
+    [0, columnWidth * 2],
+    height
+  );
+  const triangleB = computeTriangle(
+    [columnWidth * 3, 0],
+    [columnWidth * 2, columnWidth * 4],
+    height
+  );
+  const angles = [...computeAngles(triangleA), ...computeAngles(triangleB)];
+
   wrap.render = () => {
     context.fillStyle = config.colors.bg;
     context.fillRect(0, 0, width, height);
+
+    context.fillStyle = config.colors.fg;
+    drawPath(context, triangleA);
+    context.fill();
+    drawPath(context, triangleB);
+    context.fill();
 
     for (let i = 0; i < config.columns; i++) {
       const x = i * columnWidth;
@@ -96,7 +148,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
         columnWidth,
         height,
         config.colors.fg,
-        i === config.columns - 1 ? 0 : Random.rangeFloor(-20, 20)
+        i === config.columns - 1 ? 0 : angles[i]
       );
     }
   };
