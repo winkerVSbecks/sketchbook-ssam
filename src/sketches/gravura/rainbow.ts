@@ -6,6 +6,10 @@ import { formatCss, oklch } from 'culori';
 import { ColorPaletteGenerator } from 'pro-color-harmonies';
 import { logColors } from '../../colors';
 
+Random.setSeed(Random.getRandomSeed());
+// Random.setSeed('rainbow----');
+// console.log(Random.getSeed());
+
 const palette = ColorPaletteGenerator.generate(
   { l: Random.range(0, 1), c: Random.range(0, 0.4), h: Random.range(0, 360) },
   Random.pick([
@@ -60,59 +64,79 @@ function drawColumn(
   width: number,
   h: number,
   rotation: number = 0,
-  fill: CanvasGradient
+  triangle?: Point[],
+  darken?: boolean
 ) {
   // Clip to column area
   context.save();
 
   context.beginPath();
-  context.rect(x, 0, width, h);
+  if (triangle) {
+    drawPath(context, triangle);
+  } else {
+    context.rect(x, 0, width, h);
+  }
   context.clip();
 
-  context.fillStyle = fill;
-  context.rect(x, 0, width, h);
-  context.fill();
+  context.translate(x + width / 2, h / 2);
+  context.rotate(rotation);
+  context.translate(-(x + width / 2), -(h / 2));
+  const fills: Array<{ start: number; count: number }> = [];
+  let currentFill: { start: number; count: number } | null = null;
 
-  // context.translate(x + width / 2, h / 2);
-  // context.rotate(rotation);
-  // context.translate(-(x + width / 2), -(h / 2));
-  // const fills: Array<{ start: number; count: number }> = [];
-  // let currentFill: { start: number; count: number } | null = null;
+  columnTypes[type].forEach((val, index) => {
+    if (val === '1') {
+      if (currentFill) {
+        currentFill.count++;
+      } else {
+        currentFill = { start: index, count: 1 };
+      }
+    } else {
+      if (currentFill) {
+        fills.push(currentFill);
+        currentFill = null;
+      }
+    }
+  });
 
-  // columnTypes[type].forEach((val, index) => {
-  //   if (val === '1') {
-  //     if (currentFill) {
-  //       currentFill.count++;
-  //     } else {
-  //       currentFill = { start: index, count: 1 };
-  //     }
-  //   } else {
-  //     if (currentFill) {
-  //       fills.push(currentFill);
-  //       currentFill = null;
-  //     }
-  //   }
-  // });
+  const cellHeight = h / columnTypes[type].length;
+  fills.forEach(({ start, count }, idx) => {
+    const color = config.colors.fg[idx % config.colors.fg.length];
+    context.fillStyle = darken
+      ? `oklch(from ${color} calc(l * .75) c h)`
+      : color;
+    const y = start * cellHeight;
+    const height = count * cellHeight;
 
-  // const cellHeight = h / columnTypes[type].length;
-  // fills.forEach(({ start, count }, idx) => {
-  //   context.fillStyle = config.colors.fg[idx % config.colors.fg.length];
-  //   const y = start * cellHeight;
-  //   const height = count * cellHeight;
-  //   context.fillRect(x, y, width, height);
-  // });
+    context.fillRect(x, y, width, height);
+
+    if (triangle) {
+      if (type === 'filled') {
+        context.fillRect(x - width, y, width, height);
+      } else {
+        context.fillRect(x + width, y, width, height);
+      }
+    } else {
+      if (type === 'filled') {
+        context.fillRect(x + width, y, width, height);
+      } else {
+        context.fillRect(x - width, y, width, height);
+      }
+    }
+  });
   context.restore();
 }
 
 function computeTriangle(
   [x1, y1]: Point,
-  [x2min, x2max]: [number, number],
+  columnWidth: number,
   y2: number
 ): Point[] {
+  const xDelta = Random.range(0, columnWidth);
   const vertices: Point[] = [[x1, y1]];
-  const x2 = Random.rangeFloor(x2min, x1);
+  const x2 = x1 - xDelta; //Random.rangeFloor(x2min, x1);
   vertices.push([x2, y2]);
-  const x3 = Random.rangeFloor(x1, x2max);
+  const x3 = x1 + xDelta; //Random.rangeFloor(x1, x2max);
   vertices.push([x3, y2]);
 
   return vertices;
@@ -120,38 +144,13 @@ function computeTriangle(
 
 function computeAngles([p1, p2, p3]: Point[]): number[] {
   const deltaX1 = p1[0] - p2[0];
-  const deltaX2 = p3[0] - p1[0];
+  const deltaX2 = p1[0] - p3[0];
   const deltaY = p1[1] - p2[1];
 
   return [
     Math.PI / 2 + Math.atan2(deltaY, deltaX1),
-    Math.PI / 2 - Math.atan2(deltaY, deltaX2),
+    Math.PI / 2 + Math.atan2(deltaY, deltaX2),
   ];
-}
-
-function makeGradient(
-  context: CanvasRenderingContext2D,
-  type: ColumnType,
-  height: number,
-  to: Point,
-  from: Point
-) {
-  // const gradient = context.createLinearGradient(0, 0, 0, height);
-  const gradient = context.createLinearGradient(...to, ...from);
-
-  const cellHeight = 1 / columnTypes[type].length;
-  let colCount = 0;
-  columnTypes[type].forEach((t, idx) => {
-    const color =
-      t === '1'
-        ? config.colors.fg[colCount % config.colors.fg.length]
-        : 'transparent';
-    gradient.addColorStop(idx * cellHeight, color);
-    gradient.addColorStop((idx + 1) * cellHeight, color);
-
-    if (t === '1') colCount++;
-  });
-  return gradient;
 }
 
 function splitTriangle([a, b, c]: Point[]): Point[][] {
@@ -167,76 +166,24 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     import.meta.hot.accept(() => wrap.hotReload());
   }
 
-  // Generate seed
-  const seed = Random.getRandomSeed();
-  Random.setSeed(seed);
-  console.log('Seed:', seed);
-
   const columnWidth = width / config.columns;
 
-  const triangleA = computeTriangle(
-    [columnWidth, 0],
-    [0, columnWidth * 2],
-    height
-  );
-  const triangleB = computeTriangle(
-    [columnWidth * 3, 0],
-    [columnWidth * 2, columnWidth * 4],
-    height
-  );
+  const triangleA = computeTriangle([columnWidth, 0], columnWidth, height);
+  const triangleB = computeTriangle([columnWidth * 3, 0], columnWidth, height);
   const angles = [...computeAngles(triangleA), ...computeAngles(triangleB)];
 
   wrap.render = () => {
     context.fillStyle = config.colors.bg;
     context.fillRect(0, 0, width, height);
+    const [tA1, tA2] = splitTriangle(triangleA);
+    const [tB1, tB2] = splitTriangle(triangleB);
 
-    const gradientFilled = makeGradient(
-      context,
-      'hole',
-      height,
-      triangleA[0],
-      triangleA[1]
-    );
-    const gradientHole = makeGradient(
-      context,
-      'filled',
-      height,
-      triangleA[0],
-      triangleA[2]
-    );
-
-    // config.colors.fg.forEach((color, index) => {
-    //   gradient.addColorStop(index / (config.colors.fg.length - 1), color);
-    // });
-
-    // const [tB1, tB2] = splitTriangle(triangleB);
-    // context.fillStyle = gradientFilled;
-    // drawPath(context, tB1);
-    // context.fill();
-    // context.stroke();
-    // context.fillStyle = gradientHole;
-    // drawPath(context, tB2);
-    // context.fill();
-    // context.stroke();
-
-    const g1 = makeGradient(
-      context,
-      'filled',
-      height,
-      triangleA[0],
-      triangleA[1]
-    );
-    const g2 = makeGradient(
-      context,
-      'hole',
-      height,
-      triangleA[0],
-      triangleA[2]
-    );
+    const triangles = [tA1, tA2, tB1, tB2];
 
     for (let i = 0; i < config.columns; i++) {
       const x = i * columnWidth;
       const type: ColumnType = i % 2 === 0 ? 'filled' : 'hole';
+      const flippedType: ColumnType = i % 2 === 0 ? 'hole' : 'filled';
 
       drawColumn(
         type,
@@ -245,20 +192,23 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
         columnWidth,
         height,
         i === config.columns - 1 ? 0 : angles[i],
-        i % 2 === 0 ? g1 : g2
+        undefined,
+        i % 2 !== 0
       );
-    }
 
-    context.strokeStyle = '#f00';
-    const [tA1, tA2] = splitTriangle(triangleA);
-    context.fillStyle = gradientFilled;
-    drawPath(context, tA1);
-    context.fill();
-    // context.stroke();
-    context.fillStyle = gradientHole;
-    drawPath(context, tA2);
-    context.fill();
-    // context.stroke();
+      if (triangles[i]) {
+        drawColumn(
+          flippedType,
+          context,
+          x,
+          columnWidth,
+          height,
+          i === config.columns - 1 ? 0 : angles[i],
+          triangles[i],
+          i % 2 !== 0
+        );
+      }
+    }
   };
 };
 
