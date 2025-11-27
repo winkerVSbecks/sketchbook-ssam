@@ -4,11 +4,18 @@ import Random from 'canvas-sketch-util/random';
 import { drawPath } from '@daeinc/draw';
 import { formatCss, oklch } from 'culori';
 import { ColorPaletteGenerator } from 'pro-color-harmonies';
-import { logColors } from '../colors';
+import { logColors } from '../../colors';
 
 const palette = ColorPaletteGenerator.generate(
   { l: Random.range(0, 1), c: Random.range(0, 0.4), h: Random.range(0, 360) },
-  'analogous',
+  Random.pick([
+    'analogous',
+    'complementary',
+    'triadic',
+    'tetradic',
+    'splitComplementary',
+    'tintsShades',
+  ]),
   {
     style: Random.pick(['default', 'square', 'triangle', 'circle', 'diamond']),
     modifiers: {
@@ -65,14 +72,30 @@ function drawColumn(
   context.translate(x + width / 2, h / 2);
   context.rotate(rotation);
   context.translate(-(x + width / 2), -(h / 2));
-  columnTypes[type].forEach((val, index) => {
-    const y = index * (h / columnTypes[type].length);
-    const height = h / columnTypes[type].length;
+  const fills: Array<{ start: number; count: number }> = [];
+  let currentFill: { start: number; count: number } | null = null;
 
+  columnTypes[type].forEach((val, index) => {
     if (val === '1') {
-      context.fillStyle = color;
-      context.fillRect(x, y, width, height);
+      if (currentFill) {
+        currentFill.count++;
+      } else {
+        currentFill = { start: index, count: 1 };
+      }
+    } else {
+      if (currentFill) {
+        fills.push(currentFill);
+        currentFill = null;
+      }
     }
+  });
+
+  const cellHeight = h / columnTypes[type].length;
+  context.fillStyle = color;
+  fills.forEach(({ start, count }) => {
+    const y = start * cellHeight;
+    const height = count * cellHeight;
+    context.fillRect(x, y, width, height);
   });
   context.restore();
 }
@@ -131,10 +154,17 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     context.fillStyle = config.colors.bg;
     context.fillRect(0, 0, width, height);
 
-    context.fillStyle = config.colors.fg;
-    drawPath(context, triangleA);
+    context.fillStyle = palette[0];
+    drawPath(context, [triangleA[0], triangleA[1], [columnWidth, height]]);
     context.fill();
-    drawPath(context, triangleB);
+    context.fillStyle = palette[1];
+    drawPath(context, [[columnWidth, height], triangleA[0], triangleA[2]]);
+    context.fill();
+    context.fillStyle = palette[2];
+    drawPath(context, [triangleB[0], triangleB[1], [columnWidth * 3, height]]);
+    context.fill();
+    context.fillStyle = palette[3];
+    drawPath(context, [[columnWidth * 3, height], triangleB[0], triangleB[2]]);
     context.fill();
 
     for (let i = 0; i < config.columns; i++) {
@@ -147,7 +177,8 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
         x,
         columnWidth,
         height,
-        config.colors.fg,
+        palette[i % palette.length],
+        // config.colors.fg,
         i === config.columns - 1 ? 0 : angles[i]
       );
     }
