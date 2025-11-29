@@ -5,6 +5,8 @@ import { drawPath } from '@daeinc/draw';
 import { formatCss, oklch } from 'culori';
 import { ColorPaletteGenerator } from 'pro-color-harmonies';
 import { logColors } from '../../colors';
+import { scaleCanvasAndApplyDither } from '../../scale-canvas-dither';
+import { dither } from '../../dither';
 
 Random.setSeed(Random.getRandomSeed());
 
@@ -38,6 +40,7 @@ const config = {
     bg: palette.pop()!,
     fg: palette,
   },
+  dither: true,
 };
 
 // 5 columns
@@ -128,9 +131,9 @@ function computeTriangle(
 ): Point[] {
   const xDelta = Random.range(0, columnWidth);
   const vertices: Point[] = [[x1, y1]];
-  const x2 = x1 - xDelta; //Random.rangeFloor(x2min, x1);
+  const x2 = x1 - xDelta;
   vertices.push([x2, y2]);
-  const x3 = x1 + xDelta; //Random.rangeFloor(x1, x2max);
+  const x3 = x1 + xDelta;
   vertices.push([x3, y2]);
 
   return vertices;
@@ -154,7 +157,13 @@ function splitTriangle([a, b, c]: Point[]): Point[][] {
   ];
 }
 
-export const sketch = ({ wrap, context, width, height }: SketchProps) => {
+export const sketch = ({
+  wrap,
+  context,
+  width,
+  height,
+  canvas,
+}: SketchProps) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => wrap.dispose());
     import.meta.hot.accept(() => wrap.hotReload());
@@ -203,13 +212,30 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
         );
       }
     }
+
+    if (config.dither) {
+      const ditheredImage = scaleCanvasAndApplyDither(
+        width,
+        height,
+        0.75,
+        canvas,
+        (data) =>
+          dither(data, {
+            greyscaleMethod: 'none',
+            ditherMethod: 'atkinson',
+          })
+      );
+
+      context.drawImage(ditheredImage, 0, 0, width, height);
+    }
   };
 };
 
 export const settings: SketchSettings = {
   mode: '2d',
-  dimensions: [1080, 1080],
-  pixelRatio: 2,
+  // dimensions: [1080, 1080],
+  dimensions: [800, 600],
+  pixelRatio: window.devicePixelRatio,
   animate: false,
 };
 
