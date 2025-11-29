@@ -44,7 +44,6 @@ const config = {
 // 2 x 2 x 1
 // Fill pattern for 2x columns:
 // triangle with top vertex in center two columns, base spanning random width at bottom
-//
 
 type ColumnType = 'filled' | 'hole';
 
@@ -79,27 +78,20 @@ function drawColumn(
   context.translate(x + width / 2, h / 2);
   context.rotate(rotation);
   context.translate(-(x + width / 2), -(h / 2));
-  const fills: Array<{ start: number; count: number }> = [];
-  let currentFill: { start: number; count: number } | null = null;
 
-  columnTypes[type].forEach((val, index) => {
+  const fills = columnTypes[type].reduce<
+    Array<{ start: number; count: number }>
+  >((acc, val, index) => {
     if (val === '1') {
-      if (currentFill) {
-        currentFill.count++;
+      const lastFill = acc[acc.length - 1];
+      if (lastFill && lastFill.start + lastFill.count === index) {
+        lastFill.count++;
       } else {
-        currentFill = { start: index, count: 1 };
-      }
-    } else {
-      if (currentFill) {
-        fills.push(currentFill);
-        currentFill = null;
+        acc.push({ start: index, count: 1 });
       }
     }
-  });
-
-  if (currentFill) {
-    fills.push(currentFill);
-  }
+    return acc;
+  }, []);
 
   const cellHeight = h / columnTypes[type].length;
   fills.forEach(({ start, count }, idx) => {
