@@ -7,8 +7,6 @@ import { ColorPaletteGenerator } from 'pro-color-harmonies';
 import { logColors } from '../../colors';
 
 Random.setSeed(Random.getRandomSeed());
-// Random.setSeed('rainbow----');
-// console.log(Random.getSeed());
 
 const palette = ColorPaletteGenerator.generate(
   { l: Random.range(0, 1), c: Random.range(0, 0.4), h: Random.range(0, 360) },
@@ -98,6 +96,10 @@ function drawColumn(
       }
     }
   });
+
+  if (currentFill) {
+    fills.push(currentFill);
+  }
 
   const cellHeight = h / columnTypes[type].length;
   fills.forEach(({ start, count }, idx) => {
