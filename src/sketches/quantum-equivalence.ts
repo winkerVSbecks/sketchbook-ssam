@@ -1,20 +1,19 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-import { drawPath } from '@daeinc/draw';
 import { formatCss, oklch } from 'culori';
 import { ColorPaletteGenerator } from 'pro-color-harmonies';
 import { logColors } from '../colors';
 
 Random.setSeed(Random.getRandomSeed());
 
-const l = Random.range(0, 1),
-  c = Random.range(0.2, 0.4),
-  h = Random.range(0, 360);
+const l = Random.range(0.5, 1);
+const c = Random.range(0.2, 0.4);
+const h = Random.range(0, 360);
 
 const palette = () => {
   const basePalette = ColorPaletteGenerator.generate(
-    { l, c, h },
+    { l, c, h: Random.range(0, 360) },
     Random.pick(['triadic']),
     {
       style: 'default',
@@ -59,10 +58,15 @@ const config = {
     bg: '#fff',
     layers: colorLayers,
   },
+  debug: false,
 };
 
 interface Rect {
-  vertices: [number, number][];
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  flip?: boolean;
   color: string;
 }
 
@@ -77,7 +81,8 @@ function makeLayer(
   width: number,
   height: number,
   colors: string[],
-  flip?: boolean
+  flip?: boolean,
+  collapse?: boolean
 ): Layer {
   const w = width / config.res;
   const h2 = height / 2;
@@ -90,68 +95,77 @@ function makeLayer(
   const colC = colors[2];
   const colD = flip ? colors[0] : colors[3];
 
-  const top = [
+  const single = [
     {
-      vertices: [
-        [x + w, y1],
-        [x + config.res * w, y1],
-        [x + config.res * w, y1 + h2],
-        [x + w, y1 + h2],
-      ] as Point[],
-      color: colB, // 'red'
+      x: x + w,
+      y: y1,
+      width: w * 4,
+      height: h2,
+      flip,
+      color: config.debug ? 'red' : colB,
     },
   ];
-  const bottom = [
-    {
-      vertices: [
-        [x + w, y2],
-        [x + 3 * w, y2],
-        [x + 3 * w, y2 + h2],
-        [x + w, y2 + h2],
-      ] as Point[],
-      color: colC, // 'green'
-    },
-    {
-      vertices: [
-        [x + 3 * w, y2],
-        [x + config.res * w, y2],
-        [x + config.res * w, y2 + h2],
-        [x + 3 * w, y2 + h2],
-      ] as Point[],
-      color: colD, // 'blue'
-    },
-  ];
+  const split = collapse
+    ? [
+        {
+          x: x + w,
+          y: y2,
+          width: 4 * w,
+          height: h2,
+          flip,
+          color: config.debug ? 'blue' : colD,
+        },
+      ]
+    : [
+        {
+          x: x + w,
+          y: y2,
+          width: 2 * w,
+          height: h2,
+          flip,
+          color: config.debug ? 'green' : colC,
+        },
+        {
+          x: x + 3 * w,
+          y: y2,
+          width: 2 * w,
+          height: h2,
+          flip,
+          color: config.debug ? 'blue' : colD,
+        },
+      ];
 
   return {
     left: {
-      vertices: [
-        [x, y],
-        [x + w, y],
-        [x + w, y + height],
-        [x, y + height],
-      ],
-      color: colA, // 'yellow'
+      x: x,
+      y: y,
+      width: w,
+      height: height,
+      flip,
+      color: config.debug ? 'yellow' : colA,
     },
-    top: top,
-    bottom: bottom,
+    top: flip ? split : single,
+    bottom: flip ? single : split,
   };
 }
 
 function drawLayer(layer: Layer, context: CanvasRenderingContext2D) {
-  drawPath(context, layer.left.vertices);
   context.fillStyle = layer.left.color;
-  context.fill();
+  context.fillRect(
+    layer.left.x,
+    layer.left.y,
+    layer.left.width,
+    layer.left.height
+  );
 
   layer.top.forEach((top) => {
-    drawPath(context, top.vertices);
     context.fillStyle = top.color;
-    context.fill();
+    context.fillRect(top.x, top.y, top.width, top.height);
   });
 
   layer.bottom.forEach((bottom) => {
-    drawPath(context, bottom.vertices);
     context.fillStyle = bottom.color;
-    context.fill();
+    context.fillRect(bottom.x, bottom.y, bottom.width, bottom.height);
   });
 }
 
@@ -165,21 +179,82 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   const w = width / config.res;
   const h = height / config.res;
 
-  const layers = [
+  let layers = [
     makeLayer([0, 0], width, h * 4, config.colors.layers[0]),
     makeLayer([0, h * 4], width, h, config.colors.layers[0], true),
   ];
 
-  layers.push(makeLayer([w, h * 2], w * 2, h * 2, config.colors.layers[1]));
-  layers.push(makeLayer([w, h * 4], w * 2, h, config.colors.layers[1], true));
+  let level2 = layers.map((layer) => {
+    const rect = layer.bottom.length === 2 ? layer.bottom[0] : layer.top[0];
 
-  wrap.render = () => {
+    return makeLayer(
+      [rect.x, rect.y],
+      rect.width,
+      rect.height,
+      config.colors.layers[1],
+      rect.flip
+    );
+  });
+  layers.push(...level2);
+
+  let level3 = level2.map((layer) => {
+    const rect = layer.bottom.length === 2 ? layer.bottom[0] : layer.top[0];
+
+    return makeLayer(
+      [rect.x, rect.y],
+      rect.width,
+      rect.height,
+      config.colors.layers[2],
+      rect.flip,
+      true
+    );
+  });
+  layers.push(...level3);
+
+  wrap.render = ({ frame }) => {
     context.fillStyle = config.colors.bg;
     context.fillRect(0, 0, width, height);
 
     layers.forEach((layer) => {
       drawLayer(layer, context);
     });
+
+    if (frame > 0 && frame % 30 === 0) {
+      console.log('update ');
+
+      config.colors.layers = [palette(), palette(), palette()];
+      layers = [
+        makeLayer([0, 0], width, h * 4, config.colors.layers[0]),
+        makeLayer([0, h * 4], width, h, config.colors.layers[0], true),
+      ];
+
+      level2 = layers.map((layer) => {
+        const rect = layer.bottom.length === 2 ? layer.bottom[0] : layer.top[0];
+
+        return makeLayer(
+          [rect.x, rect.y],
+          rect.width,
+          rect.height,
+          config.colors.layers[1],
+          rect.flip
+        );
+      });
+      layers.push(...level2);
+
+      level3 = level2.map((layer) => {
+        const rect = layer.bottom.length === 2 ? layer.bottom[0] : layer.top[0];
+
+        return makeLayer(
+          [rect.x, rect.y],
+          rect.width,
+          rect.height,
+          config.colors.layers[2],
+          rect.flip,
+          true
+        );
+      });
+      layers.push(...level3);
+    }
   };
 };
 
@@ -187,7 +262,11 @@ export const settings: SketchSettings = {
   mode: '2d',
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
-  animate: false,
+  animate: true,
+  duration: 6_000,
+  playFps: 60,
+  exportFps: 60,
+  framesFormat: ['mp4'],
 };
 
 ssam(sketch as Sketch<'2d'>, settings);
