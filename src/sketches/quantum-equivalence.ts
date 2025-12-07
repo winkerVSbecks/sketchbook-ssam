@@ -9,11 +9,11 @@ Random.setSeed(Random.getRandomSeed());
 
 const l = Random.range(0.5, 1);
 const c = Random.range(0.2, 0.4);
-const h = Random.range(0, 360);
+let h = Random.range(0, 360);
 
 const palette = () => {
   const basePalette = ColorPaletteGenerator.generate(
-    { l, c, h: Random.range(0, 360) },
+    { l, c, h },
     Random.pick(['triadic']),
     {
       style: 'default',
@@ -25,6 +25,8 @@ const palette = () => {
       },
     }
   );
+
+  h += 45;
 
   return extendPalette(basePalette, 4).map((c) =>
     formatCss(oklch({ mode: 'oklch', ...c }))
