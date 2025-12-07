@@ -1,36 +1,74 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-import { formatCss, oklch } from 'culori';
-import { ColorPaletteGenerator } from 'pro-color-harmonies';
-import { logColors } from '../colors';
+import { rybHsl2rgb } from 'rybitten';
+import { cubes, ColorCoords } from 'rybitten/cubes';
 
 Random.setSeed(Random.getRandomSeed());
 
-const l = Random.range(0.5, 1);
-const c = Random.range(0.2, 0.4);
+const gamuts = [
+  'itten',
+  'itten-normalized',
+  'itten-neutral',
+  'bezold',
+  'boutet',
+  'hett',
+  'schiffermueller',
+  'harris',
+  'harrisc82',
+  'harrisc82alt',
+  'goethe',
+  'munsell',
+  'munsell-alt',
+  'hayter',
+  'bormann',
+  'albers',
+  'lohse',
+  'chevreul',
+  'runge',
+  'maycock',
+  'colorprinter',
+  'japschool',
+  'kindergarten1890',
+  'marvel-news',
+  'apple90s',
+  'apple80s',
+  'clayton',
+  'pixelart',
+  'ippsketch',
+  'ryan',
+  'ten',
+  'rgb',
+];
+const gamut = cubes.get(Random.pick(gamuts))!;
+// const gamut = cubes.get('itten-normalized')!;
+console.log(gamut.title);
+
+const formatCSS = (rgb: ColorCoords): string => {
+  return `rgb(${Math.round(rgb[0] * 255)} ${Math.round(
+    rgb[1] * 255
+  )} ${Math.round(rgb[2] * 255)})`;
+};
+
+const getColorHSL = (h = 20, s = 1, l = 0.5) => {
+  return formatCSS(rybHsl2rgb([h, s, l], { cube: gamut.cube }));
+};
+
 let h = Random.range(0, 360);
+const s = Random.range(0.5, 1);
+const l = Random.range(0.5, 0.75);
 
 const palette = () => {
-  const basePalette = ColorPaletteGenerator.generate(
-    { l, c, h },
-    Random.pick(['triadic']),
-    {
-      style: 'default',
-      modifiers: {
-        sine: Random.range(-1, 1),
-        wave: Random.range(-1, 1),
-        zap: Random.range(-1, 1),
-        block: Random.range(-1, 1),
-      },
-    }
-  );
+  const colors = [
+    getColorHSL(h, s, l),
+    getColorHSL(h + 90, s, l),
+    getColorHSL(h + 180, s, l),
+    getColorHSL(h + 270, s, l),
+  ];
 
-  h += 45;
+  h = h + 60;
 
-  return extendPalette(basePalette, 4).map((c) =>
-    formatCss(oklch({ mode: 'oklch', ...c }))
-  );
+  return colors;
 };
 interface PaletteColor {
   l: number;
@@ -50,8 +88,6 @@ export function extendPalette(
 }
 
 const colorLayers = [palette(), palette(), palette()];
-
-colorLayers.forEach((p) => logColors(p));
 
 // Configuration
 const config = {
@@ -222,8 +258,6 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     });
 
     if (frame > 0 && frame % 30 === 0) {
-      console.log('update ');
-
       config.colors.layers = [palette(), palette(), palette()];
       layers = [
         makeLayer([0, 0], width, h * 4, config.colors.layers[0]),
