@@ -50,10 +50,6 @@ const formatCSS = (rgb: ColorCoords): string => {
   )} ${Math.round(rgb[2] * 255)})`;
 };
 
-const getColorHSL = (h = 20, s = 1, l = 0.5) => {
-  return formatCSS(rybHsl2rgb([h, s, l], { cube: gamut.cube }));
-};
-
 const getColorHSLFn =
   (baseH: number, s = 1, l = 0.5) =>
   (t: number) => {
@@ -62,7 +58,7 @@ const getColorHSLFn =
   };
 
 let h = Random.range(0, 360);
-const s = Random.range(0.5, 1);
+const s = Random.range(0.75, 1);
 const l = Random.range(0.5, 0.75);
 
 const palette = () => {
@@ -77,6 +73,9 @@ const palette = () => {
 
   return colors;
 };
+
+const white = formatCSS(rybHsl2rgb([1, 1, 1], { cube: gamut.cube }));
+
 interface PaletteColor {
   l: number;
   c: number;
@@ -103,6 +102,7 @@ const config = {
     bg: '#fff',
     layers: colorLayers,
   },
+  outline: true,
   debug: false,
 };
 
@@ -147,7 +147,7 @@ function makeLayer(
       width: w * 4,
       height: h2,
       flip,
-      color: config.debug ? 'red' : colB,
+      color: config.debug ? () => 'red' : colB,
     },
   ];
   const split = collapse
@@ -158,7 +158,7 @@ function makeLayer(
           width: 4 * w,
           height: h2,
           flip,
-          color: config.debug ? 'blue' : colD,
+          color: config.debug ? () => 'blue' : colD,
         },
       ]
     : [
@@ -168,7 +168,7 @@ function makeLayer(
           width: 2 * w,
           height: h2,
           flip,
-          color: config.debug ? 'green' : colC,
+          color: config.debug ? () => 'green' : colC,
         },
         {
           x: x + 3 * w,
@@ -176,7 +176,7 @@ function makeLayer(
           width: 2 * w,
           height: h2,
           flip,
-          color: config.debug ? 'blue' : colD,
+          color: config.debug ? () => 'blue' : colD,
         },
       ];
 
@@ -187,7 +187,7 @@ function makeLayer(
       width: w,
       height: height,
       flip,
-      color: config.debug ? 'yellow' : colA,
+      color: config.debug ? () => 'yellow' : colA,
     },
     top: flip ? split : single,
     bottom: flip ? single : split,
@@ -199,22 +199,35 @@ function drawLayer(
   context: CanvasRenderingContext2D,
   playhead: number
 ) {
+  context.strokeStyle = white;
+  context.lineWidth = 2;
+
   context.fillStyle = layer.left.color(playhead);
-  context.fillRect(
-    layer.left.x,
-    layer.left.y,
-    layer.left.width,
-    layer.left.height
-  );
+  context.beginPath();
+  context.rect(layer.left.x, layer.left.y, layer.left.width, layer.left.height);
+  context.fill();
+  if (config.outline) {
+    context.stroke();
+  }
 
   layer.top.forEach((top) => {
     context.fillStyle = top.color(playhead);
-    context.fillRect(top.x, top.y, top.width, top.height);
+    context.beginPath();
+    context.rect(top.x, top.y, top.width, top.height);
+    context.fill();
+    if (config.outline) {
+      context.stroke();
+    }
   });
 
   layer.bottom.forEach((bottom) => {
     context.fillStyle = bottom.color(playhead);
-    context.fillRect(bottom.x, bottom.y, bottom.width, bottom.height);
+    context.beginPath();
+    context.rect(bottom.x, bottom.y, bottom.width, bottom.height);
+    context.fill();
+    if (config.outline) {
+      context.stroke();
+    }
   });
 }
 
@@ -225,7 +238,6 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     import.meta.hot.accept(() => wrap.hotReload());
   }
 
-  const w = width / config.res;
   const h = height / config.res;
 
   let layers = [
@@ -267,41 +279,6 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     layers.forEach((layer) => {
       drawLayer(layer, context, playhead);
     });
-
-    // if (frame > 0 && frame % 30 === 0) {
-    //   config.colors.layers = [palette(), palette(), palette()];
-    //   layers = [
-    //     makeLayer([0, 0], width, h * 4, config.colors.layers[0]),
-    //     makeLayer([0, h * 4], width, h, config.colors.layers[0], true),
-    //   ];
-
-    //   level2 = layers.map((layer) => {
-    //     const rect = layer.bottom.length === 2 ? layer.bottom[0] : layer.top[0];
-
-    //     return makeLayer(
-    //       [rect.x, rect.y],
-    //       rect.width,
-    //       rect.height,
-    //       config.colors.layers[1],
-    //       rect.flip
-    //     );
-    //   });
-    //   layers.push(...level2);
-
-    //   level3 = level2.map((layer) => {
-    //     const rect = layer.bottom.length === 2 ? layer.bottom[0] : layer.top[0];
-
-    //     return makeLayer(
-    //       [rect.x, rect.y],
-    //       rect.width,
-    //       rect.height,
-    //       config.colors.layers[2],
-    //       rect.flip,
-    //       true
-    //     );
-    //   });
-    //   layers.push(...level3);
-    // }
   };
 };
 

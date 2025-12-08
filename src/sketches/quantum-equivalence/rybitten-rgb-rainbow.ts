@@ -2,47 +2,38 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 import { rybHsl2rgb } from 'rybitten';
-import { cubes, ColorCoords } from 'rybitten/cubes';
+import { ColorCoords, ColorCube } from 'rybitten/cubes';
 
 Random.setSeed(Random.getRandomSeed());
 
-const gamuts = [
-  'itten',
-  'itten-normalized',
-  'itten-neutral',
-  'bezold',
-  'boutet',
-  'hett',
-  'schiffermueller',
-  'harris',
-  'harrisc82',
-  'harrisc82alt',
-  'goethe',
-  'munsell',
-  'munsell-alt',
-  'hayter',
-  'bormann',
-  'albers',
-  'lohse',
-  'chevreul',
-  'runge',
-  'maycock',
-  'colorprinter',
-  'japschool',
-  'kindergarten1890',
-  'marvel-news',
-  'apple90s',
-  'apple80s',
-  'clayton',
-  'pixelart',
-  'ippsketch',
-  'ryan',
-  'ten',
-  'rgb',
-];
-const gamut = cubes.get(Random.pick(gamuts))!;
-// const gamut = cubes.get('itten-normalized')!;
-console.log(gamut.title);
+const u = [255, 225, 200, 175, 150, 125];
+const v = [10, 20, 30, 40, 50, 60];
+const w = [0, 10, 20, 30, 40, 50];
+
+const makeCube = (type: 'red' | 'green' | 'blue'): ColorCube => {
+  const r = type === 'red' ? u : Random.pick([v, w]);
+  const g = type === 'green' ? u : Random.pick([v, w]);
+  const b = type === 'blue' ? u : Random.pick([v, w]);
+
+  return [
+    // White
+    [0 / 255, 255 / 255, 237 / 255],
+    // Red
+    [r[0] / 255, g[0] / 255, b[0] / 255],
+    // Yellow
+    [r[1] / 255, g[1] / 255, b[1] / 255],
+    // Orange
+    [r[2] / 255, g[2] / 255, b[2] / 255],
+    // Blue
+    [r[3] / 255, g[3] / 255, b[3] / 255],
+    // Violet
+    [r[4] / 255, g[4] / 255, b[4] / 255],
+    // Green
+    [r[5] / 255, g[5] / 255, b[5] / 255],
+    // Black
+    [29 / 255, 28 / 255, 28 / 255],
+  ];
+};
 
 const formatCSS = (rgb: ColorCoords): string => {
   return `rgb(${Math.round(rgb[0] * 255)} ${Math.round(
@@ -50,26 +41,32 @@ const formatCSS = (rgb: ColorCoords): string => {
   )} ${Math.round(rgb[2] * 255)})`;
 };
 
-const getColorHSL = (h = 20, s = 1, l = 0.5) => {
-  return formatCSS(rybHsl2rgb([h, s, l], { cube: gamut.cube }));
-};
+const getColorHSLFn =
+  (baseH: number, s = 1, l = 0.5, type: 'red' | 'green' | 'blue') =>
+  (t: number) => {
+    const h = baseH + 360 * t;
+    return formatCSS(rybHsl2rgb([h, s, l], { cube: makeCube(type) }));
+  };
 
 let h = Random.range(0, 360);
-const s = Random.range(0.5, 1);
+const s = Random.range(0.25, 0.75);
 const l = Random.range(0.5, 0.75);
 
-const palette = () => {
+const palette = (type: 'red' | 'green' | 'blue') => {
   const colors = [
-    getColorHSL(h, s, l),
-    getColorHSL(h + 90, s, l),
-    getColorHSL(h + 180, s, l),
-    getColorHSL(h + 270, s, l),
+    getColorHSLFn(h, s, l, type),
+    getColorHSLFn(h + 90, s, l, type),
+    getColorHSLFn(h + 180, s, l, type),
+    getColorHSLFn(h + 270, s, l, type),
   ];
 
   h = h + 60;
 
   return colors;
 };
+
+const white = formatCSS(rybHsl2rgb([1, 1, 1], { cube: makeCube('red') }));
+
 interface PaletteColor {
   l: number;
   c: number;
@@ -87,7 +84,7 @@ export function extendPalette(
   });
 }
 
-const colorLayers = [palette(), palette(), palette()];
+const colorLayers = [palette('red'), palette('green'), palette('blue')];
 
 // Configuration
 const config = {
@@ -96,6 +93,7 @@ const config = {
     bg: '#fff',
     layers: colorLayers,
   },
+  outline: false,
   debug: false,
 };
 
@@ -105,7 +103,7 @@ interface Rect {
   width: number;
   height: number;
   flip?: boolean;
-  color: string;
+  color: (t: number) => string;
 }
 
 interface Layer {
@@ -118,7 +116,7 @@ function makeLayer(
   [x, y]: Point,
   width: number,
   height: number,
-  colors: string[],
+  colors: ((t: number) => string)[],
   flip?: boolean,
   collapse?: boolean
 ): Layer {
@@ -140,7 +138,7 @@ function makeLayer(
       width: w * 4,
       height: h2,
       flip,
-      color: config.debug ? 'red' : colB,
+      color: config.debug ? () => 'red' : colB,
     },
   ];
   const split = collapse
@@ -151,7 +149,7 @@ function makeLayer(
           width: 4 * w,
           height: h2,
           flip,
-          color: config.debug ? 'blue' : colD,
+          color: config.debug ? () => 'blue' : colD,
         },
       ]
     : [
@@ -161,7 +159,7 @@ function makeLayer(
           width: 2 * w,
           height: h2,
           flip,
-          color: config.debug ? 'green' : colC,
+          color: config.debug ? () => 'green' : colC,
         },
         {
           x: x + 3 * w,
@@ -169,7 +167,7 @@ function makeLayer(
           width: 2 * w,
           height: h2,
           flip,
-          color: config.debug ? 'blue' : colD,
+          color: config.debug ? () => 'blue' : colD,
         },
       ];
 
@@ -180,30 +178,47 @@ function makeLayer(
       width: w,
       height: height,
       flip,
-      color: config.debug ? 'yellow' : colA,
+      color: config.debug ? () => 'yellow' : colA,
     },
     top: flip ? split : single,
     bottom: flip ? single : split,
   };
 }
 
-function drawLayer(layer: Layer, context: CanvasRenderingContext2D) {
-  context.fillStyle = layer.left.color;
-  context.fillRect(
-    layer.left.x,
-    layer.left.y,
-    layer.left.width,
-    layer.left.height
-  );
+function drawLayer(
+  layer: Layer,
+  context: CanvasRenderingContext2D,
+  playhead: number
+) {
+  context.strokeStyle = white;
+  context.lineWidth = 2;
+
+  context.fillStyle = layer.left.color(playhead);
+  context.beginPath();
+  context.rect(layer.left.x, layer.left.y, layer.left.width, layer.left.height);
+  context.fill();
+  if (config.outline) {
+    context.stroke();
+  }
 
   layer.top.forEach((top) => {
-    context.fillStyle = top.color;
-    context.fillRect(top.x, top.y, top.width, top.height);
+    context.fillStyle = top.color(playhead);
+    context.beginPath();
+    context.rect(top.x, top.y, top.width, top.height);
+    context.fill();
+    if (config.outline) {
+      context.stroke();
+    }
   });
 
   layer.bottom.forEach((bottom) => {
-    context.fillStyle = bottom.color;
-    context.fillRect(bottom.x, bottom.y, bottom.width, bottom.height);
+    context.fillStyle = bottom.color(playhead);
+    context.beginPath();
+    context.rect(bottom.x, bottom.y, bottom.width, bottom.height);
+    context.fill();
+    if (config.outline) {
+      context.stroke();
+    }
   });
 }
 
@@ -248,48 +263,13 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   });
   layers.push(...level3);
 
-  wrap.render = ({ frame }) => {
+  wrap.render = ({ frame, playhead }) => {
     context.fillStyle = config.colors.bg;
     context.fillRect(0, 0, width, height);
 
     layers.forEach((layer) => {
-      drawLayer(layer, context);
+      drawLayer(layer, context, playhead);
     });
-
-    if (frame > 0 && frame % 30 === 0) {
-      config.colors.layers = [palette(), palette(), palette()];
-      layers = [
-        makeLayer([0, 0], width, h * 4, config.colors.layers[0]),
-        makeLayer([0, h * 4], width, h, config.colors.layers[0], true),
-      ];
-
-      level2 = layers.map((layer) => {
-        const rect = layer.bottom.length === 2 ? layer.bottom[0] : layer.top[0];
-
-        return makeLayer(
-          [rect.x, rect.y],
-          rect.width,
-          rect.height,
-          config.colors.layers[1],
-          rect.flip
-        );
-      });
-      layers.push(...level2);
-
-      level3 = level2.map((layer) => {
-        const rect = layer.bottom.length === 2 ? layer.bottom[0] : layer.top[0];
-
-        return makeLayer(
-          [rect.x, rect.y],
-          rect.width,
-          rect.height,
-          config.colors.layers[2],
-          rect.flip,
-          true
-        );
-      });
-      layers.push(...level3);
-    }
   };
 };
 
@@ -297,7 +277,7 @@ export const settings: SketchSettings = {
   mode: '2d',
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
-  animate: true,
+  animate: false,
   duration: 6_000,
   playFps: 60,
   exportFps: 60,
