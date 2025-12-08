@@ -272,7 +272,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   });
   layers.push(...level3);
 
-  wrap.render = ({ frame, playhead }) => {
+  wrap.render = ({ playhead }) => {
     context.fillStyle = config.colors.bg;
     context.fillRect(0, 0, width, height);
 
