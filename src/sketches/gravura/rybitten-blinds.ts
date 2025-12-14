@@ -1,7 +1,7 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-import { mapRange, wrap } from 'canvas-sketch-util/math';
+import { mapRange, lerpFrames, wrap } from 'canvas-sketch-util/math';
 import { rybHsl2rgb } from 'rybitten';
 import { cubes, ColorCoords } from 'rybitten/cubes';
 
@@ -93,7 +93,8 @@ function drawColumn(
   width: number,
   h: number,
   color: ColorCoords,
-  t: number
+  t: number,
+  offset: number = 0
 ) {
   // Clip to column area
   context.save();
@@ -122,15 +123,37 @@ function drawColumn(
 
   const cellHeight = h / (columnTypes[type].length - 1);
 
+  const offT = wrap(t + offset, 0, 1);
+
   fills.forEach(({ start, count }, idx) => {
-    context.fillStyle = getColorHSLFn(
-      color[0] + wrap(idx * 15 + t * 360, 0, 360),
-      color[1],
-      mapRange(idx, 0, fills.length, 0.3, 0.7) + Math.sin(t * Math.PI * 2) * 0.2
-    );
     const y = start * cellHeight;
     const height = count * cellHeight;
-    context.fillRect(x, y, width, height);
+
+    const yOff1 = lerpFrames([0, 0, height], offT);
+    const hOff1 = lerpFrames([-height, 0, -height], offT);
+    context.fillStyle = getColorHSLFn(
+      color[0],
+      color[1],
+      mapRange(idx, 0, fills.length, 0.7, 0.3) + 0.1
+    );
+    context.fillRect(x, y + yOff1, width, height + hOff1);
+
+    const yOff2 = lerpFrames([0, height, height], offT);
+    const hOff2 = lerpFrames([0, -height, -height], offT);
+    context.fillStyle = getColorHSLFn(
+      color[0],
+      color[1],
+      mapRange(idx, 0, fills.length, 0.7, 0.3)
+    );
+    context.fillRect(x, y + yOff2, width, height + hOff2);
+
+    const hOff3 = lerpFrames([0, 0, height], offT);
+    context.fillStyle = getColorHSLFn(
+      color[0],
+      color[1],
+      mapRange(idx, 0, fills.length, 0.7, 0.3)
+    );
+    context.fillRect(x, y, width, hOff3);
   });
   context.restore();
 }
@@ -163,7 +186,8 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
         columnWidth,
         height,
         config.colors.fg[i],
-        playhead
+        playhead,
+        i / (config.columns - 1)
       );
     }
   };
