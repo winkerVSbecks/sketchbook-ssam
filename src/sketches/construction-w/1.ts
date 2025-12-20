@@ -24,6 +24,26 @@ const palette = createPalette(
   ])
 );
 
+const createToggleButton = (onToggle: () => void) => {
+  const button = document.createElement('button');
+  button.textContent = 'Toggle Grid';
+  button.style.position = 'fixed';
+  button.style.top = '20px';
+  button.style.right = '20px';
+  button.style.padding = '10px 20px';
+  button.style.cursor = 'pointer';
+  button.style.zIndex = '1000';
+  button.style.fontFamily = 'sans-serif';
+  button.style.fontSize = '14px';
+  button.style.border = '2px solid #EC776E';
+  button.style.background = '#fff';
+  button.style.color = '#EC776E';
+  button.style.borderRadius = '4px';
+  button.addEventListener('click', onToggle);
+  document.body.appendChild(button);
+  return button;
+};
+
 export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => wrap.dispose());
@@ -35,6 +55,15 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   Random.setSeed(seed);
   console.log('Seed:', seed);
 
+  // Grid toggle state
+  let showGrid = true;
+
+  // Create toggle button
+  createToggleButton(() => {
+    showGrid = !showGrid;
+    wrap.render();
+  });
+
   const grid = makeGrid({
     width: width,
     height: height,
@@ -44,44 +73,50 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     gapY: config.gap[1],
   });
 
+  const rects = palette.map((color) => {
+    const x = Random.rangeFloor(0, config.cols);
+    const y = Random.rangeFloor(0, config.rows);
+    const w = Random.rangeFloor(1, config.cols - x);
+    const h = Random.rangeFloor(1, config.rows - y);
+    const rect = getRect(
+      {
+        width: width,
+        height: height,
+        cols: config.cols,
+        rows: config.rows,
+        gapX: config.gap[0],
+        gapY: config.gap[1],
+      },
+      { x, y, w, h }
+    );
+
+    return rect;
+  });
+
   wrap.render = () => {
     context.fillStyle = '#F0F0F0';
     context.fillRect(0, 0, width, height);
 
-    palette.forEach((color) => {
-      const x = Random.rangeFloor(0, config.cols);
-      const y = Random.rangeFloor(0, config.rows);
-      const w = Random.rangeFloor(1, config.cols - x);
-      const h = Random.rangeFloor(1, config.rows - y);
-      const rect = getRect(
-        {
-          width: width,
-          height: height,
-          cols: config.cols,
-          rows: config.rows,
-          gapX: config.gap[0],
-          gapY: config.gap[1],
-        },
-        { x, y, w, h }
-      );
-
-      context.fillStyle = color;
+    rects.forEach((rect, i) => {
+      context.fillStyle = palette[i];
       context.fillRect(rect.x, rect.y, rect.w, rect.h);
     });
 
-    // context.lineWidth = 2;
-    context.strokeStyle = '#EC776E';
-    grid.forEach((cell) => {
-      const px = cell.x + cell.width / 2;
-      const py = cell.y + cell.height / 2;
+    if (showGrid) {
+      context.lineWidth = 2;
+      context.strokeStyle = '#EC776E';
+      grid.forEach((cell) => {
+        const px = cell.x + cell.width / 2;
+        const py = cell.y + cell.height / 2;
 
-      context.strokeRect(
-        px - cell.width / 2,
-        py - cell.height / 2,
-        cell.width,
-        cell.height
-      );
-    });
+        context.strokeRect(
+          px - cell.width / 2,
+          py - cell.height / 2,
+          cell.width,
+          cell.height
+        );
+      });
+    }
   };
 };
 
