@@ -2,19 +2,22 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 import { createPalette } from '../../colors/rybitten';
-import { getRect, makeGrid } from '../../grid';
+import { getRect, getRectInGap, makeGrid } from '../../grid';
 
 // Configuration
 const config = {
   colorCount: 6,
-  cols: 4,
-  rows: 3,
+  rectCount: Random.rangeFloor(8, 12),
+  cols: 4 * 2,
+  rows: 3 * 2,
   gap: [25, 25],
+  showGrid: true,
 };
 
 let h = Random.range(0, 360);
 const s = Random.range(0.75, 0.9);
 const l = Random.range(0.5, 0.75);
+
 const palette = createPalette(
   Array.from({ length: config.colorCount }, (_, i) => [
     (h + (360 / config.colorCount) * i) % 360,
@@ -22,6 +25,8 @@ const palette = createPalette(
     l,
   ])
 );
+
+const bgColor = '#E8E3D8';
 
 const createToggleButton = (onToggle: () => void) => {
   const button = document.createElement('button');
@@ -60,12 +65,9 @@ export const sketch = ({
   Random.setSeed(seed);
   console.log('Seed:', seed);
 
-  // Grid toggle state
-  let showGrid = true;
-
   // Create toggle button
   createToggleButton(() => {
-    showGrid = !showGrid;
+    config.showGrid = !config.showGrid;
     render();
   });
 
@@ -78,11 +80,16 @@ export const sketch = ({
     gapY: config.gap[1],
   });
 
-  const rects = palette.map(() => {
-    const x = Random.rangeFloor(0, config.cols);
-    const y = Random.rangeFloor(0, config.rows);
-    const w = Random.rangeFloor(1, config.cols - x);
-    const h = Random.rangeFloor(1, config.rows - y);
+  // Generate rectangles aligned to grid
+  const rects = Array.from({ length: config.rectCount }, () => {
+    // Pick random grid position with center bias
+    const gx = Random.rangeFloor(0, config.cols);
+    const gy = Random.rangeFloor(0, config.rows);
+
+    // Pick size - mostly 1 column wide, 2-3 rows tall
+    const gw = 1;
+    const gh = Random.rangeFloor(2, 4);
+
     const rect = getRect(
       {
         width: width,
@@ -92,22 +99,55 @@ export const sketch = ({
         gapX: config.gap[0],
         gapY: config.gap[1],
       },
-      { x, y, w, h }
+      { x: gx, y: gy, w: gw, h: Math.min(gh, config.rows - gy) }
     );
 
-    return rect;
-  });
+    const color = Random.pick(palette);
+
+    return { ...rect, color };
+  }).concat([
+    {
+      ...getRectInGap(
+        {
+          width: width,
+          height: height,
+          cols: config.cols,
+          rows: config.rows,
+          gapX: config.gap[0],
+          gapY: config.gap[1],
+        },
+        { x: 0, y: 0, w: 4, h: 1 },
+        'horizontal'
+      ),
+      color: '#585348',
+    },
+    {
+      ...getRectInGap(
+        {
+          width: width,
+          height: height,
+          cols: config.cols,
+          rows: config.rows,
+          gapX: config.gap[0],
+          gapY: config.gap[1],
+        },
+        { x: 1, y: 0, w: 1, h: 3 },
+        'vertical'
+      ),
+      color: '#585348',
+    },
+  ]);
 
   wrap.render = () => {
-    context.fillStyle = '#F0F0F0';
+    context.fillStyle = bgColor;
     context.fillRect(0, 0, width, height);
 
-    rects.forEach((rect, i) => {
-      context.fillStyle = palette[i];
+    rects.forEach((rect) => {
+      context.fillStyle = rect.color;
       context.fillRect(rect.x, rect.y, rect.w, rect.h);
     });
 
-    if (showGrid) {
+    if (config.showGrid) {
       context.lineWidth = 2;
       context.strokeStyle = '#EC776E';
       grid.forEach((cell) => {

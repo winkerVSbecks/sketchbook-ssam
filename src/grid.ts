@@ -83,3 +83,20 @@ export function getRect(options: GridOptions, { x, y, w, h }: Rect): Rect {
     h: h * cellHeight + (h - 1) * gapY,
   };
 }
+
+export function getRectInGap(
+  options: GridOptions,
+  { x, y, w, h }: Rect,
+  type: 'horizontal' | 'vertical'
+): Rect {
+  const { gapX = 0, gapY = 0 } = options;
+  const { cellWidth, cellHeight } = cellDimensions(options);
+
+  return {
+    x: gapX + x * (cellWidth + gapX) + (type === 'vertical' ? cellWidth : 0),
+    y:
+      gapY + y * (cellHeight + gapY) + (type === 'horizontal' ? cellHeight : 0),
+    w: type === 'horizontal' ? w * cellWidth + (w - 1) * gapX : gapX,
+    h: type === 'vertical' ? h * cellHeight + (h - 1) * gapY : gapY,
+  };
+}

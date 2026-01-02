@@ -44,8 +44,11 @@ const formatCSS = (rgb: ColorCoords): string => {
   )} ${Math.round(rgb[2] * 255)})`;
 };
 
+export function rybHslToCSS([h, s, l]: ColorCoords): string {
+  const rgb = rybHsl2rgb([h, s, l], { cube: gamut.cube });
+  return formatCSS(rgb);
+}
+
 export function createPalette(coords: ColorCoords[]) {
-  return coords.map((coord) =>
-    formatCSS(rybHsl2rgb(coord, { cube: gamut.cube }))
-  );
+  return coords.map((coord) => rybHslToCSS(coord));
 }

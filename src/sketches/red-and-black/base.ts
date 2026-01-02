@@ -55,7 +55,8 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     }
 
     // Orange background
-    context.fillStyle = fg; // '#d84d3c';
+    context.fillStyle = fg;
+    // context.fillStyle = '#d84d3c';
     context.fillRect(0, 0, width, height);
 
     // Choose one of the N targets based on loop time
