@@ -26,7 +26,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
 
   context.fillStyle = fg;
   // draw text in center
-  context.font = `bold ${width / 10}px sans-serif`;
+  context.font = `900 ${width / 7}px sans-serif`;
   context.textAlign = 'center';
   context.textBaseline = 'middle';
   context.fillText('GENUARY', width / 2, height / 2);
@@ -47,7 +47,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     r: (shape.radius * scale) / 2,
   }));
 
-  wrap.render = ({ playhead }) => {
+  wrap.render = () => {
     circles.forEach((c: any) => {
       context.beginPath();
       context.arc(c.x, c.y, c.r, 0, Math.PI * 2);
@@ -59,6 +59,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
 export const settings: SketchSettings = {
   mode: '2d',
   dimensions: [1080, 1080],
+  // dimensions: [800, 600],
   pixelRatio: window.devicePixelRatio,
   animate: true,
   duration: 3_000,
