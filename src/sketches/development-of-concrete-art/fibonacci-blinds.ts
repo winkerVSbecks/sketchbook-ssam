@@ -70,6 +70,26 @@ const rects = [
   },
 ];
 
+function drawBlind(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  [colorA, colorB]: string[],
+  t: number
+) {
+  context.beginPath();
+  context.moveTo(0, y);
+  context.lineTo(width - 0, y);
+  context.stroke();
+
+  context.beginPath();
+  context.moveTo(x, 0);
+  context.lineTo(x, height - 0);
+  context.stroke();
+}
+
 export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => wrap.dispose());
