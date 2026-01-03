@@ -79,15 +79,32 @@ function drawBlind(
   [colorA, colorB]: string[],
   t: number
 ) {
-  context.beginPath();
-  context.moveTo(0, y);
-  context.lineTo(width - 0, y);
-  context.stroke();
+  // Determine animation direction based on aspect ratio
+  const isHorizontal = height > width;
 
-  context.beginPath();
-  context.moveTo(x, 0);
-  context.lineTo(x, height - 0);
-  context.stroke();
+  // Create a ping-pong animation (0 -> 1 -> 0)
+  const progress = t < 0.5 ? t * 2 : 2 - t * 2;
+
+  // Determine which color to use as base and which as reveal
+  const baseColor = t < 0.5 ? colorA : colorB;
+  const revealColor = t < 0.5 ? colorB : colorA;
+
+  // Draw base color
+  context.fillStyle = baseColor;
+  context.fillRect(x, y, width, height);
+
+  // Draw revealing blind
+  context.fillStyle = revealColor;
+
+  if (isHorizontal) {
+    // Horizontal blinds - animate in x direction
+    const revealWidth = width * progress;
+    context.fillRect(x, y, revealWidth, height);
+  } else {
+    // Vertical blinds - animate in y direction
+    const revealHeight = height * progress;
+    context.fillRect(x, y, width, revealHeight);
+  }
 }
 
 export const sketch = ({ wrap, context, width, height }: SketchProps) => {
@@ -101,7 +118,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   Random.setSeed(seed);
   console.log('Seed:', seed);
 
-  wrap.render = () => {
+  wrap.render = ({ playhead }) => {
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
 
@@ -132,9 +149,17 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       }
     }
 
-    rects.forEach((r) => {
-      context.fillStyle = r.color;
-      context.fillRect(r.x * s, r.y * s, r.width * s, r.height * s);
+    rects.forEach((r, i) => {
+      const nextIndex = (i + 1) % palette.length;
+      drawBlind(
+        context,
+        r.x * s,
+        r.y * s,
+        r.width * s,
+        r.height * s,
+        [r.color, palette[nextIndex]],
+        playhead
+      );
     });
   };
 };
@@ -143,7 +168,7 @@ export const settings: SketchSettings = {
   mode: '2d',
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
-  animate: false,
+  animate: true,
   duration: 3_000,
   playFps: 60,
   exportFps: 60,
