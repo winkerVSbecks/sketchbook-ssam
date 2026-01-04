@@ -3,6 +3,7 @@ import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 import { formatCss, oklch } from 'culori';
 import { ColorPaletteGenerator } from 'pro-color-harmonies';
+import { logColors } from '../../colors';
 
 const config = {
   res: [11, 13],
@@ -31,6 +32,8 @@ const config = {
 //     },
 //   }
 // ).map((c) => formatCss(oklch({ mode: 'oklch', ...c })));
+
+// logColors(palette);
 
 const palette = ['#367565', '#43529F', '#E06D3A', '#EBE4C8'];
 const bg = palette.pop()!;
