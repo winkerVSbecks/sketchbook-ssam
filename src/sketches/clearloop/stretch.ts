@@ -6,7 +6,8 @@ import { ColorPaletteGenerator } from 'pro-color-harmonies';
 import { logColors } from '../../colors';
 
 const config = {
-  res: [11, 13],
+  res: [13, 15],
+  stretch: 3,
 };
 
 // const bg = '#111';
@@ -35,7 +36,7 @@ const config = {
 
 // logColors(palette);
 
-const palette = ['#367565', '#43529F', '#E06D3A', '#EBE4C8'];
+const palette = ['#367565', '#43529F', '#E06D3A', '#EBA98A', '#EBE4C8'];
 const bg = palette.pop()!;
 
 const layers = [
@@ -48,12 +49,12 @@ const layers = [
       h: number
     ) => {
       context.fillStyle = palette[0];
-      context.fillRect((x + 1) * w, y * h, w, h);
+      context.fillRect((x + 1) * w, y * h, w * config.stretch, h);
       context.fillRect(x * w, (y + 1) * h, w, h * 2);
-      context.fillRect((x + 2) * w, (y + 1) * h, w, h * 2);
-      context.fillRect((x + 1) * w, (y + 3) * h, w, h);
+      context.fillRect((x + 1 + config.stretch) * w, (y + 1) * h, w, h * 2);
+      context.fillRect((x + 1) * w, (y + 3) * h, w * config.stretch, h);
     },
-    xStep: 2,
+    xStep: 1 + config.stretch,
   },
   {
     cell: (
@@ -64,12 +65,12 @@ const layers = [
       h: number
     ) => {
       context.fillStyle = palette[1];
-      context.fillRect((x + 1) * w, y * h, w, h);
+      context.fillRect((x + 1) * w, y * h, w * config.stretch, h);
       context.fillRect(x * w, (y + 1) * h, w, h * 2);
-      context.fillRect((x + 2) * w, (y + 1) * h, w, h * 2);
-      context.fillRect((x + 1) * w, (y + 3) * h, w, h);
+      context.fillRect((x + 1 + config.stretch) * w, (y + 1) * h, w, h * 2);
+      context.fillRect((x + 1) * w, (y + 3) * h, w * config.stretch, h);
     },
-    xStep: 4,
+    xStep: 1 + config.stretch,
   },
   {
     cell: (
@@ -80,12 +81,28 @@ const layers = [
       h: number
     ) => {
       context.fillStyle = palette[2];
-      context.fillRect((x + 1) * w, y * h, w, h);
+      context.fillRect((x + 1) * w, y * h, w * config.stretch, h);
       context.fillRect(x * w, (y + 1) * h, w, h * 2);
-      context.fillRect((x + 2) * w, (y + 1) * h, w, h * 2);
-      context.fillRect((x + 1) * w, (y + 3) * h, w, h);
+      context.fillRect((x + 1 + config.stretch) * w, (y + 1) * h, w, h * 2);
+      context.fillRect((x + 1) * w, (y + 3) * h, w * config.stretch, h);
     },
-    xStep: 4,
+    xStep: 1 + config.stretch,
+  },
+  {
+    cell: (
+      context: CanvasRenderingContext2D,
+      x: number,
+      y: number,
+      w: number,
+      h: number
+    ) => {
+      context.fillStyle = palette[3];
+      context.fillRect((x + 1) * w, y * h, w * config.stretch, h);
+      context.fillRect(x * w, (y + 1) * h, w, h * 2);
+      context.fillRect((x + 1 + config.stretch) * w, (y + 1) * h, w, h * 2);
+      context.fillRect((x + 1) * w, (y + 3) * h, w * config.stretch, h);
+    },
+    xStep: 1 + config.stretch,
   },
 ];
 
