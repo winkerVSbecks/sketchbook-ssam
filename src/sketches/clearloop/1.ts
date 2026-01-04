@@ -54,6 +54,57 @@ const layers: [boolean, number, number][][] = [
   ],
 ];
 
+const layers2 = [
+  {
+    cell: (
+      context: CanvasRenderingContext2D,
+      x: number,
+      y: number,
+      w: number,
+      h: number
+    ) => {
+      context.fillStyle = palette[0];
+      context.fillRect((x + 1) * w, y * h, w, h);
+      context.fillRect(x * w, (y + 1) * h, w, h * 2);
+      context.fillRect((x + 2) * w, (y + 1) * h, w, h * 2);
+      context.fillRect((x + 1) * w, (y + 3) * h, w, h);
+    },
+    xStep: 2,
+  },
+  {
+    cell: (
+      context: CanvasRenderingContext2D,
+      x: number,
+      y: number,
+      w: number,
+      h: number
+    ) => {
+      context.fillStyle = palette[1];
+      context.fillRect((x + 1) * w, y * h, w, h);
+      context.fillRect(x * w, (y + 1) * h, w, h * 2);
+      context.fillRect((x + 2) * w, (y + 1) * h, w, h * 2);
+      context.fillRect((x + 1) * w, (y + 3) * h, w, h);
+    },
+    xStep: 4,
+  },
+  {
+    cell: (
+      context: CanvasRenderingContext2D,
+      x: number,
+      y: number,
+      w: number,
+      h: number
+    ) => {
+      context.fillStyle = palette[2];
+      context.fillRect((x + 1) * w, y * h, w, h);
+      context.fillRect(x * w, (y + 1) * h, w, h * 2);
+      context.fillRect((x + 2) * w, (y + 1) * h, w, h * 2);
+      context.fillRect((x + 1) * w, (y + 3) * h, w, h);
+    },
+    xStep: 4,
+  },
+];
+
 export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => wrap.dispose());
@@ -72,22 +123,28 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
 
-    palette.forEach((color, i) => {
-      context.fillStyle = color;
-
-      // Define pattern: [fillOdd, height, yIncrement]
-      const rows = layers[i];
-
-      let y = i * 3;
-      rows.forEach(([fillOdd, heightMultiplier, yIncrement]) => {
-        for (let x = 0; x < config.res[0]; x++) {
-          if ((x % 2 !== 0) === fillOdd) {
-            context.fillRect(x * w, y * h, w, h * heightMultiplier);
-          }
-        }
-        y += yIncrement;
-      });
+    layers2.forEach((layer, i) => {
+      for (let x = 0; x < config.res[0]; x += layer.xStep) {
+        layer.cell(context, x, i * 3, w, h);
+      }
     });
+
+    // palette.forEach((color, i) => {
+    //   context.fillStyle = color;
+
+    //   // Define pattern: [fillOdd, height, yIncrement]
+    //   const rows = layers[i];
+
+    //   let y = i * 3;
+    //   rows.forEach(([fillOdd, heightMultiplier, yIncrement]) => {
+    //     for (let x = 0; x < config.res[0]; x++) {
+    //       if ((x % 2 !== 0) === fillOdd) {
+    //         context.fillRect(x * w, y * h, w, h * heightMultiplier);
+    //       }
+    //     }
+    //     y += yIncrement;
+    //   });
+    // });
   };
 };
 
