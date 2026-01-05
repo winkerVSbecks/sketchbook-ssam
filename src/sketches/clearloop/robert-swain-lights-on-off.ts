@@ -2,12 +2,13 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 import { wrap } from 'canvas-sketch-util/math';
+import { invert } from '../../colors/rybitten';
 
 const config = {
   res: [15, 15],
 };
 
-const palette = [
+const basePalette = [
   '#334E87',
   '#16344A',
   '#C3291D',
@@ -17,7 +18,15 @@ const palette = [
     ['#66B8CD', '#B5DAD9', '#DDE6CE'],
     ['#B0D5F0', '#DCE9F1', '#F4F3F5'],
   ],
+  '#E76F51',
+  '#F4A261',
 ];
+const inversePalette = basePalette.map((color) =>
+  Array.isArray(color)
+    ? color.map((c) => c.map(invert))
+    : (invert(color) as string)
+);
+let palette = basePalette;
 const bg = '#fff';
 
 const wY = (y: number) => wrap(y, 0, config.res[1]);
@@ -33,7 +42,6 @@ const layers = [
     ) => {
       context.fillStyle = palette[0] as string;
       context.fillRect(x * w, wY(y) * h, w * 3, h * 6);
-      context.fillRect(x * w, wY(y) * h, w * 3, h);
       context.fillRect(x * w, wY(y) * h, w * 3, h);
       context.fillRect(x * w, wY(y + 1) * h, w * 3, h);
       context.fillRect(x * w, wY(y + 2) * h, w * 3, h);
@@ -111,6 +119,7 @@ const layers = [
       const colors = palette[4][x / 5] as string[];
 
       context.fillStyle = colors[0];
+      context.fillRect(x * w, wY(y) * h, w * 5, h * 3);
       context.fillRect(x * w, wY(y) * h, w * 5, h);
       context.fillRect(x * w, wY(y + 1) * h, w * 5, h);
       context.fillRect(x * w, wY(y + 2) * h, w * 5, h);
@@ -141,10 +150,20 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   const w = width / config.res[0];
   const h = height / config.res[1];
 
-  wrap.render = ({ playhead }) => {
+  document.onclick = () => {
+    palette = palette === basePalette ? inversePalette : basePalette;
+  };
+
+  wrap.render = ({ playhead, frame }) => {
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
     const yOffset = playhead * config.res[1];
+
+    if (frame === 0) {
+      palette = basePalette;
+    } else if (frame === 120) {
+      palette = palette === basePalette ? inversePalette : basePalette;
+    }
 
     layers.forEach((layer) => {
       for (let x = 0; x < config.res[0]; x += layer.xStep) {
@@ -153,14 +172,14 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     });
 
     for (let x = 0; x < config.res[0]; x += 2) {
-      context.fillStyle = '#E76F51';
+      context.fillStyle = palette[5] as string;
       context.fillRect(x * w, 0, w, h);
-      context.fillStyle = '#F4A261';
+      context.fillStyle = palette[6] as string;
       context.fillRect((x + 1) * w, 0, w, h);
 
-      context.fillStyle = '#E76F51';
+      context.fillStyle = palette[5] as string;
       context.fillRect(x * w, (config.res[1] - 1) * h, w, h);
-      context.fillStyle = '#F4A261';
+      context.fillStyle = palette[6] as string;
       context.fillRect((x + 1) * w, (config.res[1] - 1) * h, w, h);
     }
   };

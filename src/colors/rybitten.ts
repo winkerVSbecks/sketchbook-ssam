@@ -1,3 +1,4 @@
+import { hsl } from 'culori';
 import { rybHsl2rgb } from 'rybitten';
 import { cubes, ColorCoords } from 'rybitten/cubes';
 import Random from 'canvas-sketch-util/random';
@@ -51,4 +52,16 @@ export function rybHslToCSS([h, s, l]: ColorCoords): string {
 
 export function createPalette(coords: ColorCoords[]) {
   return coords.map((coord) => rybHslToCSS(coord));
+}
+
+export function invert(color: string): string {
+  const { h, s, l } = hsl(color)!;
+  if (l === undefined || s === undefined || h === undefined) {
+    return color;
+  }
+  const rgb = rybHsl2rgb([h, s, l], {
+    cube: gamut.cube,
+    invertLightness: false,
+  });
+  return formatCSS(rgb);
 }
