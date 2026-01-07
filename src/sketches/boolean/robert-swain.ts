@@ -6,9 +6,9 @@ import { invert } from '../../colors/rybitten';
 import { getRect, makeGrid } from '../../grid';
 
 const config = {
-  cols: 4,
+  cols: 12,
   rows: 3,
-  gap: [25, 25],
+  gap: [0, 0],
 };
 
 const basePalette = [
@@ -29,7 +29,7 @@ const basePalette = [
   '#F4A261',
 ];
 const inversePalette = basePalette.map(invert);
-const bg = '#fff';
+const bg = '#ccc';
 
 interface Rectangle {
   x: number; // grid column position
@@ -48,7 +48,8 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
 
   // Generate seed
   const seed = Random.getRandomSeed();
-  Random.setSeed(seed);
+  // Random.setSeed(seed);
+  Random.setSeed('#ffff');
   console.log('Seed:', seed);
 
   const grid = makeGrid({
@@ -61,7 +62,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   });
 
   // Generate multiple layers of rectangles
-  const numRectangles = Random.rangeFloor(8, 15);
+  const numRectangles = 25;
   const rectangles: Rectangle[] = [];
 
   for (let i = 0; i < numRectangles; i++) {
@@ -81,31 +82,14 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     });
   }
 
-  // Helper function to check if two rectangles overlap
-  const rectanglesOverlap = (r1: Rectangle, r2: Rectangle): boolean => {
-    return !(
-      r1.x + r1.w <= r2.x ||
-      r2.x + r2.w <= r1.x ||
-      r1.y + r1.h <= r2.y ||
-      r2.y + r2.h <= r1.y
-    );
-  };
-
   wrap.render = ({ playhead, frame }) => {
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
 
-    // Draw each rectangle
-    rectangles.forEach((rect, index) => {
-      // Check if this rectangle overlaps with any previous rectangles
-      const hasOverlap = rectangles
-        .slice(0, index)
-        .some((otherRect) => rectanglesOverlap(rect, otherRect));
+    // Layer 1: Draw all rectangles in their normal colors
+    rectangles.forEach((rect) => {
+      context.fillStyle = rect.color;
 
-      // Use inverse color if there's an overlap, otherwise use normal color
-      context.fillStyle = hasOverlap ? rect.inverseColor : rect.color;
-
-      // Get pixel coordinates for the rectangle
       const pixelRect = getRect(
         {
           width,
@@ -120,12 +104,34 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
 
       context.fillRect(pixelRect.x, pixelRect.y, pixelRect.w, pixelRect.h);
     });
+
+    // Layer 2: Draw overlapping cells with inverse color
+    grid.forEach((cell) => {
+      const coveringRects = rectangles.filter(
+        (rect) =>
+          cell.col >= rect.x &&
+          cell.col < rect.x + rect.w &&
+          cell.row >= rect.y &&
+          cell.row < rect.y + rect.h
+      );
+
+      // Only draw if 2 or more rectangles overlap this cell
+      if (coveringRects.length >= 2) {
+        const topRect = coveringRects[coveringRects.length - 1];
+        context.fillStyle = topRect.inverseColor;
+        context.fillRect(cell.x, cell.y, cell.width, cell.height);
+
+        context.strokeStyle = '#0f0';
+        context.lineWidth = 2;
+        context.strokeRect(cell.x, cell.y, cell.width, cell.height);
+      }
+    });
   };
 };
 
 export const settings: SketchSettings = {
   mode: '2d',
-  dimensions: [1080, 1080],
+  dimensions: [800, 600],
   pixelRatio: window.devicePixelRatio,
   animate: false,
   duration: 4_000,
