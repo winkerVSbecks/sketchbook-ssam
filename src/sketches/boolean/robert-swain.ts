@@ -131,7 +131,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
 
     // Draw Layer 2: Top rectangles
     layer2Rectangles.forEach((rect) => {
-      context.fillStyle = `rgba(0 0 0 / 0.5)`; //rect.color;
+      context.fillStyle = rect.color;
 
       const pixelRect = getRect(
         {
@@ -149,33 +149,33 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     });
 
     // // Draw inverse color cells where layer 2 overlaps with layer 1
-    // grid.forEach((cell) => {
-    //   const layer1Covers = layer1Rectangles.some(
-    //     (rect) =>
-    //       cell.col >= rect.x &&
-    //       cell.col < rect.x + rect.w &&
-    //       cell.row >= rect.y &&
-    //       cell.row < rect.y + rect.h
-    //   );
+    grid.forEach((cell) => {
+      const layer1Covers = layer1Rectangles.some(
+        (rect) =>
+          cell.col >= rect.x &&
+          cell.col < rect.x + rect.w &&
+          cell.row >= rect.y &&
+          cell.row < rect.y + rect.h
+      );
 
-    //   const layer2Rects = layer2Rectangles.filter(
-    //     (rect) =>
-    //       cell.col >= rect.x &&
-    //       cell.col < rect.x + rect.w &&
-    //       cell.row >= rect.y &&
-    //       cell.row < rect.y + rect.h
-    //   );
+      const layer2Rects = layer2Rectangles.filter(
+        (rect) =>
+          cell.col >= rect.x &&
+          cell.col < rect.x + rect.w &&
+          cell.row >= rect.y &&
+          cell.row < rect.y + rect.h
+      );
 
-    //   // If both layers cover this cell, use inverse color of layer 2
-    //   if (layer1Covers && layer2Rects.length > 0) {
-    //     const topRect = layer2Rects[layer2Rects.length - 1];
-    //     context.fillStyle = topRect.inverseColor;
-    //     context.fillRect(cell.x, cell.y, cell.width, cell.height);
+      // If both layers cover this cell, use inverse color of layer 2
+      if (layer1Covers && layer2Rects.length > 0) {
+        const topRect = layer2Rects[layer2Rects.length - 1];
+        context.fillStyle = topRect.inverseColor;
+        context.fillRect(cell.x, cell.y, cell.width, cell.height);
 
-    //     context.strokeStyle = '#0f0';
-    //     context.strokeRect(cell.x, cell.y, cell.width, cell.height);
-    //   }
-    // });
+        context.strokeStyle = '#0f0';
+        context.strokeRect(cell.x, cell.y, cell.width, cell.height);
+      }
+    });
   };
 };
 
