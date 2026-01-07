@@ -85,16 +85,50 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     }
   }
 
-  // Layer 2: Single rectangle that can be positioned anywhere (not grid-aligned)
-  const colorIndex = Random.rangeFloor(0, basePalette.length);
-  const layer2Rectangle: Rectangle = {
-    x: Random.range(0, config.cols - 2),
-    y: Random.range(0, config.rows - 1),
-    w: Random.range(2, 5),
-    h: Random.range(1, 2.5),
-    color: basePalette[colorIndex],
-    inverseColor: inversePalette[colorIndex],
+  // Helper function to check if two rectangles overlap
+  const rectanglesOverlap = (r1: Rectangle, r2: Rectangle): boolean => {
+    return !(
+      r1.x + r1.w <= r2.x ||
+      r2.x + r2.w <= r1.x ||
+      r1.y + r1.h <= r2.y ||
+      r2.y + r2.h <= r1.y
+    );
   };
+
+  // Layer 2: Multiple rectangles that can be positioned anywhere (not grid-aligned)
+  const numLayer2Rects = Random.rangeFloor(4, 7);
+  const layer2Rectangles: Rectangle[] = [];
+
+  for (let i = 0; i < numLayer2Rects; i++) {
+    let attempts = 0;
+    let newRect: Rectangle;
+    let overlaps = true;
+
+    // Try to find a non-overlapping position
+    while (overlaps && attempts < 100) {
+      const colorIndex = Random.rangeFloor(0, basePalette.length);
+      newRect = {
+        x: Random.range(1, config.cols - 2),
+        y: Random.range(1, config.rows - 2),
+        w: Random.range(2, 3),
+        h: Random.range(1, 2.5),
+        color: basePalette[colorIndex],
+        inverseColor: inversePalette[colorIndex],
+      };
+
+      // Check if this rectangle overlaps with any existing layer 2 rectangles
+      overlaps = layer2Rectangles.some((existingRect) =>
+        rectanglesOverlap(newRect, existingRect)
+      );
+
+      attempts++;
+    }
+
+    // Only add if we found a non-overlapping position
+    if (!overlaps) {
+      layer2Rectangles.push(newRect!);
+    }
+  }
 
   wrap.render = ({ playhead, frame }) => {
     context.fillStyle = bg;
@@ -119,67 +153,71 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       context.fillRect(pixelRect.x, pixelRect.y, pixelRect.w, pixelRect.h);
     });
 
-    // Draw Layer 2: Single rectangle (not grid-aligned)
-    context.fillStyle = layer2Rectangle.color;
+    // Draw Layer 2: Multiple rectangles (not grid-aligned)
+    layer2Rectangles.forEach((layer2Rect) => {
+      context.fillStyle = layer2Rect.color;
 
-    const layer2PixelRect = getRect(
-      {
-        width,
-        height,
-        cols: config.cols,
-        rows: config.rows,
-        gapX: config.gap[0],
-        gapY: config.gap[1],
-      },
-      {
-        x: layer2Rectangle.x,
-        y: layer2Rectangle.y,
-        w: layer2Rectangle.w,
-        h: layer2Rectangle.h,
-      }
-    );
+      const layer2PixelRect = getRect(
+        {
+          width,
+          height,
+          cols: config.cols,
+          rows: config.rows,
+          gapX: config.gap[0],
+          gapY: config.gap[1],
+        },
+        {
+          x: layer2Rect.x,
+          y: layer2Rect.y,
+          w: layer2Rect.w,
+          h: layer2Rect.h,
+        }
+      );
 
-    context.fillRect(
-      layer2PixelRect.x,
-      layer2PixelRect.y,
-      layer2PixelRect.w,
-      layer2PixelRect.h
-    );
+      context.fillRect(
+        layer2PixelRect.x,
+        layer2PixelRect.y,
+        layer2PixelRect.w,
+        layer2PixelRect.h
+      );
+    });
 
     // Draw inverse color for overlapping sub-areas
-    layer1Rectangles.forEach((rect1) => {
-      // Calculate intersection in grid coordinates
-      const intersectX = Math.max(rect1.x, layer2Rectangle.x);
-      const intersectY = Math.max(rect1.y, layer2Rectangle.y);
-      const intersectRight = Math.min(
-        rect1.x + rect1.w,
-        layer2Rectangle.x + layer2Rectangle.w
-      );
-      const intersectBottom = Math.min(
-        rect1.y + rect1.h,
-        layer2Rectangle.y + layer2Rectangle.h
-      );
-      const intersectW = intersectRight - intersectX;
-      const intersectH = intersectBottom - intersectY;
-
-      // If there's an overlap, draw it
-      if (intersectW > 0 && intersectH > 0) {
-        context.fillStyle = rect1.inverseColor;
-
-        const pixelRect = getRect(
-          {
-            width,
-            height,
-            cols: config.cols,
-            rows: config.rows,
-            gapX: config.gap[0],
-            gapY: config.gap[1],
-          },
-          { x: intersectX, y: intersectY, w: intersectW, h: intersectH }
+    layer2Rectangles.forEach((layer2Rect) => {
+      layer1Rectangles.forEach((rect1) => {
+        // Calculate intersection in grid coordinates
+        const intersectX = Math.max(rect1.x, layer2Rect.x);
+        const intersectY = Math.max(rect1.y, layer2Rect.y);
+        const intersectRight = Math.min(
+          rect1.x + rect1.w,
+          layer2Rect.x + layer2Rect.w
         );
+        const intersectBottom = Math.min(
+          rect1.y + rect1.h,
+          layer2Rect.y + layer2Rect.h
+        );
+        const intersectW = intersectRight - intersectX;
+        const intersectH = intersectBottom - intersectY;
 
-        context.fillRect(pixelRect.x, pixelRect.y, pixelRect.w, pixelRect.h);
-      }
+        // If there's an overlap, draw it
+        if (intersectW > 0 && intersectH > 0) {
+          context.fillStyle = rect1.inverseColor;
+
+          const pixelRect = getRect(
+            {
+              width,
+              height,
+              cols: config.cols,
+              rows: config.rows,
+              gapX: config.gap[0],
+              gapY: config.gap[1],
+            },
+            { x: intersectX, y: intersectY, w: intersectW, h: intersectH }
+          );
+
+          context.fillRect(pixelRect.x, pixelRect.y, pixelRect.w, pixelRect.h);
+        }
+      });
     });
   };
 };
