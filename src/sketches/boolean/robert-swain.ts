@@ -85,26 +85,16 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     }
   }
 
-  // Layer 2: Generate 4-5 rectangles placed randomly on top
-  const numLayer2Rects = Random.rangeFloor(4, 6);
-  const layer2Rectangles: Rectangle[] = [];
-
-  for (let i = 0; i < numLayer2Rects; i++) {
-    const colorIndex = Random.rangeFloor(0, basePalette.length);
-    const x = Random.rangeFloor(0, config.cols);
-    const y = Random.rangeFloor(0, config.rows);
-    const maxW = Math.min(Random.rangeFloor(2, 5), config.cols - x);
-    const maxH = Math.min(Random.rangeFloor(1, 3), config.rows - y);
-
-    layer2Rectangles.push({
-      x,
-      y,
-      w: maxW,
-      h: maxH,
-      color: basePalette[colorIndex],
-      inverseColor: inversePalette[colorIndex],
-    });
-  }
+  // Layer 2: Single rectangle that can be positioned anywhere (not grid-aligned)
+  const colorIndex = Random.rangeFloor(0, basePalette.length);
+  const layer2Rectangle: Rectangle = {
+    x: Random.range(0, config.cols - 2),
+    y: Random.range(0, config.rows - 1),
+    w: Random.range(2, 5),
+    h: Random.range(1, 2.5),
+    color: basePalette[colorIndex],
+    inverseColor: inversePalette[colorIndex],
+  };
 
   wrap.render = ({ playhead, frame }) => {
     context.fillStyle = bg;
@@ -129,51 +119,66 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       context.fillRect(pixelRect.x, pixelRect.y, pixelRect.w, pixelRect.h);
     });
 
-    // Draw Layer 2: Top rectangles
-    layer2Rectangles.forEach((rect) => {
-      context.fillStyle = rect.color;
+    // Draw Layer 2: Single rectangle (not grid-aligned)
+    context.fillStyle = layer2Rectangle.color;
 
-      const pixelRect = getRect(
-        {
-          width,
-          height,
-          cols: config.cols,
-          rows: config.rows,
-          gapX: config.gap[0],
-          gapY: config.gap[1],
-        },
-        { x: rect.x, y: rect.y, w: rect.w, h: rect.h }
+    const layer2PixelRect = getRect(
+      {
+        width,
+        height,
+        cols: config.cols,
+        rows: config.rows,
+        gapX: config.gap[0],
+        gapY: config.gap[1],
+      },
+      {
+        x: layer2Rectangle.x,
+        y: layer2Rectangle.y,
+        w: layer2Rectangle.w,
+        h: layer2Rectangle.h,
+      }
+    );
+
+    context.fillRect(
+      layer2PixelRect.x,
+      layer2PixelRect.y,
+      layer2PixelRect.w,
+      layer2PixelRect.h
+    );
+
+    // Draw inverse color for overlapping sub-areas
+    layer1Rectangles.forEach((rect1) => {
+      // Calculate intersection in grid coordinates
+      const intersectX = Math.max(rect1.x, layer2Rectangle.x);
+      const intersectY = Math.max(rect1.y, layer2Rectangle.y);
+      const intersectRight = Math.min(
+        rect1.x + rect1.w,
+        layer2Rectangle.x + layer2Rectangle.w
       );
-
-      context.fillRect(pixelRect.x, pixelRect.y, pixelRect.w, pixelRect.h);
-    });
-
-    // // Draw inverse color cells where layer 2 overlaps with layer 1
-    grid.forEach((cell) => {
-      const layer1Covers = layer1Rectangles.some(
-        (rect) =>
-          cell.col >= rect.x &&
-          cell.col < rect.x + rect.w &&
-          cell.row >= rect.y &&
-          cell.row < rect.y + rect.h
+      const intersectBottom = Math.min(
+        rect1.y + rect1.h,
+        layer2Rectangle.y + layer2Rectangle.h
       );
+      const intersectW = intersectRight - intersectX;
+      const intersectH = intersectBottom - intersectY;
 
-      const layer2Rects = layer2Rectangles.filter(
-        (rect) =>
-          cell.col >= rect.x &&
-          cell.col < rect.x + rect.w &&
-          cell.row >= rect.y &&
-          cell.row < rect.y + rect.h
-      );
+      // If there's an overlap, draw it
+      if (intersectW > 0 && intersectH > 0) {
+        context.fillStyle = rect1.inverseColor;
 
-      // If both layers cover this cell, use inverse color of layer 2
-      if (layer1Covers && layer2Rects.length > 0) {
-        const topRect = layer2Rects[layer2Rects.length - 1];
-        context.fillStyle = topRect.inverseColor;
-        context.fillRect(cell.x, cell.y, cell.width, cell.height);
+        const pixelRect = getRect(
+          {
+            width,
+            height,
+            cols: config.cols,
+            rows: config.rows,
+            gapX: config.gap[0],
+            gapY: config.gap[1],
+          },
+          { x: intersectX, y: intersectY, w: intersectW, h: intersectH }
+        );
 
-        context.strokeStyle = '#0f0';
-        context.strokeRect(cell.x, cell.y, cell.width, cell.height);
+        context.fillRect(pixelRect.x, pixelRect.y, pixelRect.w, pixelRect.h);
       }
     });
   };
