@@ -1,7 +1,7 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-import { generateColors } from '../subtractive-color';
+import { generateColors } from '../../subtractive-color';
 
 const ruleNumber = Random.pick([156, 135, 214, 195, 151, 246, 250, 190]); //Random.rangeFloor(0, 255); // 156 135 214 195 151 246 250 190
 let ruleSet = toBinary(ruleNumber).split(''); //  [0, 1, 0, 1, 1, 0, 1, 0];

@@ -1,11 +1,11 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-import { generateColors } from '../subtractive-color';
-import { palettes as autoAlbersPalettes } from '../colors/auto-albers';
-import { palettes as mindfulPalettes } from '../colors/mindful-palettes';
-import { scaleCanvasAndApplyDither } from '../scale-canvas-dither';
-import { dither } from '../dither';
+import { generateColors } from '../../subtractive-color';
+import { palettes as autoAlbersPalettes } from '../../colors/auto-albers';
+import { palettes as mindfulPalettes } from '../../colors/mindful-palettes';
+import { scaleCanvasAndApplyDither } from '../../scale-canvas-dither';
+import { dither } from '../../dither';
 
 const ruleNumber = Random.pick([156, 135, 214, 195, 151, 246, 250, 190]); //Random.rangeFloor(0, 255); // 156 135 214 195 151 246 250 190
 let ruleSet = toBinary(ruleNumber).split(''); //  [0, 1, 0, 1, 1, 0, 1, 0];

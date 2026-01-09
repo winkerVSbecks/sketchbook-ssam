@@ -8,7 +8,7 @@ const config = {
   rows: 128 * 2,
   gap: [0, 0],
   steps: 30,
-  sides: 6,
+  sides: 12,
   r: 96,
 };
 
@@ -67,29 +67,16 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     }
   }
 
-  wrap.render = ({ playhead }) => {
-    context.fillStyle = '#fff';
-    context.fillRect(0, 0, width, height);
-
-    pixels = grid.map((cell) => ({
-      ...cell,
-      value: 0,
-    }));
-
-    const [cx, cy] = [Math.floor(config.cols / 2), Math.floor(config.rows / 2)];
-
+  function drawShape([cx, cy]: Point, playhead: number) {
     const angleOffset = 2 * Math.PI * playhead;
 
-    const shape = Array.from({ length: config.sides }, (_, i) => [
-      cx +
-        Math.floor(
-          Math.cos((i / config.sides) * 2 * Math.PI + angleOffset) * config.r
-        ),
-      cy +
-        Math.floor(
-          Math.sin((i / config.sides) * 2 * Math.PI + angleOffset) * config.r
-        ),
-    ]) as [number, number][];
+    const shape = Array.from({ length: config.sides }, (_, i) => {
+      const angle = (i / config.sides) * 2 * Math.PI + angleOffset;
+      return [
+        cx + Math.floor(Math.cos(angle) * config.r),
+        cy + Math.floor(Math.sin(angle) * config.r),
+      ];
+    }) as [number, number][];
 
     for (let i = 1; i < config.sides - 1; i++) {
       for (let step = 0; step <= config.steps; step++) {
@@ -101,6 +88,21 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
         ]);
       }
     }
+  }
+
+  wrap.render = ({ playhead }) => {
+    context.fillStyle = '#fff';
+    context.fillRect(0, 0, width, height);
+
+    pixels = grid.map((cell) => ({
+      ...cell,
+      value: 0,
+    }));
+
+    drawShape(
+      [Math.floor(config.cols * playhead), Math.floor(config.rows * 0.5)],
+      playhead
+    );
 
     pixels.forEach((pixel) => {
       if (pixel.value === 1) {
@@ -115,7 +117,7 @@ export const settings: SketchSettings = {
   mode: '2d',
   dimensions: [1080, 1080],
   pixelRatio: 1, //window.devicePixelRatio,
-  animate: false,
+  animate: true,
   duration: 10_000,
   playFps: 24,
   exportFps: 24,
