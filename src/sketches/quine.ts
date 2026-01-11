@@ -28,23 +28,33 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     context.fillStyle = '#0a0a0a';
     context.fillRect(0, 0, width, height);
 
-    // Render the source code with scrolling
-    context.fillStyle = '#fff';
-    context.font = '18px "SF Mono", "Monaco", "Consolas", monospace';
-
     const lineHeight = 28;
     const padding = 40;
     const maxVisibleLines = Math.floor((height - padding * 2) / lineHeight);
 
+    // Clip the text rendering area
+    context.save();
+    context.beginPath();
+    context.rect(padding, padding * 2, width - padding * 2, height - padding * 4);
+    context.clip();
+
+    // Render the source code with scrolling
+    context.fillStyle = '#fff';
+    context.font = '18px "SF Mono", "Monaco", "Consolas", monospace';
+
     // Scroll through the code over time
-    const scrollOffset = playhead * Math.max(0, lines.length - maxVisibleLines);
+    const scrollOffset =
+      playhead * Math.max(padding * 2, lines.length - maxVisibleLines);
     const startLine = Math.floor(scrollOffset);
     const endLine = startLine + maxVisibleLines;
 
     lines.slice(startLine, endLine).forEach((line, i) => {
-      const y = padding + i * lineHeight - (scrollOffset - startLine) * lineHeight;
+      const y =
+        padding + i * lineHeight - (scrollOffset - startLine) * lineHeight;
       context.fillText(line, padding, y);
     });
+
+    context.restore();
   };
 };
 
@@ -53,7 +63,7 @@ export const settings: SketchSettings = {
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
   animate: true,
-  duration: 10_000,
+  duration: 30_000,
   playFps: 60,
   exportFps: 60,
   framesFormat: ['mp4'],
@@ -73,17 +83,28 @@ ssam(sketch as Sketch<'2d'>, settings);
     context.fillStyle = '#0a0a0a';
     context.fillRect(0, 0, width, height);
 
-    // Render the source code with scrolling
-    context.fillStyle = '#fff';
-    context.font = '18px "SF Mono", "Monaco", "Consolas", monospace';
-
     const lineHeight = 28;
     const padding = 40;
     const maxVisibleLines = Math.floor((height - padding * 2) / lineHeight);
 
+    // Clip the text rendering area
+    context.save();
+    context.beginPath();
+    context.rect(
+      padding,
+      padding * 2,
+      width - padding * 2,
+      height - padding * 4
+    );
+    context.clip();
+
+    // Render the source code with scrolling
+    context.fillStyle = '#fff';
+    context.font = '18px "SF Mono", "Monaco", "Consolas", monospace';
+
     // Scroll through the code over time
     const scrollOffset =
-      playhead * Math.max(padding, lines.length - maxVisibleLines);
+      playhead * Math.max(padding * 2, lines.length - maxVisibleLines);
     const startLine = Math.floor(scrollOffset);
     const endLine = startLine + maxVisibleLines;
 
@@ -92,6 +113,8 @@ ssam(sketch as Sketch<'2d'>, settings);
         padding + i * lineHeight - (scrollOffset - startLine) * lineHeight;
       context.fillText(line, padding, y);
     });
+
+    context.restore();
   };
 };
 
