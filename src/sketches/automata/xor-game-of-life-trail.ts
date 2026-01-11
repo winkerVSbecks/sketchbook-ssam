@@ -1,7 +1,10 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
+import { ColorPaletteGenerator } from 'pro-color-harmonies';
+import { formatCss, oklch } from 'culori';
 import { makeGrid } from '../../grid';
+import { logColors } from '../../colors';
 
 Random.setSeed(Random.getRandomSeed());
 
@@ -13,8 +16,38 @@ const config = {
   decayFrames: 4, // Number of frames for a cell to fully fade out
 };
 
-const bg = '#000';
-const fg = '#fff';
+const palette = ColorPaletteGenerator.generate(
+  { l: Random.range(0, 1), c: Random.range(0, 0.4), h: Random.range(0, 360) },
+  Random.pick([
+    'analogous',
+    'complementary',
+    'triadic',
+    'tetradic',
+    'splitComplementary',
+    'tintsShades',
+  ]),
+  {
+    style: Random.pick(['default', 'square', 'triangle', 'circle', 'diamond']),
+    modifiers: {
+      sine: Random.range(-1, 1),
+      wave: Random.range(-1, 1),
+      zap: Random.range(-1, 1),
+      block: Random.range(-1, 1),
+    },
+  }
+).map((c) => formatCss(oklch({ mode: 'oklch', ...c })));
+
+logColors(palette);
+
+// pick the lightest color as background
+const bg = palette.reduce((lightest, color) => {
+  // Compare lightness values in OKLCH color space
+  const lightestL = oklch(lightest)?.l ?? 0;
+  const colorL = oklch(color)?.l ?? 0;
+  return colorL > lightestL ? color : lightest;
+}, palette[0]);
+
+// const bg = palette.shift()!; // '#fff';
 
 function xor(a: number, b: number) {
   return (a || b) && !(a && b);
@@ -137,7 +170,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       if (pixel.decay > 0) {
         // Calculate opacity based on decay (1 = full brightness, fading to 0)
         const opacity = pixel.decay / config.decayFrames;
-        context.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+        context.fillStyle = palette[pixel.decay % palette.length]; // `rgba(255, 255, 255, ${opacity})`;
         context.fillRect(pixel.x, pixel.y, pixel.width, pixel.height);
       }
     });
@@ -171,8 +204,8 @@ export const settings: SketchSettings = {
   pixelRatio: 1,
   animate: true,
   duration: 30_000,
-  playFps: 12,
-  exportFps: 12,
+  playFps: 60,
+  exportFps: 60,
   framesFormat: ['mp4'],
 };
 
