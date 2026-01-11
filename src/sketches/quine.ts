@@ -35,24 +35,25 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     // Clip the text rendering area
     context.save();
     context.beginPath();
-    context.rect(padding, padding * 2, width - padding * 2, height - padding * 4);
+    context.rect(padding, padding, width - padding * 2, height - padding * 2);
     context.clip();
 
-    // Render the source code with scrolling
+    // Render the source code with carousel scrolling
     context.fillStyle = '#fff';
     context.font = '18px "SF Mono", "Monaco", "Consolas", monospace';
 
-    // Scroll through the code over time
-    const scrollOffset =
-      playhead * Math.max(padding * 2, lines.length - maxVisibleLines);
-    const startLine = Math.floor(scrollOffset);
-    const endLine = startLine + maxVisibleLines;
+    // Carousel scroll - wraps around infinitely
+    const scrollOffset = playhead * lines.length;
+    const startLine = Math.floor(scrollOffset) % lines.length;
+    const pixelOffset = (scrollOffset % 1) * lineHeight;
 
-    lines.slice(startLine, endLine).forEach((line, i) => {
-      const y =
-        padding + i * lineHeight - (scrollOffset - startLine) * lineHeight;
+    // Render visible lines in carousel fashion
+    for (let i = 0; i < maxVisibleLines + 1; i++) {
+      const lineIndex = (startLine + i) % lines.length;
+      const line = lines[lineIndex];
+      const y = padding + i * lineHeight - pixelOffset;
       context.fillText(line, padding, y);
-    });
+    }
 
     context.restore();
   };
@@ -90,29 +91,25 @@ ssam(sketch as Sketch<'2d'>, settings);
     // Clip the text rendering area
     context.save();
     context.beginPath();
-    context.rect(
-      padding,
-      padding * 2,
-      width - padding * 2,
-      height - padding * 4
-    );
+    context.rect(padding, padding, width - padding * 2, height - padding * 2);
     context.clip();
 
-    // Render the source code with scrolling
+    // Render the source code with carousel scrolling
     context.fillStyle = '#fff';
     context.font = '18px "SF Mono", "Monaco", "Consolas", monospace';
 
-    // Scroll through the code over time
-    const scrollOffset =
-      playhead * Math.max(padding * 2, lines.length - maxVisibleLines);
-    const startLine = Math.floor(scrollOffset);
-    const endLine = startLine + maxVisibleLines;
+    // Carousel scroll - wraps around infinitely
+    const scrollOffset = playhead * lines.length;
+    const startLine = Math.floor(scrollOffset) % lines.length;
+    const pixelOffset = (scrollOffset % 1) * lineHeight;
 
-    lines.slice(startLine, endLine).forEach((line, i) => {
-      const y =
-        padding + i * lineHeight - (scrollOffset - startLine) * lineHeight;
+    // Render visible lines in carousel fashion
+    for (let i = 0; i < maxVisibleLines + 1; i++) {
+      const lineIndex = (startLine + i) % lines.length;
+      const line = lines[lineIndex];
+      const y = padding + i * lineHeight - pixelOffset;
       context.fillText(line, padding, y);
-    });
+    }
 
     context.restore();
   };
