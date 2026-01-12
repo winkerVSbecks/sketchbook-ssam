@@ -41,6 +41,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     // Render the source code with carousel scrolling
     context.fillStyle = '#fff';
     context.font = '18px "SF Mono", "Monaco", "Consolas", monospace';
+    context.textBaseline = 'middle';
 
     // Carousel scroll - wraps around infinitely
     const scrollOffset = playhead * lines.length;
@@ -51,7 +52,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     for (let i = 0; i < maxVisibleLines + 1; i++) {
       const lineIndex = (startLine + i) % lines.length;
       const line = lines[lineIndex];
-      const y = padding + i * lineHeight - pixelOffset;
+      const y = padding + i * lineHeight - pixelOffset + lineHeight / 2;
       context.fillText(line, padding, y);
     }
 
@@ -97,6 +98,7 @@ ssam(sketch as Sketch<'2d'>, settings);
     // Render the source code with carousel scrolling
     context.fillStyle = '#fff';
     context.font = '18px "SF Mono", "Monaco", "Consolas", monospace';
+    context.textBaseline = 'middle';
 
     // Carousel scroll - wraps around infinitely
     const scrollOffset = playhead * lines.length;
@@ -107,7 +109,7 @@ ssam(sketch as Sketch<'2d'>, settings);
     for (let i = 0; i < maxVisibleLines + 1; i++) {
       const lineIndex = (startLine + i) % lines.length;
       const line = lines[lineIndex];
-      const y = padding + i * lineHeight - pixelOffset;
+      const y = padding + i * lineHeight - pixelOffset + lineHeight / 2;
       context.fillText(line, padding, y);
     }
 
