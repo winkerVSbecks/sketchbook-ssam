@@ -7,6 +7,9 @@ const config = {
   cols: 128 * 2,
   rows: 128 * 2,
   gap: [0, 0],
+  steps: 30,
+  sides: 12,
+  r: 96,
 };
 
 function xor(a: number, b: number) {
@@ -64,7 +67,30 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     }
   }
 
-  wrap.render = ({ playhead, frame }) => {
+  function drawShape([cx, cy]: Point, playhead: number) {
+    const angleOffset = 2 * Math.PI * playhead;
+
+    const shape = Array.from({ length: config.sides }, (_, i) => {
+      const angle = (i / config.sides) * 2 * Math.PI + angleOffset;
+      return [
+        cx + Math.floor(Math.cos(angle) * config.r),
+        cy + Math.floor(Math.sin(angle) * config.r),
+      ];
+    }) as [number, number][];
+
+    for (let i = 1; i < config.sides - 1; i++) {
+      for (let step = 0; step <= config.steps; step++) {
+        const t = step / config.steps;
+
+        drawLine(shape[i], [
+          Math.floor(lerp(shape[i + 1][0], shape[0][0], t)),
+          Math.floor(lerp(shape[i + 1][1], shape[0][1], t)),
+        ]);
+      }
+    }
+  }
+
+  wrap.render = ({ playhead }) => {
     context.fillStyle = '#fff';
     context.fillRect(0, 0, width, height);
 
@@ -73,25 +99,16 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       value: 0,
     }));
 
-    const [cx, cy] = [Math.floor(config.cols / 2), Math.floor(config.rows / 2)];
-
-    const angleOffset = 2 * Math.PI * playhead;
-
-    const triangle = Array.from({ length: 3 }, (_, i) => [
-      cx + Math.floor(Math.cos((i / 3) * 2 * Math.PI + angleOffset) * 64),
-      cy + Math.floor(Math.sin((i / 3) * 2 * Math.PI + angleOffset) * 64),
-    ]) as [number, number][];
-
-    for (let i = 0; i <= 50; i++) {
-      drawLine(triangle[0], [
-        Math.floor(lerp(triangle[1][0], triangle[2][0], i / 50)),
-        Math.floor(lerp(triangle[1][1], triangle[2][1], i / 50)),
-      ]);
-    }
+    drawShape(
+      [Math.floor(config.cols * playhead), Math.floor(config.rows * 0.5)],
+      playhead
+    );
 
     pixels.forEach((pixel) => {
-      context.fillStyle = pixel.value === 1 ? '#000' : '#fff';
-      context.fillRect(pixel.x, pixel.y, pixel.width, pixel.height);
+      if (pixel.value === 1) {
+        context.fillStyle = '#000';
+        context.fillRect(pixel.x, pixel.y, pixel.width, pixel.height);
+      }
     });
   };
 };
@@ -99,7 +116,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
 export const settings: SketchSettings = {
   mode: '2d',
   dimensions: [1080, 1080],
-  pixelRatio: window.devicePixelRatio,
+  pixelRatio: 1, //window.devicePixelRatio,
   animate: true,
   duration: 10_000,
   playFps: 24,

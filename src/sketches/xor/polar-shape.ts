@@ -90,7 +90,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     }
   }
 
-  wrap.render = ({ playhead }) => {
+  wrap.render = ({ playhead, frame }) => {
     context.fillStyle = '#fff';
     context.fillRect(0, 0, width, height);
 
@@ -99,10 +99,21 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       value: 0,
     }));
 
-    drawShape(
-      [Math.floor(config.cols * playhead), Math.floor(config.rows * 0.5)],
-      playhead
-    );
+    drawShape([config.cols / 2, config.rows / 2], playhead);
+
+    // shift pixels value by 1 in x direction for next frame
+    const originalValues = pixels.map((p) => p.value);
+    pixels = pixels.map((pixel) => {
+      const dir = frame % 2 === 0 ? 1 : -1;
+      const dir2 = pixel.col % 2 === 0 ? dir : -dir;
+      const shiftedX = (pixel.col + dir2 * 1) % config.cols;
+      const shiftedIdx = pixel.row * config.cols + shiftedX;
+
+      return {
+        ...pixel,
+        value: originalValues[shiftedIdx],
+      };
+    });
 
     pixels.forEach((pixel) => {
       if (pixel.value === 1) {

@@ -532,6 +532,67 @@ function generateRegions(
   return regions;
 }
 
+/**
+ * Generates regions that guaranteed fill the grid using recursive subdivision
+ * @param rows - number of rows in the grid
+ * @param cols - number of columns in the grid
+ * @param minRegions - minimum number of regions to create
+ */
+function generateSubdividedRegions(
+  rows: number,
+  cols: number,
+  minRegions: number = 4
+): Region[] {
+  const regions: Region[] = [];
+  let idCounter = 0;
+
+  function subdivide(
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    depth: number
+  ) {
+    // Stop subdividing if we have enough regions or the area is too small
+    if (regions.length >= minRegions && depth > 0) {
+      if (Random.chance(0.7)) {
+        regions.push({ id: idCounter++, x, y, width: w, height: h });
+        return;
+      }
+    }
+
+    // Don't subdivide if too small
+    if (w <= 1 && h <= 1) {
+      regions.push({ id: idCounter++, x, y, width: w, height: h });
+      return;
+    }
+
+    // Decide whether to split horizontally or vertically
+    const canSplitH = w > 1;
+    const canSplitV = h > 1;
+
+    if (!canSplitH && !canSplitV) {
+      regions.push({ id: idCounter++, x, y, width: w, height: h });
+      return;
+    }
+
+    const splitHorizontally = canSplitH && (!canSplitV || Random.chance(0.5));
+
+    if (splitHorizontally) {
+      const splitAt = Random.rangeFloor(1, w);
+      subdivide(x, y, splitAt, h, depth + 1);
+      subdivide(x + splitAt, y, w - splitAt, h, depth + 1);
+    } else {
+      const splitAt = Random.rangeFloor(1, h);
+      subdivide(x, y, w, splitAt, depth + 1);
+      subdivide(x, y + splitAt, w, h - splitAt, depth + 1);
+    }
+  }
+
+  subdivide(0, 0, cols, rows, 0);
+  return regions;
+}
+
 export type DomainSystemState = {
   domains: Domain[];
   polygon: Point[];
@@ -559,11 +620,13 @@ export function* domainSystemGenerator(
     doCombineSmallRegions?: boolean;
     doCombineNarrowRegions?: boolean;
     doReduceNarrowRegions?: boolean;
+    fillMode?: 'random' | 'subdivide';
   } = {
     inset: [0, 0, 0, 0],
     doCombineSmallRegions: true,
     doCombineNarrowRegions: true,
     doReduceNarrowRegions: true,
+    fillMode: 'random',
   },
   grid: { w: number; h: number; x: number; y: number } = {
     w: width * 0.75,
@@ -578,6 +641,7 @@ export function* domainSystemGenerator(
     doCombineSmallRegions = true,
     doCombineNarrowRegions = true,
     doReduceNarrowRegions = true,
+    fillMode = 'random',
   } = options;
 
   const gap = Math.min(grid.w, grid.h) * gapScale;
@@ -595,7 +659,10 @@ export function* domainSystemGenerator(
 
   try {
     // Initial unoptimized state
-    let regions = generateRegions(res[1], res[0]);
+    let regions =
+      fillMode === 'subdivide'
+        ? generateSubdividedRegions(res[1], res[0])
+        : generateRegions(res[1], res[0]);
     state = generateDomainData(regions, {
       gap,
       w,
@@ -698,11 +765,13 @@ export function generateDomainSystem(
     doCombineSmallRegions?: boolean;
     doCombineNarrowRegions?: boolean;
     doReduceNarrowRegions?: boolean;
+    fillMode?: 'random' | 'subdivide';
   } = {
     inset: [0, 0, 0, 0],
     doCombineSmallRegions: true,
     doCombineNarrowRegions: true,
     doReduceNarrowRegions: true,
+    fillMode: 'random',
   },
   grid: { w: number; h: number; x: number; y: number } = {
     w: width * 0.75,
