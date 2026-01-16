@@ -2,6 +2,42 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 import { Vector } from 'p5';
+import pack from 'pack-spheres';
+
+// Circle type
+type Circle = {
+  x: number;
+  y: number;
+  r: number;
+};
+
+const showCircle = (ctx: CanvasRenderingContext2D, circle: Circle) => {
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(circle.x, circle.y, circle.r, 0, Math.PI * 2);
+  ctx.stroke();
+};
+
+// Convert circle to polygon boundaries for raycasting
+const circleToSegments = (circle: Circle, segments = 32): Boundary[] => {
+  const boundaries: Boundary[] = [];
+  const angleStep = (Math.PI * 2) / segments;
+
+  for (let i = 0; i < segments; i++) {
+    const angle1 = i * angleStep;
+    const angle2 = (i + 1) * angleStep;
+
+    const x1 = circle.x + Math.cos(angle1) * circle.r;
+    const y1 = circle.y + Math.sin(angle1) * circle.r;
+    const x2 = circle.x + Math.cos(angle2) * circle.r;
+    const y2 = circle.y + Math.sin(angle2) * circle.r;
+
+    boundaries.push(createBoundary(x1, y1, x2, y2));
+  }
+
+  return boundaries;
+};
 
 // Boundary - represents a wall
 type Boundary = {
@@ -153,23 +189,37 @@ export const sketch = ({
     import.meta.hot.accept(() => wrap.hotReload());
   }
 
+  const size = Math.min(width, height);
+  const scale = 0.5 * size;
+
+  // Generate packed circles
+  const shapes = pack({
+    dimensions: 2,
+    padding: 0.01,
+    minRadius: 0.25,
+    maxRadius: 0.5,
+  });
+
+  const circles: Circle[] = shapes.map((shape: any) => ({
+    x: scale + shape.position[0] * scale,
+    y: scale + shape.position[1] * scale,
+    r: shape.radius * scale,
+  }));
+
   // Initialize walls
   const walls: Boundary[] = [];
-
-  // Random interior walls
-  for (let i = 0; i < 5; i++) {
-    const x1 = Random.range(0, width);
-    const x2 = Random.range(0, width);
-    const y1 = Random.range(0, height);
-    const y2 = Random.range(0, height);
-    walls.push(createBoundary(x1, y1, x2, y2));
-  }
 
   // Canvas boundary walls
   walls.push(createBoundary(0, 0, width, 0));
   walls.push(createBoundary(width, 0, width, height));
   walls.push(createBoundary(width, height, 0, height));
   walls.push(createBoundary(0, height, 0, 0));
+
+  // Convert each circle to line segments for raycasting
+  circles.forEach((circle) => {
+    const segments = circleToSegments(circle, 32);
+    walls.push(...segments);
+  });
 
   // Initialize particle
   const particle = createParticle(width, height);
@@ -203,9 +253,9 @@ export const sketch = ({
     lookParticle(context, particle, walls);
     context.restore();
 
-    // Show walls
-    for (let wall of walls) {
-      showBoundary(context, wall);
+    // Show circles
+    for (let circle of circles) {
+      // showCircle(context, circle);
     }
 
     // Show particle
