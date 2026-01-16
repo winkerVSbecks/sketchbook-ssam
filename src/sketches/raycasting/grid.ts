@@ -54,20 +54,109 @@ type Rectangle = {
 };
 
 const showRectangle = (ctx: CanvasRenderingContext2D, rect: Rectangle) => {
+  const { x, y, w, h } = rect;
+  const radius = Math.min(w, h) * 0.2; // 20% of smallest dimension
+
   ctx.strokeStyle = '#ffffff';
   ctx.lineWidth = 2;
-  ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + w - radius, y);
+  ctx.arcTo(x + w, y, x + w, y + radius, radius);
+  ctx.lineTo(x + w, y + h - radius);
+  ctx.arcTo(x + w, y + h, x + w - radius, y + h, radius);
+  ctx.lineTo(x + radius, y + h);
+  ctx.arcTo(x, y + h, x, y + h - radius, radius);
+  ctx.lineTo(x, y + radius);
+  ctx.arcTo(x, y, x + radius, y, radius);
+  ctx.closePath();
+  ctx.stroke();
 };
 
-// Convert rectangle to boundaries
+// Convert rounded rectangle to boundaries
 const rectToSegments = (rect: Rectangle): Boundary[] => {
   const { x, y, w, h } = rect;
-  return [
-    createBoundary(x, y, x + w, y), // top
-    createBoundary(x + w, y, x + w, y + h), // right
-    createBoundary(x + w, y + h, x, y + h), // bottom
-    createBoundary(x, y + h, x, y), // left
-  ];
+  const radius = Math.min(w, h) * 0.2; // 20% of smallest dimension
+  const segments: Boundary[] = [];
+  const cornerSegments = 8; // Number of segments per corner
+
+  // Top edge
+  segments.push(createBoundary(x + radius, y, x + w - radius, y));
+
+  // Top-right corner
+  for (let i = 0; i < cornerSegments; i++) {
+    const angle1 = -Math.PI / 2 + (i * Math.PI) / (2 * cornerSegments);
+    const angle2 = -Math.PI / 2 + ((i + 1) * Math.PI) / (2 * cornerSegments);
+    const cx = x + w - radius;
+    const cy = y + radius;
+    segments.push(
+      createBoundary(
+        cx + Math.cos(angle1) * radius,
+        cy + Math.sin(angle1) * radius,
+        cx + Math.cos(angle2) * radius,
+        cy + Math.sin(angle2) * radius
+      )
+    );
+  }
+
+  // Right edge
+  segments.push(createBoundary(x + w, y + radius, x + w, y + h - radius));
+
+  // Bottom-right corner
+  for (let i = 0; i < cornerSegments; i++) {
+    const angle1 = 0 + (i * Math.PI) / (2 * cornerSegments);
+    const angle2 = 0 + ((i + 1) * Math.PI) / (2 * cornerSegments);
+    const cx = x + w - radius;
+    const cy = y + h - radius;
+    segments.push(
+      createBoundary(
+        cx + Math.cos(angle1) * radius,
+        cy + Math.sin(angle1) * radius,
+        cx + Math.cos(angle2) * radius,
+        cy + Math.sin(angle2) * radius
+      )
+    );
+  }
+
+  // Bottom edge
+  segments.push(createBoundary(x + w - radius, y + h, x + radius, y + h));
+
+  // Bottom-left corner
+  for (let i = 0; i < cornerSegments; i++) {
+    const angle1 = Math.PI / 2 + (i * Math.PI) / (2 * cornerSegments);
+    const angle2 = Math.PI / 2 + ((i + 1) * Math.PI) / (2 * cornerSegments);
+    const cx = x + radius;
+    const cy = y + h - radius;
+    segments.push(
+      createBoundary(
+        cx + Math.cos(angle1) * radius,
+        cy + Math.sin(angle1) * radius,
+        cx + Math.cos(angle2) * radius,
+        cy + Math.sin(angle2) * radius
+      )
+    );
+  }
+
+  // Left edge
+  segments.push(createBoundary(x, y + h - radius, x, y + radius));
+
+  // Top-left corner
+  for (let i = 0; i < cornerSegments; i++) {
+    const angle1 = Math.PI + (i * Math.PI) / (2 * cornerSegments);
+    const angle2 = Math.PI + ((i + 1) * Math.PI) / (2 * cornerSegments);
+    const cx = x + radius;
+    const cy = y + radius;
+    segments.push(
+      createBoundary(
+        cx + Math.cos(angle1) * radius,
+        cy + Math.sin(angle1) * radius,
+        cx + Math.cos(angle2) * radius,
+        cy + Math.sin(angle2) * radius
+      )
+    );
+  }
+
+  return segments;
 };
 
 // Circle type
@@ -181,8 +270,10 @@ const createParticle = (width: number, height: number): Particle => {
   const pos = new Vector(width / 2, height / 2);
   const rays: Ray[] = [];
 
-  for (let a = 0; a < 360; a += 1) {
-    rays.push(createRay(pos, (a * Math.PI) / 180));
+  // Use more rays for smoother polygon
+  const rayCount = 720; // 0.5 degree increments
+  for (let a = 0; a < rayCount; a += 1) {
+    rays.push(createRay(pos, (a * Math.PI * 2) / rayCount));
   }
 
   return { pos, rays };
@@ -195,10 +286,11 @@ const updateParticle = (particle: Particle, x: number, y: number) => {
 const lookParticle = (
   ctx: CanvasRenderingContext2D,
   particle: Particle,
-  walls: Boundary[]
+  walls: Boundary[],
+  fillColor: string
 ) => {
-  // Collect all intersection points
-  const points: Vector[] = [];
+  // Collect all intersection points with their angles
+  const points: Array<{ point: Vector; angle: number }> = [];
 
   for (let i = 0; i < particle.rays.length; i++) {
     const ray = particle.rays[i];
@@ -217,18 +309,26 @@ const lookParticle = (
     }
 
     if (closest) {
-      points.push(closest);
+      // Calculate angle from particle to intersection point
+      const angle = Math.atan2(
+        closest.y - particle.pos.y,
+        closest.x - particle.pos.x
+      );
+      points.push({ point: closest, angle });
     }
   }
 
-  // Draw solid polygon
+  // Sort points by angle to ensure correct polygon drawing order
+  points.sort((a, b) => a.angle - b.angle);
+
+  // Draw solid polygon with the specified color
   if (points.length > 0) {
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.fillStyle = fillColor;
     ctx.beginPath();
-    ctx.moveTo(points[0].x, points[0].y);
+    ctx.moveTo(points[0].point.x, points[0].point.y);
 
     for (let i = 1; i < points.length; i++) {
-      ctx.lineTo(points[i].x, points[i].y);
+      ctx.lineTo(points[i].point.x, points[i].point.y);
     }
 
     ctx.closePath();
@@ -404,18 +504,12 @@ export const sketch = ({
       lerp(0, height, playhead)
     );
 
-    context.fillStyle = bg;
-    context.fillRect(0, 0, width, height);
-
-    // // Draw shadow layer (black everywhere)
+    // Fill entire canvas with shadow color (foreground)
     context.fillStyle = fg;
     context.fillRect(0, 0, width, height);
 
-    // Cut out the lit area using destination-out
-    context.save();
-    context.globalCompositeOperation = 'destination-out';
-    lookParticle(context, particle, walls);
-    context.restore();
+    // Draw the lit area with background color
+    lookParticle(context, particle, walls, bg);
 
     // // Show rectangles
     // for (let rect of rectangles) {
