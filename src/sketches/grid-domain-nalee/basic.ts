@@ -20,8 +20,8 @@ const bg = '#fff';
 const colors = ['#FFDE73', '#EE7744', '#F9BC4F', '#2C7C79', '#4C4D78'];
 
 const config = {
-  gap: 0.02,
-  debug: false,
+  gap: 0,
+  debug: true,
   res: Random.pick([
     [6, 6],
     [5, 5],
@@ -61,7 +61,7 @@ function makeWalkerDomain(
 }
 
 /**
- * Split walker domain points into grid cells based on which domain they fall into
+ * Split walker domain points into grid cells based on which domain they fall into.
  */
 function splitDomainIntoGridCells(
   walkerDomain: Node[],
@@ -102,6 +102,8 @@ class GridConstrainedState {
   walkers: Walker[];
   mode: 'draw' | 'complete';
   currentGridCell: GridCell | null;
+  currentPosition: Coord | null;
+  visitedCells: Set<GridCell>;
 
   constructor(walkerDomain: Node[], gridCells: GridCell[]) {
     this.walkerDomain = walkerDomain;
@@ -109,23 +111,13 @@ class GridConstrainedState {
     this.walkers = [];
     this.mode = 'draw';
     this.currentGridCell = null;
-  }
-
-  getPoint(x: number, y: number) {
-    if (!this.currentGridCell) return undefined;
-    return this.currentGridCell.points.find(
-      (node) => node.x === x && node.y === y,
-    );
+    this.currentPosition = null;
+    this.visitedCells = new Set();
   }
 
   getStartInCell(cell: GridCell) {
     const options = cell.points.filter((p) => !p.occupied);
     return Random.pick(options);
-  }
-
-  getStart() {
-    if (!this.currentGridCell) return undefined;
-    return this.getStartInCell(this.currentGridCell);
   }
 
   isOccupied({ x, y }: Coord) {
@@ -140,47 +132,96 @@ class GridConstrainedState {
     }
   }
 
-  /**
-   * Check if point is valid - must be in current grid cell and not occupied
-   */
-  validOption = (option: Coord) => {
-    if (!this.currentGridCell) return false;
-
-    const inCurrentCell = this.currentGridCell.points.some(
-      (p) => p.x === option.x && p.y === option.y,
-    );
-
-    return inCurrentCell && !this.isOccupied(option);
-  };
-
-  /**
-   * Check if point is in a different grid cell (for transition detection)
-   */
-  getNewGridCell(option: Coord): GridCell | undefined {
-    const newCell = findGridCellForPoint(this.gridCells, option);
-    if (newCell && newCell !== this.currentGridCell) {
-      return newCell;
-    }
-    return undefined;
+  getNode({ x, y }: Coord): Node | undefined {
+    return this.walkerDomain.find((n) => n.x === x && n.y === y);
   }
 
   /**
-   * Expanded valid option that allows crossing into adjacent cells
+   * Check if a point is in a specific cell
    */
-  validOptionWithTransition = (option: Coord) => {
-    // First check if valid in current cell
-    if (this.validOption(option)) {
-      return true;
-    }
+  isInCell(point: Coord, cell: GridCell): boolean {
+    return cell.points.some((p) => p.x === point.x && p.y === point.y);
+  }
 
-    // Check if the point is in an adjacent cell and not occupied
-    const newCell = findGridCellForPoint(this.gridCells, option);
-    if (newCell && !this.isOccupied(option)) {
-      return true;
-    }
+  /**
+   * Check if a point exists in the walker domain
+   */
+  isInDomain(point: Coord): boolean {
+    return this.walkerDomain.some((p) => p.x === point.x && p.y === point.y);
+  }
 
-    return false;
+  /**
+   * Get all 4 neighbors of a point
+   */
+  getNeighbors(point: Coord): Coord[] {
+    return [
+      { x: point.x + 1, y: point.y },
+      { x: point.x - 1, y: point.y },
+      { x: point.x, y: point.y + 1 },
+      { x: point.x, y: point.y - 1 },
+    ];
+  }
+
+  /**
+   * Strictly constrain walker to current cell only
+   */
+  validOptionInCell = (option: Coord) => {
+    if (!this.currentGridCell) return false;
+    if (this.isOccupied(option)) return false;
+    return this.isInCell(option, this.currentGridCell);
   };
+
+  /**
+   * Find valid unoccupied neighbors that are in an adjacent cell
+   * (neighbor can be in both current cell and adjacent cell - boundary points)
+   */
+  findValidNeighborInAdjacentCell(
+    position: Coord,
+    currentCell: GridCell,
+  ): { neighbor: Coord; cell: GridCell } | null {
+    const neighbors = this.getNeighbors(position);
+
+    for (const neighbor of Random.shuffle(neighbors)) {
+      if (this.isOccupied(neighbor)) continue;
+      if (!this.isInDomain(neighbor)) continue;
+
+      // Check if neighbor is in a different unvisited cell
+      // (it might also be in current cell - that's OK for boundary points)
+      for (const cell of Random.shuffle([...this.gridCells])) {
+        if (cell === currentCell) continue;
+        if (this.visitedCells.has(cell)) continue;
+
+        if (this.isInCell(neighbor, cell)) {
+          return { neighbor, cell };
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Backtrack through walker path to find a position with valid neighbor in adjacent cell
+   */
+  backtrackToFindTransition(
+    walker: Walker,
+    currentCell: GridCell,
+  ): { position: Coord; neighbor: Coord; cell: GridCell } | null {
+    // Go backwards through the path
+    for (let i = walker.path.length - 1; i >= 0; i--) {
+      const position = walker.path[i];
+      const result = this.findValidNeighborInAdjacentCell(
+        position,
+        currentCell,
+      );
+
+      if (result) {
+        return { position, ...result };
+      }
+    }
+
+    return null;
+  }
 }
 
 export const sketch = ({ wrap, context, width, height }: SketchProps) => {
@@ -216,18 +257,19 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   // Create state
   const state = new GridConstrainedState(walkerDomain, gridCells);
 
-  // Spawn walkers
-  function spawnWalker(initialCell?: GridCell) {
-    if (state.mode === 'complete') return;
+  // Spawn walker in a cell
+  function spawnWalker(initialCell?: GridCell): Walker | null {
+    if (state.mode === 'complete') return null;
 
-    // Pick a random grid cell if not specified
     const cell = initialCell || Random.pick(gridCells);
-    if (!cell || cell.points.length === 0) return;
+    if (!cell || cell.points.length === 0) return null;
 
     state.currentGridCell = cell;
+    state.visitedCells.add(cell);
     const start = state.getStartInCell(cell);
 
     if (start) {
+      state.currentPosition = start;
       const walker = makeWalker(
         start,
         Random.pick(colors),
@@ -236,69 +278,119 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
         config.flat,
         config.size,
         config.stepSize,
-        state.validOptionWithTransition,
+        state.validOptionInCell, // Strictly constrained to current cell
       );
       state.setOccupied(start);
       state.walkers.push(walker);
+      return walker;
     }
+    return null;
   }
 
-  // // Spawn initial walkers in different grid cells
-  // const shuffledCells = Random.shuffle([...gridCells]);
-  // for (let i = 0; i < Math.min(config.walkerCount, shuffledCells.length); i++) {
-  //   spawnWalker(shuffledCells[i]);
-  // }
-  spawnWalker(Random.shuffle([...gridCells])[0]);
+  // Start with a random cell
+  const initialCell = Random.shuffle([...gridCells])[0];
+  let currentWalker = spawnWalker(initialCell);
 
   // Run simulation
   function runSimulation() {
-    let maxSteps = config.walkerRes[0] * config.walkerRes[1] * 2;
+    let maxSteps = config.walkerRes[0] * config.walkerRes[1] * 4;
 
     while (state.mode !== 'complete' && maxSteps > 0) {
       maxSteps--;
 
-      state.walkers.forEach((walker) => {
-        if (walker.state === 'alive') {
-          const current = walker.path[walker.path.length - 1];
+      if (!currentWalker || !state.currentGridCell) {
+        state.mode = 'complete';
+        break;
+      }
 
-          // Update current grid cell based on walker's position
-          const currentCell = findGridCellForPoint(gridCells, current);
-          if (currentCell) {
-            state.currentGridCell = currentCell;
-          }
+      if (currentWalker.state === 'alive') {
+        const current = currentWalker.path[currentWalker.path.length - 1];
+        state.currentPosition = current;
 
-          const next = step(walker);
-          if (next) {
-            state.setOccupied(next);
-
-            // Check if walker moved to a new grid cell
-            const newCell = state.getNewGridCell(next);
-            if (newCell) {
-              state.currentGridCell = newCell;
-            }
-          }
-        }
-      });
-
-      // Spawn new walkers if all are dead
-      const activeWalkers = state.walkers.filter((w) => w.state === 'alive');
-
-      if (activeWalkers.length === 0) {
-        // Find cells with unoccupied points
-        const cellsWithSpace = gridCells.filter((cell) =>
-          cell.points.some((p) => !p.occupied),
-        );
-
-        if (cellsWithSpace.length > 0) {
-          // spawnWalker(Random.pick(cellsWithSpace));
-        } else {
-          state.mode = 'complete';
+        const next = step(currentWalker);
+        if (next) {
+          state.setOccupied(next);
         }
       }
 
-      // Check if all points are occupied
-      if (state.walkerDomain.every((p) => p.occupied)) {
-        state.mode = 'complete';
+      // Walker is stuck - try to backtrack and transition to adjacent cell
+      if (currentWalker.state === 'dead') {
+        const transition = state.backtrackToFindTransition(
+          currentWalker,
+          state.currentGridCell,
+        );
+
+        if (transition) {
+          // Found a valid transition point
+          const { position, neighbor, cell } = transition;
+
+          // Find the index of the backtrack position in the path
+          const backtrackIndex = currentWalker.path.findIndex(
+            (p) => p.x === position.x && p.y === position.y,
+          );
+
+          // Add the backtrack path (reversed) from current position to the transition point
+          if (
+            backtrackIndex >= 0 &&
+            backtrackIndex < currentWalker.path.length - 1
+          ) {
+            for (
+              let i = currentWalker.path.length - 2;
+              i >= backtrackIndex;
+              i--
+            ) {
+              const backtrackNode = currentWalker.path[i];
+              // Create a copy to avoid modifying the original
+              currentWalker.path.push({
+                ...backtrackNode,
+                moveTo: false,
+              });
+            }
+          }
+
+          // Get the node for the neighbor to add to path
+          const neighborNode = state.getNode(neighbor);
+          if (neighborNode) {
+            // Add transition step to adjacent cell
+            currentWalker.path.push(neighborNode);
+            state.setOccupied(neighbor);
+
+            // Transition to new cell
+            state.currentGridCell = cell;
+            state.visitedCells.add(cell);
+            currentWalker.state = 'alive';
+
+            // Update walker's nextStep to use new cell constraint
+            // Use a dummy node copy to avoid makeWalker setting moveTo=true on neighborNode
+            const dummyStart: Node = { ...neighborNode, moveTo: false };
+            currentWalker.nextStep = makeWalker(
+              dummyStart,
+              currentWalker.color,
+              currentWalker.highlightColor,
+              currentWalker.pathStyle,
+              config.flat,
+              currentWalker.size,
+              currentWalker.stepSize,
+              state.validOptionInCell,
+            ).nextStep;
+          }
+        } else {
+          // // No valid transition found - try to spawn a new walker
+          // const cellsWithSpace = gridCells.filter((cell) =>
+          //   cell.points.some((p) => !p.occupied),
+          // );
+
+          // if (cellsWithSpace.length > 0) {
+          //   // Spawn new walker in a cell with space
+          //   const newCell = Random.pick(cellsWithSpace);
+          //   state.visitedCells.clear(); // Reset visited cells for new walker
+          //   currentWalker = spawnWalker(newCell);
+          // } else {
+          //   // No cells with space left - truly done
+          //   state.mode = 'complete';
+          // }
+          state.mode = 'complete';
+        }
       }
     }
   }
