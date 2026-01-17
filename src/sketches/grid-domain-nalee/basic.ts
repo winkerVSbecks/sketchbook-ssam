@@ -132,6 +132,13 @@ class GridConstrainedState {
     }
   }
 
+  setUnoccupied({ x, y }: Coord) {
+    const node = this.walkerDomain.find((n) => n.x === x && n.y === y);
+    if (node) {
+      node.occupied = false;
+    }
+  }
+
   getNode({ x, y }: Coord): Node | undefined {
     return this.walkerDomain.find((n) => n.x === x && n.y === y);
   }
@@ -330,22 +337,17 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
             (p) => p.x === position.x && p.y === position.y,
           );
 
-          // Add the backtrack path (reversed) from current position to the transition point
+          // Remove steps from path after backtrack position and reset their state
           if (
             backtrackIndex >= 0 &&
             backtrackIndex < currentWalker.path.length - 1
           ) {
-            for (
-              let i = currentWalker.path.length - 2;
-              i >= backtrackIndex;
-              i--
-            ) {
-              const backtrackNode = currentWalker.path[i];
-              // Create a copy to avoid modifying the original
-              currentWalker.path.push({
-                ...backtrackNode,
-                moveTo: false,
-              });
+            // Remove from end back to backtrack position (exclusive)
+            while (currentWalker.path.length > backtrackIndex + 1) {
+              const removed = currentWalker.path.pop();
+              if (removed) {
+                state.setUnoccupied(removed);
+              }
               yield; // Pause after each backtrack step
             }
           }
