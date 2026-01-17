@@ -291,8 +291,8 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   const initialCell = Random.shuffle([...gridCells])[0];
   let currentWalker = spawnWalker(initialCell);
 
-  // Run simulation
-  function runSimulation() {
+  // Simulation generator - yields after each step for animation
+  function* simulationGenerator(): Generator<void, void, unknown> {
     let maxSteps = config.walkerRes[0] * config.walkerRes[1] * 4;
 
     while (state.mode !== 'complete' && maxSteps > 0) {
@@ -311,6 +311,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
         if (next) {
           state.setOccupied(next);
         }
+        yield; // Pause after each step
       }
 
       // Walker is stuck - try to backtrack and transition to adjacent cell
@@ -345,6 +346,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
                 ...backtrackNode,
                 moveTo: false,
               });
+              yield; // Pause after each backtrack step
             }
           }
 
@@ -373,31 +375,38 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
               currentWalker.stepSize,
               state.validOptionInCell,
             ).nextStep;
+            yield; // Pause after transition
           }
         } else {
-          // // No valid transition found - try to spawn a new walker
-          // const cellsWithSpace = gridCells.filter((cell) =>
-          //   cell.points.some((p) => !p.occupied),
-          // );
+          // No valid transition found - try to spawn a new walker
+          const cellsWithSpace = gridCells.filter((cell) =>
+            cell.points.some((p) => !p.occupied),
+          );
 
-          // if (cellsWithSpace.length > 0) {
-          //   // Spawn new walker in a cell with space
-          //   const newCell = Random.pick(cellsWithSpace);
-          //   state.visitedCells.clear(); // Reset visited cells for new walker
-          //   currentWalker = spawnWalker(newCell);
-          // } else {
-          //   // No cells with space left - truly done
-          //   state.mode = 'complete';
-          // }
-          state.mode = 'complete';
+          if (cellsWithSpace.length > 0) {
+            // Spawn new walker in a cell with space
+            const newCell = Random.pick(cellsWithSpace);
+            state.visitedCells.clear(); // Reset visited cells for new walker
+            currentWalker = spawnWalker(newCell);
+            yield; // Pause after spawning new walker
+          } else {
+            // No cells with space left - truly done
+            state.mode = 'complete';
+          }
         }
       }
     }
   }
 
-  runSimulation();
+  // Create the generator instance
+  const simulation = simulationGenerator();
 
   wrap.render = ({ width, height, playhead }: SketchProps) => {
+    // Advance simulation by one step each frame
+    if (state.mode !== 'complete') {
+      simulation.next();
+    }
+
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
 
