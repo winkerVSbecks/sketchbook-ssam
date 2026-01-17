@@ -2,22 +2,58 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 import { mapRange } from 'canvas-sketch-util/math';
+import { ColorPaletteGenerator } from 'pro-color-harmonies';
+import { formatCss, oklch, wcagContrast } from 'culori';
 import { generateDomainSystem } from '../domain-polygon/domain-polygon-system';
 import { makeWalker, step, walkerToPaths } from '../nalee/walker';
 import { drawPath } from '../nalee/paths';
 import { xyToId } from '../nalee/utils';
 import type { Node, Walker, Coord, DomainToWorld } from '../nalee/types';
 import type { Domain } from '../domain-polygon/types';
+import { logColor, logColors } from '../../colors';
 
 const seed = Random.getRandomSeed();
 Random.setSeed(seed);
+// Random.setSeed('671749');
 console.log(seed);
 
-const outline = '#333';
-const gridLines = '#aaa';
-const bg = '#fff';
+const palette = ColorPaletteGenerator.generate(
+  { l: Random.range(0, 1), c: Random.range(0, 0.4), h: Random.range(0, 360) },
+  Random.pick([
+    'analogous',
+    'complementary',
+    'triadic',
+    'tetradic',
+    'splitComplementary',
+    'tintsShades',
+  ]),
+  {
+    style: Random.pick(['default', 'square', 'triangle', 'circle', 'diamond']),
+    modifiers: {
+      sine: Random.range(-1, 1),
+      wave: Random.range(-1, 1),
+      zap: Random.range(-1, 1),
+      block: Random.range(-1, 1),
+    },
+  },
+).map((c) => formatCss(oklch({ mode: 'oklch', ...c })));
 
-const colors = ['#FFDE73', '#EE7744', '#F9BC4F', '#2C7C79', '#4C4D78'];
+logColors(palette);
+
+const bg = palette.pop()!;
+
+const colors = palette.filter((c) => wcagContrast(c, bg) >= 4.5);
+
+const c = Random.pick(palette.filter((c) => colors.indexOf(c) === -1));
+
+const outline =
+  c || `rgb(from ${bg} calc(255 - r) calc(255 - g) calc(255 - b))`;
+// const outline = `hsl(from ${bg} calc(h + 180) s l)`;
+const gridLines =
+  c || `rgb(from ${bg} calc(255 - r) calc(255 - g) calc(255 - b) / 0.75)`;
+// const gridLines = `hsl(from ${bg} calc(h + 180) s l / 0.5)`;
+
+// const bg = colors.pop()!;
 
 const config = {
   gap: 0,
@@ -30,10 +66,11 @@ const config = {
   ]) as [number, number],
   walkerRes: [60, 60],
   walkerCount: 1,
-  flat: false,
+  flat: true,
   padding: 0.125,
   size: 12,
   stepSize: 4,
+  stepsPerFrame: 5, // Number of simulation steps per frame
 };
 
 interface GridCell {
@@ -401,25 +438,77 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   }
 
   // Create the generator instance
-  const simulation = simulationGenerator();
+  let simulation = simulationGenerator();
 
-  wrap.render = ({ width, height, playhead }: SketchProps) => {
-    // Advance simulation by one step each frame
-    if (state.mode !== 'complete') {
+  // Reset function to restart the simulation
+  function reset() {
+    // Reset all walker domain points to unoccupied
+    state.walkerDomain.forEach((node) => {
+      node.occupied = false;
+    });
+    // Clear walkers and state
+    state.walkers = [];
+    state.mode = 'draw';
+    state.currentGridCell = null;
+    state.currentPosition = null;
+    state.visitedCells.clear();
+    // Spawn initial walker
+    const initialCell = Random.shuffle([...gridCells])[0];
+    currentWalker = spawnWalker(initialCell);
+    // Recreate the generator
+    simulation = simulationGenerator();
+  }
+
+  wrap.render = ({ width, height, playhead, frame }: SketchProps) => {
+    // Reset when animation loops back to frame 0
+    if (frame === 0) {
+      reset();
+    }
+
+    // Advance simulation by configured steps per frame
+    for (
+      let i = 0;
+      i < config.stepsPerFrame && state.mode !== 'complete';
+      i++
+    ) {
       simulation.next();
     }
 
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
 
+    context.strokeStyle = gridLines;
+    context.lineWidth = 1;
+
+    for (let x = grid.x; x <= grid.x + grid.w; x += grid.xRes) {
+      context.beginPath();
+      context.moveTo(x + grid.gap / 2, grid.y);
+      context.lineTo(x + grid.gap / 2, grid.y + grid.h);
+      context.stroke();
+    }
+    for (let y = grid.y; y <= grid.y + grid.h; y += grid.yRes) {
+      context.beginPath();
+      context.moveTo(grid.x, y + grid.gap / 2);
+      context.lineTo(grid.x + grid.w, y + grid.gap / 2);
+      context.stroke();
+    }
+
+    // Draw walker domain points
+    context.fillStyle = gridLines;
+    state.walkerDomain.forEach(({ worldX, worldY, occupied }) => {
+      if (!occupied) {
+        context.beginPath();
+        context.arc(worldX, worldY, 2, 0, Math.PI * 2);
+        context.fill();
+      }
+    });
+
     // Draw grid cell domains
     context.strokeStyle = outline;
     context.lineWidth = 2;
-    context.fillStyle = bg;
     domains.forEach((d) => {
       context.beginPath();
       context.rect(d.x, d.y, d.width, d.height);
-      context.fill();
       context.stroke();
     });
 
@@ -431,35 +520,6 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       });
       drawPath(context, walker, playhead, bg, pathsInWorldCoords);
     });
-
-    // Debug: draw grid lines
-    if (config.debug) {
-      context.strokeStyle = gridLines;
-      context.lineWidth = 0.5;
-
-      for (let x = grid.x; x <= grid.x + grid.w; x += grid.xRes) {
-        context.beginPath();
-        context.moveTo(x + grid.gap / 2, grid.y);
-        context.lineTo(x + grid.gap / 2, grid.y + grid.h);
-        context.stroke();
-      }
-      for (let y = grid.y; y <= grid.y + grid.h; y += grid.yRes) {
-        context.beginPath();
-        context.moveTo(grid.x, y + grid.gap / 2);
-        context.lineTo(grid.x + grid.w, y + grid.gap / 2);
-        context.stroke();
-      }
-
-      // Draw walker domain points
-      context.fillStyle = 'rgba(0,0,0,0.2)';
-      state.walkerDomain.forEach(({ worldX, worldY, occupied }) => {
-        if (!occupied) {
-          context.beginPath();
-          context.arc(worldX, worldY, 2, 0, Math.PI * 2);
-          context.fill();
-        }
-      });
-    }
   };
 };
 
@@ -468,7 +528,7 @@ export const settings: SketchSettings = {
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
   animate: true,
-  duration: 4_000,
+  // duration: 4_000,
   playFps: 60,
   exportFps: 60,
   framesFormat: ['mp4'],
