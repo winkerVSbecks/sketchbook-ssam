@@ -38,22 +38,24 @@ const palette = ColorPaletteGenerator.generate(
   },
 ).map((c) => formatCss(oklch({ mode: 'oklch', ...c })));
 
-logColors(palette);
+// logColors(palette);
 
 const bg = palette.pop()!;
 
-const colors = palette.filter((c) => wcagContrast(c, bg) >= 4.5);
+const colors =
+  palette.filter((c) => wcagContrast(c, bg) >= 3).length > 0
+    ? palette.filter((c) => wcagContrast(c, bg) >= 3)
+    : palette.filter((c) => wcagContrast(c, bg) >= 2);
+
+logColors(colors);
 
 const c = Random.pick(palette.filter((c) => colors.indexOf(c) === -1));
 
 const outline =
   c || `rgb(from ${bg} calc(255 - r) calc(255 - g) calc(255 - b))`;
-// const outline = `hsl(from ${bg} calc(h + 180) s l)`;
 const gridLines =
-  c || `rgb(from ${bg} calc(255 - r) calc(255 - g) calc(255 - b) / 0.75)`;
-// const gridLines = `hsl(from ${bg} calc(h + 180) s l / 0.5)`;
-
-// const bg = colors.pop()!;
+  `hsl(from ${c} h s l /0.55)` ||
+  `rgb(from ${bg} calc(255 - r) calc(255 - g) calc(255 - b) / 0.5)`;
 
 const config = {
   gap: 0,
@@ -302,6 +304,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   const state = new GridConstrainedState(walkerDomain, gridCells);
 
   // Spawn walker in a cell
+  let walkerCount = 0;
   function spawnWalker(initialCell?: GridCell): Walker | null {
     if (state.mode === 'complete') return null;
 
@@ -316,8 +319,8 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       state.currentPosition = start;
       const walker = makeWalker(
         start,
-        Random.pick(colors),
-        Random.pick(colors),
+        colors[walkerCount % colors.length],
+        colors[walkerCount % colors.length],
         'solidStyle',
         config.flat,
         config.size,
@@ -406,8 +409,8 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
             const dummyStart: Node = { ...neighborNode, moveTo: false };
             currentWalker.nextStep = makeWalker(
               dummyStart,
-              currentWalker.color,
-              currentWalker.highlightColor,
+              colors[walkerCount % colors.length],
+              colors[walkerCount % colors.length],
               currentWalker.pathStyle,
               config.flat,
               currentWalker.size,
@@ -426,6 +429,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
             // Spawn new walker in a cell with space
             const newCell = Random.pick(cellsWithSpace);
             state.visitedCells.clear(); // Reset visited cells for new walker
+            walkerCount++;
             currentWalker = spawnWalker(newCell);
             yield; // Pause after spawning new walker
           } else {
@@ -511,6 +515,14 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       context.rect(d.x, d.y, d.width, d.height);
       context.stroke();
     });
+
+    if (state.currentGridCell) {
+      const d = state.currentGridCell.domain;
+      context.lineWidth = 6;
+      context.beginPath();
+      context.rect(d.x, d.y, d.width, d.height);
+      context.stroke();
+    }
 
     // Draw walkers
     state.walkers.forEach((walker) => {
