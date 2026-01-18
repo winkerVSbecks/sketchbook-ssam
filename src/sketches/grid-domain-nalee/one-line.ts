@@ -4,13 +4,12 @@ import Random from 'canvas-sketch-util/random';
 import { mapRange } from 'canvas-sketch-util/math';
 import { ColorPaletteGenerator } from 'pro-color-harmonies';
 import { formatCss, oklch, wcagContrast } from 'culori';
-import { generateDomainSystem } from '../domain-polygon/domain-polygon-system';
-import { makeWalker, step, walkerToPaths } from '../nalee/walker';
+import { makeWalker, walkerToPaths } from '../nalee/walker';
 import { drawPath } from '../nalee/paths';
 import { xyToId } from '../nalee/utils';
 import type { Node, Walker, Coord, DomainToWorld } from '../nalee/types';
 import type { Domain } from '../domain-polygon/types';
-import { logColor, logColors } from '../../colors';
+import { logColors } from '../../colors';
 
 const seed = Random.getRandomSeed();
 Random.setSeed(seed);
@@ -51,28 +50,27 @@ logColors(colors);
 
 const c = Random.pick(palette.filter((c) => colors.indexOf(c) === -1));
 
-const outline =
-  c || `rgb(from ${bg} calc(255 - r) calc(255 - g) calc(255 - b))`;
-const gridLines =
-  `hsl(from ${c} h s l /0.55)` ||
+const nodeColor =
+  colors[1] ||
   `rgb(from ${bg} calc(255 - r) calc(255 - g) calc(255 - b) / 0.5)`;
 
 const config = {
   gap: 0,
-  debug: true,
+  debug: false,
   res: Random.pick([
     [6, 6],
     [5, 5],
     [4, 4],
     [3, 3],
   ]) as [number, number],
-  walkerRes: [60, 60],
+  walkerRes: [60, 60], // Grid resolution for Hamiltonian path
   walkerCount: 1,
   flat: true,
   padding: 0.125,
   size: 12,
   stepSize: 4,
-  stepsPerFrame: 5, // Number of simulation steps per frame
+  stepsPerFrame: 20, // More steps per frame for faster visualization
+  startOnCorners: false,
 };
 
 interface GridCell {
@@ -100,191 +98,245 @@ function makeWalkerDomain(
 }
 
 /**
- * Split walker domain points into grid cells based on which domain they fall into.
+ * Direction indices for consistent ordering
  */
-function splitDomainIntoGridCells(
-  walkerDomain: Node[],
-  domains: Domain[],
-): GridCell[] {
-  return domains.map((domain) => {
-    const points = walkerDomain.filter(({ worldX, worldY }) => {
-      return (
-        worldX >= domain.x &&
-        worldX <= domain.x + domain.width &&
-        worldY >= domain.y &&
-        worldY <= domain.y + domain.height
-      );
-    });
-
-    return { domain, points };
-  });
-}
+const DIRECTIONS: Coord[] = [
+  { x: 1, y: 0 }, // right
+  { x: -1, y: 0 }, // left
+  { x: 0, y: 1 }, // down
+  { x: 0, y: -1 }, // up
+];
 
 /**
- * Find which grid cell a point belongs to
+ * Walker state using Warnsdorff's algorithm for Hamiltonian path finding
+ * Warnsdorff's rule: always move to the neighbor with the fewest onward moves
  */
-function findGridCellForPoint(
-  gridCells: GridCell[],
-  { x, y }: Coord,
-): GridCell | undefined {
-  return gridCells.find((cell) =>
-    cell.points.some((p) => p.x === x && p.y === y),
-  );
-}
-
-/**
- * Walker state that tracks current grid cell
- */
-class GridConstrainedState {
+class HamiltonianPathState {
   walkerDomain: Node[];
-  gridCells: GridCell[];
+  nodeMap: Map<string, Node>; // Fast lookup
   walkers: Walker[];
   mode: 'draw' | 'complete';
-  currentGridCell: GridCell | null;
-  currentPosition: Coord | null;
-  visitedCells: Set<GridCell>;
+  totalNodes: number;
+  // For backtracking: track which neighbors we've tried at each path index
+  triedAtIndex: Map<number, Set<string>>;
 
-  constructor(walkerDomain: Node[], gridCells: GridCell[]) {
+  constructor(walkerDomain: Node[]) {
     this.walkerDomain = walkerDomain;
-    this.gridCells = gridCells;
     this.walkers = [];
     this.mode = 'draw';
-    this.currentGridCell = null;
-    this.currentPosition = null;
-    this.visitedCells = new Set();
+    this.totalNodes = walkerDomain.length;
+    this.triedAtIndex = new Map();
+
+    // Build fast lookup map
+    this.nodeMap = new Map();
+    for (const node of walkerDomain) {
+      this.nodeMap.set(`${node.x},${node.y}`, node);
+    }
   }
 
-  getStartInCell(cell: GridCell) {
-    const options = cell.points.filter((p) => !p.occupied);
+  coordToKey(coord: Coord): string {
+    return `${coord.x},${coord.y}`;
+  }
+
+  getStartPoint(): Node | undefined {
+    const options = this.walkerDomain.filter((p) => !p.occupied);
+    if (options.length === 0) return undefined;
+
+    // Find grid bounds
+    const maxX = this.walkerDomain.reduce((max, n) => Math.max(max, n.x), 0);
+    const maxY = this.walkerDomain.reduce((max, n) => Math.max(max, n.y), 0);
+
+    // For odd×odd grids, corners are best starting points
+    const corners = [
+      { x: 0, y: 0 },
+      { x: maxX, y: 0 },
+      { x: 0, y: maxY },
+      { x: maxX, y: maxY },
+    ];
+
+    // Find actual corner nodes
+    const cornerNodes = corners
+      .map((c) => this.getNode(c))
+      .filter((n): n is Node => n !== undefined && !n.occupied);
+
+    if (cornerNodes.length > 0 && config.startOnCorners) {
+      return Random.pick(cornerNodes);
+    }
+
+    // Fallback: pick any unoccupied node
     return Random.pick(options);
   }
 
-  isOccupied({ x, y }: Coord) {
-    const node = this.walkerDomain.find((n) => n.x === x && n.y === y);
-    return node ? node.occupied : true;
-  }
-
-  setOccupied({ x, y }: Coord) {
-    const node = this.walkerDomain.find((n) => n.x === x && n.y === y);
-    if (node) {
-      node.occupied = true;
-    }
-  }
-
-  setUnoccupied({ x, y }: Coord) {
-    const node = this.walkerDomain.find((n) => n.x === x && n.y === y);
-    if (node) {
-      node.occupied = false;
-    }
-  }
-
   getNode({ x, y }: Coord): Node | undefined {
-    return this.walkerDomain.find((n) => n.x === x && n.y === y);
+    return this.nodeMap.get(`${x},${y}`);
   }
 
-  /**
-   * Check if a point is in a specific cell
-   */
-  isInCell(point: Coord, cell: GridCell): boolean {
-    return cell.points.some((p) => p.x === point.x && p.y === point.y);
+  isOccupied(coord: Coord): boolean {
+    const node = this.getNode(coord);
+    return node ? !!node.occupied : true;
   }
 
-  /**
-   * Check if a point exists in the walker domain
-   */
-  isInDomain(point: Coord): boolean {
-    return this.walkerDomain.some((p) => p.x === point.x && p.y === point.y);
+  setOccupied(coord: Coord): void {
+    const node = this.getNode(coord);
+    if (node) node.occupied = true;
   }
 
-  /**
-   * Get all 4 neighbors of a point
-   */
+  setUnoccupied(coord: Coord): void {
+    const node = this.getNode(coord);
+    if (node) node.occupied = false;
+  }
+
+  isInDomain(coord: Coord): boolean {
+    return this.nodeMap.has(`${coord.x},${coord.y}`);
+  }
+
   getNeighbors(point: Coord): Coord[] {
-    return [
-      { x: point.x + 1, y: point.y },
-      { x: point.x - 1, y: point.y },
-      { x: point.x, y: point.y + 1 },
-      { x: point.x, y: point.y - 1 },
-    ];
+    return DIRECTIONS.map((d) => ({ x: point.x + d.x, y: point.y + d.y }));
   }
 
   /**
-   * Strictly constrain walker to current cell only
+   * Get valid (unoccupied, in-domain) neighbors
    */
-  validOptionInCell = (option: Coord) => {
-    if (!this.currentGridCell) return false;
-    if (this.isOccupied(option)) return false;
-    return this.isInCell(option, this.currentGridCell);
+  getValidNeighbors(point: Coord): Coord[] {
+    return this.getNeighbors(point).filter(
+      (n) => this.isInDomain(n) && !this.isOccupied(n),
+    );
+  }
+
+  /**
+   * Count the degree (number of unvisited neighbors) of a node
+   */
+  getDegree(coord: Coord): number {
+    return this.getValidNeighbors(coord).length;
+  }
+
+  /**
+   * Warnsdorff's algorithm: get the next move by choosing the neighbor
+   * with the minimum number of onward moves (lowest degree)
+   * With tie-breaking using further look-ahead and randomization
+   */
+  getNextMoveWarnsdorff(position: Coord, pathIndex: number): Coord | null {
+    const neighbors = this.getValidNeighbors(position);
+    if (neighbors.length === 0) return null;
+
+    // Get tried neighbors at this path index
+    let tried = this.triedAtIndex.get(pathIndex);
+    if (!tried) {
+      tried = new Set<string>();
+      this.triedAtIndex.set(pathIndex, tried);
+    }
+
+    // Filter out already tried neighbors
+    const triedSet = tried;
+    const untried = neighbors.filter((n) => !triedSet.has(this.coordToKey(n)));
+    if (untried.length === 0) return null;
+
+    // Pre-compute max coordinates
+    const maxX = this.walkerDomain.reduce((max, n) => Math.max(max, n.x), 0);
+    const maxY = this.walkerDomain.reduce((max, n) => Math.max(max, n.y), 0);
+
+    // Score each untried neighbor using Warnsdorff's rule
+    const scored = untried.map((n) => {
+      // Temporarily mark as occupied to get accurate degree
+      this.setOccupied(n);
+      const degree = this.getDegree(n);
+      this.setUnoccupied(n);
+
+      // Secondary: distance from center (prefer edges/corners)
+      const distFromCenter =
+        Math.abs(n.x - maxX / 2) + Math.abs(n.y - maxY / 2);
+
+      // Tertiary: random factor for tie-breaking
+      const randomFactor = Random.value();
+
+      return { coord: n, degree, distFromCenter, randomFactor };
+    });
+
+    // Sort: lowest degree first, then highest distance from center, then random
+    scored.sort((a, b) => {
+      if (a.degree !== b.degree) return a.degree - b.degree;
+      if (Math.abs(a.distFromCenter - b.distFromCenter) > 0.5) {
+        return b.distFromCenter - a.distFromCenter;
+      }
+      return a.randomFactor - b.randomFactor;
+    });
+
+    // Pick the best option
+    const best = scored[0].coord;
+    tried.add(this.coordToKey(best));
+    return best;
+  }
+
+  /**
+   * Greedy Warnsdorff's algorithm: get the best move without tracking
+   * Uses look-ahead for tie-breaking (Pohl's improvement)
+   */
+  getBestMoveWarnsdorff(position: Coord): Coord | null {
+    const neighbors = this.getValidNeighbors(position);
+    if (neighbors.length === 0) return null;
+
+    // Score each neighbor using Warnsdorff's rule
+    const scored = neighbors.map((n) => {
+      // Temporarily mark as occupied to get accurate degree
+      this.setOccupied(n);
+      const degree = this.getDegree(n);
+
+      // For tie-breaking: sum of degrees of neighbors (look-ahead)
+      // Lower sum = neighbors are more constrained = visit them first
+      let sumNeighborDegrees = 0;
+      const nNeighbors = this.getValidNeighbors(n);
+      for (const nn of nNeighbors) {
+        sumNeighborDegrees += this.getDegree(nn);
+      }
+
+      this.setUnoccupied(n);
+
+      // Tertiary: random factor for final tie-breaking
+      const randomFactor = Random.value();
+
+      return { coord: n, degree, sumNeighborDegrees, randomFactor };
+    });
+
+    // Sort: lowest degree first, then lowest sum of neighbor degrees, then random
+    scored.sort((a, b) => {
+      if (a.degree !== b.degree) return a.degree - b.degree;
+      if (a.sumNeighborDegrees !== b.sumNeighborDegrees) {
+        return a.sumNeighborDegrees - b.sumNeighborDegrees;
+      }
+      return a.randomFactor - b.randomFactor;
+    });
+
+    return scored[0].coord;
+  }
+
+  /**
+   * Clear tried moves at and after a given path index (when backtracking)
+   */
+  clearTriedFromIndex(fromIndex: number): void {
+    for (const [idx] of this.triedAtIndex) {
+      if (idx >= fromIndex) {
+        this.triedAtIndex.delete(idx);
+      }
+    }
+  }
+
+  /**
+   * Valid option for walker - anywhere in domain that's not occupied
+   */
+  validOption = (option: Coord): boolean => {
+    return this.isInDomain(option) && !this.isOccupied(option);
   };
 
-  /**
-   * Find valid unoccupied neighbors that are in an adjacent cell
-   * (neighbor can be in both current cell and adjacent cell - boundary points)
-   */
-  findValidNeighborInAdjacentCell(
-    position: Coord,
-    currentCell: GridCell,
-  ): { neighbor: Coord; cell: GridCell } | null {
-    const neighbors = this.getNeighbors(position);
-
-    for (const neighbor of Random.shuffle(neighbors)) {
-      if (this.isOccupied(neighbor)) continue;
-      if (!this.isInDomain(neighbor)) continue;
-
-      // Check if neighbor is in a different unvisited cell
-      // (it might also be in current cell - that's OK for boundary points)
-      for (const cell of Random.shuffle([...this.gridCells])) {
-        if (cell === currentCell) continue;
-        if (this.visitedCells.has(cell)) continue;
-
-        if (this.isInCell(neighbor, cell)) {
-          return { neighbor, cell };
-        }
-      }
-    }
-
-    return null;
+  getOccupiedCount(): number {
+    return this.walkerDomain.filter((n) => n.occupied).length;
   }
 
-  /**
-   * Backtrack through walker path to find a position with valid neighbor in adjacent cell
-   */
-  backtrackToFindTransition(
-    walker: Walker,
-    currentCell: GridCell,
-  ): { position: Coord; neighbor: Coord; cell: GridCell } | null {
-    // Go backwards through the path
-    for (let i = walker.path.length - 1; i >= 0; i--) {
-      const position = walker.path[i];
-      const result = this.findValidNeighborInAdjacentCell(
-        position,
-        currentCell,
-      );
-
-      if (result) {
-        return { position, ...result };
-      }
-    }
-
-    return null;
+  isComplete(): boolean {
+    return this.getOccupiedCount() === this.totalNodes;
   }
 }
 
 export const sketch = ({ wrap, context, width, height }: SketchProps) => {
-  // Generate grid cell domains
-  const { domains, grid } = generateDomainSystem(
-    config.res,
-    config.gap,
-    width,
-    height,
-    {
-      inset: [0, 0, 0, 0],
-      doCombineSmallRegions: true,
-      doCombineNarrowRegions: true,
-      doReduceNarrowRegions: true,
-    },
-  );
-
   // Create domain to world coordinate transformation for walker
   const domainToWorld: DomainToWorld = (x, y) => {
     const padding = width * config.padding;
@@ -297,147 +349,101 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   // Create walker domain - all possible points the walker can occupy
   const walkerDomain = makeWalkerDomain(config.walkerRes, domainToWorld);
 
-  // Split walker domain into grid cells
-  const gridCells = splitDomainIntoGridCells(walkerDomain, domains);
-
   // Create state
-  const state = new GridConstrainedState(walkerDomain, gridCells);
+  const state = new HamiltonianPathState(walkerDomain);
 
-  // Spawn walker in a cell
-  let walkerCount = 0;
-  function spawnWalker(initialCell?: GridCell): Walker | null {
+  // Spawn a single walker
+  function spawnWalker(): Walker | null {
     if (state.mode === 'complete') return null;
 
-    const cell = initialCell || Random.pick(gridCells);
-    if (!cell || cell.points.length === 0) return null;
+    const start = state.getStartPoint();
+    if (!start) return null;
 
-    state.currentGridCell = cell;
-    state.visitedCells.add(cell);
-    const start = state.getStartInCell(cell);
-
-    if (start) {
-      state.currentPosition = start;
-      const walker = makeWalker(
-        start,
-        colors[walkerCount % colors.length],
-        colors[walkerCount % colors.length],
-        'solidStyle',
-        config.flat,
-        config.size,
-        config.stepSize,
-        state.validOptionInCell, // Strictly constrained to current cell
-      );
-      state.setOccupied(start);
-      state.walkers.push(walker);
-      return walker;
-    }
-    return null;
+    const walker = makeWalker(
+      start,
+      colors[0],
+      colors[0],
+      'solidStyle',
+      config.flat,
+      config.size,
+      config.stepSize,
+      state.validOption,
+    );
+    state.setOccupied(start);
+    state.walkers.push(walker);
+    return walker;
   }
 
-  // Start with a random cell
-  const initialCell = Random.shuffle([...gridCells])[0];
-  let currentWalker = spawnWalker(initialCell);
+  let currentWalker = spawnWalker();
 
-  // Simulation generator - yields after each step for animation
+  // Simulation generator using greedy Warnsdorff's algorithm
+  // On failure, restart from a different starting point
   function* simulationGenerator(): Generator<void, void, unknown> {
-    let maxSteps = config.walkerRes[0] * config.walkerRes[1] * 4;
+    const maxAttempts = 200; // Try many starting points
 
-    while (state.mode !== 'complete' && maxSteps > 0) {
-      maxSteps--;
+    for (
+      let attempt = 0;
+      attempt < maxAttempts && state.mode === 'draw';
+      attempt++
+    ) {
+      let stuck = false;
 
-      if (!currentWalker || !state.currentGridCell) {
-        state.mode = 'complete';
-        break;
-      }
-
-      if (currentWalker.state === 'alive') {
-        const current = currentWalker.path[currentWalker.path.length - 1];
-        state.currentPosition = current;
-
-        const next = step(currentWalker);
-        if (next) {
-          state.setOccupied(next);
+      while (!stuck && state.mode === 'draw') {
+        if (!currentWalker) {
+          stuck = true;
+          break;
         }
-        yield; // Pause after each step
-      }
 
-      // Walker is stuck - try to backtrack and transition to adjacent cell
-      if (currentWalker.state === 'dead') {
-        const transition = state.backtrackToFindTransition(
-          currentWalker,
-          state.currentGridCell,
-        );
+        // Check if we've filled the entire domain
+        if (state.isComplete()) {
+          state.mode = 'complete';
+          console.log(`Hamiltonian path found on attempt ${attempt + 1}!`);
+          break;
+        }
 
-        if (transition) {
-          // Found a valid transition point
-          const { position, neighbor, cell } = transition;
+        const current = currentWalker.path[currentWalker.path.length - 1];
 
-          // Find the index of the backtrack position in the path
-          const backtrackIndex = currentWalker.path.findIndex(
-            (p) => p.x === position.x && p.y === position.y,
-          );
+        // Use greedy Warnsdorff's algorithm to get next move
+        const nextCoord = state.getBestMoveWarnsdorff(current);
 
-          // Remove steps from path after backtrack position and reset their state
-          if (
-            backtrackIndex >= 0 &&
-            backtrackIndex < currentWalker.path.length - 1
-          ) {
-            // Remove from end back to backtrack position (exclusive)
-            while (currentWalker.path.length > backtrackIndex + 1) {
-              const removed = currentWalker.path.pop();
-              if (removed) {
-                state.setUnoccupied(removed);
-              }
-              yield; // Pause after each backtrack step
-            }
-          }
-
-          // Get the node for the neighbor to add to path
-          const neighborNode = state.getNode(neighbor);
-          if (neighborNode) {
-            // Add transition step to adjacent cell
-            currentWalker.path.push(neighborNode);
-            state.setOccupied(neighbor);
-
-            // Transition to new cell
-            state.currentGridCell = cell;
-            state.visitedCells.add(cell);
-            currentWalker.state = 'alive';
-
-            // Update walker's nextStep to use new cell constraint
-            // Use a dummy node copy to avoid makeWalker setting moveTo=true on neighborNode
-            const dummyStart: Node = { ...neighborNode, moveTo: false };
-            currentWalker.nextStep = makeWalker(
-              dummyStart,
-              colors[walkerCount % colors.length],
-              colors[walkerCount % colors.length],
-              currentWalker.pathStyle,
-              config.flat,
-              currentWalker.size,
-              currentWalker.stepSize,
-              state.validOptionInCell,
-            ).nextStep;
-            yield; // Pause after transition
+        if (nextCoord) {
+          // Found a valid move - advance
+          const targetNode = state.getNode(nextCoord);
+          if (targetNode) {
+            currentWalker.path.push(targetNode);
+            state.setOccupied(nextCoord);
+            yield; // Pause for animation
           }
         } else {
-          // No valid transition found - try to spawn a new walker
-          const cellsWithSpace = gridCells.filter((cell) =>
-            cell.points.some((p) => !p.occupied),
-          );
-
-          if (cellsWithSpace.length > 0) {
-            // Spawn new walker in a cell with space
-            const newCell = Random.pick(cellsWithSpace);
-            state.visitedCells.clear(); // Reset visited cells for new walker
-            walkerCount++;
-            currentWalker = spawnWalker(newCell);
-            yield; // Pause after spawning new walker
-          } else {
-            // No cells with space left - truly done
-            state.mode = 'complete';
+          // No valid moves - stuck
+          stuck = true;
+          const coverage = (
+            (state.getOccupiedCount() / state.totalNodes) *
+            100
+          ).toFixed(1);
+          if (attempt % 10 === 0) {
+            console.log(
+              `Attempt ${attempt + 1} stuck at ${coverage}% (${state.getOccupiedCount()}/${state.totalNodes})`,
+            );
           }
         }
       }
+
+      // If not complete, try a new starting point
+      if (stuck && state.mode === 'draw') {
+        // Reset everything
+        state.walkerDomain.forEach((node) => {
+          node.occupied = false;
+        });
+        state.walkers = [];
+        currentWalker = spawnWalker();
+        yield;
+      }
+    }
+
+    if (state.mode === 'draw') {
+      console.log('Could not find Hamiltonian path after all attempts');
+      state.mode = 'complete';
     }
   }
 
@@ -453,12 +459,8 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     // Clear walkers and state
     state.walkers = [];
     state.mode = 'draw';
-    state.currentGridCell = null;
-    state.currentPosition = null;
-    state.visitedCells.clear();
     // Spawn initial walker
-    const initialCell = Random.shuffle([...gridCells])[0];
-    currentWalker = spawnWalker(initialCell);
+    currentWalker = spawnWalker();
     // Recreate the generator
     simulation = simulationGenerator();
   }
@@ -481,24 +483,8 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
 
-    context.strokeStyle = gridLines;
-    context.lineWidth = 1;
-
-    for (let x = grid.x; x <= grid.x + grid.w; x += grid.xRes) {
-      context.beginPath();
-      context.moveTo(x + grid.gap / 2, grid.y);
-      context.lineTo(x + grid.gap / 2, grid.y + grid.h);
-      context.stroke();
-    }
-    for (let y = grid.y; y <= grid.y + grid.h; y += grid.yRes) {
-      context.beginPath();
-      context.moveTo(grid.x, y + grid.gap / 2);
-      context.lineTo(grid.x + grid.w, y + grid.gap / 2);
-      context.stroke();
-    }
-
     // Draw walker domain points
-    context.fillStyle = gridLines;
+    context.fillStyle = nodeColor;
     state.walkerDomain.forEach(({ worldX, worldY, occupied }) => {
       if (!occupied) {
         context.beginPath();
@@ -507,24 +493,15 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       }
     });
 
-    // Draw grid cell domains
-    context.strokeStyle = outline;
-    context.lineWidth = 2;
-    domains.forEach((d) => {
-      context.beginPath();
-      context.rect(d.x, d.y, d.width, d.height);
-      context.stroke();
-    });
-
-    if (state.currentGridCell) {
-      const d = state.currentGridCell.domain;
-      context.lineWidth = 6;
-      context.beginPath();
-      context.rect(d.x, d.y, d.width, d.height);
-      context.stroke();
+    if (config.debug) {
+      // Draw progress info
+      const occupied = state.getOccupiedCount();
+      const total = state.totalNodes;
+      context.fillStyle = outline;
+      context.font = '16px monospace';
+      context.fillText(`${occupied}/${total} nodes`, 20, 30);
     }
 
-    // Draw walkers
     state.walkers.forEach((walker) => {
       const paths = walkerToPaths(walker);
       const pathsInWorldCoords = paths.map((pts) => {
