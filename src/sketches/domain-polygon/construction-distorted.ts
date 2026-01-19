@@ -50,7 +50,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       h: height * 1,
       x: width * 0, //.03125,
       y: height * 0, //.03125,
-    }
+    },
   );
 
   const distort = () => {
@@ -58,7 +58,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     for (let i = 1; i < config.res[0]; i++) {
       const next = Math.min(
         xs[i - 1] + Random.range(0.2, 1.8),
-        config.res[0] - 1
+        config.res[0] - 1,
       );
       xs.push(next);
     }
@@ -68,7 +68,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     for (let i = 1; i < config.res[1]; i++) {
       const next = Math.min(
         ys[i - 1] + Random.range(0.2, 1.8),
-        config.res[1] - 1
+        config.res[1] - 1,
       );
       ys.push(next);
     }
@@ -91,7 +91,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     currG: number[][],
     nextG: number[][],
     x: number,
-    t: number
+    t: number,
   ) => {
     const idx = lerp(currG[0][x], nextG[0][x], t);
     return mapRange(
@@ -99,7 +99,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       0,
       config.res[0],
       config.outline / 2,
-      width - config.outline / 2
+      width - config.outline / 2,
     );
   };
 
@@ -107,7 +107,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     currG: number[][],
     nextG: number[][],
     y: number,
-    t: number
+    t: number,
   ) => {
     const idx = lerp(currG[1][y], nextG[1][y], t);
     return mapRange(
@@ -115,7 +115,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       0,
       config.res[1],
       config.outline / 2,
-      height - config.outline / 2
+      height - config.outline / 2,
     );
   };
 

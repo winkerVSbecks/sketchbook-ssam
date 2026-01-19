@@ -48,7 +48,7 @@ const colors =
 
 logColors(colors);
 
-const c = Random.pick(palette.filter((c) => colors.indexOf(c) === -1));
+const color = colors[0];
 
 const nodeColor =
   colors[1] ||
@@ -69,7 +69,7 @@ const config = {
   padding: 0.125,
   size: 12,
   stepSize: 4,
-  stepsPerFrame: 20, // More steps per frame for faster visualization
+  stepsPerFrame: 10, // More steps per frame for faster visualization
   startOnCorners: false,
 };
 
@@ -183,7 +183,10 @@ class HamiltonianPathState {
 
   setUnoccupied(coord: Coord): void {
     const node = this.getNode(coord);
-    if (node) node.occupied = false;
+    if (node) {
+      node.occupied = false;
+      node.moveTo = false;
+    }
   }
 
   isInDomain(coord: Coord): boolean {
@@ -361,8 +364,8 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
 
     const walker = makeWalker(
       start,
-      colors[0],
-      colors[0],
+      color,
+      color,
       'solidStyle',
       config.flat,
       config.size,
@@ -434,6 +437,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
         // Reset everything
         state.walkerDomain.forEach((node) => {
           node.occupied = false;
+          node.moveTo = false;
         });
         state.walkers = [];
         currentWalker = spawnWalker();
@@ -455,6 +459,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     // Reset all walker domain points to unoccupied
     state.walkerDomain.forEach((node) => {
       node.occupied = false;
+      node.moveTo = false;
     });
     // Clear walkers and state
     state.walkers = [];
@@ -497,7 +502,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       // Draw progress info
       const occupied = state.getOccupiedCount();
       const total = state.totalNodes;
-      context.fillStyle = outline;
+      context.fillStyle = colors[0];
       context.font = '16px monospace';
       context.fillText(`${occupied}/${total} nodes`, 20, 30);
     }

@@ -1,7 +1,7 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-import { generateColorSystem } from '../colors/subtractive-shift';
+import { generateColorSystem } from '../../colors/subtractive-shift';
 
 const colorSystem = generateColorSystem('srgb');
 
