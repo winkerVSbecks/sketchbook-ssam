@@ -1,58 +1,35 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
+import { mapRange } from 'canvas-sketch-util/math';
 import { ColorPaletteGenerator } from 'pro-color-harmonies';
-import { formatCss, oklch, wcagContrast, interpolate } from 'culori';
+import * as tome from 'chromotome';
+import { formatCss, interpolate } from 'culori';
 import { makeWalker, walkerToPaths } from '../nalee/walker';
 import { drawPath, createGradientStyle } from '../nalee/paths';
-import type { Node, Walker, Coord } from '../nalee/types';
+import { xyToId } from '../nalee/utils';
+import type { Node, Walker, Coord, DomainToWorld } from '../nalee/types';
+import type { Domain } from '../domain-polygon/types';
 import { logColors } from '../../colors';
-import { makePolarDomain, polarDomainToWorld } from '../nalee/polar-utils';
 
 const seed = Random.getRandomSeed();
 Random.setSeed(seed);
 // Random.setSeed('671749');
 console.log(seed);
 
-const palette = ColorPaletteGenerator.generate(
-  { l: Random.range(0, 1), c: Random.range(0, 0.4), h: Random.range(0, 360) },
-  Random.pick([
-    'analogous',
-    'complementary',
-    'triadic',
-    'tetradic',
-    'splitComplementary',
-    'tintsShades',
-  ]),
-  {
-    style: Random.pick(['default', 'square', 'triangle', 'circle', 'diamond']),
-    modifiers: {
-      sine: Random.range(-1, 1),
-      wave: Random.range(-1, 1),
-      zap: Random.range(-1, 1),
-      block: Random.range(-1, 1),
-    },
-  },
-).map((c) => formatCss(oklch({ mode: 'oklch', ...c })));
+const { colors, background: bg, stroke } = tome.get();
 
-const bg = palette.pop()!;
-
-const colors =
-  palette.filter((c) => wcagContrast(c, bg) >= 3).length > 0
-    ? palette.filter((c) => wcagContrast(c, bg) >= 3)
-    : palette.filter((c) => wcagContrast(c, bg) >= 1);
-
-logColors(colors);
+logColors([...colors, bg]);
 
 let colorFn = interpolate(colors);
-
 const myGradientStyle = createGradientStyle(({ t }) => formatCss(colorFn(t)));
 
 const color = colors[0];
 
+logColors([...colors, bg]);
+
 const nodeColor =
-  colors[1] ||
-  `rgb(from ${bg} calc(255 - r) calc(255 - g) calc(255 - b) / 0.5)`;
+  stroke || `rgb(from ${bg} calc(255 - r) calc(255 - g) calc(255 - b) / 0.5)`;
 
 const config = {
   gap: 0,
@@ -63,15 +40,39 @@ const config = {
     [4, 4],
     [3, 3],
   ]) as [number, number],
-  walkerRes: [12, 50], // Grid resolution for Hamiltonian path
+  walkerRes: [60, 60], // Grid resolution for Hamiltonian path
   walkerCount: 1,
   flat: true,
   padding: 0.125,
   size: 12,
   stepSize: 4,
-  stepsPerFrame: 4, // More steps per frame for faster visualization
+  stepsPerFrame: 10, // More steps per frame for faster visualization
   startOnCorners: false,
 };
+
+interface GridCell {
+  domain: Domain;
+  points: Node[];
+}
+
+/**
+ * Create a walker domain - a grid of points that the walker can occupy
+ */
+function makeWalkerDomain(
+  resolution: number[],
+  domainToWorld: DomainToWorld,
+): Node[] {
+  const domain: Node[] = [];
+
+  for (let y = 0; y <= resolution[1]; y++) {
+    for (let x = 0; x <= resolution[0]; x++) {
+      const [worldX, worldY] = domainToWorld(x, y);
+      domain.push({ x, y, occupied: false, id: xyToId(x, y), worldX, worldY });
+    }
+  }
+
+  return domain;
+}
 
 /**
  * Direction indices for consistent ordering
@@ -316,24 +317,17 @@ class HamiltonianPathState {
 }
 
 export const sketch = ({ wrap, context, width, height }: SketchProps) => {
-  const radiusRes = config.walkerRes[0];
-  const thetaRes = config.walkerRes[1];
-  const radius = width * 0.4;
-  const [cx, cy] = [width * 0.5, height * 0.5];
-
-  const domainToWorld = polarDomainToWorld(
-    radiusRes,
-    thetaRes,
-    [cx, cy],
-    radius,
-  );
+  // Create domain to world coordinate transformation for walker
+  const domainToWorld: DomainToWorld = (x, y) => {
+    const padding = width * config.padding;
+    return [
+      mapRange(x, 0, config.walkerRes[0], padding, width - padding),
+      mapRange(y, 0, config.walkerRes[1], padding, height - padding),
+    ];
+  };
 
   // Create walker domain - all possible points the walker can occupy
-  const walkerDomain = makePolarDomain(
-    [3, radiusRes],
-    [0, thetaRes],
-    domainToWorld,
-  ); //makeWalkerDomain(config.walkerRes, domainToWorld);
+  const walkerDomain = makeWalkerDomain(config.walkerRes, domainToWorld);
 
   // Create state
   const state = new HamiltonianPathState(walkerDomain);
@@ -350,7 +344,6 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       color,
       color,
       myGradientStyle,
-      // 'solidStyle',
       config.flat,
       config.size,
       config.stepSize,

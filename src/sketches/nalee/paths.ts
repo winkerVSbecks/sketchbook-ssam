@@ -395,6 +395,56 @@ function dimpleLine(
   context.restore();
 }
 
+export type GradientColorFn = (info: {
+  index: number;
+  total: number;
+  t: number;
+  point: Point;
+  nextPoint: Point;
+  walker: Walker;
+  playhead: number;
+}) => string;
+
+export function createGradientStyle(colorFn: GradientColorFn) {
+  return function gradientStyle(
+    context: CanvasRenderingContext2D,
+    walker: Walker,
+    pts: Point[],
+    playhead: number
+  ) {
+    context.save();
+    context.lineCap = 'round';
+    context.lineJoin = 'round';
+    context.lineWidth = walker.size - walker.stepSize;
+
+    const total = pts.length - 1;
+
+    for (let i = 0; i < total; i++) {
+      const point = pts[i];
+      const nextPoint = pts[i + 1];
+      const t = total > 0 ? i / total : 0;
+
+      const color = colorFn({
+        index: i,
+        total,
+        t,
+        point,
+        nextPoint,
+        walker,
+        playhead,
+      });
+
+      context.strokeStyle = color;
+      context.beginPath();
+      context.moveTo(point[0], point[1]);
+      context.lineTo(nextPoint[0], nextPoint[1]);
+      context.stroke();
+    }
+
+    context.restore();
+  };
+}
+
 export function drawShape(
   context: CanvasRenderingContext2D,
   [start, ...pts]: Point[],

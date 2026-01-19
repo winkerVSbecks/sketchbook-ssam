@@ -1,8 +1,8 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-import { ColorPaletteGenerator } from 'pro-color-harmonies';
-import { formatCss, oklch, wcagContrast, interpolate } from 'culori';
+import * as tome from 'chromotome';
+import { formatCss, interpolate } from 'culori';
 import { makeWalker, walkerToPaths } from '../nalee/walker';
 import { drawPath, createGradientStyle } from '../nalee/paths';
 import type { Node, Walker, Coord } from '../nalee/types';
@@ -14,38 +14,11 @@ Random.setSeed(seed);
 // Random.setSeed('671749');
 console.log(seed);
 
-const palette = ColorPaletteGenerator.generate(
-  { l: Random.range(0, 1), c: Random.range(0, 0.4), h: Random.range(0, 360) },
-  Random.pick([
-    'analogous',
-    'complementary',
-    'triadic',
-    'tetradic',
-    'splitComplementary',
-    'tintsShades',
-  ]),
-  {
-    style: Random.pick(['default', 'square', 'triangle', 'circle', 'diamond']),
-    modifiers: {
-      sine: Random.range(-1, 1),
-      wave: Random.range(-1, 1),
-      zap: Random.range(-1, 1),
-      block: Random.range(-1, 1),
-    },
-  },
-).map((c) => formatCss(oklch({ mode: 'oklch', ...c })));
+const { colors, background: bg } = tome.get();
 
-const bg = palette.pop()!;
-
-const colors =
-  palette.filter((c) => wcagContrast(c, bg) >= 3).length > 0
-    ? palette.filter((c) => wcagContrast(c, bg) >= 3)
-    : palette.filter((c) => wcagContrast(c, bg) >= 1);
-
-logColors(colors);
+logColors([...colors, bg]);
 
 let colorFn = interpolate(colors);
-
 const myGradientStyle = createGradientStyle(({ t }) => formatCss(colorFn(t)));
 
 const color = colors[0];
@@ -63,13 +36,13 @@ const config = {
     [4, 4],
     [3, 3],
   ]) as [number, number],
-  walkerRes: [12, 50], // Grid resolution for Hamiltonian path
+  walkerRes: [24, 50], // Grid resolution for Hamiltonian path
   walkerCount: 1,
   flat: true,
   padding: 0.125,
   size: 12,
   stepSize: 4,
-  stepsPerFrame: 4, // More steps per frame for faster visualization
+  stepsPerFrame: 2, // More steps per frame for faster visualization
   startOnCorners: false,
 };
 
@@ -330,7 +303,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
 
   // Create walker domain - all possible points the walker can occupy
   const walkerDomain = makePolarDomain(
-    [3, radiusRes],
+    [10, radiusRes],
     [0, thetaRes],
     domainToWorld,
   ); //makeWalkerDomain(config.walkerRes, domainToWorld);
@@ -350,7 +323,6 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       color,
       color,
       myGradientStyle,
-      // 'solidStyle',
       config.flat,
       config.size,
       config.stepSize,
