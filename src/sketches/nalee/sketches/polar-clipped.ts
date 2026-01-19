@@ -53,48 +53,44 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
   const radius2 = width * 0.25;
   const [cx2, cy2] = [width * 0.6, height * 0.5];
 
-  const domainToWorld1: DomainToWorld = polarDomainToWorld(
+  const domainToWorld: DomainToWorld = polarDomainToWorld(
     radiusRes,
     thetaRes,
     [cx, cy],
-    radius
+    radius,
   );
-  const domain = makePolarDomain(
-    [10, radiusRes],
-    [0, thetaRes],
-    domainToWorld1
-  );
+  const domain = makePolarDomain([10, radiusRes], [0, thetaRes], domainToWorld);
   const clippedDomain = clipPolarDomainWithWorldCoords(
     domain,
     [cx2, cy2],
     radius2 + size * 1.5,
-    true
+    true,
   );
   const naleeSystem = createNaleeSystem(
     clippedDomain,
     config,
     domainToWorld1,
     colors,
-    bg
+    bg,
   );
 
   const domainToWorld2: DomainToWorld = polarDomainToWorld(
     radiusRes,
     thetaRes,
     [cx2, cy2],
-    radius2
+    radius2,
   );
   const domain2 = makePolarDomain(
     [10, radiusRes],
     [0, thetaRes],
-    domainToWorld2
+    domainToWorld2,
   );
   const naleeSystem2 = createNaleeSystem(
     domain2,
     config,
     domainToWorld2,
     colors,
-    bg
+    bg,
   );
 
   wrap.render = (props: SketchProps) => {
