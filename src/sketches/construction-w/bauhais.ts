@@ -18,7 +18,7 @@ const BAUHAUS_COLORS = {
 const config = {
   cols: 6,
   rows: 8,
-  gap: [10, 10] as [number, number],
+  gap: [20, 20] as [number, number],
 };
 
 type ShapeType =
@@ -229,126 +229,194 @@ export const sketch = ({
   // Generate Bauhaus elements with deliberate composition
   const elements: BauhausElement[] = [];
 
-  // Layer 1: Large primary shape (anchor element)
-  const anchorSize = Random.rangeFloor(3, 5);
-  const anchorX = Random.rangeFloor(0, config.cols - anchorSize + 1);
-  const anchorY = Random.rangeFloor(0, config.rows - anchorSize + 1);
+  // Calculate cell dimensions for precise gap alignment
+  const cellWidth =
+    (width - config.gap[0] * (config.cols - 1)) / config.cols;
+  const cellHeight =
+    (height - config.gap[1] * (config.rows - 1)) / config.rows;
+
+  // FOUNDATION: Structural line aligned to grid gap
+  // This is the compositional anchor - everything else relates to it
+  const isVerticalLine = Random.chance(0.5);
+  // Pick a gap position (between cells, not at edges)
+  const lineGapIndex = isVerticalLine
+    ? Random.rangeFloor(1, config.cols - 1)
+    : Random.rangeFloor(2, config.rows - 2);
+
+  // Calculate exact pixel position for the line center (in the gap)
+  const linePixelPos = isVerticalLine
+    ? lineGapIndex * (cellWidth + config.gap[0]) - config.gap[0] / 2
+    : lineGapIndex * (cellHeight + config.gap[1]) - config.gap[1] / 2;
+
+  // Store line info for shape placement
+  const structuralLine = {
+    isVertical: isVerticalLine,
+    gapIndex: lineGapIndex,
+    pixelPos: linePixelPos,
+    thickness: isVerticalLine ? config.gap[0] : config.gap[1],
+  };
+
+  // Add the structural line element (will be drawn specially)
   elements.push({
-    type: Random.pick(['circle', 'rectangle', 'quarterCircle']),
-    gridX: anchorX,
-    gridY: anchorY,
-    gridW: anchorSize,
-    gridH: anchorSize,
-    color: Random.pick(primaryColors),
-    rotation: Random.pick(rotations),
-    filled: true,
-    lineWidth: 0,
+    type: 'line',
+    gridX: isVerticalLine ? lineGapIndex : 0,
+    gridY: isVerticalLine ? 0 : lineGapIndex,
+    gridW: 0,
+    gridH: 0,
+    color: BAUHAUS_COLORS.black,
+    rotation: isVerticalLine ? Math.PI / 2 : 0,
+    filled: false,
+    lineWidth: structuralLine.thickness,
   });
 
-  // Layer 2: Secondary shape (contrasting position)
-  const secondarySize = Random.rangeFloor(2, 4);
-  // Position away from anchor
-  const secondaryX =
-    anchorX < config.cols / 2
-      ? Random.rangeFloor(
-          Math.min(anchorX + anchorSize, config.cols - secondarySize),
-          config.cols - secondarySize + 1,
-        )
-      : Random.rangeFloor(0, Math.max(1, anchorX - secondarySize + 1));
-  const secondaryY =
-    anchorY < config.rows / 2
-      ? Random.rangeFloor(
-          Math.min(anchorY + anchorSize, config.rows - secondarySize),
-          config.rows - secondarySize + 1,
-        )
-      : Random.rangeFloor(0, Math.max(1, anchorY - secondarySize + 1));
-  elements.push({
-    type: Random.pick(['circle', 'triangle', 'semicircle']),
-    gridX: secondaryX,
-    gridY: secondaryY,
-    gridW: secondarySize,
-    gridH: secondarySize,
-    color: Random.pick(primaryColors.filter((c) => c !== elements[0].color)),
-    rotation: Random.pick(rotations),
-    filled: true,
-    lineWidth: 0,
-  });
+  // Rotation helpers: flat edge faces the line
+  // For semicircle/triangle on Side A (left of vertical or above horizontal line)
+  const rotationFacingLineA = isVerticalLine ? -Math.PI / 2 : 0;
+  // For semicircle/triangle on Side B (right of vertical or below horizontal line)
+  const rotationFacingLineB = isVerticalLine ? Math.PI / 2 : Math.PI;
+  // For quarterCircle: corner should touch the line
+  const quarterRotationA = isVerticalLine
+    ? Random.pick([Math.PI / 2, -Math.PI / 2]) // corner on right
+    : Random.pick([Math.PI, -Math.PI / 2]); // corner on bottom
+  const quarterRotationB = isVerticalLine
+    ? Random.pick([0, Math.PI]) // corner on left
+    : Random.pick([0, Math.PI / 2]); // corner on top
 
-  // Layer 3: Accent rectangles (always axis-aligned, no rotation)
-  const accentCount = Random.rangeFloor(1, 3);
-  for (let i = 0; i < accentCount; i++) {
-    const isHorizontal = Random.chance(0.5);
-    const w = isHorizontal ? Random.rangeFloor(2, 4) : 1;
-    const h = isHorizontal ? 1 : Random.rangeFloor(2, 4);
+  // SIDE A: Large primary shape touching the line
+  const anchorSizeA = Math.min(
+    Random.rangeFloor(2, 4),
+    isVerticalLine ? lineGapIndex : lineGapIndex,
+  );
+  if (anchorSizeA >= 2) {
+    const anchorXA = isVerticalLine
+      ? lineGapIndex - anchorSizeA
+      : Random.rangeFloor(0, config.cols - anchorSizeA + 1);
+    const anchorYA = isVerticalLine
+      ? Random.rangeFloor(0, config.rows - anchorSizeA + 1)
+      : lineGapIndex - anchorSizeA;
+
+    const shapeTypeA = Random.pick(['circle', 'rectangle', 'semicircle', 'triangle', 'quarterCircle'] as ShapeType[]);
+    const rotationA =
+      shapeTypeA === 'semicircle' || shapeTypeA === 'triangle'
+        ? rotationFacingLineA
+        : shapeTypeA === 'quarterCircle'
+          ? quarterRotationA
+          : 0;
+
     elements.push({
-      type: 'rectangle',
-      gridX: Random.rangeFloor(0, config.cols - w + 1),
-      gridY: Random.rangeFloor(0, config.rows - h + 1),
-      gridW: w,
-      gridH: h,
-      color: Random.pick([BAUHAUS_COLORS.black, ...primaryColors]),
-      rotation: 0, // No rotation for rectangles
+      type: shapeTypeA,
+      gridX: Math.max(0, anchorXA),
+      gridY: Math.max(0, anchorYA),
+      gridW: anchorSizeA,
+      gridH: anchorSizeA,
+      color: Random.pick(primaryColors),
+      rotation: rotationA,
       filled: true,
       lineWidth: 0,
     });
   }
 
-  // Layer 4: Small geometric accents
-  const smallAccentCount = Random.rangeFloor(2, 4);
-  for (let i = 0; i < smallAccentCount; i++) {
+  // SIDE B: Secondary shape touching the line from the other side
+  const spaceB = isVerticalLine
+    ? config.cols - lineGapIndex
+    : config.rows - lineGapIndex;
+  const anchorSizeB = Math.min(Random.rangeFloor(2, 4), spaceB);
+
+  if (anchorSizeB >= 2) {
+    const anchorXB = isVerticalLine
+      ? lineGapIndex
+      : Random.rangeFloor(0, config.cols - anchorSizeB + 1);
+    const anchorYB = isVerticalLine
+      ? Random.rangeFloor(0, config.rows - anchorSizeB + 1)
+      : lineGapIndex;
+
+    const usedColor = elements.length > 1 ? elements[1].color : null;
+    const shapeTypeB = Random.pick(['circle', 'triangle', 'semicircle', 'quarterCircle'] as ShapeType[]);
+    const rotationB =
+      shapeTypeB === 'semicircle' || shapeTypeB === 'triangle'
+        ? rotationFacingLineB
+        : shapeTypeB === 'quarterCircle'
+          ? quarterRotationB
+          : 0;
+
     elements.push({
-      type: Random.pick(['circle', 'triangle', 'semicircle']),
-      gridX: Random.rangeFloor(0, config.cols - 1),
-      gridY: Random.rangeFloor(0, config.rows - 1),
+      type: shapeTypeB,
+      gridX: anchorXB,
+      gridY: anchorYB,
+      gridW: anchorSizeB,
+      gridH: anchorSizeB,
+      color: Random.pick(primaryColors.filter((c) => c !== usedColor)),
+      rotation: rotationB,
+      filled: true,
+      lineWidth: 0,
+    });
+  }
+
+  // ACCENTS: Small shapes touching the line with correct orientation
+  const accentCount = Random.rangeFloor(3, 6);
+  for (let i = 0; i < accentCount; i++) {
+    const onSideA = Random.chance(0.5);
+
+    let accX: number, accY: number;
+    if (isVerticalLine) {
+      accX = onSideA ? lineGapIndex - 1 : lineGapIndex;
+      accY = Random.rangeFloor(0, config.rows);
+    } else {
+      accX = Random.rangeFloor(0, config.cols);
+      accY = onSideA ? lineGapIndex - 1 : lineGapIndex;
+    }
+
+    if (accX < 0 || accY < 0) continue;
+
+    const accentType = Random.pick(['circle', 'triangle', 'semicircle', 'rectangle'] as ShapeType[]);
+    const accentRotation =
+      accentType === 'semicircle' || accentType === 'triangle'
+        ? onSideA
+          ? rotationFacingLineA
+          : rotationFacingLineB
+        : 0;
+
+    elements.push({
+      type: accentType,
+      gridX: accX,
+      gridY: accY,
       gridW: 1,
       gridH: 1,
       color: Random.pick(allColors),
-      rotation: Random.pick(rotations),
-      filled: Random.chance(0.7),
-      lineWidth: 4,
+      rotation: accentRotation,
+      filled: Random.chance(0.8),
+      lineWidth: 3,
     });
   }
 
-  // Layer 5: Structural lines (strictly horizontal or vertical)
-  const lineCount = Random.rangeFloor(1, 3);
-  for (let i = 0; i < lineCount; i++) {
-    const isVertical = Random.chance(0.5);
-    const lineX = Random.rangeFloor(0, config.cols);
-    const lineY = Random.rangeFloor(0, config.rows);
-    elements.push({
-      type: 'line',
-      gridX: isVertical ? lineX : 0,
-      gridY: isVertical ? 0 : lineY,
-      gridW: isVertical ? 0 : config.cols,
-      gridH: isVertical ? config.rows : 0,
-      color: BAUHAUS_COLORS.black,
-      rotation: isVertical ? Math.PI / 2 : 0,
-      filled: false,
-      lineWidth: Random.pick([4, 8, 12]),
-    });
-  }
-
-  // Layer 6: Optional concentric arcs (centered on grid intersection)
+  // OPTIONAL: Large semicircle with flat edge on the line
   if (Random.chance(0.5)) {
-    const cx = Random.rangeFloor(1, config.cols - 1);
-    const cy = Random.rangeFloor(1, config.rows - 1);
-    const arcRotation = Random.pick(rotations);
+    const onSideA = Random.chance(0.5);
+    const size = Random.rangeFloor(2, 4);
 
-    for (let i = 0; i < 3; i++) {
-      const size = 1 + i;
-      if (cx - Math.floor(size / 2) >= 0 && cy - Math.floor(size / 2) >= 0) {
-        elements.push({
-          type: 'arc',
-          gridX: cx - Math.floor(size / 2),
-          gridY: cy - Math.floor(size / 2),
-          gridW: size,
-          gridH: size,
-          color: i === 0 ? BAUHAUS_COLORS.black : Random.pick(primaryColors),
-          rotation: arcRotation, // Same rotation for all arcs in set
-          filled: false,
-          lineWidth: 3,
-        });
-      }
+    const semiX = isVerticalLine
+      ? onSideA
+        ? lineGapIndex - size
+        : lineGapIndex
+      : Random.rangeFloor(0, config.cols - size + 1);
+    const semiY = isVerticalLine
+      ? Random.rangeFloor(0, config.rows - size + 1)
+      : onSideA
+        ? lineGapIndex - size
+        : lineGapIndex;
+
+    if (semiX >= 0 && semiY >= 0) {
+      elements.push({
+        type: 'semicircle',
+        gridX: semiX,
+        gridY: semiY,
+        gridW: size,
+        gridH: size,
+        color: Random.pick(primaryColors),
+        rotation: onSideA ? rotationFacingLineA : rotationFacingLineB,
+        filled: true,
+        lineWidth: 0,
+      });
     }
   }
 
@@ -441,18 +509,18 @@ export const sketch = ({
           break;
         }
         case 'line': {
-          // Draw lines as simple horizontal or vertical strokes
+          // Draw structural line aligned precisely to the grid gap
           context.lineWidth = el.lineWidth;
-          context.lineCap = 'square';
+          context.lineCap = 'butt';
           context.beginPath();
           if (el.rotation === Math.PI / 2 || el.rotation === -Math.PI / 2) {
-            // Vertical line
-            const x = rect.x + rect.w / 2;
+            // Vertical line - position at gap center
+            const x = structuralLine.pixelPos;
             context.moveTo(x, 0);
             context.lineTo(x, height);
           } else {
-            // Horizontal line
-            const y = rect.y + rect.h / 2;
+            // Horizontal line - position at gap center
+            const y = structuralLine.pixelPos;
             context.moveTo(0, y);
             context.lineTo(width, y);
           }
