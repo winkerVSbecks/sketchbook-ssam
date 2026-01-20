@@ -429,7 +429,7 @@ export const sketch = ({
 
     // Draw elements
     elements.forEach((el) => {
-      const rect = getRect(
+      const baseRect = getRect(
         {
           width,
           height,
@@ -441,16 +441,26 @@ export const sketch = ({
         { x: el.gridX, y: el.gridY, w: el.gridW, h: el.gridH },
       );
 
+      // For stroked shapes, inset by half lineWidth so stroke aligns to grid
+      const strokeInset = el.filled ? 0 : el.lineWidth / 2;
+      const rect = {
+        x: baseRect.x + strokeInset,
+        y: baseRect.y + strokeInset,
+        w: baseRect.w - el.lineWidth,
+        h: baseRect.h - el.lineWidth,
+      };
+
       context.fillStyle = el.color;
       context.strokeStyle = el.color;
 
       switch (el.type) {
         case 'circle': {
-          const radius = Math.min(rect.w, rect.h) / 2;
+          const baseRadius = Math.min(baseRect.w, baseRect.h) / 2;
+          const radius = el.filled ? baseRadius : baseRadius - strokeInset;
           context.beginPath();
           context.arc(
-            rect.x + rect.w / 2,
-            rect.y + rect.h / 2,
+            baseRect.x + baseRect.w / 2,
+            baseRect.y + baseRect.h / 2,
             radius,
             0,
             Math.PI * 2,
@@ -464,37 +474,33 @@ export const sketch = ({
           break;
         }
         case 'semicircle': {
-          drawSemicircle(context, rect.x, rect.y, rect.w, rect.h, el.rotation);
           if (el.filled) {
+            drawSemicircle(context, baseRect.x, baseRect.y, baseRect.w, baseRect.h, el.rotation);
             context.fill();
           } else {
+            drawSemicircle(context, rect.x, rect.y, rect.w, rect.h, el.rotation);
             context.lineWidth = el.lineWidth;
             context.stroke();
           }
           break;
         }
         case 'quarterCircle': {
-          drawQuarterCircle(
-            context,
-            rect.x,
-            rect.y,
-            rect.w,
-            rect.h,
-            el.rotation,
-          );
           if (el.filled) {
+            drawQuarterCircle(context, baseRect.x, baseRect.y, baseRect.w, baseRect.h, el.rotation);
             context.fill();
           } else {
+            drawQuarterCircle(context, rect.x, rect.y, rect.w, rect.h, el.rotation);
             context.lineWidth = el.lineWidth;
             context.stroke();
           }
           break;
         }
         case 'triangle': {
-          drawTriangle(context, rect.x, rect.y, rect.w, rect.h, el.rotation);
           if (el.filled) {
+            drawTriangle(context, baseRect.x, baseRect.y, baseRect.w, baseRect.h, el.rotation);
             context.fill();
           } else {
+            drawTriangle(context, rect.x, rect.y, rect.w, rect.h, el.rotation);
             context.lineWidth = el.lineWidth;
             context.stroke();
           }
@@ -503,7 +509,7 @@ export const sketch = ({
         case 'rectangle': {
           // Rectangles stay axis-aligned (no rotation)
           if (el.filled) {
-            context.fillRect(rect.x, rect.y, rect.w, rect.h);
+            context.fillRect(baseRect.x, baseRect.y, baseRect.w, baseRect.h);
           } else {
             context.lineWidth = el.lineWidth;
             context.strokeRect(rect.x, rect.y, rect.w, rect.h);
