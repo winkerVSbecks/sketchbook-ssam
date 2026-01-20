@@ -229,12 +229,6 @@ export const sketch = ({
   // Generate Bauhaus elements with deliberate composition
   const elements: BauhausElement[] = [];
 
-  // Calculate cell dimensions for precise gap alignment
-  const cellWidth =
-    (width - config.gap[0] * (config.cols - 1)) / config.cols;
-  const cellHeight =
-    (height - config.gap[1] * (config.rows - 1)) / config.rows;
-
   // FOUNDATION: Structural line aligned to grid gap
   // This is the compositional anchor - everything else relates to it
   const isVerticalLine = Random.chance(0.5);
@@ -243,10 +237,12 @@ export const sketch = ({
     ? Random.rangeFloor(1, config.cols - 1)
     : Random.rangeFloor(2, config.rows - 2);
 
-  // Calculate exact pixel position for the line center (in the gap)
+  // Use actual grid cell positions to find the exact gap center
+  // For vertical line: gap is before column lineGapIndex
+  // For horizontal line: gap is before row lineGapIndex
   const linePixelPos = isVerticalLine
-    ? lineGapIndex * (cellWidth + config.gap[0]) - config.gap[0] / 2
-    : lineGapIndex * (cellHeight + config.gap[1]) - config.gap[1] / 2;
+    ? grid[lineGapIndex].x - config.gap[0] / 2
+    : grid[lineGapIndex * config.cols].y - config.gap[1] / 2;
 
   // Store line info for shape placement
   const structuralLine = {
