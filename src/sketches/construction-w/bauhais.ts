@@ -18,11 +18,17 @@ const BAUHAUS_COLORS = {
 const config = {
   cols: 6,
   rows: 8,
-  gap: [0, 0] as [number, number],
-  elementCount: 12,
+  gap: [10, 10] as [number, number],
 };
 
-type ShapeType = 'circle' | 'semicircle' | 'triangle' | 'rectangle' | 'line' | 'arc' | 'quarterCircle';
+type ShapeType =
+  | 'circle'
+  | 'semicircle'
+  | 'triangle'
+  | 'rectangle'
+  | 'line'
+  | 'arc'
+  | 'quarterCircle';
 
 interface BauhausElement {
   type: ShapeType;
@@ -85,10 +91,37 @@ const drawSemicircle = (
 ) => {
   const radius = Math.min(w, h) / 2;
   ctx.save();
-  ctx.translate(x + w / 2, y + h / 2);
-  ctx.rotate(rotation);
+
+  // Position semicircle at edge of bounding box based on rotation
+  let cx = x + w / 2;
+  let cy = y + h / 2;
+  let startAngle = 0;
+  let endAngle = Math.PI;
+
+  if (rotation === 0) {
+    // Flat edge at bottom
+    cy = y + h;
+    startAngle = Math.PI;
+    endAngle = 2 * Math.PI;
+  } else if (rotation === Math.PI / 2) {
+    // Flat edge at left
+    cx = x;
+    startAngle = -Math.PI / 2;
+    endAngle = Math.PI / 2;
+  } else if (rotation === Math.PI || rotation === -Math.PI) {
+    // Flat edge at top
+    cy = y;
+    startAngle = 0;
+    endAngle = Math.PI;
+  } else if (rotation === -Math.PI / 2) {
+    // Flat edge at right
+    cx = x + w;
+    startAngle = Math.PI / 2;
+    endAngle = (3 * Math.PI) / 2;
+  }
+
   ctx.beginPath();
-  ctx.arc(0, 0, radius, 0, Math.PI, false);
+  ctx.arc(cx, cy, radius, startAngle, endAngle, false);
   ctx.closePath();
   ctx.restore();
 };
@@ -103,11 +136,26 @@ const drawQuarterCircle = (
 ) => {
   const radius = Math.min(w, h);
   ctx.save();
-  ctx.translate(x + w / 2, y + h / 2);
-  ctx.rotate(rotation);
+  ctx.translate(x, y);
+
+  // Rotate around the corner that will be the arc center
+  const corners = [
+    { cx: 0, cy: 0, start: 0, end: Math.PI / 2 }, // top-left
+    { cx: w, cy: 0, start: Math.PI / 2, end: Math.PI }, // top-right
+    { cx: w, cy: h, start: Math.PI, end: (3 * Math.PI) / 2 }, // bottom-right
+    { cx: 0, cy: h, start: (3 * Math.PI) / 2, end: 2 * Math.PI }, // bottom-left
+  ];
+
+  // Map rotation to corner index
+  let cornerIndex = 0;
+  if (rotation === Math.PI / 2) cornerIndex = 1;
+  else if (rotation === Math.PI || rotation === -Math.PI) cornerIndex = 2;
+  else if (rotation === -Math.PI / 2) cornerIndex = 3;
+
+  const corner = corners[cornerIndex];
   ctx.beginPath();
-  ctx.moveTo(-w / 2, -h / 2);
-  ctx.arc(-w / 2, -h / 2, radius, 0, Math.PI / 2, false);
+  ctx.moveTo(corner.cx, corner.cy);
+  ctx.arc(corner.cx, corner.cy, radius, corner.start, corner.end, false);
   ctx.closePath();
   ctx.restore();
 };
@@ -132,26 +180,6 @@ const drawArc = (
   ctx.restore();
 };
 
-const drawLine = (
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  rotation: number,
-  lineWidth: number,
-) => {
-  ctx.save();
-  ctx.translate(x + w / 2, y + h / 2);
-  ctx.rotate(rotation);
-  ctx.beginPath();
-  ctx.moveTo(-w / 2, 0);
-  ctx.lineTo(w / 2, 0);
-  ctx.lineWidth = lineWidth;
-  ctx.stroke();
-  ctx.restore();
-};
-
 export const sketch = ({
   wrap,
   context,
@@ -168,7 +196,7 @@ export const sketch = ({
   Random.setSeed(seed);
   console.log('Seed:', seed);
 
-  let showGrid = false;
+  let showGrid = true;
 
   createToggleButton(() => {
     showGrid = !showGrid;
@@ -195,91 +223,132 @@ export const sketch = ({
     BAUHAUS_COLORS.orange,
   ];
 
-  const shapeTypes: ShapeType[] = [
-    'circle',
-    'semicircle',
-    'triangle',
-    'rectangle',
-    'line',
-    'arc',
-    'quarterCircle',
-  ];
+  // Only 90-degree rotations to maintain grid alignment
+  const rotations = [0, Math.PI / 2, Math.PI, -Math.PI / 2];
 
-  const rotations = [0, Math.PI / 4, Math.PI / 2, Math.PI, -Math.PI / 4, (3 * Math.PI) / 4];
-
-  // Generate Bauhaus elements
+  // Generate Bauhaus elements with deliberate composition
   const elements: BauhausElement[] = [];
 
-  // Add a large background shape
-  const bgShape: BauhausElement = {
+  // Layer 1: Large primary shape (anchor element)
+  const anchorSize = Random.rangeFloor(3, 5);
+  const anchorX = Random.rangeFloor(0, config.cols - anchorSize + 1);
+  const anchorY = Random.rangeFloor(0, config.rows - anchorSize + 1);
+  elements.push({
     type: Random.pick(['circle', 'rectangle', 'quarterCircle']),
-    gridX: Random.rangeFloor(0, 2),
-    gridY: Random.rangeFloor(0, 2),
-    gridW: Random.rangeFloor(3, config.cols),
-    gridH: Random.rangeFloor(3, config.rows),
+    gridX: anchorX,
+    gridY: anchorY,
+    gridW: anchorSize,
+    gridH: anchorSize,
     color: Random.pick(primaryColors),
-    rotation: Random.pick([0, Math.PI / 2, Math.PI, -Math.PI / 2]),
+    rotation: Random.pick(rotations),
     filled: true,
     lineWidth: 0,
-  };
-  elements.push(bgShape);
+  });
 
-  // Generate random elements
-  for (let i = 0; i < config.elementCount; i++) {
-    const type = Random.pick(shapeTypes);
-    const filled = type === 'line' || type === 'arc' ? false : Random.chance(0.7);
-    const gridW = Random.rangeFloor(1, 4);
-    const gridH = Random.rangeFloor(1, 4);
+  // Layer 2: Secondary shape (contrasting position)
+  const secondarySize = Random.rangeFloor(2, 4);
+  // Position away from anchor
+  const secondaryX =
+    anchorX < config.cols / 2
+      ? Random.rangeFloor(
+          Math.min(anchorX + anchorSize, config.cols - secondarySize),
+          config.cols - secondarySize + 1,
+        )
+      : Random.rangeFloor(0, Math.max(1, anchorX - secondarySize + 1));
+  const secondaryY =
+    anchorY < config.rows / 2
+      ? Random.rangeFloor(
+          Math.min(anchorY + anchorSize, config.rows - secondarySize),
+          config.rows - secondarySize + 1,
+        )
+      : Random.rangeFloor(0, Math.max(1, anchorY - secondarySize + 1));
+  elements.push({
+    type: Random.pick(['circle', 'triangle', 'semicircle']),
+    gridX: secondaryX,
+    gridY: secondaryY,
+    gridW: secondarySize,
+    gridH: secondarySize,
+    color: Random.pick(primaryColors.filter((c) => c !== elements[0].color)),
+    rotation: Random.pick(rotations),
+    filled: true,
+    lineWidth: 0,
+  });
 
-    const element: BauhausElement = {
-      type,
-      gridX: Random.rangeFloor(0, config.cols - gridW + 1),
-      gridY: Random.rangeFloor(0, config.rows - gridH + 1),
-      gridW,
-      gridH,
-      color: Random.pick(allColors),
-      rotation: Random.pick(rotations),
-      filled,
-      lineWidth: Random.range(4, 16),
-    };
-    elements.push(element);
-  }
-
-  // Add some bold lines
-  const lineCount = Random.rangeFloor(2, 5);
-  for (let i = 0; i < lineCount; i++) {
-    const isVertical = Random.chance(0.5);
+  // Layer 3: Accent rectangles (always axis-aligned, no rotation)
+  const accentCount = Random.rangeFloor(1, 3);
+  for (let i = 0; i < accentCount; i++) {
+    const isHorizontal = Random.chance(0.5);
+    const w = isHorizontal ? Random.rangeFloor(2, 4) : 1;
+    const h = isHorizontal ? 1 : Random.rangeFloor(2, 4);
     elements.push({
-      type: 'line',
-      gridX: Random.rangeFloor(0, config.cols - 1),
-      gridY: Random.rangeFloor(0, config.rows - 1),
-      gridW: isVertical ? 1 : Random.rangeFloor(2, config.cols),
-      gridH: isVertical ? Random.rangeFloor(2, config.rows) : 1,
-      color: BAUHAUS_COLORS.black,
-      rotation: isVertical ? Math.PI / 2 : 0,
-      filled: false,
-      lineWidth: Random.range(6, 20),
+      type: 'rectangle',
+      gridX: Random.rangeFloor(0, config.cols - w + 1),
+      gridY: Random.rangeFloor(0, config.rows - h + 1),
+      gridW: w,
+      gridH: h,
+      color: Random.pick([BAUHAUS_COLORS.black, ...primaryColors]),
+      rotation: 0, // No rotation for rectangles
+      filled: true,
+      lineWidth: 0,
     });
   }
 
-  // Add concentric circles or arcs
-  if (Random.chance(0.6)) {
-    const cx = Random.rangeFloor(1, config.cols - 2);
-    const cy = Random.rangeFloor(1, config.rows - 2);
-    const concentricCount = Random.rangeFloor(2, 4);
+  // Layer 4: Small geometric accents
+  const smallAccentCount = Random.rangeFloor(2, 4);
+  for (let i = 0; i < smallAccentCount; i++) {
+    elements.push({
+      type: Random.pick(['circle', 'triangle', 'semicircle']),
+      gridX: Random.rangeFloor(0, config.cols - 1),
+      gridY: Random.rangeFloor(0, config.rows - 1),
+      gridW: 1,
+      gridH: 1,
+      color: Random.pick(allColors),
+      rotation: Random.pick(rotations),
+      filled: Random.chance(0.7),
+      lineWidth: 4,
+    });
+  }
 
-    for (let i = 0; i < concentricCount; i++) {
-      elements.push({
-        type: 'arc',
-        gridX: cx - i,
-        gridY: cy - i,
-        gridW: 2 + i * 2,
-        gridH: 2 + i * 2,
-        color: i === 0 ? BAUHAUS_COLORS.black : Random.pick(allColors),
-        rotation: Random.pick(rotations),
-        filled: false,
-        lineWidth: Random.range(3, 8),
-      });
+  // Layer 5: Structural lines (strictly horizontal or vertical)
+  const lineCount = Random.rangeFloor(1, 3);
+  for (let i = 0; i < lineCount; i++) {
+    const isVertical = Random.chance(0.5);
+    const lineX = Random.rangeFloor(0, config.cols);
+    const lineY = Random.rangeFloor(0, config.rows);
+    elements.push({
+      type: 'line',
+      gridX: isVertical ? lineX : 0,
+      gridY: isVertical ? 0 : lineY,
+      gridW: isVertical ? 0 : config.cols,
+      gridH: isVertical ? config.rows : 0,
+      color: BAUHAUS_COLORS.black,
+      rotation: isVertical ? Math.PI / 2 : 0,
+      filled: false,
+      lineWidth: Random.pick([4, 8, 12]),
+    });
+  }
+
+  // Layer 6: Optional concentric arcs (centered on grid intersection)
+  if (Random.chance(0.5)) {
+    const cx = Random.rangeFloor(1, config.cols - 1);
+    const cy = Random.rangeFloor(1, config.rows - 1);
+    const arcRotation = Random.pick(rotations);
+
+    for (let i = 0; i < 3; i++) {
+      const size = 1 + i;
+      if (cx - Math.floor(size / 2) >= 0 && cy - Math.floor(size / 2) >= 0) {
+        elements.push({
+          type: 'arc',
+          gridX: cx - Math.floor(size / 2),
+          gridY: cy - Math.floor(size / 2),
+          gridW: size,
+          gridH: size,
+          color: i === 0 ? BAUHAUS_COLORS.black : Random.pick(primaryColors),
+          rotation: arcRotation, // Same rotation for all arcs in set
+          filled: false,
+          lineWidth: 3,
+        });
+      }
     }
   }
 
@@ -309,7 +378,13 @@ export const sketch = ({
         case 'circle': {
           const radius = Math.min(rect.w, rect.h) / 2;
           context.beginPath();
-          context.arc(rect.x + rect.w / 2, rect.y + rect.h / 2, radius, 0, Math.PI * 2);
+          context.arc(
+            rect.x + rect.w / 2,
+            rect.y + rect.h / 2,
+            radius,
+            0,
+            Math.PI * 2,
+          );
           if (el.filled) {
             context.fill();
           } else {
@@ -329,7 +404,14 @@ export const sketch = ({
           break;
         }
         case 'quarterCircle': {
-          drawQuarterCircle(context, rect.x, rect.y, rect.w, rect.h, el.rotation);
+          drawQuarterCircle(
+            context,
+            rect.x,
+            rect.y,
+            rect.w,
+            rect.h,
+            el.rotation,
+          );
           if (el.filled) {
             context.fill();
           } else {
@@ -349,24 +431,44 @@ export const sketch = ({
           break;
         }
         case 'rectangle': {
-          context.save();
-          context.translate(rect.x + rect.w / 2, rect.y + rect.h / 2);
-          context.rotate(el.rotation);
+          // Rectangles stay axis-aligned (no rotation)
           if (el.filled) {
-            context.fillRect(-rect.w / 2, -rect.h / 2, rect.w, rect.h);
+            context.fillRect(rect.x, rect.y, rect.w, rect.h);
           } else {
             context.lineWidth = el.lineWidth;
-            context.strokeRect(-rect.w / 2, -rect.h / 2, rect.w, rect.h);
+            context.strokeRect(rect.x, rect.y, rect.w, rect.h);
           }
-          context.restore();
           break;
         }
         case 'line': {
-          drawLine(context, rect.x, rect.y, rect.w, rect.h, el.rotation, el.lineWidth);
+          // Draw lines as simple horizontal or vertical strokes
+          context.lineWidth = el.lineWidth;
+          context.lineCap = 'square';
+          context.beginPath();
+          if (el.rotation === Math.PI / 2 || el.rotation === -Math.PI / 2) {
+            // Vertical line
+            const x = rect.x + rect.w / 2;
+            context.moveTo(x, 0);
+            context.lineTo(x, height);
+          } else {
+            // Horizontal line
+            const y = rect.y + rect.h / 2;
+            context.moveTo(0, y);
+            context.lineTo(width, y);
+          }
+          context.stroke();
           break;
         }
         case 'arc': {
-          drawArc(context, rect.x, rect.y, rect.w, rect.h, el.rotation, el.lineWidth);
+          drawArc(
+            context,
+            rect.x,
+            rect.y,
+            rect.w,
+            rect.h,
+            el.rotation,
+            el.lineWidth,
+          );
           break;
         }
       }
