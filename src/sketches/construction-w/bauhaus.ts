@@ -458,6 +458,108 @@ export const sketch = ({
     }
   }
 
+  // Build occupancy grid to find negative space
+  const occupancy: boolean[][] = Array.from({ length: config.rows }, () =>
+    Array.from({ length: config.cols }, () => false),
+  );
+
+  // Mark cells adjacent to the structural line as occupied
+  if (isVerticalLine) {
+    // Vertical line is in gap before column lineGapIndex
+    // Mark columns on both sides of the gap
+    for (let row = 0; row < config.rows; row++) {
+      if (lineGapIndex - 1 >= 0) occupancy[row][lineGapIndex - 1] = true;
+      if (lineGapIndex < config.cols) occupancy[row][lineGapIndex] = true;
+    }
+  } else {
+    // Horizontal line is in gap before row lineGapIndex
+    // Mark rows on both sides of the gap
+    for (let col = 0; col < config.cols; col++) {
+      if (lineGapIndex - 1 >= 0) occupancy[lineGapIndex - 1][col] = true;
+      if (lineGapIndex < config.rows) occupancy[lineGapIndex][col] = true;
+    }
+  }
+
+  // Mark cells occupied by shapes
+  elements.forEach((el) => {
+    if (el.type === 'line') return;
+    for (let row = el.gridY; row < el.gridY + el.gridH && row < config.rows; row++) {
+      for (let col = el.gridX; col < el.gridX + el.gridW && col < config.cols; col++) {
+        if (row >= 0 && col >= 0) {
+          occupancy[row][col] = true;
+        }
+      }
+    }
+  });
+
+  // Find best strip for text (1 cell wide, 3-4 cells long)
+  type TextPlacement = {
+    gridX: number;
+    gridY: number;
+    length: number;
+    isVertical: boolean;
+  } | null;
+
+  let textPlacement: TextPlacement = null;
+
+  // Check horizontal strips
+  for (let row = 0; row < config.rows; row++) {
+    let startCol = -1;
+    let runLength = 0;
+
+    for (let col = 0; col <= config.cols; col++) {
+      const isEmpty = col < config.cols && !occupancy[row][col];
+
+      if (isEmpty) {
+        if (startCol === -1) startCol = col;
+        runLength++;
+      } else {
+        if (runLength >= 3) {
+          const length = Math.min(runLength, 4);
+          if (!textPlacement || length > textPlacement.length) {
+            textPlacement = {
+              gridX: startCol,
+              gridY: row,
+              length,
+              isVertical: false,
+            };
+          }
+        }
+        startCol = -1;
+        runLength = 0;
+      }
+    }
+  }
+
+  // Check vertical strips
+  for (let col = 0; col < config.cols; col++) {
+    let startRow = -1;
+    let runLength = 0;
+
+    for (let row = 0; row <= config.rows; row++) {
+      const isEmpty = row < config.rows && !occupancy[row][col];
+
+      if (isEmpty) {
+        if (startRow === -1) startRow = row;
+        runLength++;
+      } else {
+        if (runLength >= 3) {
+          const length = Math.min(runLength, 4);
+          if (!textPlacement || length > textPlacement.length) {
+            textPlacement = {
+              gridX: col,
+              gridY: startRow,
+              length,
+              isVertical: true,
+            };
+          }
+        }
+        startRow = -1;
+        runLength = 0;
+      }
+    }
+  }
+
   wrap.render = () => {
     // Cream/off-white background typical of Bauhaus posters
     context.fillStyle = BAUHAUS_COLORS.cream;
@@ -585,6 +687,50 @@ export const sketch = ({
         }
       }
     });
+
+    // Draw "BAUHAUS" text in negative space
+    if (textPlacement) {
+      const textRect = getRect(
+        {
+          width,
+          height,
+          cols: config.cols,
+          rows: config.rows,
+          gapX: config.gap[0],
+          gapY: config.gap[1],
+        },
+        {
+          x: textPlacement.gridX,
+          y: textPlacement.gridY,
+          w: textPlacement.isVertical ? 1 : textPlacement.length,
+          h: textPlacement.isVertical ? textPlacement.length : 1,
+        },
+      );
+
+      context.save();
+      context.fillStyle = BAUHAUS_COLORS.black;
+      context.textBaseline = 'middle';
+      context.textAlign = 'center';
+
+      if (textPlacement.isVertical) {
+        // Vertical text
+        context.translate(textRect.x + textRect.w / 2, textRect.y + textRect.h / 2);
+        context.rotate(-Math.PI / 2);
+        const fontSize = Math.min(textRect.w * 0.9, textRect.h / 7);
+        context.font = `bold ${fontSize}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+        context.fillText('BAUHAUS', 0, 0);
+      } else {
+        // Horizontal text
+        const fontSize = Math.min(textRect.h * 0.8, textRect.w / 7);
+        context.font = `bold ${fontSize}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+        context.fillText(
+          'BAUHAUS',
+          textRect.x + textRect.w / 2,
+          textRect.y + textRect.h / 2,
+        );
+      }
+      context.restore();
+    }
 
     // Draw grid overlay if enabled
     if (showGrid) {
