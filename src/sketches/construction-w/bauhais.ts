@@ -219,6 +219,37 @@ export const sketch = ({
     BAUHAUS_COLORS.blue,
   ];
 
+  // Check if two grid rectangles overlap
+  const shapesOverlap = (
+    a: { gridX: number; gridY: number; gridW: number; gridH: number },
+    b: { gridX: number; gridY: number; gridW: number; gridH: number },
+  ): boolean => {
+    return (
+      a.gridX < b.gridX + b.gridW &&
+      a.gridX + a.gridW > b.gridX &&
+      a.gridY < b.gridY + b.gridH &&
+      a.gridY + a.gridH > b.gridY
+    );
+  };
+
+  // Get a color that doesn't overlap with existing shapes
+  const getNonOverlappingColor = (
+    newShape: { gridX: number; gridY: number; gridW: number; gridH: number },
+    existingElements: BauhausElement[],
+  ): string => {
+    const overlappingColors = existingElements
+      .filter((el) => el.type !== 'line' && shapesOverlap(newShape, el))
+      .map((el) => el.color);
+
+    const availableColors = primaryColors.filter(
+      (c) => !overlappingColors.includes(c),
+    );
+
+    return availableColors.length > 0
+      ? Random.pick(availableColors)
+      : Random.pick(primaryColors);
+  };
+
   // Only 90-degree rotations to maintain grid alignment
   const rotations = [0, Math.PI / 2, Math.PI, -Math.PI / 2];
 
@@ -295,13 +326,17 @@ export const sketch = ({
           ? quarterRotationA
           : 0;
 
-    elements.push({
-      type: shapeTypeA,
+    const shapeA = {
       gridX: Math.max(0, anchorXA),
       gridY: Math.max(0, anchorYA),
       gridW: anchorSizeA,
       gridH: anchorSizeA,
-      color: Random.pick(primaryColors),
+    };
+
+    elements.push({
+      type: shapeTypeA,
+      ...shapeA,
+      color: getNonOverlappingColor(shapeA, elements),
       rotation: rotationA,
       filled: true,
       lineWidth: 0,
@@ -330,13 +365,17 @@ export const sketch = ({
           ? quarterRotationB
           : 0;
 
-    elements.push({
-      type: shapeTypeB,
+    const shapeB = {
       gridX: anchorXB,
       gridY: anchorYB,
       gridW: anchorSizeB,
       gridH: anchorSizeB,
-      color: Random.pick(primaryColors),
+    };
+
+    elements.push({
+      type: shapeTypeB,
+      ...shapeB,
+      color: getNonOverlappingColor(shapeB, elements),
       rotation: rotationB,
       filled: true,
       lineWidth: 0,
@@ -367,13 +406,17 @@ export const sketch = ({
           : rotationFacingLineB
         : 0;
 
-    elements.push({
-      type: accentType,
+    const accentShape = {
       gridX: accX,
       gridY: accY,
       gridW: 1,
       gridH: 1,
-      color: Random.pick(primaryColors),
+    };
+
+    elements.push({
+      type: accentType,
+      ...accentShape,
+      color: getNonOverlappingColor(accentShape, elements),
       rotation: accentRotation,
       filled: Random.chance(0.8),
       lineWidth: 3,
@@ -397,13 +440,17 @@ export const sketch = ({
         : lineGapIndex;
 
     if (semiX >= 0 && semiY >= 0) {
-      elements.push({
-        type: 'semicircle',
+      const semiShape = {
         gridX: semiX,
         gridY: semiY,
         gridW: size,
         gridH: size,
-        color: Random.pick(primaryColors),
+      };
+
+      elements.push({
+        type: 'semicircle',
+        ...semiShape,
+        color: getNonOverlappingColor(semiShape, elements),
         rotation: onSideA ? rotationFacingLineA : rotationFacingLineB,
         filled: true,
         lineWidth: 0,
