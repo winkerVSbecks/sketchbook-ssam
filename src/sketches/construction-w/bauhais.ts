@@ -212,16 +212,23 @@ export const sketch = ({
     gapY: config.gap[1],
   });
 
-  const primaryColors = [
-    BAUHAUS_COLORS.red,
-    BAUHAUS_COLORS.yellow,
-    BAUHAUS_COLORS.blue,
-  ];
-  const allColors = [
-    ...primaryColors,
-    BAUHAUS_COLORS.black,
-    BAUHAUS_COLORS.orange,
-  ];
+  // Kandinsky's color-shape theory:
+  // Triangle = Yellow, Rectangle = Red, Circle = Blue
+  const getShapeColor = (type: ShapeType): string => {
+    switch (type) {
+      case 'triangle':
+        return BAUHAUS_COLORS.yellow;
+      case 'rectangle':
+        return BAUHAUS_COLORS.red;
+      case 'circle':
+      case 'semicircle':
+      case 'quarterCircle':
+      case 'arc':
+        return BAUHAUS_COLORS.blue;
+      default:
+        return BAUHAUS_COLORS.black;
+    }
+  };
 
   // Only 90-degree rotations to maintain grid alignment
   const rotations = [0, Math.PI / 2, Math.PI, -Math.PI / 2];
@@ -305,7 +312,7 @@ export const sketch = ({
       gridY: Math.max(0, anchorYA),
       gridW: anchorSizeA,
       gridH: anchorSizeA,
-      color: Random.pick(primaryColors),
+      color: getShapeColor(shapeTypeA),
       rotation: rotationA,
       filled: true,
       lineWidth: 0,
@@ -326,7 +333,6 @@ export const sketch = ({
       ? Random.rangeFloor(0, config.rows - anchorSizeB + 1)
       : lineGapIndex;
 
-    const usedColor = elements.length > 1 ? elements[1].color : null;
     const shapeTypeB = Random.pick(['circle', 'triangle', 'semicircle', 'quarterCircle'] as ShapeType[]);
     const rotationB =
       shapeTypeB === 'semicircle' || shapeTypeB === 'triangle'
@@ -341,7 +347,7 @@ export const sketch = ({
       gridY: anchorYB,
       gridW: anchorSizeB,
       gridH: anchorSizeB,
-      color: Random.pick(primaryColors.filter((c) => c !== usedColor)),
+      color: getShapeColor(shapeTypeB),
       rotation: rotationB,
       filled: true,
       lineWidth: 0,
@@ -378,7 +384,7 @@ export const sketch = ({
       gridY: accY,
       gridW: 1,
       gridH: 1,
-      color: Random.pick(allColors),
+      color: getShapeColor(accentType),
       rotation: accentRotation,
       filled: Random.chance(0.8),
       lineWidth: 3,
@@ -408,7 +414,7 @@ export const sketch = ({
         gridY: semiY,
         gridW: size,
         gridH: size,
-        color: Random.pick(primaryColors),
+        color: getShapeColor('semicircle'),
         rotation: onSideA ? rotationFacingLineA : rotationFacingLineB,
         filled: true,
         lineWidth: 0,
