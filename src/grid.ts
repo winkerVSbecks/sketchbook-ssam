@@ -7,7 +7,7 @@ export interface GridCell {
   row: number;
 }
 
-interface Rect {
+export interface Rect {
   x: number;
   y: number;
   w: number;
@@ -87,7 +87,7 @@ export function getRect(options: GridOptions, { x, y, w, h }: Rect): Rect {
 export function getRectInGap(
   options: GridOptions,
   { x, y, w, h }: Rect,
-  type: 'horizontal' | 'vertical'
+  type: 'horizontal' | 'vertical',
 ): Rect {
   const { gapX = 0, gapY = 0 } = options;
   const { cellWidth, cellHeight } = cellDimensions(options);
@@ -99,4 +99,39 @@ export function getRectInGap(
     w: type === 'horizontal' ? w * cellWidth + (w - 1) * gapX : gapX,
     h: type === 'vertical' ? h * cellHeight + (h - 1) * gapY : gapY,
   };
+}
+
+export const createToggleButton = (onToggle: () => void) => {
+  const button = document.createElement('button');
+  button.textContent = 'Toggle Grid';
+  button.style.position = 'fixed';
+  button.style.top = '20px';
+  button.style.right = '20px';
+  button.style.padding = '10px 20px';
+  button.style.cursor = 'pointer';
+  button.style.zIndex = '1000';
+  button.style.fontFamily = 'sans-serif';
+  button.style.fontSize = '14px';
+  button.style.border = '2px solid #212121';
+  button.style.background = '#fff';
+  button.style.color = '#212121';
+  button.style.borderRadius = '4px';
+  button.addEventListener('click', onToggle);
+  document.body.appendChild(button);
+  return button;
+};
+
+export function drawGrid(
+  context: CanvasRenderingContext2D,
+  grid: GridCell[],
+  showGrid: boolean,
+  color: string = 'rgba(0, 0, 0, 0.5)',
+) {
+  if (showGrid) {
+    context.lineWidth = 1;
+    context.strokeStyle = color;
+    grid.forEach((cell) => {
+      context.strokeRect(cell.x, cell.y, cell.width, cell.height);
+    });
+  }
 }
