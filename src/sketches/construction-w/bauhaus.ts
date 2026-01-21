@@ -1,17 +1,18 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
+import WebFont from 'webfontloader';
 import { getRect, makeGrid } from '../../grid';
 
 // Bauhaus color palette
 const BAUHAUS_COLORS = {
-  red: '#E53935',
-  yellow: '#FDD835',
-  blue: '#1E88E5',
+  red: '#f13401',
+  yellow: '#f1d93c',
+  blue: '#0769ce',
   black: '#212121',
-  cream: '#F5F5DC',
   orange: '#FF6F00',
   white: '#FFFFFF',
+  green: '#11804b',
 };
 
 // Configuration
@@ -19,6 +20,7 @@ const config = {
   cols: 6,
   rows: 8,
   gap: [20, 20] as [number, number],
+  showGrid: true,
 };
 
 type ShapeType =
@@ -180,7 +182,7 @@ const drawArc = (
   ctx.restore();
 };
 
-export const sketch = ({
+export const sketch = async ({
   wrap,
   context,
   width,
@@ -192,14 +194,24 @@ export const sketch = ({
     import.meta.hot.accept(() => wrap.hotReload());
   }
 
+  // Load Baumans font
+  await new Promise((resolve) => {
+    WebFont.load({
+      google: {
+        families: ['Baumans'],
+      },
+      active: () => {
+        resolve(void 0);
+      },
+    });
+  });
+
   const seed = Random.getRandomSeed();
   Random.setSeed(seed);
   console.log('Seed:', seed);
 
-  let showGrid = true;
-
   createToggleButton(() => {
-    showGrid = !showGrid;
+    config.showGrid = !config.showGrid;
     render();
   });
 
@@ -318,7 +330,13 @@ export const sketch = ({
       ? Random.rangeFloor(0, config.rows - anchorSizeA + 1)
       : lineGapIndex - anchorSizeA;
 
-    const shapeTypeA = Random.pick(['circle', 'rectangle', 'semicircle', 'triangle', 'quarterCircle'] as ShapeType[]);
+    const shapeTypeA = Random.pick([
+      'circle',
+      'rectangle',
+      'semicircle',
+      'triangle',
+      'quarterCircle',
+    ] as ShapeType[]);
     const rotationA =
       shapeTypeA === 'semicircle' || shapeTypeA === 'triangle'
         ? rotationFacingLineA
@@ -357,7 +375,12 @@ export const sketch = ({
       ? Random.rangeFloor(0, config.rows - anchorSizeB + 1)
       : lineGapIndex;
 
-    const shapeTypeB = Random.pick(['circle', 'triangle', 'semicircle', 'quarterCircle'] as ShapeType[]);
+    const shapeTypeB = Random.pick([
+      'circle',
+      'triangle',
+      'semicircle',
+      'quarterCircle',
+    ] as ShapeType[]);
     const rotationB =
       shapeTypeB === 'semicircle' || shapeTypeB === 'triangle'
         ? rotationFacingLineB
@@ -398,7 +421,12 @@ export const sketch = ({
 
     if (accX < 0 || accY < 0) continue;
 
-    const accentType = Random.pick(['circle', 'triangle', 'semicircle', 'rectangle'] as ShapeType[]);
+    const accentType = Random.pick([
+      'circle',
+      'triangle',
+      'semicircle',
+      'rectangle',
+    ] as ShapeType[]);
     const accentRotation =
       accentType === 'semicircle' || accentType === 'triangle'
         ? onSideA
@@ -483,8 +511,16 @@ export const sketch = ({
   // Mark cells occupied by shapes
   elements.forEach((el) => {
     if (el.type === 'line') return;
-    for (let row = el.gridY; row < el.gridY + el.gridH && row < config.rows; row++) {
-      for (let col = el.gridX; col < el.gridX + el.gridW && col < config.cols; col++) {
+    for (
+      let row = el.gridY;
+      row < el.gridY + el.gridH && row < config.rows;
+      row++
+    ) {
+      for (
+        let col = el.gridX;
+        col < el.gridX + el.gridW && col < config.cols;
+        col++
+      ) {
         if (row >= 0 && col >= 0) {
           occupancy[row][col] = true;
         }
@@ -562,11 +598,22 @@ export const sketch = ({
 
   wrap.render = () => {
     // Cream/off-white background typical of Bauhaus posters
-    context.fillStyle = BAUHAUS_COLORS.cream;
+    context.fillStyle = BAUHAUS_COLORS.white;
     context.fillRect(0, 0, width, height);
 
+    // Sort elements by area: largest first (back) to smallest last (front)
+    // Lines have 0 area but should be drawn first (back) as structural elements
+    const sortedElements = [...elements].sort((a, b) => {
+      const areaA = a.gridW * a.gridH;
+      const areaB = b.gridW * b.gridH;
+      // Lines go to the back (largest area equivalent)
+      if (a.type === 'line') return -1;
+      if (b.type === 'line') return 1;
+      return areaB - areaA; // Descending order: largest first
+    });
+
     // Draw elements
-    elements.forEach((el) => {
+    sortedElements.forEach((el) => {
       const baseRect = getRect(
         {
           width,
@@ -613,10 +660,24 @@ export const sketch = ({
         }
         case 'semicircle': {
           if (el.filled) {
-            drawSemicircle(context, baseRect.x, baseRect.y, baseRect.w, baseRect.h, el.rotation);
+            drawSemicircle(
+              context,
+              baseRect.x,
+              baseRect.y,
+              baseRect.w,
+              baseRect.h,
+              el.rotation,
+            );
             context.fill();
           } else {
-            drawSemicircle(context, rect.x, rect.y, rect.w, rect.h, el.rotation);
+            drawSemicircle(
+              context,
+              rect.x,
+              rect.y,
+              rect.w,
+              rect.h,
+              el.rotation,
+            );
             context.lineWidth = el.lineWidth;
             context.stroke();
           }
@@ -624,10 +685,24 @@ export const sketch = ({
         }
         case 'quarterCircle': {
           if (el.filled) {
-            drawQuarterCircle(context, baseRect.x, baseRect.y, baseRect.w, baseRect.h, el.rotation);
+            drawQuarterCircle(
+              context,
+              baseRect.x,
+              baseRect.y,
+              baseRect.w,
+              baseRect.h,
+              el.rotation,
+            );
             context.fill();
           } else {
-            drawQuarterCircle(context, rect.x, rect.y, rect.w, rect.h, el.rotation);
+            drawQuarterCircle(
+              context,
+              rect.x,
+              rect.y,
+              rect.w,
+              rect.h,
+              el.rotation,
+            );
             context.lineWidth = el.lineWidth;
             context.stroke();
           }
@@ -635,7 +710,14 @@ export const sketch = ({
         }
         case 'triangle': {
           if (el.filled) {
-            drawTriangle(context, baseRect.x, baseRect.y, baseRect.w, baseRect.h, el.rotation);
+            drawTriangle(
+              context,
+              baseRect.x,
+              baseRect.y,
+              baseRect.w,
+              baseRect.h,
+              el.rotation,
+            );
             context.fill();
           } else {
             drawTriangle(context, rect.x, rect.y, rect.w, rect.h, el.rotation);
@@ -714,15 +796,18 @@ export const sketch = ({
 
       if (textPlacement.isVertical) {
         // Vertical text
-        context.translate(textRect.x + textRect.w / 2, textRect.y + textRect.h / 2);
+        context.translate(
+          textRect.x + textRect.w / 2,
+          textRect.y + textRect.h / 2,
+        );
         context.rotate(-Math.PI / 2);
         const fontSize = Math.min(textRect.w * 0.9, textRect.h / 7);
-        context.font = `bold ${fontSize}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+        context.font = `${fontSize}px Baumans, sans-serif`;
         context.fillText('BAUHAUS', 0, 0);
       } else {
         // Horizontal text
         const fontSize = Math.min(textRect.h * 0.8, textRect.w / 7);
-        context.font = `bold ${fontSize}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+        context.font = `${fontSize}px Baumans, sans-serif`;
         context.fillText(
           'BAUHAUS',
           textRect.x + textRect.w / 2,
@@ -733,7 +818,7 @@ export const sketch = ({
     }
 
     // Draw grid overlay if enabled
-    if (showGrid) {
+    if (config.showGrid) {
       context.lineWidth = 1;
       context.strokeStyle = 'rgba(0, 0, 0, 0.3)';
       grid.forEach((cell) => {
