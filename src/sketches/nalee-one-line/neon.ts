@@ -4,7 +4,7 @@ import Random from 'canvas-sketch-util/random';
 import { mapRange } from 'canvas-sketch-util/math';
 import * as tome from 'chromotome';
 import { makeWalker, walkerToPaths } from '../nalee/walker';
-import { drawPath } from '../nalee/paths';
+import { drawPath, drawShape } from '../nalee/paths';
 import { xyToId } from '../nalee/utils';
 import type { Node, Walker, Coord, DomainToWorld } from '../nalee/types';
 import { logColors } from '../../colors';
@@ -305,6 +305,21 @@ class HamiltonianPathState {
   }
 }
 
+function neonStyle(
+  context: CanvasRenderingContext2D,
+  walker: Walker,
+  pts: Point[],
+) {
+  context.lineCap = 'round';
+  context.lineJoin = 'round';
+
+  // outer
+  context.strokeStyle = walker.color;
+  context.lineWidth = walker.size - walker.stepSize;
+  drawShape(context, pts, false);
+  context.stroke();
+}
+
 export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   // Create domain to world coordinate transformation for walker
   const domainToWorld: DomainToWorld = (x, y) => {
@@ -332,7 +347,8 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       start,
       color,
       color,
-      'solidStyle',
+      neonStyle,
+      // 'solidStyle',
       config.flat,
       config.size,
       config.stepSize,
@@ -450,11 +466,6 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
 
     context.lineJoin = 'round';
     context.lineCap = 'round';
-    const innerLineConfig = {
-      color: colors[1],
-      pathStyle: 'animatedLine',
-      size: 20,
-    };
 
     const walker = state.walkers[0];
 
@@ -463,107 +474,8 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       return pts.map(([x, y]) => domainToWorld(x, y));
     });
 
-    // // White outline for the main path
-    // context.save();
-    // drawPath(
-    //   context,
-    //   {
-    //     ...walker,
-    //     color: `hsl(from ${color} h s 80% / 1)`,
-    //     size: walker.size + 4,
-    //   },
-    //   playhead,
-    //   bg,
-    //   pathsInWorldCoords,
-    // );
-    // context.restore();
-
-    context.save();
-    context.filter = 'blur(12px)';
-    drawPath(
-      context,
-      {
-        ...walker,
-        ...innerLineConfig,
-      } as any,
-      playhead,
-      bg,
-      pathsInWorldCoords,
-    );
-    context.restore();
-
-    // Blurred glass effect for the animated line path
-    // Simulate backdrop-filter: blur by drawing blurred background through path
-    context.save();
-
-    // Create the path shape for clipping
-    drawPath(
-      context,
-      {
-        ...walker,
-        ...innerLineConfig,
-      } as any,
-      playhead,
-      bg,
-      pathsInWorldCoords,
-    );
-
-    // Draw blurred content clipped to the path
-    context.globalCompositeOperation = 'destination-out';
-    context.filter = 'blur(16px)';
-    drawPath(
-      context,
-      {
-        ...walker,
-        ...innerLineConfig,
-        color: `hsl(from ${color} h s l / 0.4)`,
-      } as any,
-      playhead,
-      bg,
-      pathsInWorldCoords,
-    );
-    //   context.beginPath();
-    //   if (pts.length > 0) {
-    //     context.moveTo(pts[0][0], pts[0][1]);
-    //     for (let i = 1; i < pts.length; i++) {
-    //       context.lineTo(pts[i][0], pts[i][1]);
-    //     }
-    //   }
-    //   context.stroke();
-    // });
-    context.restore();
-
-    // Draw frosted glass overlay
-    context.save();
-    context.filter = 'blur(12px)';
-    drawPath(
-      context,
-      {
-        ...walker,
-        ...innerLineConfig,
-        color: `hsl(from ${color} h s l / 0.4)`,
-      } as any,
-      playhead,
-      bg,
-      pathsInWorldCoords,
-    );
-    context.filter = 'none';
-    context.restore();
-
     // Draw soft shadow for the main path
-    context.save();
-    context.shadowColor = 'rgba(0, 0, 0, 0.4)';
-    context.shadowBlur = 60;
-    context.shadowOffsetX = 0;
-    context.shadowOffsetY = 0;
-    drawPath(
-      context,
-      { ...walker, color: `hsl(from ${color} h s l / 0.5)` },
-      playhead,
-      bg,
-      pathsInWorldCoords,
-    );
-    context.restore();
+    drawPath(context, walker, playhead, bg, pathsInWorldCoords);
   };
 };
 
