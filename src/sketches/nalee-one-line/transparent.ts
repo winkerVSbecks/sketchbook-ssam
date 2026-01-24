@@ -2,22 +2,20 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 import { mapRange } from 'canvas-sketch-util/math';
-import { ColorPaletteGenerator } from 'pro-color-harmonies';
 import * as tome from 'chromotome';
 import { formatCss, interpolate } from 'culori';
 import { makeWalker, walkerToPaths } from '../nalee/walker';
 import { drawPath, createGradientStyle } from '../nalee/paths';
 import { xyToId } from '../nalee/utils';
 import type { Node, Walker, Coord, DomainToWorld } from '../nalee/types';
-import type { Domain } from '../domain-polygon/types';
 import { logColors } from '../../colors';
 
 const seed = Random.getRandomSeed();
 Random.setSeed(seed);
-// Random.setSeed('671749');
+// Random.setSeed('645544');
 console.log(seed);
 
-const { colors, background: bg, stroke } = tome.get();
+const { colors, background: bg, stroke } = tome.get('spatial03i');
 
 logColors([...colors, bg]);
 
@@ -456,93 +454,98 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
 
     context.lineJoin = 'round';
     context.lineCap = 'round';
-    state.walkers.forEach((walker) => {
-      const paths = walkerToPaths(walker);
-      const pathsInWorldCoords = paths.map((pts) => {
-        return pts.map(([x, y]) => domainToWorld(x, y));
-      });
+    const innerLineConfig = {
+      color: colors[1],
+      pathStyle: 'animatedLine',
+      size: 20,
+    };
 
-      context.save();
-      context.filter = 'blur(8px)';
-      drawPath(
-        context,
-        {
-          ...walker,
-          color: colors[1],
-          pathStyle: 'animatedLine',
-          size: 20,
-        },
-        playhead,
-        bg,
-        pathsInWorldCoords,
-      );
-      context.restore();
+    const walker = state.walkers[0];
 
-      // Draw the main path first
-      drawPath(
-        context,
-        { ...walker, color: `hsl(from ${walker.color} h s l / 0.2)` },
-        playhead,
-        bg,
-        pathsInWorldCoords,
-      );
-
-      // Blurred glass effect for the animated line path
-      // Simulate backdrop-filter: blur by drawing blurred background through path
-      context.save();
-
-      // Create the path shape for clipping
-      context.lineWidth = 20;
-      context.lineCap = 'round';
-      context.lineJoin = 'round';
-      pathsInWorldCoords.forEach((pts) => {
-        context.beginPath();
-        if (pts.length > 0) {
-          context.moveTo(pts[0][0], pts[0][1]);
-          for (let i = 1; i < pts.length; i++) {
-            context.lineTo(pts[i][0], pts[i][1]);
-          }
-        }
-        context.stroke();
-      });
-
-      // Draw blurred content clipped to the path
-      context.globalCompositeOperation = 'destination-out';
-      context.filter = 'blur(12px)';
-      context.strokeStyle = `hsl(from ${color} h s calc(l + 20%) / 0.4)`;
-      context.lineWidth = 24;
-      pathsInWorldCoords.forEach((pts) => {
-        context.beginPath();
-        if (pts.length > 0) {
-          context.moveTo(pts[0][0], pts[0][1]);
-          for (let i = 1; i < pts.length; i++) {
-            context.lineTo(pts[i][0], pts[i][1]);
-          }
-        }
-        context.stroke();
-      });
-      context.restore();
-
-      // Draw frosted glass overlay
-      context.save();
-      context.filter = 'blur(8px)';
-      context.strokeStyle = `hsl(from ${color} h s l / 0.4)`;
-      context.lineWidth = 22;
-      context.lineCap = 'round';
-      context.lineJoin = 'round';
-      pathsInWorldCoords.forEach((pts) => {
-        context.beginPath();
-        if (pts.length > 0) {
-          context.moveTo(pts[0][0], pts[0][1]);
-          for (let i = 1; i < pts.length; i++) {
-            context.lineTo(pts[i][0], pts[i][1]);
-          }
-        }
-        context.stroke();
-      });
-      context.filter = 'none';
-      context.restore();
+    const paths = walkerToPaths(walker);
+    const pathsInWorldCoords = paths.map((pts) => {
+      return pts.map(([x, y]) => domainToWorld(x, y));
     });
+
+    context.save();
+    context.filter = 'blur(12px)';
+    drawPath(
+      context,
+      {
+        ...walker,
+        ...innerLineConfig,
+      } as any,
+      playhead,
+      bg,
+      pathsInWorldCoords,
+    );
+    context.restore();
+
+    // Blurred glass effect for the animated line path
+    // Simulate backdrop-filter: blur by drawing blurred background through path
+    context.save();
+
+    // Create the path shape for clipping
+    drawPath(
+      context,
+      {
+        ...walker,
+        ...innerLineConfig,
+      } as any,
+      playhead,
+      bg,
+      pathsInWorldCoords,
+    );
+
+    // Draw blurred content clipped to the path
+    context.globalCompositeOperation = 'destination-out';
+    context.filter = 'blur(16px)';
+    drawPath(
+      context,
+      {
+        ...walker,
+        ...innerLineConfig,
+        color: `hsl(from ${color} h s l / 0.4)`,
+      } as any,
+      playhead,
+      bg,
+      pathsInWorldCoords,
+    );
+    //   context.beginPath();
+    //   if (pts.length > 0) {
+    //     context.moveTo(pts[0][0], pts[0][1]);
+    //     for (let i = 1; i < pts.length; i++) {
+    //       context.lineTo(pts[i][0], pts[i][1]);
+    //     }
+    //   }
+    //   context.stroke();
+    // });
+    context.restore();
+
+    // Draw frosted glass overlay
+    context.save();
+    context.filter = 'blur(12px)';
+    drawPath(
+      context,
+      {
+        ...walker,
+        ...innerLineConfig,
+        color: `hsl(from ${color} h s l / 0.4)`,
+      } as any,
+      playhead,
+      bg,
+      pathsInWorldCoords,
+    );
+    context.filter = 'none';
+    context.restore();
+
+    drawPath(
+      context,
+      { ...walker, color: `hsl(from ${color} h s l / 0.5)` },
+      playhead,
+      bg,
+      pathsInWorldCoords,
+    );
   };
 };
 
