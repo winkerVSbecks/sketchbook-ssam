@@ -86,7 +86,7 @@ const colors = palette.filter((c) => c !== bg);
 
 const colorPairs = [
   findContrastPair(colors),
-  findContrastPair(colors),
+  findContrastPair(colors), //.map((c) => `hsl(from ${c} h s l / 0.5)`),
   findContrastPair(colors, 4.5, bg),
 ];
 
