@@ -463,6 +463,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       });
 
       context.save();
+      context.filter = 'blur(8px)';
       drawPath(
         context,
         {
@@ -477,13 +478,70 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       );
       context.restore();
 
+      // Draw the main path first
       drawPath(
         context,
-        { ...walker, color: `hsl(from ${walker.color} h s l / 0.5)` },
+        { ...walker, color: `hsl(from ${walker.color} h s l / 0.2)` },
         playhead,
         bg,
         pathsInWorldCoords,
       );
+
+      // Blurred glass effect for the animated line path
+      // Simulate backdrop-filter: blur by drawing blurred background through path
+      context.save();
+
+      // Create the path shape for clipping
+      context.lineWidth = 20;
+      context.lineCap = 'round';
+      context.lineJoin = 'round';
+      pathsInWorldCoords.forEach((pts) => {
+        context.beginPath();
+        if (pts.length > 0) {
+          context.moveTo(pts[0][0], pts[0][1]);
+          for (let i = 1; i < pts.length; i++) {
+            context.lineTo(pts[i][0], pts[i][1]);
+          }
+        }
+        context.stroke();
+      });
+
+      // Draw blurred content clipped to the path
+      context.globalCompositeOperation = 'destination-out';
+      context.filter = 'blur(12px)';
+      context.strokeStyle = `hsl(from ${color} h s calc(l + 20%) / 0.4)`;
+      context.lineWidth = 24;
+      pathsInWorldCoords.forEach((pts) => {
+        context.beginPath();
+        if (pts.length > 0) {
+          context.moveTo(pts[0][0], pts[0][1]);
+          for (let i = 1; i < pts.length; i++) {
+            context.lineTo(pts[i][0], pts[i][1]);
+          }
+        }
+        context.stroke();
+      });
+      context.restore();
+
+      // Draw frosted glass overlay
+      context.save();
+      context.filter = 'blur(8px)';
+      context.strokeStyle = `hsl(from ${color} h s l / 0.4)`;
+      context.lineWidth = 22;
+      context.lineCap = 'round';
+      context.lineJoin = 'round';
+      pathsInWorldCoords.forEach((pts) => {
+        context.beginPath();
+        if (pts.length > 0) {
+          context.moveTo(pts[0][0], pts[0][1]);
+          for (let i = 1; i < pts.length; i++) {
+            context.lineTo(pts[i][0], pts[i][1]);
+          }
+        }
+        context.stroke();
+      });
+      context.filter = 'none';
+      context.restore();
     });
   };
 };
