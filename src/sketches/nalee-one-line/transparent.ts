@@ -461,16 +461,29 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       const pathsInWorldCoords = paths.map((pts) => {
         return pts.map(([x, y]) => domainToWorld(x, y));
       });
-      drawPath(context, walker, playhead, bg, pathsInWorldCoords);
+
       context.save();
       drawPath(
         context,
-        { ...walker, color: colors[1], pathStyle: 'animatedLine', size: 20 },
+        {
+          ...walker,
+          color: colors[1],
+          pathStyle: 'animatedLine',
+          size: 20,
+        },
         playhead,
         bg,
         pathsInWorldCoords,
       );
       context.restore();
+
+      drawPath(
+        context,
+        { ...walker, color: `hsl(from ${walker.color} h s l / 0.5)` },
+        playhead,
+        bg,
+        pathsInWorldCoords,
+      );
     });
   };
 };
