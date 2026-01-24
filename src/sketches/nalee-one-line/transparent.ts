@@ -15,7 +15,7 @@ Random.setSeed(seed);
 // Random.setSeed('645544');
 console.log(seed);
 
-const { colors, background: bg, stroke } = tome.get('spatial03i');
+const { colors, background: bg, stroke } = tome.get(/* 'spatial03i' */);
 
 logColors([...colors, bg]);
 
@@ -467,6 +467,21 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       return pts.map(([x, y]) => domainToWorld(x, y));
     });
 
+    // // White outline for the main path
+    // context.save();
+    // drawPath(
+    //   context,
+    //   {
+    //     ...walker,
+    //     color: `hsl(from ${color} h s 80% / 1)`,
+    //     size: walker.size + 4,
+    //   },
+    //   playhead,
+    //   bg,
+    //   pathsInWorldCoords,
+    // );
+    // context.restore();
+
     context.save();
     context.filter = 'blur(12px)';
     drawPath(
@@ -539,6 +554,12 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     context.filter = 'none';
     context.restore();
 
+    // Draw soft shadow for the main path
+    context.save();
+    context.shadowColor = 'rgba(0, 0, 0, 0.4)';
+    context.shadowBlur = 60;
+    context.shadowOffsetX = 0;
+    context.shadowOffsetY = 0;
     drawPath(
       context,
       { ...walker, color: `hsl(from ${color} h s l / 0.5)` },
@@ -546,6 +567,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       bg,
       pathsInWorldCoords,
     );
+    context.restore();
   };
 };
 
