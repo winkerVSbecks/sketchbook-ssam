@@ -2,7 +2,6 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 import { mapRange } from 'canvas-sketch-util/math';
-import * as tome from 'chromotome';
 import { makeWalker, walkerToPaths } from '../nalee/walker';
 import { drawPath, drawShape } from '../nalee/paths';
 import { xyToId } from '../nalee/utils';
@@ -16,8 +15,7 @@ Random.setSeed(seed);
 // Random.setSeed('592820');
 console.log(seed);
 
-// const { colors, background: bg, stroke } = tome.get('spatial01');
-const colors = ColorPaletteGenerator.generate(
+let colors = ColorPaletteGenerator.generate(
   { l: Random.range(0, 1), c: Random.range(0, 0.4), h: Random.range(0, 360) },
   Random.pick([
     'analogous',
@@ -36,7 +34,14 @@ const colors = ColorPaletteGenerator.generate(
       block: Random.range(-1, 1),
     },
   },
-).map((c) => formatCss(oklch({ mode: 'oklch', ...c })));
+)
+  .sort((a, b) => {
+    // Sort colors by lightness in OKLCH color space
+    const lA = a.l ?? 0;
+    const lB = b.l ?? 0;
+    return lA - lB;
+  })
+  .map((c) => formatCss(oklch({ mode: 'oklch', ...c })));
 
 const bg = colors.reduce((lightest, color) => {
   // Compare lightness values in OKLCH color space
@@ -45,9 +50,7 @@ const bg = colors.reduce((lightest, color) => {
   return colorL < lightestL ? color : lightest;
 }, colors[0]);
 
-logColors([...colors, bg]);
-
-const color = colors[0];
+colors = colors.filter((c) => c !== bg);
 
 logColors([...colors, bg]);
 
@@ -343,62 +346,24 @@ function neonStyle(
   context.lineCap = 'round';
   context.lineJoin = 'round';
 
-  const baseColor = walker.color;
-
-  // Outer glow - very soft and wide with heavy blur
-  context.globalCompositeOperation = 'screen';
-  context.filter = 'blur(24px)';
-  context.strokeStyle = `hsl(from ${baseColor} h s l / 0.15)`;
-  context.lineWidth = walker.size * 2.5;
-  // context.lineWidth = walker.size * 2;
+  context.strokeStyle = colors[0];
+  context.lineWidth = walker.size * 2;
   drawShape(context, pts, false);
   context.stroke();
 
-  // Second glow layer with medium blur
-  context.globalCompositeOperation = 'screen';
-  context.filter = 'blur(16px)';
-  context.strokeStyle = `hsl(from ${baseColor} h s l / 0.25)`;
-  context.lineWidth = walker.size * 1.8;
-  // context.lineWidth = walker.size * 0.8;
-  drawShape(context, pts, false);
-  context.stroke();
+  colors.forEach((c, idx) => {
+    context.strokeStyle = c;
+    context.lineWidth = mapRange(
+      idx,
+      0,
+      colors.length - 1,
+      walker.size * 2 - 8,
+      8,
+    );
 
-  // Third glow layer - more saturated with light blur
-  context.globalCompositeOperation = 'lighter';
-  context.filter = 'blur(8px)';
-  context.strokeStyle = `hsl(from ${baseColor} h calc(s * 1.2) l / 0.5)`;
-  // context.lineWidth = walker.size * 1.2;
-  context.lineWidth = walker.size * 1;
-  drawShape(context, pts, false);
-  context.stroke();
-
-  // Main color layer with subtle blur
-  context.globalCompositeOperation = 'lighter';
-  context.filter = 'blur(4px)';
-  context.strokeStyle = `hsl(from ${baseColor} h s calc(l * 1.2) / 0.5)`;
-  context.lineWidth = walker.size * 0.7;
-  // context.lineWidth = walker.size * 0.5;
-  drawShape(context, pts, false);
-  context.stroke();
-
-  // Inner bright layer - no blur for sharpness
-  context.globalCompositeOperation = 'source-over';
-  context.filter = 'blur(8px)';
-  context.strokeStyle = `hsl(from ${baseColor} h calc(s * 0.75) calc(l * 1.5))`;
-  context.lineWidth = walker.size * 0.35;
-  drawShape(context, pts, false);
-  context.stroke();
-
-  // Core - near white with hint of color, sharp
-  context.strokeStyle = `hsl(from ${baseColor} h calc(s * 0.2) calc(l * 1.8))`;
-  // context.lineWidth = walker.size * 0.15;
-  context.lineWidth = walker.size * 0.09;
-  drawShape(context, pts, false);
-  context.stroke();
-
-  // Reset composite operation
-  context.globalCompositeOperation = 'source-over';
-  context.restore();
+    drawShape(context, pts, false);
+    context.stroke();
+  });
 }
 
 export const sketch = ({ wrap, context, width, height }: SketchProps) => {
@@ -426,10 +391,9 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
 
     const walker = makeWalker(
       start,
-      color,
-      color,
+      colors[0],
+      colors[0],
       neonStyle,
-      // 'solidStyle',
       config.flat,
       config.size,
       config.stepSize,
@@ -563,7 +527,7 @@ export const settings: SketchSettings = {
   mode: '2d',
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
-  animate: true,
+  animate: false,
   duration: 20_000,
   playFps: 60,
   exportFps: 60,
