@@ -25,6 +25,8 @@ export const sketch = ({ wrap, context, width }: SketchProps) => {
     context.fillStyle = '#ffffff';
     context.fillRect(0, 0, width, height);
 
+    drawUIElements(context, width, height, lw);
+
     context.strokeStyle = '#111111';
     context.lineWidth = lw;
     context.lineJoin = 'round';
@@ -250,4 +252,119 @@ function drawRubberBand(ctx: CanvasRenderingContext2D, circles: Circle[]): void 
   }
 
   ctx.stroke();
+}
+
+// --- UI decoration elements ---
+
+function drawUIElements(ctx: CanvasRenderingContext2D, w: number, h: number, lw: number): void {
+  drawTopRightPanel(ctx, w, h, lw);
+  drawBottomLeftPanel(ctx, w, h, lw);
+  drawBottomRightGroup(ctx, w, h, lw);
+}
+
+// 稿 + large 009 + pill bar
+function drawTopRightPanel(ctx: CanvasRenderingContext2D, w: number, h: number, lw: number): void {
+  const px = w * 0.575;
+  const py = h * 0.038;
+  const pw = w * 0.388;
+  const ph = h * 0.275;
+
+  ctx.fillStyle = '#111111';
+  ctx.textAlign = 'left';
+
+  // Small kanji top-left
+  ctx.font = `${w * 0.042}px sans-serif`;
+  ctx.textBaseline = 'top';
+  ctx.fillText('稿', px + pw * 0.055, py + ph * 0.07);
+
+  // Large bold number
+  ctx.font = `900 ${w * 0.158}px sans-serif`;
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText('009', px + pw * 0.24, py + ph * 0.82);
+
+  // Pill at bottom
+  const pillW = pw * 0.72;
+  const pillH = h * 0.028;
+  const pillX = px + (pw - pillW) / 2;
+  const pillY = py + ph * 0.875;
+  const pillR = pillH / 2;
+  ctx.beginPath();
+  ctx.moveTo(pillX + pillR, pillY);
+  ctx.lineTo(pillX + pillW - pillR, pillY);
+  ctx.arc(pillX + pillW - pillR, pillY + pillR, pillR, -Math.PI / 2, Math.PI / 2);
+  ctx.lineTo(pillX + pillR, pillY + pillH);
+  ctx.arc(pillX + pillR, pillY + pillR, pillR, Math.PI / 2, -Math.PI / 2);
+  ctx.closePath();
+  ctx.strokeStyle = '#111111';
+  ctx.lineWidth = lw;
+  ctx.stroke();
+
+  ctx.textBaseline = 'alphabetic';
+}
+
+// Ring of small outlined circles
+function drawBottomLeftPanel(ctx: CanvasRenderingContext2D, w: number, h: number, lw: number): void {
+  const px = w * 0.032;
+  const py = h * 0.638;
+  const pw = w * 0.278;
+  const ph = h * 0.278;
+
+  const cx = px + pw / 2;
+  const cy = py + ph / 2;
+  const ringR = Math.min(pw, ph) * 0.32;
+  const N = 16;
+  const baseR = lw * 2.2;
+
+  for (let i = 0; i < N; i++) {
+    const angle = (i / N) * Math.PI * 2 - Math.PI / 2;
+    const dx = cx + Math.cos(angle) * ringR;
+    const dy = cy + Math.sin(angle) * ringR;
+    // Dots smaller toward bottom for a subtle 3D-rotation feel
+    const sf = 0.5 + 0.5 * ((1 - Math.sin(angle)) / 2);
+    ctx.beginPath();
+    ctx.arc(dx, dy, baseR * sf, 0, Math.PI * 2);
+    ctx.lineWidth = lw * 0.9;
+    ctx.stroke();
+  }
+}
+
+// Group of filled rounded rectangles with random sizes
+function drawBottomRightGroup(ctx: CanvasRenderingContext2D, w: number, h: number, lw: number): void {
+  const groupX = w * 0.578;
+  const groupY = h * 0.72;
+  const groupW = w * 0.388;
+  const groupH = h * 0.16;
+
+  // Same height, varying widths, evenly gapped — constrained to canvas
+  const portions = [0.28, 0.14, 0.22, 0.10, 0.18];
+  const gap = w * 0.018;
+  const margin = w * 0.038;
+  const available = w - groupX - margin;
+  const totalGaps = (portions.length - 1) * gap;
+  const totalRectW = available - totalGaps;
+  const rh = groupH;
+
+  ctx.fillStyle = '#111111';
+  let curX = groupX;
+  for (const portion of portions) {
+    const rw = portion * totalRectW;
+    const radius = Math.min(rw / 2, rh * 0.3);
+    roundRect(ctx, curX, groupY, rw, rh, radius);
+    ctx.fill();
+    curX += rw + gap;
+  }
+}
+
+function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arc(x + w - r, y + r, r, -Math.PI / 2, 0);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arc(x + w - r, y + h - r, r, 0, Math.PI / 2);
+  ctx.lineTo(x + r, y + h);
+  ctx.arc(x + r, y + h - r, r, Math.PI / 2, Math.PI);
+  ctx.lineTo(x, y + r);
+  ctx.arc(x + r, y + r, r, Math.PI, -Math.PI / 2);
+  ctx.closePath();
 }
