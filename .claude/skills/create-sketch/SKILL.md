@@ -55,6 +55,7 @@ export const settings: SketchSettings = {
   animate: ANIMATE,
   // DURATION_LINE
   // FRAMES_LINE
+  // FPS_LINES
 };
 
 ssam(sketch as Sketch<'2d'>, settings);
@@ -118,6 +119,7 @@ export const settings: SketchSettings = {
   animate: ANIMATE,
   // DURATION_LINE
   // FRAMES_LINE
+  // FPS_LINES
 };
 
 ssam(sketch, settings);
@@ -132,6 +134,7 @@ ssam(sketch, settings);
 | `ANIMATE` | `true` or `false` |
 | `// DURATION_LINE` | `duration: <ms>,` (only if animated, remove comment otherwise) |
 | `// FRAMES_LINE` | `framesFormat: ['mp4'],` (only if animated, remove comment otherwise) |
+| `// FPS_LINES` | `playFps: 60,\n  exportFps: 60,` (only if animated, remove comment otherwise) |
 | `MODE` | `webgl` or `webgl2` |
 
 Remove all comment placeholders that aren't used — don't leave `// RANDOM_IMPORT` or empty comment lines in the final file.
