@@ -1,0 +1,134 @@
+---
+name: implement-sketch
+description: >
+  Takes a generative art idea and implements it in an existing sketch file,
+  following the project's code patterns and style conventions.
+  Use when the user describes what they want a sketch to do/look like,
+  or says "implement this", "make it do X", "add X to the sketch", etc.
+  Always use this skill — don't implement from memory without reading the file first.
+---
+
+# implement-sketch
+
+Implement a generative art idea in an existing ssam sketch file, following project conventions.
+
+## Step 1: Read the target file
+
+Read the sketch file the user wants to implement in. If they haven't specified one, ask which file to work in.
+
+Also briefly scan related sketches for relevant patterns if the idea involves a technique not already present in the target file (e.g. noise fields, particle systems, grid layouts, packing algorithms).
+
+## Step 2: Understand the idea
+
+If the idea is vague or ambiguous, ask one focused clarifying question. Otherwise proceed with reasonable creative interpretation — don't over-ask.
+
+Think through:
+- What visual elements are being drawn?
+- Is there animation? If so, what changes over time?
+- What's the overall composition (grid, field, particles, paths, etc.)?
+- Which utilities from the project are relevant?
+
+## Step 3: Plan the implementation
+
+Before writing, briefly outline the approach:
+- What data structures represent the scene (plain objects/arrays, not classes)
+- What is computed once (setup) vs per-frame (render)
+- Which imports are needed
+- How animation timing maps to visual change (playhead, frame, time)
+
+## Step 4: Write the implementation
+
+### Code style rules (strict)
+
+- **No classes** — use plain objects, arrays, and functions
+- **Prefer stateless functions** — pure functions that take inputs and return outputs
+- **State in closures** — if state persists across frames, declare it before `wrap.render`, not inside it
+- **Named helper functions** — extract non-trivial logic into named functions at file scope (bottom of file), not inline lambdas
+- **TypeScript** — type all function parameters and return values; use `interface`/`type` for complex shapes
+
+### Drawing patterns to follow
+
+```typescript
+// Clear canvas
+context.fillStyle = bg;
+context.fillRect(0, 0, width, height);
+
+// Save/restore for transforms
+context.save();
+context.translate(cx, cy);
+// ... draw ...
+context.restore();
+
+// Paths
+context.beginPath();
+context.arc(x, y, r, 0, Math.PI * 2);
+context.fill();
+```
+
+### Animation patterns
+
+```typescript
+// Use playhead (0→1 per loop) for smooth cycles
+const t = mapRange(playhead, 0, 1, startVal, endVal);
+
+// Progressive reveal
+const visible = Math.floor(playhead * items.length);
+
+// Looping noise (from src/loop-noise.ts)
+const n = loopNoise(x, y, playhead, scale);
+```
+
+### State management
+
+```typescript
+// One-time setup — outside wrap.render
+const points = generatePoints(width, height);
+let count = 0;
+
+// Per-frame — inside wrap.render
+wrap.render = ({ width, height, playhead, frame }: SketchProps) => {
+  // ...
+};
+```
+
+### Color patterns
+
+Prefer these sources in order:
+1. Project palette utilities — `generateColors()` from `../subtractive-color` for RYB ramps
+2. `rampensau` — `generateColorRamp()` + `colorToCSS()` for oklch ramps
+3. Hard-coded okclh/hsl strings for simple cases
+
+### Available project utilities
+
+| Import | What it provides |
+|--------|-----------------|
+| `canvas-sketch-util/random` | `Random.range()`, `.rangeFloor()`, `.pick()`, `.noise2D/3D/4D()`, `.chance()` |
+| `canvas-sketch-util/math` | `mapRange()`, `lerp()`, `lerpArray()`, `clamp()` |
+| `../grid` | `makeGrid()` → grid cells with `{x, y, width, height, col, row}` |
+| `../loop-noise` | `loopNoise()`, `loopNoise2D()` — seamlessly looping Perlin noise |
+| `../noise-texture` | `applyNoise()` — add grain to canvas pixels |
+| `../subtractive-color` | `generateColors()` — RYB color palettes |
+| `rampensau` | `generateColorRamp()`, `colorToCSS()` |
+| `chaikin-smooth` | `smooth()` — smooth polylines |
+
+Only import what is actually used.
+
+### Hot reload boilerplate (always include if not already present)
+
+```typescript
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => wrap.dispose());
+  import.meta.hot.accept(() => wrap.hotReload());
+}
+```
+
+## Step 5: Write the file
+
+Implement the full sketch. Preserve the existing `settings` export unchanged unless the idea clearly requires changing `animate`, `duration`, or `dimensions`. Do not add unused imports or placeholder comments in the final file.
+
+## Step 6: Tell the user
+
+After writing the file:
+- One sentence describing what was implemented
+- How to run it: `VITE_SKETCH="sketches/<name>" npm run dev`
+- Any notable creative choices made (only if non-obvious)
