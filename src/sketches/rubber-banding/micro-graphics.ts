@@ -25,7 +25,7 @@ export const sketch = ({ wrap, context, width }: SketchProps) => {
     context.fillStyle = '#ffffff';
     context.fillRect(0, 0, width, height);
 
-    drawUIElements(context, width, height, lw);
+    drawUIElements(context, width, height, lw, playhead);
 
     context.strokeStyle = '#111111';
     context.lineWidth = lw;
@@ -256,10 +256,10 @@ function drawRubberBand(ctx: CanvasRenderingContext2D, circles: Circle[]): void 
 
 // --- UI decoration elements ---
 
-function drawUIElements(ctx: CanvasRenderingContext2D, w: number, h: number, lw: number): void {
+function drawUIElements(ctx: CanvasRenderingContext2D, w: number, h: number, lw: number, playhead: number): void {
   drawTopRightPanel(ctx, w, h, lw);
   drawBottomLeftPanel(ctx, w, h, lw);
-  drawBottomRightGroup(ctx, w, h, lw);
+  drawBottomRightGroup(ctx, w, h, lw, playhead);
 }
 
 // 稿 + large 009 + pill bar
@@ -328,28 +328,32 @@ function drawBottomLeftPanel(ctx: CanvasRenderingContext2D, w: number, h: number
   }
 }
 
-// Group of filled rounded rectangles with random sizes
-function drawBottomRightGroup(ctx: CanvasRenderingContext2D, w: number, h: number, lw: number): void {
+// Group of filled rounded rectangles — same height, widths animate while
+// total occupied width (rects + gaps) stays constant.
+function drawBottomRightGroup(ctx: CanvasRenderingContext2D, w: number, h: number, lw: number, playhead: number): void {
   const groupX = w * 0.578;
   const groupY = h * 0.72;
-  const groupW = w * 0.388;
-  const groupH = h * 0.16;
-
-  // Same height, varying widths, evenly gapped — constrained to canvas
-  const portions = [0.28, 0.14, 0.22, 0.10, 0.18];
+  const groupH = h * 0.07;
   const gap = w * 0.018;
   const margin = w * 0.038;
+  const N = 5;
   const available = w - groupX - margin;
-  const totalGaps = (portions.length - 1) * gap;
-  const totalRectW = available - totalGaps;
-  const rh = groupH;
+  const totalRectW = available - (N - 1) * gap;
+
+  // Each rect has a staggered sine phase; clamp minimum weight so no rect
+  // collapses, then normalize so widths always sum to totalRectW.
+  const phases = [0, 1.26, 2.51, 3.77, 5.03]; // evenly spread over 2π
+  const minWeight = 0.08;
+  const raw = phases.map(p => minWeight + (1 - minWeight) * (Math.sin(playhead * Math.PI * 2 + p) * 0.5 + 0.5));
+  const sum = raw.reduce((a, b) => a + b, 0);
+  const portions = raw.map(v => v / sum);
 
   ctx.fillStyle = '#111111';
   let curX = groupX;
   for (const portion of portions) {
     const rw = portion * totalRectW;
-    const radius = Math.min(rw / 2, rh * 0.3);
-    roundRect(ctx, curX, groupY, rw, rh, radius);
+    const radius = Math.min(rw / 2, groupH * 0.18);
+    roundRect(ctx, curX, groupY, rw, groupH, radius);
     ctx.fill();
     curX += rw + gap;
   }
