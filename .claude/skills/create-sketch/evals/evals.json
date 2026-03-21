@@ -1,0 +1,23 @@
+{
+  "skill_name": "create-sketch",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "create a sketch called ripple",
+      "expected_output": "A file src/sketches/ripple.ts is created with a 2d static ssam sketch structure, HMR boilerplate, wrap.render, and settings. No canvas-sketch-util imports since user didn't request them.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "new animated sketch called flow-field, 2d, 6 seconds, use random and math",
+      "expected_output": "A file src/sketches/flow-field.ts is created with animate: true, duration: 6000, framesFormat: ['mp4'], and imports for both canvas-sketch-util/random and canvas-sketch-util/math. HMR boilerplate present.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "make a webgl2 sketch called noise-plane, animated, 8000ms",
+      "expected_output": "A file src/sketches/noise-plane.ts is created using the WebGL2 template with ogl imports (Mesh, Program, Renderer, Triangle), mode: 'webgl2', animate: true, duration: 8000. No leftover placeholder comments.",
+      "files": []
+    }
+  ]
+}
