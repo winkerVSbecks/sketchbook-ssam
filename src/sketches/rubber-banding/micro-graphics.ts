@@ -2,7 +2,7 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 
-const DEBUG = true;
+const DEBUG = false;
 
 type CircleKind = 'asterisk' | 'ring' | 'gear';
 
@@ -75,9 +75,11 @@ ssam(sketch as Sketch<'2d'>, settings);
 // --- Layout ---
 
 function makeGrid(width: number, height: number): Vec2[] {
-  const size = Math.min(width, height) * 0.5;
+  // Grid lives in the rubber band area [0, 0, width*2/3, height]
+  const areaW = (width * 2) / 3;
+  const size = Math.min(areaW, height) * 0.65;
   const step = size / 2;
-  const ox = (width - size) / 2;
+  const ox = (areaW - size) / 2;
   const oy = (height - size) / 2;
   const pts: Vec2[] = [];
   for (let row = 0; row < 3; row++) {
@@ -89,7 +91,8 @@ function makeGrid(width: number, height: number): Vec2[] {
 }
 
 function generateLayout(grid: Vec2[], width: number, height: number): Circle[] {
-  const step = (Math.min(width, height) * 0.5) / 2;
+  // step = half the grid size; max radius keeps circles within their cell
+  const step = (Math.min((width * 2) / 3, height) * 0.65) / 2;
   const minR = step * 0.28;
   const maxR = step * 0.44;
   return pickCircles(grid, minR, maxR);
@@ -320,53 +323,46 @@ function drawUIElements(
   lw: number,
   playhead: number,
 ): void {
-  const gridBottom = h * 0.75;
-  drawTopRightPanel(ctx, w, h, lw);
-  drawBottomLeftPanel(ctx, w, h, lw, playhead, gridBottom);
-  drawBottomRightGroup(ctx, w, h, lw, playhead, gridBottom);
+  drawTopRightPanel(ctx, (w * 2) / 3, 0, w / 3, h / 2, lw);
+  drawBottomLeftPanel(ctx, 0, (h * 2) / 3, w / 3, h / 3, lw, playhead);
+  drawBottomRightGroup(ctx, (w * 2) / 3, h / 2, w / 3, h / 2, lw, playhead);
 }
 
-// 稿 + large 009 + pill bar
+// 稿 + large 009 + pill bar — fitted to rect (rx, ry, rw, rh)
 function drawTopRightPanel(
   ctx: CanvasRenderingContext2D,
-  w: number,
-  h: number,
+  rx: number,
+  ry: number,
+  rw: number,
+  rh: number,
   lw: number,
 ): void {
-  const px = w * 0.575;
-  const py = h * 0.038;
-  const pw = w * 0.388;
-  const ph = h * 0.275;
+  const pad = rw * 0.08;
 
   ctx.fillStyle = '#111111';
   ctx.textAlign = 'left';
 
   // Small kanji top-left
-  ctx.font = `${w * 0.042}px sans-serif`;
+  ctx.font = `${rh * 0.12}px sans-serif`;
   ctx.textBaseline = 'top';
-  ctx.fillText('प्रारूप', px + pw * 0.055, py + ph * 0.07);
+  ctx.fillText('稿', rx + pad, ry + pad);
 
-  // Large bold number
-  ctx.font = `900 ${w * 0.158}px sans-serif`;
+  // Large bold number sized to fill the rect
+  const numSize = Math.min(rw * 0.82, rh * 0.52);
+  ctx.font = `900 ${numSize}px sans-serif`;
   ctx.textBaseline = 'alphabetic';
-  ctx.fillText('009', px + pw * 0.24, py + ph * 0.82);
+  ctx.fillText('009', rx + pad, ry + rh * 0.78);
 
-  // Pill at bottom
-  const pillW = pw * 0.72;
-  const pillH = h * 0.028;
-  const pillX = px + (pw - pillW) / 2;
-  const pillY = py + ph * 0.875;
+  // Pill near the bottom
+  const pillW = rw * 0.75;
+  const pillH = rh * 0.06;
+  const pillX = rx + (rw - pillW) / 2;
+  const pillY = ry + rh * 0.88;
   const pillR = pillH / 2;
   ctx.beginPath();
   ctx.moveTo(pillX + pillR, pillY);
   ctx.lineTo(pillX + pillW - pillR, pillY);
-  ctx.arc(
-    pillX + pillW - pillR,
-    pillY + pillR,
-    pillR,
-    -Math.PI / 2,
-    Math.PI / 2,
-  );
+  ctx.arc(pillX + pillW - pillR, pillY + pillR, pillR, -Math.PI / 2, Math.PI / 2);
   ctx.lineTo(pillX + pillR, pillY + pillH);
   ctx.arc(pillX + pillR, pillY + pillR, pillR, Math.PI / 2, -Math.PI / 2);
   ctx.closePath();
@@ -377,21 +373,19 @@ function drawTopRightPanel(
   ctx.textBaseline = 'alphabetic';
 }
 
-// Ring of small outlined circles with animated radius wave
+// Ring of small outlined circles with animated radius wave — fitted to rect
 function drawBottomLeftPanel(
   ctx: CanvasRenderingContext2D,
-  w: number,
-  h: number,
+  rx: number,
+  ry: number,
+  rw: number,
+  rh: number,
   lw: number,
   playhead: number,
-  gridBottom: number,
 ): void {
-  const px = w * 0.032;
-  const pw = w * 0.278;
-  const ringR = pw * 0.2;
-
-  const cx = px + pw / 2;
-  const cy = gridBottom - ringR;
+  const cx = rx + rw / 2;
+  const cy = ry + rh / 2;
+  const ringR = Math.min(rw, rh) * 0.3;
   const N = 16;
   const minR = lw * 0.5;
   const maxR = lw * 1.8;
@@ -400,7 +394,6 @@ function drawBottomLeftPanel(
     const angle = (i / N) * Math.PI * 2 - Math.PI / 2;
     const dx = cx + Math.cos(angle) * ringR;
     const dy = cy + Math.sin(angle) * ringR;
-    // Wave travels around the ring: phase offset by position
     const wave =
       Math.sin(playhead * Math.PI * 2 - (i / N) * Math.PI * 2) * 0.5 + 0.5;
     const dotR = minR + (maxR - minR) * wave;
@@ -411,28 +404,24 @@ function drawBottomLeftPanel(
   }
 }
 
-// Group of filled rounded rectangles — same height, widths animate while
-// total occupied width (rects + gaps) stays constant.
+// Animated rounded rectangles — fitted to rect (rx, ry, rw, rh)
 function drawBottomRightGroup(
   ctx: CanvasRenderingContext2D,
-  w: number,
-  h: number,
+  rx: number,
+  ry: number,
+  rw: number,
+  rh: number,
   lw: number,
   playhead: number,
-  gridBottom: number,
 ): void {
-  const groupX = w * 0.578;
-  const groupH = h * 0.07;
-  const groupY = gridBottom - groupH;
-  const gap = w * 0.018;
-  const margin = w * 0.038;
+  const pad = rw * 0.06;
+  const groupH = rh * 0.14;
+  const groupY = ry + (rh - groupH) / 2;
+  const gap = rw * 0.03;
   const N = 5;
-  const available = w - groupX - margin;
-  const totalRectW = available - (N - 1) * gap;
+  const totalRectW = rw - 2 * pad - (N - 1) * gap;
 
-  // Each rect has a staggered sine phase; clamp minimum weight so no rect
-  // collapses, then normalize so widths always sum to totalRectW.
-  const phases = [0, 1.26, 2.51, 3.77, 5.03]; // evenly spread over 2π
+  const phases = [0, 1.26, 2.51, 3.77, 5.03];
   const minWeight = 0.08;
   const raw = phases.map(
     (p) =>
@@ -443,13 +432,13 @@ function drawBottomRightGroup(
   const portions = raw.map((v) => v / sum);
 
   ctx.fillStyle = '#111111';
-  let curX = groupX;
+  let curX = rx + pad;
   for (const portion of portions) {
-    const rw = portion * totalRectW;
-    const radius = Math.min(rw / 2, groupH * 0.18);
-    roundRect(ctx, curX, groupY, rw, groupH, radius);
+    const rectW = portion * totalRectW;
+    const radius = Math.min(rectW / 2, groupH * 0.18);
+    roundRect(ctx, curX, groupY, rectW, groupH, radius);
     ctx.fill();
-    curX += rw + gap;
+    curX += rectW + gap;
   }
 }
 
