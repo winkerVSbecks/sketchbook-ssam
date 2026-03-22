@@ -2,7 +2,24 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 
-const DEBUG = true;
+interface LayoutRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+interface Layout {
+  rubberBand: LayoutRect;
+  topRight: LayoutRect;
+  bottomRight: LayoutRect;
+  bottomLeft: LayoutRect;
+}
+
+const config = {
+  debug: true,
+  layout: null as Layout | null,
+};
 
 type CircleKind = 'asterisk' | 'ring' | 'gear';
 
@@ -23,31 +40,23 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     import.meta.hot.accept(() => wrap.hotReload());
   }
 
-  const grid = makeGrid(width, height);
+  config.layout = makeLayout(width, height);
+  const grid = makeGrid(config.layout.rubberBand);
   let circles: Circle[] = [];
   const lw = width * 0.003;
 
+  circles = generateLayout(grid);
   wrap.render = ({ width, height, frame, playhead }: SketchProps) => {
-    if (frame === 0) {
-      circles = generateLayout(grid, width, height);
-    }
-
     context.fillStyle = '#ffffff';
     context.fillRect(0, 0, width, height);
 
-    if (DEBUG) {
+    if (config.debug && config.layout) {
       // Layout rectangles
       context.strokeStyle = 'rgba(255, 0, 0, 0.45)';
       context.lineWidth = lw * 0.6;
       context.setLineDash([lw * 3, lw * 3]);
-      const layoutRects = [
-        [0, 0, (width * 2) / 3, height],
-        [(width * 2) / 3, 0, width / 3, height / 2],
-        [(width * 2) / 3, height / 2, width / 3, height / 2],
-        [0, (height * 2) / 3, width / 3, height / 3],
-      ];
-      for (const [rx, ry, rw, rh] of layoutRects) {
-        context.strokeRect(rx, ry, rw, rh);
+      for (const { x, y, w, h } of Object.values(config.layout)) {
+        context.strokeRect(x, y, w, h);
       }
       context.setLineDash([]);
 
@@ -60,7 +69,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       }
     }
 
-    drawUIElements(context, width, height, lw, playhead, frame);
+    drawUIElements(context, lw, playhead, frame);
 
     context.strokeStyle = '#111111';
     context.lineWidth = lw;
@@ -77,7 +86,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
 
 export const settings: SketchSettings = {
   mode: '2d',
-  dimensions: [900, 600],
+  dimensions: [900, 540],
   pixelRatio: window.devicePixelRatio,
   animate: true,
   duration: 4000,
@@ -90,31 +99,34 @@ ssam(sketch as Sketch<'2d'>, settings);
 
 // --- Layout ---
 
-function makeGrid(width: number, height: number): Vec2[] {
-  // Grid lives in the rubber band area [0, 0, width*2/3, height]
-  const areaW = (width * 2) / 3;
-  const size = Math.min(areaW, height) * 0.65;
+function makeLayout(w: number, h: number): Layout {
+  return {
+    rubberBand: { x: 0, y: 0, w: (w * 2) / 3, h: h },
+    topRight: { x: (w * 2) / 3, y: 0, w: w / 3, h: h / 2 },
+    bottomRight: { x: (w * 2) / 3, y: h / 2, w: w / 3, h: h / 2 },
+    bottomLeft: { x: 0, y: (h * 2) / 3, w: w * 0.25, h: h / 3 },
+  };
+}
+
+function makeGrid({ x: rx, y: ry, w: rw, h: rh }: LayoutRect): Vec2[] {
+  const size = Math.min(rw, rh) * 0.65;
   const step = size / 2;
-  const ox = (areaW - size) / 2;
-  const oy = (height - size) / 2;
-  // Exclude points inside the bottom-left panel [0, height*2/3, width/3, height]
-  const exX = width / 3;
-  const exY = (height * 2) / 3;
+  const ox = rx + (rw - size) / 2;
+  const oy = ry + (rh - size) / 2;
+  // Exclude bottom-left and bottom-centre points
   const pts: Vec2[] = [];
   for (let row = 0; row < 3; row++) {
     for (let col = 0; col < 3; col++) {
-      const x = ox + col * step;
-      const y = oy + row * step;
-      if (x < exX && y > exY) continue;
-      pts.push({ x, y });
+      if (row === 2 && col <= 1) continue;
+      pts.push({ x: ox + col * step, y: oy + row * step });
     }
   }
   return pts;
 }
 
-function generateLayout(grid: Vec2[], width: number, height: number): Circle[] {
-  // step = half the grid size; max radius keeps circles within their cell
-  const step = (Math.min((width * 2) / 3, height) * 0.65) / 2;
+function generateLayout(grid: Vec2[]): Circle[] {
+  const { w: rw, h: rh } = config.layout!.rubberBand;
+  const step = (Math.min(rw, rh) * 0.65) / 2;
   const minR = step * 0.28;
   const maxR = step * 0.44;
   return pickCircles(grid, minR, maxR);
@@ -141,7 +153,12 @@ function pickCircles(grid: Vec2[], minR: number, maxR: number): Circle[] {
     return hullCircles([
       { x: grid[0].x, y: grid[0].y, r: minR, kind: kinds[0] },
       { x: grid[mid].x, y: grid[mid].y, r: minR, kind: kinds[1] },
-      { x: grid[grid.length - 1].x, y: grid[grid.length - 1].y, r: minR, kind: kinds[2] },
+      {
+        x: grid[grid.length - 1].x,
+        y: grid[grid.length - 1].y,
+        r: minR,
+        kind: kinds[2],
+      },
     ]);
   }
 
@@ -341,15 +358,38 @@ function drawRubberBand(
 
 function drawUIElements(
   ctx: CanvasRenderingContext2D,
-  w: number,
-  h: number,
   lw: number,
   playhead: number,
   frame: number,
 ): void {
-  drawTopRightPanel(ctx, (w * 2) / 3, 0, w / 3, h / 2, lw, frame);
-  drawBottomLeftPanel(ctx, 0, (h * 2) / 3, w / 3, h / 3, lw, playhead);
-  drawBottomRightGroup(ctx, (w * 2) / 3, h / 2, w / 3, h / 2, lw, playhead);
+  const { topRight, bottomLeft, bottomRight } = config.layout!;
+  drawTopRightPanel(
+    ctx,
+    topRight.x,
+    topRight.y,
+    topRight.w,
+    topRight.h,
+    lw,
+    frame,
+  );
+  drawBottomLeftPanel(
+    ctx,
+    bottomLeft.x,
+    bottomLeft.y,
+    bottomLeft.w,
+    bottomLeft.h,
+    lw,
+    playhead,
+  );
+  drawBottomRightGroup(
+    ctx,
+    bottomRight.x,
+    bottomRight.y,
+    bottomRight.w,
+    bottomRight.h,
+    lw,
+    playhead,
+  );
 }
 
 // Stacked: text / number / pill — all same width W, centred in rect
@@ -373,11 +413,12 @@ function drawTopRightPanel(
   ctx.textBaseline = 'alphabetic';
 
   // --- Number: scale font so "000" spans exactly W, then measure real ink bounds ---
-  ctx.font = '900 100px sans-serif';
+  ctx.font = '100px "SF Mono", ui-monospace, monospace';
   const refW = ctx.measureText('000').width;
   const numSize = 100 * (W / refW);
-  ctx.font = `900 ${numSize}px sans-serif`;
-  const numM = ctx.measureText(numStr);
+  ctx.font = `${numSize}px "SF Mono", ui-monospace, monospace`;
+  // Measure "000" (not the live numStr) so layout is stable across all frames
+  const numM = ctx.measureText('000');
   const numAsc = numM.actualBoundingBoxAscent;
   const numDesc = numM.actualBoundingBoxDescent;
   const numInkH = numAsc + numDesc;
@@ -388,7 +429,8 @@ function drawTopRightPanel(
   (ctx as any).letterSpacing = '0px';
   const rawTextW = ctx.measureText(label).width;
   const clusters = [...new Intl.Segmenter().segment(label)].length;
-  (ctx as any).letterSpacing = `${(W - rawTextW) / Math.max(clusters - 1, 1)}px`;
+  (ctx as any).letterSpacing =
+    `${(W - rawTextW) / Math.max(clusters - 1, 1)}px`;
   const textM = ctx.measureText(label);
   const textAsc = textM.actualBoundingBoxAscent;
   const textDesc = textM.actualBoundingBoxDescent;
@@ -407,7 +449,7 @@ function drawTopRightPanel(
 
   // Number — ink top at startY + textInkH + gap
   const numBaseY = startY + textInkH + gap + numAsc;
-  ctx.font = `900 ${numSize}px sans-serif`;
+  ctx.font = `${numSize}px "SF Mono", ui-monospace, monospace`;
   ctx.fillText(numStr, startX, numBaseY);
 
   // Pill — top at startY + textInkH + gap + numInkH + gap
