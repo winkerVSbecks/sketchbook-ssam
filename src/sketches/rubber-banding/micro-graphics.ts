@@ -2,7 +2,7 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 
-const DEBUG = false;
+const DEBUG = true;
 
 type CircleKind = 'asterisk' | 'ring' | 'gear';
 
@@ -36,7 +36,23 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     context.fillRect(0, 0, width, height);
 
     if (DEBUG) {
-      context.fillStyle = 'rgba(255, 0, 0, 0.5)';
+      // Layout rectangles
+      context.strokeStyle = 'rgba(255, 0, 0, 0.45)';
+      context.lineWidth = lw * 0.6;
+      context.setLineDash([lw * 3, lw * 3]);
+      const layoutRects = [
+        [0, 0, (width * 2) / 3, height],
+        [(width * 2) / 3, 0, width / 3, height / 2],
+        [(width * 2) / 3, height / 2, width / 3, height / 2],
+        [0, (height * 2) / 3, width / 3, height / 3],
+      ];
+      for (const [rx, ry, rw, rh] of layoutRects) {
+        context.strokeRect(rx, ry, rw, rh);
+      }
+      context.setLineDash([]);
+
+      // Rubber band grid points
+      context.fillStyle = 'rgba(255, 0, 0, 0.6)';
       for (const pt of grid) {
         context.beginPath();
         context.arc(pt.x, pt.y, lw * 2, 0, Math.PI * 2);
@@ -81,10 +97,16 @@ function makeGrid(width: number, height: number): Vec2[] {
   const step = size / 2;
   const ox = (areaW - size) / 2;
   const oy = (height - size) / 2;
+  // Exclude points inside the bottom-left panel [0, height*2/3, width/3, height]
+  const exX = width / 3;
+  const exY = (height * 2) / 3;
   const pts: Vec2[] = [];
   for (let row = 0; row < 3; row++) {
     for (let col = 0; col < 3; col++) {
-      pts.push({ x: ox + col * step, y: oy + row * step });
+      const x = ox + col * step;
+      const y = oy + row * step;
+      if (x < exX && y > exY) continue;
+      pts.push({ x, y });
     }
   }
   return pts;
@@ -115,10 +137,11 @@ function pickCircles(grid: Vec2[], minR: number, maxR: number): Circle[] {
   }
 
   if (result.length < 3) {
+    const mid = Math.floor(grid.length / 2);
     return hullCircles([
       { x: grid[0].x, y: grid[0].y, r: minR, kind: kinds[0] },
-      { x: grid[4].x, y: grid[4].y, r: minR, kind: kinds[1] },
-      { x: grid[8].x, y: grid[8].y, r: minR, kind: kinds[2] },
+      { x: grid[mid].x, y: grid[mid].y, r: minR, kind: kinds[1] },
+      { x: grid[grid.length - 1].x, y: grid[grid.length - 1].y, r: minR, kind: kinds[2] },
     ]);
   }
 
@@ -345,7 +368,7 @@ function drawTopRightPanel(
   // Small kanji top-left
   ctx.font = `${rh * 0.12}px sans-serif`;
   ctx.textBaseline = 'top';
-  ctx.fillText('稿', rx + pad, ry + pad);
+  ctx.fillText('प्रारूप', rx + pad, ry + pad);
 
   // Large bold number sized to fill the rect
   const numSize = Math.min(rw * 0.82, rh * 0.52);
