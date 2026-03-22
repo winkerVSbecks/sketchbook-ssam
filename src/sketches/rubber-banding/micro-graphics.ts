@@ -60,7 +60,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       }
     }
 
-    drawUIElements(context, width, height, lw, playhead);
+    drawUIElements(context, width, height, lw, playhead, frame);
 
     context.strokeStyle = '#111111';
     context.lineWidth = lw;
@@ -345,13 +345,14 @@ function drawUIElements(
   h: number,
   lw: number,
   playhead: number,
+  frame: number,
 ): void {
-  drawTopRightPanel(ctx, (w * 2) / 3, 0, w / 3, h / 2, lw);
+  drawTopRightPanel(ctx, (w * 2) / 3, 0, w / 3, h / 2, lw, frame);
   drawBottomLeftPanel(ctx, 0, (h * 2) / 3, w / 3, h / 3, lw, playhead);
   drawBottomRightGroup(ctx, (w * 2) / 3, h / 2, w / 3, h / 2, lw, playhead);
 }
 
-// 稿 + large 009 + pill bar — fitted to rect (rx, ry, rw, rh)
+// Stacked: text / number / pill — all same width W, centred in rect
 function drawTopRightPanel(
   ctx: CanvasRenderingContext2D,
   rx: number,
@@ -359,41 +360,69 @@ function drawTopRightPanel(
   rw: number,
   rh: number,
   lw: number,
+  frame: number,
 ): void {
-  const pad = rw * 0.08;
+  const W = rw * 0.72;
+  const gap = rh * 0.06;
+  const pillH = rh * 0.07;
+  const startX = rx + (rw - W) / 2;
+  const label = 'प्रारूप';
+  const numStr = String(frame).padStart(3, '0');
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+
+  // --- Number: scale font so "000" spans exactly W, then measure real ink bounds ---
+  ctx.font = '900 100px sans-serif';
+  const refW = ctx.measureText('000').width;
+  const numSize = 100 * (W / refW);
+  ctx.font = `900 ${numSize}px sans-serif`;
+  const numM = ctx.measureText(numStr);
+  const numAsc = numM.actualBoundingBoxAscent;
+  const numDesc = numM.actualBoundingBoxDescent;
+  const numInkH = numAsc + numDesc;
+
+  // --- Text: set letterSpacing to stretch to W, measure real ink bounds ---
+  const textSize = rh * 0.09;
+  ctx.font = `${textSize}px sans-serif`;
+  (ctx as any).letterSpacing = '0px';
+  const rawTextW = ctx.measureText(label).width;
+  const clusters = [...new Intl.Segmenter().segment(label)].length;
+  (ctx as any).letterSpacing = `${(W - rawTextW) / Math.max(clusters - 1, 1)}px`;
+  const textM = ctx.measureText(label);
+  const textAsc = textM.actualBoundingBoxAscent;
+  const textDesc = textM.actualBoundingBoxDescent;
+  const textInkH = textAsc + textDesc;
+
+  // --- Centre stack using real ink heights ---
+  const stackH = textInkH + gap + numInkH + gap + pillH;
+  const startY = ry + (rh - stackH) / 2;
 
   ctx.fillStyle = '#111111';
-  ctx.textAlign = 'left';
 
-  // Small kanji top-left
-  ctx.font = `${rh * 0.12}px sans-serif`;
-  ctx.textBaseline = 'top';
-  ctx.fillText('प्रारूप', rx + pad, ry + pad);
+  // Text — baseline at startY + textAsc so ink top is at startY
+  ctx.font = `${textSize}px sans-serif`;
+  ctx.fillText(label, startX, startY + textAsc);
+  (ctx as any).letterSpacing = '0px';
 
-  // Large bold number sized to fill the rect
-  const numSize = Math.min(rw * 0.82, rh * 0.52);
+  // Number — ink top at startY + textInkH + gap
+  const numBaseY = startY + textInkH + gap + numAsc;
   ctx.font = `900 ${numSize}px sans-serif`;
-  ctx.textBaseline = 'alphabetic';
-  ctx.fillText('009', rx + pad, ry + rh * 0.78);
+  ctx.fillText(numStr, startX, numBaseY);
 
-  // Pill near the bottom
-  const pillW = rw * 0.75;
-  const pillH = rh * 0.06;
-  const pillX = rx + (rw - pillW) / 2;
-  const pillY = ry + rh * 0.88;
+  // Pill — top at startY + textInkH + gap + numInkH + gap
+  const pillY = startY + textInkH + gap + numInkH + gap;
   const pillR = pillH / 2;
   ctx.beginPath();
-  ctx.moveTo(pillX + pillR, pillY);
-  ctx.lineTo(pillX + pillW - pillR, pillY);
-  ctx.arc(pillX + pillW - pillR, pillY + pillR, pillR, -Math.PI / 2, Math.PI / 2);
-  ctx.lineTo(pillX + pillR, pillY + pillH);
-  ctx.arc(pillX + pillR, pillY + pillR, pillR, Math.PI / 2, -Math.PI / 2);
+  ctx.moveTo(startX + pillR, pillY);
+  ctx.lineTo(startX + W - pillR, pillY);
+  ctx.arc(startX + W - pillR, pillY + pillR, pillR, -Math.PI / 2, Math.PI / 2);
+  ctx.lineTo(startX + pillR, pillY + pillH);
+  ctx.arc(startX + pillR, pillY + pillR, pillR, Math.PI / 2, -Math.PI / 2);
   ctx.closePath();
   ctx.strokeStyle = '#111111';
   ctx.lineWidth = lw;
   ctx.stroke();
-
-  ctx.textBaseline = 'alphabetic';
 }
 
 // Ring of small outlined circles with animated radius wave — fitted to rect
@@ -439,7 +468,7 @@ function drawBottomRightGroup(
 ): void {
   const pad = rw * 0.06;
   const groupH = rh * 0.14;
-  const groupY = ry + (rh - groupH) / 2;
+  const groupY = ry + rh - groupH - pad;
   const gap = rw * 0.03;
   const N = 5;
   const totalRectW = rw - 2 * pad - (N - 1) * gap;
