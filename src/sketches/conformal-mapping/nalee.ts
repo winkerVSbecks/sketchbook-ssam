@@ -1,10 +1,9 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-import { mapRange } from 'canvas-sketch-util/math';
 import { Pane } from 'tweakpane';
-import { createNaleeSystem } from '../nalee';
-import type { Config, Walker, DomainToWorld, Node } from '../nalee';
+import { createNaleeSystem, makeDomain, xyToCoords } from '../nalee';
+import type { Config, Walker } from '../nalee';
 import { drawShape } from '../nalee/paths';
 import { clrs } from '../../colors/clrs';
 
@@ -159,28 +158,6 @@ function makeConformalStyle(cx: number, cy: number, halfSize: number) {
   };
 }
 
-function makeCenteredDomainToWorld(
-  resolution: number[],
-  padding: number,
-  width: number,
-  height: number,
-): DomainToWorld {
-  return (x, y) => [
-    mapRange(x, -resolution[0], resolution[0], padding, width - padding),
-    mapRange(y, -resolution[1], resolution[1], padding, height - padding),
-  ];
-}
-
-function makeCenteredDomain(resolution: number[], domainToWorld: DomainToWorld): Node[] {
-  const domain: Node[] = [];
-  for (let y = -resolution[1]; y <= resolution[1]; y++) {
-    for (let x = -resolution[0]; x <= resolution[0]; x++) {
-      const [worldX, worldY] = domainToWorld(x, y);
-      domain.push({ x, y, occupied: false, id: `${x}-${y}`, worldX, worldY });
-    }
-  }
-  return domain;
-}
 
 function buildSystem(
   width: number,
@@ -201,13 +178,8 @@ function buildSystem(
     pathStyle: makeConformalStyle(cx, cy, halfSize),
     flat: true,
   };
-  const domainToWorld = makeCenteredDomainToWorld(
-    config.resolution,
-    config.padding,
-    width,
-    height,
-  );
-  const domain = makeCenteredDomain(config.resolution, domainToWorld);
+  const domainToWorld = xyToCoords(config.resolution, config.padding, width, height);
+  const domain = makeDomain(config.resolution, domainToWorld);
   return createNaleeSystem(
     domain,
     config,
