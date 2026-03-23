@@ -1,10 +1,11 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-import { lerpFrames } from 'canvas-sketch-util/math';
+import { Pane } from 'tweakpane';
 import { createNaleeSystem, makeDomain, xyToCoords } from '../nalee';
 import type { Config, Walker } from '../nalee';
 import { drawShape } from '../nalee/paths';
+import { clrs } from '../../colors/clrs';
 
 Random.setSeed(Random.getRandomSeed());
 
@@ -13,26 +14,116 @@ interface Complex {
   im: number;
 }
 
-// z² conformal map: input extent ±1.5, output extent ±4.5
-const INPUT_EXTENT = 1.5;
-const OUTPUT_EXTENT = 4.5;
-
-function zSquared(z: Complex): Complex {
-  return { re: z.re * z.re - z.im * z.im, im: 2 * z.re * z.im };
+interface Transform {
+  label: string;
+  inputExtent: number;
+  outputExtent: number;
+  fn: (z: Complex) => Complex;
 }
+
+const transforms: Transform[] = [
+  {
+    label: 'z²',
+    inputExtent: 1.5,
+    outputExtent: 4.5,
+    fn: (z) => ({ re: z.re * z.re - z.im * z.im, im: 2 * z.re * z.im }),
+  },
+  {
+    label: '1/z',
+    inputExtent: 1.5,
+    outputExtent: 3,
+    fn: (z) => {
+      const d = z.re * z.re + z.im * z.im || 1e-10;
+      return { re: z.re / d, im: -z.im / d };
+    },
+  },
+  {
+    label: 'z²/2',
+    inputExtent: 1.5,
+    outputExtent: 2.25,
+    fn: (z) => ({ re: (z.re * z.re - z.im * z.im) / 2, im: z.re * z.im }),
+  },
+  {
+    label: '1/(2z²)',
+    inputExtent: 1.5,
+    outputExtent: 5,
+    fn: (z) => {
+      const re2 = z.re * z.re - z.im * z.im;
+      const im2 = 2 * z.re * z.im;
+      const d = 2 * (re2 * re2 + im2 * im2) || 1e-10;
+      return { re: re2 / d, im: -im2 / d };
+    },
+  },
+  {
+    label: 'eᶻ',
+    inputExtent: Math.log(2),
+    outputExtent: 2,
+    fn: (z) => {
+      const r = Math.exp(z.re);
+      return { re: r * Math.cos(z.im), im: r * Math.sin(z.im) };
+    },
+  },
+  {
+    label: 'sin(z)',
+    inputExtent: Math.PI,
+    outputExtent: 2.1,
+    fn: (z) => ({
+      re: Math.sin(z.re) * Math.cosh(z.im),
+      im: Math.cos(z.re) * Math.sinh(z.im),
+    }),
+  },
+  {
+    label: 'cos(z)',
+    inputExtent: Math.PI,
+    outputExtent: 2.1,
+    fn: (z) => ({
+      re: Math.cos(z.re) * Math.cosh(z.im),
+      im: -Math.sin(z.re) * Math.sinh(z.im),
+    }),
+  },
+  {
+    label: 'ln(z)',
+    inputExtent: 1.5,
+    outputExtent: Math.PI,
+    fn: (z) => ({
+      re: 0.5 * Math.log(z.re * z.re + z.im * z.im || 1e-10),
+      im: Math.atan2(z.im, z.re),
+    }),
+  },
+];
+
+function paletteFromIndex(index: number): { bg: string; colors: string[] } {
+  const palette = clrs[index];
+  const bg = Random.shuffle(palette).pop()!;
+  return { bg: bg, colors: palette };
+}
+
+const initialPaletteIndex = Random.rangeFloor(0, clrs.length);
+
+const PARAMS = {
+  paletteIndex: initialPaletteIndex,
+  transformIndex: 0,
+  lineWidth: 4,
+  size: 16,
+  walkerCount: 20,
+  padding: 0.03125,
+  ...paletteFromIndex(initialPaletteIndex),
+};
 
 function applyConformal(
   pt: Point,
   cx: number,
   cy: number,
   halfSize: number,
+  transform: Transform,
 ): Point {
+  const { inputExtent, outputExtent, fn } = transform;
   const z: Complex = {
-    re: ((pt[0] - cx) / halfSize) * INPUT_EXTENT,
-    im: -((pt[1] - cy) / halfSize) * INPUT_EXTENT,
+    re: ((pt[0] - cx) / halfSize) * inputExtent,
+    im: -((pt[1] - cy) / halfSize) * inputExtent,
   };
-  const w = zSquared(z);
-  const outScale = halfSize / OUTPUT_EXTENT;
+  const w = fn(z);
+  const outScale = halfSize / outputExtent;
   return [cx + w.re * outScale, cy - w.im * outScale];
 }
 
@@ -42,48 +133,41 @@ function makeConformalStyle(cx: number, cy: number, halfSize: number) {
     walker: Walker,
     pts: Point[],
   ) {
-    const transformed = pts.map((pt) => applyConformal(pt, cx, cy, halfSize));
-
-    let l = 0;
-    for (let i = 1; i < transformed.length; i++) {
-      l += Math.hypot(
-        transformed[i][0] - transformed[i - 1][0],
-        transformed[i][1] - transformed[i - 1][1],
-      );
-    }
+    const transform = transforms[PARAMS.transformIndex];
+    const transformed = pts.map((pt) =>
+      applyConformal(pt, cx, cy, halfSize, transform),
+    );
 
     context.save();
     context.lineCap = 'round';
     context.lineJoin = 'round';
     context.strokeStyle = walker.color;
-    context.lineWidth = 4;
+    context.lineWidth = PARAMS.lineWidth;
     drawShape(context, transformed, false);
     context.stroke();
     context.restore();
   };
 }
 
-export const sketch = ({ wrap, context, width, height }: SketchProps) => {
-  if (import.meta.hot) {
-    import.meta.hot.dispose(() => wrap.dispose());
-    import.meta.hot.accept(() => wrap.hotReload());
-  }
-
-  const cx = width / 2;
-  const cy = height / 2;
-  const halfSize = Math.min(width, height) / 2;
-
-  const size = 16;
+function buildSystem(
+  width: number,
+  height: number,
+  cx: number,
+  cy: number,
+  halfSize: number,
+) {
   const config: Config = {
-    resolution: [Math.floor(width / size), Math.floor(height / size)],
-    size,
-    stepSize: Math.round(size / 3),
-    walkerCount: 20,
-    padding: 0.03125,
+    resolution: [
+      Math.floor(width / PARAMS.size),
+      Math.floor(height / PARAMS.size),
+    ],
+    size: PARAMS.size,
+    stepSize: Math.round(PARAMS.size / 3),
+    walkerCount: PARAMS.walkerCount,
+    padding: PARAMS.padding,
     pathStyle: makeConformalStyle(cx, cy, halfSize),
     flat: true,
   };
-
   const domainToWorld = xyToCoords(
     config.resolution,
     config.padding,
@@ -91,28 +175,70 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     height,
   );
   const domain = makeDomain(config.resolution, domainToWorld);
-
-  const colors = [
-    '#FFDE73',
-    '#EE7744',
-    '#F9BC4F',
-    '#2C7C79',
-    '#4C4D78',
-    '#FFF5E0',
-  ];
-  const bg = '#101019';
-
-  const naleeSystem = createNaleeSystem(
+  return createNaleeSystem(
     domain,
     config,
     domainToWorld,
-    colors,
-    bg,
+    PARAMS.colors,
+    PARAMS.bg,
   );
+}
+
+export const sketch = ({ wrap, context, width, height }: SketchProps) => {
+  const cx = width / 2;
+  const cy = height / 2;
+  const halfSize = Math.min(width, height) / 2;
+
+  const pane = new Pane() as any;
+  pane.containerElem_.style.zIndex = 1;
+
+  const transformOptions = Object.fromEntries(
+    transforms.map((t, i) => [t.label, i]),
+  );
+  pane
+    .addBinding(PARAMS, 'paletteIndex', {
+      label: 'palette',
+      min: 0,
+      max: clrs.length - 1,
+      step: 1,
+    })
+    .on('change', ({ value }: { value: number }) => {
+      Object.assign(PARAMS, paletteFromIndex(value));
+    });
+  pane.addBinding(PARAMS, 'transformIndex', {
+    label: 'transform',
+    options: transformOptions,
+  });
+  pane.addBinding(PARAMS, 'lineWidth', {
+    label: 'line width',
+    min: 1,
+    max: 20,
+    step: 1,
+  });
+  pane.addBinding(PARAMS, 'size', { min: 4, max: 64, step: 4 });
+  pane.addBinding(PARAMS, 'walkerCount', {
+    label: 'walkers',
+    min: 1,
+    max: 100,
+    step: 1,
+  });
+  pane.addBinding(PARAMS, 'padding', { min: 0, max: 0.1, step: 0.005 });
+
+  let naleeSystem = buildSystem(width, height, cx, cy, halfSize);
+  pane.addButton({ title: 'Regenerate' }).on('click', () => {
+    naleeSystem = buildSystem(width, height, cx, cy, halfSize);
+  });
+
+  if (import.meta.hot) {
+    import.meta.hot.dispose(() => {
+      wrap.dispose();
+      pane.dispose();
+    });
+    import.meta.hot.accept(() => wrap.hotReload());
+  }
 
   wrap.render = (props: SketchProps) => {
-    const { width, height } = props;
-    context.fillStyle = bg;
+    context.fillStyle = PARAMS.bg;
     context.fillRect(0, 0, width, height);
     naleeSystem(props);
   };
