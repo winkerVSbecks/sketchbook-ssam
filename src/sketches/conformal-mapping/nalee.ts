@@ -104,18 +104,20 @@ const transforms: Transform[] = [
 function paletteFromIndex(index: number): { bg: string; colors: string[] } {
   const palette = clrs[index];
   const bg = Random.shuffle(palette).pop()!;
-  return { bg: bg, colors: palette };
+  const colors = palette.filter((c) => c !== bg);
+  return { bg, colors };
 }
 
 const initialPaletteIndex = Random.rangeFloor(0, clrs.length);
 
 const PARAMS = {
   paletteIndex: initialPaletteIndex,
-  transformIndex: 0,
+  transformIndex: 5,
   lineWidth: 4,
-  size: 16,
-  walkerCount: 20,
+  size: 24,
+  walkerCount: 4,
   padding: 0.03125,
+  subdivisions: 8,
   ...paletteFromIndex(initialPaletteIndex),
 };
 
@@ -136,6 +138,21 @@ function applyConformal(
   return [cx + w.re * outScale, cy - w.im * outScale];
 }
 
+function subdividePath(pts: Point[], divisions: number): Point[] {
+  if (pts.length < 2) return pts;
+  const result: Point[] = [];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [x0, y0] = pts[i];
+    const [x1, y1] = pts[i + 1];
+    for (let j = 0; j < divisions; j++) {
+      const t = j / divisions;
+      result.push([x0 + (x1 - x0) * t, y0 + (y1 - y0) * t]);
+    }
+  }
+  result.push(pts[pts.length - 1]);
+  return result;
+}
+
 function makeConformalStyle(cx: number, cy: number, halfSize: number) {
   return function (
     context: CanvasRenderingContext2D,
@@ -143,7 +160,8 @@ function makeConformalStyle(cx: number, cy: number, halfSize: number) {
     pts: Point[],
   ) {
     const transform = transforms[PARAMS.transformIndex];
-    const transformed = pts.map((pt) =>
+    const subdivided = subdividePath(pts, PARAMS.subdivisions);
+    const transformed = subdivided.map((pt) =>
       applyConformal(pt, cx, cy, halfSize, transform),
     );
 
@@ -157,7 +175,6 @@ function makeConformalStyle(cx: number, cy: number, halfSize: number) {
     context.restore();
   };
 }
-
 
 function buildSystem(
   width: number,
@@ -178,7 +195,12 @@ function buildSystem(
     pathStyle: makeConformalStyle(cx, cy, halfSize),
     flat: true,
   };
-  const domainToWorld = xyToCoords(config.resolution, config.padding, width, height);
+  const domainToWorld = xyToCoords(
+    config.resolution,
+    config.padding,
+    width,
+    height,
+  );
   const domain = makeDomain(config.resolution, domainToWorld);
   return createNaleeSystem(
     domain,
@@ -228,6 +250,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     step: 1,
   });
   pane.addBinding(PARAMS, 'padding', { min: 0, max: 0.1, step: 0.005 });
+  pane.addBinding(PARAMS, 'subdivisions', { min: 1, max: 32, step: 1 });
 
   let naleeSystem = buildSystem(width, height, cx, cy, halfSize);
   pane.addButton({ title: 'Regenerate' }).on('click', () => {
