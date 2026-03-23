@@ -118,9 +118,10 @@ const transforms: Record<string, Transform> = {
   },
   sin_z: {
     label: 'sin(z)',
-    inputExtentRe: 1.5,
-    inputExtentIm: 1.5,
-    outputExtent: 3,
+    // Re ∈ [-π, π] closes the ellipses; Im extent sets outermost ellipse radius via cosh
+    inputExtentRe: Math.PI,
+    inputExtentIm: Math.acosh(2),
+    outputExtent: 2.1,
     fn: (z) => ({
       re: Math.sin(z.re) * Math.cosh(z.im),
       im: Math.cos(z.re) * Math.sinh(z.im),
@@ -128,9 +129,9 @@ const transforms: Record<string, Transform> = {
   },
   cos_z: {
     label: 'cos(z)',
-    inputExtentRe: 1.5,
-    inputExtentIm: 1.5,
-    outputExtent: 3,
+    inputExtentRe: Math.PI,
+    inputExtentIm: Math.acosh(2),
+    outputExtent: 2.1,
     fn: (z) => ({
       re: Math.cos(z.re) * Math.cosh(z.im),
       im: -Math.sin(z.re) * Math.sinh(z.im),

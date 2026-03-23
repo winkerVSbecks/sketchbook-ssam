@@ -18,12 +18,16 @@ interface Transform {
 const transforms: Transform[] = [
   {
     label: 'z²',
-    inputExtentRe: 1.5, inputExtentIm: 1.5, outputExtent: 4.5,
+    inputExtentRe: 1.5,
+    inputExtentIm: 1.5,
+    outputExtent: 4.5,
     fn: (z) => ({ re: z.re * z.re - z.im * z.im, im: 2 * z.re * z.im }),
   },
   {
     label: '1/z',
-    inputExtentRe: 1.5, inputExtentIm: 1.5, outputExtent: 3,
+    inputExtentRe: 1.5,
+    inputExtentIm: 1.5,
+    outputExtent: 3,
     fn: (z) => {
       const d = z.re * z.re + z.im * z.im;
       return { re: z.re / d, im: -z.im / d };
@@ -31,12 +35,16 @@ const transforms: Transform[] = [
   },
   {
     label: 'z²/2',
-    inputExtentRe: 1.5, inputExtentIm: 1.5, outputExtent: 2.25,
+    inputExtentRe: 1.5,
+    inputExtentIm: 1.5,
+    outputExtent: 2.25,
     fn: (z) => ({ re: (z.re * z.re - z.im * z.im) / 2, im: z.re * z.im }),
   },
   {
     label: '1/(2z²)',
-    inputExtentRe: 1.5, inputExtentIm: 1.5, outputExtent: 5,
+    inputExtentRe: 1.5,
+    inputExtentIm: 1.5,
+    outputExtent: 5,
     fn: (z) => {
       const re2 = z.re * z.re - z.im * z.im;
       const im2 = 2 * z.re * z.im;
@@ -46,7 +54,9 @@ const transforms: Transform[] = [
   },
   {
     label: 'eᶻ',
-    inputExtentRe: Math.log(2), inputExtentIm: Math.PI, outputExtent: 2,
+    inputExtentRe: Math.log(2),
+    inputExtentIm: Math.PI,
+    outputExtent: 2,
     fn: (z) => {
       const r = Math.exp(z.re);
       return { re: r * Math.cos(z.im), im: r * Math.sin(z.im) };
@@ -54,7 +64,10 @@ const transforms: Transform[] = [
   },
   {
     label: 'sin(z)',
-    inputExtentRe: 1.5, inputExtentIm: 1.5, outputExtent: 3,
+    // Re ∈ [-π, π] closes the ellipses; Im extent sets outermost ellipse radius via cosh
+    inputExtentRe: Math.PI,
+    inputExtentIm: Math.acosh(2),
+    outputExtent: 2.1,
     fn: (z) => ({
       re: Math.sin(z.re) * Math.cosh(z.im),
       im: Math.cos(z.re) * Math.sinh(z.im),
@@ -62,7 +75,9 @@ const transforms: Transform[] = [
   },
   {
     label: 'cos(z)',
-    inputExtentRe: 1.5, inputExtentIm: 1.5, outputExtent: 3,
+    inputExtentRe: Math.PI,
+    inputExtentIm: Math.acosh(2),
+    outputExtent: 2.1,
     fn: (z) => ({
       re: Math.cos(z.re) * Math.cosh(z.im),
       im: -Math.sin(z.re) * Math.sinh(z.im),
@@ -70,7 +85,9 @@ const transforms: Transform[] = [
   },
   {
     label: 'ln(z)',
-    inputExtentRe: 1.5, inputExtentIm: 1.5, outputExtent: Math.PI,
+    inputExtentRe: 1.5,
+    inputExtentIm: 1.5,
+    outputExtent: Math.PI,
     fn: (z) => ({
       re: 0.5 * Math.log(z.re * z.re + z.im * z.im),
       im: Math.atan2(z.im, z.re),
@@ -81,7 +98,7 @@ const transforms: Transform[] = [
 const config = {
   cols: 3,
   rows: 3,
-  gridLines: 10,
+  gridLines: 12,
   samples: 150,
   cellPadding: 28,
   labelHeight: 28,
@@ -93,11 +110,22 @@ const config = {
   baseExtent: 1.5,
 };
 
-function toCanvas(z: Complex, cx: number, cy: number, xScale: number, yScale: number): [number, number] {
+function toCanvas(
+  z: Complex,
+  cx: number,
+  cy: number,
+  xScale: number,
+  yScale: number,
+): [number, number] {
   return [cx + z.re * xScale, cy - z.im * yScale];
 }
 
-function makeHLines(extentRe: number, extentIm: number, n: number, samples: number): Complex[][] {
+function makeHLines(
+  extentRe: number,
+  extentIm: number,
+  n: number,
+  samples: number,
+): Complex[][] {
   return Array.from({ length: n + 1 }, (_, i) => {
     const im = mapRange(i, 0, n, -extentIm, extentIm);
     return Array.from({ length: samples + 1 }, (_, j) => ({
@@ -107,7 +135,12 @@ function makeHLines(extentRe: number, extentIm: number, n: number, samples: numb
   });
 }
 
-function makeVLines(extentRe: number, extentIm: number, n: number, samples: number): Complex[][] {
+function makeVLines(
+  extentRe: number,
+  extentIm: number,
+  n: number,
+  samples: number,
+): Complex[][] {
   return Array.from({ length: n + 1 }, (_, i) => {
     const re = mapRange(i, 0, n, -extentRe, extentRe);
     return Array.from({ length: samples + 1 }, (_, j) => ({
@@ -182,25 +215,48 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
 
   const cellW = width / config.cols;
   const cellH = height / config.rows;
-  const usable = Math.min(cellW, cellH) - config.cellPadding * 2 - config.labelHeight;
+  const usable =
+    Math.min(cellW, cellH) - config.cellPadding * 2 - config.labelHeight;
 
   // Base grid (identity) — cell [0,0]
   const baseScale = usable / (config.baseExtent * 2);
-  const baseHLines = makeHLines(config.baseExtent, config.baseExtent, config.gridLines, config.samples);
-  const baseVLines = makeVLines(config.baseExtent, config.baseExtent, config.gridLines, config.samples);
+  const baseHLines = makeHLines(
+    config.baseExtent,
+    config.baseExtent,
+    config.gridLines,
+    config.samples,
+  );
+  const baseVLines = makeVLines(
+    config.baseExtent,
+    config.baseExtent,
+    config.gridLines,
+    config.samples,
+  );
 
   // Pre-compute transformed lines for each transform
-  const transformedData = transforms.map(({ fn, label, inputExtentRe, inputExtentIm, outputExtent }) => {
-    const hLines = makeHLines(inputExtentRe, inputExtentIm, config.gridLines, config.samples);
-    const vLines = makeVLines(inputExtentRe, inputExtentIm, config.gridLines, config.samples);
-    const scale = usable / (outputExtent * 2);
-    return {
-      label,
-      hLines: hLines.map((line) => line.map(fn)),
-      vLines: vLines.map((line) => line.map(fn)),
-      scale,
-    };
-  });
+  const transformedData = transforms.map(
+    ({ fn, label, inputExtentRe, inputExtentIm, outputExtent }) => {
+      const hLines = makeHLines(
+        inputExtentRe,
+        inputExtentIm,
+        config.gridLines,
+        config.samples,
+      );
+      const vLines = makeVLines(
+        inputExtentRe,
+        inputExtentIm,
+        config.gridLines,
+        config.samples,
+      );
+      const scale = usable / (outputExtent * 2);
+      return {
+        label,
+        hLines: hLines.map((line) => line.map(fn)),
+        vLines: vLines.map((line) => line.map(fn)),
+        scale,
+      };
+    },
+  );
 
   wrap.render = ({ width, height }: SketchProps) => {
     context.fillStyle = config.bg;
@@ -218,10 +274,15 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     // Cell [0,0]: base grid
     drawCell(
       context,
-      baseHLines, baseVLines,
+      baseHLines,
+      baseVLines,
       'z',
-      0, 0, cellW, cellH,
-      baseScale, baseScale,
+      0,
+      0,
+      cellW,
+      cellH,
+      baseScale,
+      baseScale,
       config.lineWidth,
     );
 
@@ -233,10 +294,15 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       const row = Math.floor(idx / config.cols);
       drawCell(
         context,
-        hLines, vLines,
+        hLines,
+        vLines,
         `f(z) = ${label}`,
-        col * cellW, row * cellH, cellW, cellH,
-        scale, scale,
+        col * cellW,
+        row * cellH,
+        cellW,
+        cellH,
+        scale,
+        scale,
         config.lineWidth,
       );
     }
