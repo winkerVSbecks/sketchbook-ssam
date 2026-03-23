@@ -16,17 +16,18 @@ Scaffold a new ssam sketch file with the right structure, imports, and settings.
 
 Ask the user (in a single message, all at once):
 
-1. **Sketch name** — what to call it (becomes the filename, e.g. `circle-grid` → `src/sketches/circle-grid.ts`)
-2. **Mode** — `2d` (default), `webgl`, or `webgl2`
-3. **Animated?** — yes or no (default: no). If yes, ask for duration in milliseconds (default: 4000)
-4. **Random?** — import `canvas-sketch-util/random`? (yes/no)
-5. **Math?** — import `canvas-sketch-util/math` for `mapRange` etc.? (yes/no)
+1. **Sketch name** — what to call it (becomes the filename)
+2. **Directory** — subdirectory under `src/sketches/` (e.g. `grids` → `src/sketches/grids/<name>.ts`). If not specified, prompt for it.
+3. **Mode** — `2d` (default), `webgl`, or `webgl2`
+4. **Animated?** — yes or no (default: no). If yes, ask for duration in milliseconds (default: 4000)
+5. **Random?** — import `canvas-sketch-util/random`? (yes/no)
+6. **Math?** — import `canvas-sketch-util/math` for `mapRange` etc.? (yes/no)
 
 If any of these are already clear from context (e.g. the user said "animated sketch called foo"), don't re-ask for those — only ask what's missing.
 
 ## Step 2: Create the file
 
-Create `src/sketches/<name>.ts` using the appropriate template below.
+Create `src/sketches/<dir_name>/<name>.ts` using the appropriate template below. Create the directory if it doesn't exist.
 
 ### 2D template
 
@@ -143,4 +144,4 @@ Remove all comment placeholders that aren't used — don't leave `// RANDOM_IMPO
 
 After creating the file, tell them:
 - The file path created
-- How to run it: `VITE_SKETCH="sketches/<name>" npm run dev`
+- How to run it: `VITE_SKETCH="sketches/<dir_name>/<name>" npm run dev`
