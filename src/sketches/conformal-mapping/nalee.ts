@@ -1,9 +1,10 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
+import { mapRange } from 'canvas-sketch-util/math';
 import { Pane } from 'tweakpane';
-import { createNaleeSystem, makeDomain, xyToCoords } from '../nalee';
-import type { Config, Walker } from '../nalee';
+import { createNaleeSystem } from '../nalee';
+import type { Config, Walker, DomainToWorld, Node } from '../nalee';
 import { drawShape } from '../nalee/paths';
 import { clrs } from '../../colors/clrs';
 
@@ -16,7 +17,8 @@ interface Complex {
 
 interface Transform {
   label: string;
-  inputExtent: number;
+  inputExtentRe: number;
+  inputExtentIm: number;
   outputExtent: number;
   fn: (z: Complex) => Complex;
 }
@@ -24,13 +26,15 @@ interface Transform {
 const transforms: Transform[] = [
   {
     label: 'z²',
-    inputExtent: 1.5,
+    inputExtentRe: 1.5,
+    inputExtentIm: 1.5,
     outputExtent: 4.5,
     fn: (z) => ({ re: z.re * z.re - z.im * z.im, im: 2 * z.re * z.im }),
   },
   {
     label: '1/z',
-    inputExtent: 1.5,
+    inputExtentRe: 1.5,
+    inputExtentIm: 1.5,
     outputExtent: 3,
     fn: (z) => {
       const d = z.re * z.re + z.im * z.im || 1e-10;
@@ -39,13 +43,15 @@ const transforms: Transform[] = [
   },
   {
     label: 'z²/2',
-    inputExtent: 1.5,
+    inputExtentRe: 1.5,
+    inputExtentIm: 1.5,
     outputExtent: 2.25,
     fn: (z) => ({ re: (z.re * z.re - z.im * z.im) / 2, im: z.re * z.im }),
   },
   {
     label: '1/(2z²)',
-    inputExtent: 1.5,
+    inputExtentRe: 1.5,
+    inputExtentIm: 1.5,
     outputExtent: 5,
     fn: (z) => {
       const re2 = z.re * z.re - z.im * z.im;
@@ -56,7 +62,8 @@ const transforms: Transform[] = [
   },
   {
     label: 'eᶻ',
-    inputExtent: Math.log(2),
+    inputExtentRe: Math.log(2),
+    inputExtentIm: Math.PI,
     outputExtent: 2,
     fn: (z) => {
       const r = Math.exp(z.re);
@@ -65,7 +72,8 @@ const transforms: Transform[] = [
   },
   {
     label: 'sin(z)',
-    inputExtent: Math.PI,
+    inputExtentRe: Math.PI,
+    inputExtentIm: Math.acosh(2),
     outputExtent: 2.1,
     fn: (z) => ({
       re: Math.sin(z.re) * Math.cosh(z.im),
@@ -74,7 +82,8 @@ const transforms: Transform[] = [
   },
   {
     label: 'cos(z)',
-    inputExtent: Math.PI,
+    inputExtentRe: Math.PI,
+    inputExtentIm: Math.acosh(2),
     outputExtent: 2.1,
     fn: (z) => ({
       re: Math.cos(z.re) * Math.cosh(z.im),
@@ -83,7 +92,8 @@ const transforms: Transform[] = [
   },
   {
     label: 'ln(z)',
-    inputExtent: 1.5,
+    inputExtentRe: 1.5,
+    inputExtentIm: 1.5,
     outputExtent: Math.PI,
     fn: (z) => ({
       re: 0.5 * Math.log(z.re * z.re + z.im * z.im || 1e-10),
@@ -117,10 +127,10 @@ function applyConformal(
   halfSize: number,
   transform: Transform,
 ): Point {
-  const { inputExtent, outputExtent, fn } = transform;
+  const { inputExtentRe, inputExtentIm, outputExtent, fn } = transform;
   const z: Complex = {
-    re: ((pt[0] - cx) / halfSize) * inputExtent,
-    im: -((pt[1] - cy) / halfSize) * inputExtent,
+    re: ((pt[0] - cx) / halfSize) * inputExtentRe,
+    im: -((pt[1] - cy) / halfSize) * inputExtentIm,
   };
   const w = fn(z);
   const outScale = halfSize / outputExtent;
@@ -149,6 +159,29 @@ function makeConformalStyle(cx: number, cy: number, halfSize: number) {
   };
 }
 
+function makeCenteredDomainToWorld(
+  resolution: number[],
+  padding: number,
+  width: number,
+  height: number,
+): DomainToWorld {
+  return (x, y) => [
+    mapRange(x, -resolution[0], resolution[0], padding, width - padding),
+    mapRange(y, -resolution[1], resolution[1], padding, height - padding),
+  ];
+}
+
+function makeCenteredDomain(resolution: number[], domainToWorld: DomainToWorld): Node[] {
+  const domain: Node[] = [];
+  for (let y = -resolution[1]; y <= resolution[1]; y++) {
+    for (let x = -resolution[0]; x <= resolution[0]; x++) {
+      const [worldX, worldY] = domainToWorld(x, y);
+      domain.push({ x, y, occupied: false, id: `${x}-${y}`, worldX, worldY });
+    }
+  }
+  return domain;
+}
+
 function buildSystem(
   width: number,
   height: number,
@@ -168,13 +201,13 @@ function buildSystem(
     pathStyle: makeConformalStyle(cx, cy, halfSize),
     flat: true,
   };
-  const domainToWorld = xyToCoords(
+  const domainToWorld = makeCenteredDomainToWorld(
     config.resolution,
     config.padding,
     width,
     height,
   );
-  const domain = makeDomain(config.resolution, domainToWorld);
+  const domain = makeCenteredDomain(config.resolution, domainToWorld);
   return createNaleeSystem(
     domain,
     config,
