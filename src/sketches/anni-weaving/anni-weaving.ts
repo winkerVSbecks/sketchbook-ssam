@@ -1,7 +1,7 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-import { randomPalette } from '../colors';
+import { randomPalette } from '../../colors';
 
 Random.setSeed(Random.getRandomSeed());
 
