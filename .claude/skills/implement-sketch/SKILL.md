@@ -110,8 +110,38 @@ Prefer these sources in order:
 | `../subtractive-color` | `generateColors()` — RYB color palettes |
 | `rampensau` | `generateColorRamp()`, `colorToCSS()` |
 | `chaikin-smooth` | `smooth()` — smooth polylines |
+| `tweakpane` | `Pane` — always imported for the `config` panel |
 
-Only import what is actually used.
+Only import what is actually used (except `tweakpane` — always import it).
+
+### Config object and Tweakpane (always include)
+
+Every sketch must have a top-level `config` object holding all tuneable parameters. Wire each parameter to a Tweakpane `Pane` instance so the user can edit them live.
+
+```typescript
+import { Pane } from 'tweakpane';
+
+const config = {
+  count: 100,
+  speed: 0.5,
+  radius: 10,
+  // ... all tuneable values
+};
+
+const pane = new Pane() as any;
+pane.containerElem_.style.zIndex = 1;
+
+pane.addBinding(config, 'count', { min: 1, max: 500, step: 1 });
+pane.addBinding(config, 'speed', { min: 0, max: 2, step: 0.01 });
+pane.addBinding(config, 'radius', { min: 1, max: 100, step: 0.5 });
+```
+
+Rules:
+- **All magic numbers** that affect the visual output go in `config`, not scattered as constants or inline literals.
+- **Color strings** that are tuneable go in `config` too (tweakpane renders a color picker automatically for CSS hex strings).
+- Give each `addBinding` call sensible `min`/`max`/`step` options based on the parameter's range.
+- In the render function, read from `config` directly — e.g. `config.radius` — so live edits take effect immediately.
+- Do **not** destructure `config` at the top of `wrap.render`; reference it directly so tweakpane changes are always picked up.
 
 ### Hot reload boilerplate (always include if not already present)
 

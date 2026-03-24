@@ -17,7 +17,7 @@ Scaffold a new ssam sketch file with the right structure, imports, and settings.
 Ask the user (in a single message, all at once):
 
 1. **Sketch name** — what to call it (becomes the filename)
-2. **Directory** — subdirectory under `src/sketches/` (e.g. `grids` → `src/sketches/grids/<name>.ts`). If not specified, prompt for it.
+2. **Directory** — subdirectory under `src/sketches/` (e.g. `grids` → `src/sketches/grids/<name>.ts`). If not specified, default to `src/sketches/` (no subdirectory).
 3. **Mode** — `2d` (default), `webgl`, or `webgl2`
 4. **Animated?** — yes or no (default: no). If yes, ask for duration in milliseconds (default: 4000)
 5. **Random?** — import `canvas-sketch-util/random`? (yes/no)
@@ -27,7 +27,9 @@ If any of these are already clear from context (e.g. the user said "animated ske
 
 ## Step 2: Create the file
 
-Create `src/sketches/<dir_name>/<name>.ts` using the appropriate template below. Create the directory if it doesn't exist.
+Create the file using the appropriate template below:
+- With subdirectory: `src/sketches/<dir_name>/<name>.ts` (create directory if needed)
+- Without subdirectory: `src/sketches/<name>.ts`
 
 ### 2D template
 
@@ -144,4 +146,4 @@ Remove all comment placeholders that aren't used — don't leave `// RANDOM_IMPO
 
 After creating the file, tell them:
 - The file path created
-- How to run it: `VITE_SKETCH="sketches/<dir_name>/<name>" npm run dev`
+- How to run it: `VITE_SKETCH="sketches/<dir_name>/<name>" npm run dev` (or `VITE_SKETCH="sketches/<name>" npm run dev` if no subdirectory)

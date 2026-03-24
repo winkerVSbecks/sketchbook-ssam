@@ -54,11 +54,89 @@ function makeHoundstooth(scale: number): PatternFn {
   };
 }
 
+// Basket weave — n×n blocks alternate over/under
+function makeBasket(n: number): PatternFn {
+  return (c, r, offset) => {
+    const cGroup = Math.floor((c + Math.floor(offset)) / n);
+    const rGroup = Math.floor(r / n);
+    return (cGroup + rGroup) % 2 === 0;
+  };
+}
+
+// Satin — floats spaced evenly with no adjacent interlacings
+function makeSatin(s: number): PatternFn {
+  const step = satinStep(s);
+  return (c, r, offset) =>
+    ((c - r * step + Math.floor(offset) + 10000 * s) % s + s) % s < 1;
+}
+
+// Waffle — warp floats on diamond grid edges creating a waffle texture
+function makeWaffle(s: number): PatternFn {
+  const edge = Math.max(1, Math.floor(s / 5));
+  return (c, r, offset) => {
+    const off = Math.floor(offset);
+    const d1 = ((c + r + off + 10000 * s) % s + s) % s;
+    const d2 = ((c - r + off + 10000 * s) % s + s) % s;
+    return d1 < edge || d2 < edge;
+  };
+}
+
+// Brickwork — twill blocks staggered by half-repeat like brick courses
+function makeBrickwork(s: number, o: number): PatternFn {
+  const half = Math.floor(s / 2);
+  const rowsPerCourse = Math.max(1, Math.floor(s / 2));
+  return (c, r, offset) => {
+    const brick = Math.floor(r / rowsPerCourse) % 2 === 0 ? 0 : half;
+    return ((c - r + brick + offset + 10000 * s) % s + s) % s < o;
+  };
+}
+
+// Broken twill — twill that reverses every s columns, creating a zigzag
+function makeBrokenTwill(s: number, o: number): PatternFn {
+  const period = 2 * s;
+  return (c, r, offset) => {
+    const cMod = ((c % period) + period) % period;
+    const dir = cMod < s ? 1 : -1;
+    return ((dir * (c - r) + offset + 10000 * s) % s + s) % s < o;
+  };
+}
+
+// Monk's belt — alternating bands of plain weave and warp floats
+function makeMonksBelt(s: number): PatternFn {
+  return (c, r, offset) => {
+    const off = Math.floor(offset);
+    const rMod = ((r + off) % (2 * s) + 2 * s) % (2 * s);
+    if (rMod < s) {
+      // plain weave band
+      return (c + r) % 2 === 0;
+    }
+    // warp float band
+    return true;
+  };
+}
+
+function satinStep(s: number): number {
+  for (let step = 2; step < s - 1; step++) {
+    if (gcd(step, s) === 1) return step;
+  }
+  return 2;
+}
+
+function gcd(a: number, b: number): number {
+  return b === 0 ? a : gcd(b, a % b);
+}
+
 const warpOnTop: PatternFn = Random.pick([
   makeTwill(shaft, over),
   makeHerringbone(shaft, over),
   makeDiamond(shaft),
   makeHoundstooth(Random.rangeFloor(1, 3)),
+  makeBasket(Random.rangeFloor(2, 5)),
+  makeSatin(shaft),
+  makeWaffle(shaft),
+  makeBrickwork(shaft, over),
+  makeBrokenTwill(shaft, over),
+  makeMonksBelt(shaft),
 ]);
 
 const COLS = 20;
