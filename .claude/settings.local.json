@@ -10,7 +10,8 @@
       "WebFetch(domain:www.gorillasun.de)",
       "Bash(git -C /Users/varunvachhar/Documents/projects/sketchbook-ssam status)",
       "Bash(git -C /Users/varunvachhar/Documents/projects/sketchbook-ssam diff)",
-      "Bash(git -C /Users/varunvachhar/Documents/projects/sketchbook-ssam log --oneline -5)"
+      "Bash(git -C /Users/varunvachhar/Documents/projects/sketchbook-ssam log --oneline -5)",
+      "Bash(git:*)"
     ]
   }
 }
