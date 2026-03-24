@@ -5,17 +5,61 @@ import { randomPalette } from '../colors';
 
 Random.setSeed(Random.getRandomSeed());
 
-// Twill parameters — randomly selected from valid weave structures
 const shaft = Random.pick([4, 6, 8, 12]);
 const over = Random.rangeFloor(1, shaft);
 
 console.log({ seed: Random.getSeed(), shaft, over });
 
-// true = warp on top, false = weft on top
-// offset shifts the diagonal, creating animation when driven by playhead
-function warpOnTop(c: number, r: number, offset: number): boolean {
-  return (c - r + offset + 10000 * shaft) % shaft < over;
+type PatternFn = (c: number, r: number, offset: number) => boolean;
+
+// Diagonal stripe
+function makeTwill(s: number, o: number): PatternFn {
+  return (c, r, offset) =>
+    ((c - r + offset + 10000 * s) % s + s) % s < o;
 }
+
+// Chevron — twill that mirrors direction every `shaft` rows
+function makeHerringbone(s: number, o: number): PatternFn {
+  const period = 2 * s;
+  return (c, r, offset) => {
+    const rMod = ((r % period) + period) % period;
+    const rFolded = rMod < s ? rMod : 2 * s - rMod - 1;
+    return ((c - rFolded + offset + 10000 * s) % s + s) % s < o;
+  };
+}
+
+// Diamond — diagonal folded to create lozenge shapes
+function makeDiamond(s: number): PatternFn {
+  const half = s / 2;
+  const o = Math.max(1, Math.floor(s / 4));
+  return (c, r, offset) => {
+    const raw = ((c - r + offset + 10000 * s) % s + s) % s;
+    const folded = raw < half ? raw : s - raw;
+    return folded < o;
+  };
+}
+
+// Houndstooth — 4×4 matrix tiled at given scale
+function makeHoundstooth(scale: number): PatternFn {
+  const m = [
+    [1, 1, 0, 0],
+    [1, 0, 0, 1],
+    [0, 0, 1, 1],
+    [0, 1, 1, 0],
+  ];
+  return (c, r, offset) => {
+    const row = (Math.floor(r / scale) % 4 + 4) % 4;
+    const col = ((Math.floor(c / scale) + Math.floor(offset)) % 4 + 4) % 4;
+    return m[row][col] === 1;
+  };
+}
+
+const warpOnTop: PatternFn = Random.pick([
+  makeTwill(shaft, over),
+  makeHerringbone(shaft, over),
+  makeDiamond(shaft),
+  makeHoundstooth(Random.rangeFloor(1, 3)),
+]);
 
 const COLS = 20;
 const ROWS = 20;
