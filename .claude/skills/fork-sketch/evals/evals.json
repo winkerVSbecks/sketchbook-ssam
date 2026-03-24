@@ -1,0 +1,45 @@
+{
+  "skill_name": "fork-sketch",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "fork src/sketches/anni-weaving.ts into anni-weaving-color and make the warp and weft colors shift slowly over time",
+      "expected_output": "User is asked what subdirectory to create (since source is in src/sketches/ root). After user provides a name (e.g. 'anni-weaving'), original is moved to src/sketches/anni-weaving/anni-weaving.ts via git mv, fork is created at src/sketches/anni-weaving/anni-weaving-color.ts with the color-shift changes applied. Both file paths are reported, with run commands for each.",
+      "files": [
+        "src/sketches/anni-weaving.ts"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "fork src/sketches/grids/squares.ts into squares-rounded and round the corners of each square",
+      "expected_output": "Source is already in a subdirectory, so the original is NOT moved. Fork is created at src/sketches/grids/squares-rounded.ts with rounded-corner drawing applied. The original src/sketches/grids/squares.ts is left untouched.",
+      "files": [
+        "src/sketches/grids/squares.ts"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "fork src/sketches/fermat-spiral.ts into fermat-spiral-v2 and replace the circles with lines radiating from each point",
+      "expected_output": "User is asked what subdirectory to create (source is in src/sketches/ root). Original moved to src/sketches/<subdir>/fermat-spiral.ts via git mv, fork created at src/sketches/<subdir>/fermat-spiral-v2.ts with circles replaced by radiating lines. Config object and tweakpane bindings present in the fork. Run commands for both files are provided.",
+      "files": [
+        "src/sketches/fermat-spiral.ts"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "copy src/sketches/noise-field.ts to a new file called noise-field-sparse with half as many particles",
+      "expected_output": "Skill recognises this as a fork request. Source is in src/sketches/ root so user is prompted for a subdirectory name. Original is moved via git mv, fork is created with particle count reduced. The prompt phrasing ('copy ... to') does not prevent the subdirectory move behaviour.",
+      "files": [
+        "src/sketches/noise-field.ts"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "make a variant of src/sketches/rubber-banding/micro-graphics.ts called micro-graphics-dark with a dark background",
+      "expected_output": "Source is already in a subdirectory (rubber-banding), so the original stays put. Fork created at src/sketches/rubber-banding/micro-graphics-dark.ts with background colour changed to dark. Original file is not modified.",
+      "files": [
+        "src/sketches/rubber-banding/micro-graphics.ts"
+      ]
+    }
+  ]
+}
