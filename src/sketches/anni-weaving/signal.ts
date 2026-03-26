@@ -121,8 +121,8 @@ function makePalette(n: number, hStart: number, hEnd: number): string[] {
     } else {
       const t = n > 1 ? i / (n - 1) : 0;
       const h = (hStart + t * ((hEnd - hStart + 1) % 1)) % 1;
-      const l = Random.range(0.30, 0.72);
-      const s = Random.range(0.10, 0.22);
+      const l = Random.range(0.3, 0.72);
+      const s = Random.range(0.1, 0.22);
       colors.push(makePanel(h, l, s));
     }
   }
@@ -176,7 +176,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     import.meta.hot.accept(() => wrap.hotReload());
   }
 
-  wrap.render = ({ width, height }: SketchProps) => {
+  wrap.render = ({ width, height, playhead }: SketchProps) => {
     const pad = width * config.pad;
     const weaveW = width - pad * 2;
     const weaveH = height - pad * 2;
@@ -195,7 +195,8 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     let warpStart = 0;
     for (let c = 1; c <= config.cols; c++) {
       const prevColor = colColors[(c - 1) % colColors.length];
-      const currColor = c < config.cols ? colColors[c % colColors.length] : null;
+      const currColor =
+        c < config.cols ? colColors[c % colColors.length] : null;
       if (currColor !== prevColor) {
         context.fillStyle = prevColor;
         context.fillRect(warpStart * cellW, 0, (c - warpStart) * cellW, weaveH);
@@ -209,11 +210,16 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       context.fillStyle = rowColors[r % rowColors.length];
       let spanStart = -1;
       for (let c = 0; c <= config.cols; c++) {
-        const onTop = c < config.cols && !warpOnTop(c, r, 0);
+        const onTop = c < config.cols && !warpOnTop(c, r, playhead * shaft);
         if (onTop && spanStart === -1) {
           spanStart = c;
         } else if (!onTop && spanStart !== -1) {
-          context.fillRect(spanStart * cellW, y, (c - spanStart) * cellW, weftH);
+          context.fillRect(
+            spanStart * cellW,
+            y,
+            (c - spanStart) * cellW,
+            weftH,
+          );
           spanStart = -1;
         }
       }
@@ -228,6 +234,10 @@ export const settings: SketchSettings = {
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
   animate: true,
+  duration: 1000,
+  framesFormat: ['mp4'],
+  playFps: 60,
+  exportFps: 60,
 };
 
 ssam(sketch as Sketch<'2d'>, settings);

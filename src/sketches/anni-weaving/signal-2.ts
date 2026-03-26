@@ -156,7 +156,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     import.meta.hot.accept(() => wrap.hotReload());
   }
 
-  wrap.render = ({ width, height }: SketchProps) => {
+  wrap.render = ({ width, height, playhead }: SketchProps) => {
     const pad = width * config.pad;
     const weaveW = width - pad * 2;
     const weaveH = height - pad * 2;
@@ -189,7 +189,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       context.fillStyle = rowColors[r % rowColors.length];
       let spanStart = -1;
       for (let c = 0; c <= config.cols; c++) {
-        const onTop = c < config.cols && !warpOnTop(c, r, 0);
+        const onTop = c < config.cols && !warpOnTop(c, r, playhead * shaft);
         if (onTop && spanStart === -1) {
           spanStart = c;
         } else if (!onTop && spanStart !== -1) {
@@ -208,6 +208,10 @@ export const settings: SketchSettings = {
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
   animate: true,
+  duration: 1000,
+  framesFormat: ['mp4'],
+  playFps: 60,
+  exportFps: 60,
 };
 
 ssam(sketch as Sketch<'2d'>, settings);
