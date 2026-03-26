@@ -178,7 +178,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       const currColor = c < config.cols ? colColors[c % colColors.length] : null;
       if (currColor !== prevColor) {
         context.fillStyle = prevColor;
-        context.fillRect(warpStart * cellW, 0, (c - warpStart) * cellW, weaveH);
+        context.fillRect(warpStart * cellW, 0, (c - warpStart) * warpW, weaveH);
         warpStart = c;
       }
     }
