@@ -120,18 +120,12 @@ const cells = {
     y: number,
     w: number,
     h: number,
-    [, tr, , bl]: Corners
+    _corners: Corners
   ) => {
     context.beginPath();
     context.moveTo(x, y);
-    context.lineTo(x + w - (tr ? config.r : 0), y);
-    if (tr) {
-      context.arcTo(x + w, y, x + w, y + config.r, config.r);
-    }
-    context.arcTo(x + w, y + h, x, y + h, w - (bl ? config.r : 0));
-    if (bl) {
-      context.arcTo(x, y + h, x, y + h - config.r, config.r);
-    }
+    context.lineTo(x + w, y);
+    context.arcTo(x + w, y + h, x, y + h, w);
     context.closePath();
     context.fill();
   },
@@ -141,25 +135,13 @@ const cells = {
     y: number,
     w: number,
     h: number,
-    [tl, , br]: Corners
+    _corners: Corners
   ) => {
     context.beginPath();
-    context.moveTo(x - (tl ? config.r : 0), y);
+    context.moveTo(x, y);
     context.lineTo(x + w, y);
-    context.lineTo(x + w, y + h - (br ? config.r : 0));
-    if (br) {
-      context.arcTo(x + w, y + h, x, y + h, config.r);
-    }
-    context.arcTo(
-      x,
-      y + h,
-      x,
-      y + (tl ? config.r : 0),
-      w - (br ? config.r : 0) - (tl ? config.r : 0)
-    );
-    if (tl) {
-      context.arcTo(x, y, x + config.r, y, config.r);
-    }
+    context.lineTo(x + w, y + h);
+    context.arcTo(x, y + h, x, y, w);
     context.fill();
   },
   '023-arc': (
@@ -168,23 +150,11 @@ const cells = {
     y: number,
     w: number,
     h: number,
-    [tl, , br]: Corners
+    _corners: Corners
   ) => {
     context.beginPath();
-    context.moveTo(x, y + (tl ? config.r : 0));
-    if (tl) {
-      context.arcTo(x, y, x + w, y, config.r);
-    }
-    context.arcTo(
-      x + w,
-      y,
-      x + w,
-      y + h - (br ? config.r : 0),
-      w - (br ? config.r : 0)
-    );
-    if (br) {
-      context.arcTo(x + w, y + h, x, y + h, config.r);
-    }
+    context.moveTo(x, y);
+    context.arcTo(x + w, y, x + w, y + h, w);
     context.lineTo(x, y + h);
     context.closePath();
     context.fill();
@@ -195,19 +165,13 @@ const cells = {
     y: number,
     w: number,
     h: number,
-    [, tr, , bl]: Corners
+    _corners: Corners
   ) => {
     context.beginPath();
-    context.moveTo(x + w - (tr ? config.r : 0), y);
-    if (tr) {
-      context.arcTo(x + w, y, x + w, y + h, config.r);
-    }
+    context.moveTo(x + w, y);
     context.lineTo(x + w, y + h);
-    context.lineTo(x + (bl ? config.r : 0), y + h);
-    if (bl) {
-      context.arcTo(x, y + h, x, y + h - config.r, config.r);
-    }
-    context.arcTo(x, y, x + w, y, w - (tr ? config.r : 0));
+    context.lineTo(x, y + h);
+    context.arcTo(x, y, x + w, y, w);
     context.fill();
   },
 } as const;
@@ -464,6 +428,60 @@ function roundCorners() {
   });
 }
 
+// Draw bg-colored notches at corners to create smooth rounded open ends.
+// Each notch fills the r×r corner area minus the inward quarter-circle,
+// painted in bg color on top of the shape.
+// Arc centers are offset inward by r so the arc curves toward the corner
+// (outward from the cell), matching roundRect behaviour.
+function drawCornerNotches(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  corners: Corners
+) {
+  const r = config.r;
+  const [tl, tr, br, bl] = corners;
+  context.fillStyle = bg;
+  // TL: center (x+r, y+r), arc from top (x+r,y) → left (x,y+r) via upper-left
+  if (tl) {
+    context.beginPath();
+    context.moveTo(x, y);
+    context.lineTo(x + r, y);
+    context.arc(x + r, y + r, r, -Math.PI / 2, Math.PI, true);
+    context.closePath();
+    context.fill();
+  }
+  // TR: center (x+w-r, y+r), arc from right (x+w,y+r) → top (x+w-r,y) via upper-right
+  if (tr) {
+    context.beginPath();
+    context.moveTo(x + w, y);
+    context.lineTo(x + w, y + r);
+    context.arc(x + w - r, y + r, r, 0, -Math.PI / 2, true);
+    context.closePath();
+    context.fill();
+  }
+  // BR: center (x+w-r, y+h-r), arc from bottom (x+w-r,y+h) → right (x+w,y+h-r) via lower-right
+  if (br) {
+    context.beginPath();
+    context.moveTo(x + w, y + h);
+    context.lineTo(x + w - r, y + h);
+    context.arc(x + w - r, y + h - r, r, Math.PI / 2, 0, true);
+    context.closePath();
+    context.fill();
+  }
+  // BL: center (x+r, y+h-r), arc from left (x,y+h-r) → bottom (x+r,y+h) via lower-left
+  if (bl) {
+    context.beginPath();
+    context.moveTo(x, y + h);
+    context.lineTo(x + r, y + h);
+    context.arc(x + r, y + h - r, r, Math.PI / 2, Math.PI, false);
+    context.closePath();
+    context.fill();
+  }
+}
+
 export const sketch = async ({ wrap, context, ...props }: SketchProps) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => wrap.dispose());
@@ -500,6 +518,9 @@ export const sketch = async ({ wrap, context, ...props }: SketchProps) => {
 
         context.fillStyle = cell.color!;
         cells[cell.type](context, x, y, w, h, cell.corners);
+        if (cell.type !== 'blank' && cell.type !== '0123') {
+          drawCornerNotches(context, x, y, w, h, cell.corners);
+        }
         if (config.debug === 1) {
           context.fillStyle = `rgb(from ${cell.color} calc(255 - r) calc(255 - g) calc(255 - b))`;
           context.textAlign = 'center';
