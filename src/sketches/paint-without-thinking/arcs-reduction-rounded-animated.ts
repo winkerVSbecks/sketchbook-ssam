@@ -21,29 +21,30 @@ Random.setSeed(Random.getRandomSeed());
 console.log(`Seed: ${Random.getSeed()}`);
 
 const config = {
-  res: [5, 3] as [number, number],
+  // res: [5, 3] as [number, number],
+  res: [4, 4] as [number, number],
   debug: 0, // 0 = none, 1 = area cells, 2 = outline cells, 3 = all cells
   edgeAwareReduction: true,
   margin: 20,
   r: 10,
-  changeInterval: 5000, // ms between shape changes
-  transitionDuration: 600, // ms for the slide animation
+  shapeCount: 8, // number of distinct shapes (first and last are the same)
+  transitionDuration: 0.15, // fraction of each segment spent animating (0–1)
 };
 
 const pane = new Pane() as any;
 pane.containerElem_.style.zIndex = 1;
 
-pane.addBinding(config, 'changeInterval', {
-  min: 1000,
-  max: 10000,
-  step: 500,
-  label: 'Change interval (ms)',
+pane.addBinding(config, 'shapeCount', {
+  min: 2,
+  max: 20,
+  step: 1,
+  label: 'Shape count',
 });
 pane.addBinding(config, 'transitionDuration', {
-  min: 100,
-  max: 1000,
-  step: 50,
-  label: 'Transition (ms)',
+  min: 0.05,
+  max: 0.5,
+  step: 0.05,
+  label: 'Transition (frac)',
 });
 pane.addBinding(config, 'margin', { min: 0, max: 80, step: 1 });
 pane.addBinding(config, 'r', { min: 0, max: 60, step: 1, label: 'Corner r' });
@@ -533,37 +534,21 @@ export const sketch = async ({ wrap, context, ...props }: SketchProps) => {
     props.exportFrame();
   });
 
+  // Precompute all shapes; first and last are the same for seamless looping
   const palette = Random.pick(palettes);
-  let currentSnapshot = generateSnapshot(palette);
-  let nextSnapshot = generateSnapshot(palette);
-  let lastChangeTime = 0;
-  let transitioning = false;
-  let transitionStart = 0;
+  const shapes: GridSnapshot[] = [];
+  for (let i = 0; i < config.shapeCount; i++) {
+    shapes.push(generateSnapshot(palette));
+  }
+  shapes.push(shapes[0]);
 
-  wrap.render = ({ width, height, time }: SketchProps) => {
-    const sinceChange = time - lastChangeTime;
+  wrap.render = ({ width, height, playhead }: SketchProps) => {
+    const cycles = shapes.length - 1;
+    const shapeIndex = Math.floor(playhead * cycles);
+    const t = (playhead * cycles) % 1;
 
-    // Kick off a new transition every changeInterval ms
-    if (!transitioning && sinceChange >= config.changeInterval) {
-      transitioning = true;
-      transitionStart = time;
-      nextSnapshot = generateSnapshot(palette);
-    }
-
-    // Advance the transition
-    if (transitioning) {
-      const animElapsed = time - transitionStart;
-      if (animElapsed >= config.transitionDuration) {
-        // Animation complete — settle into the new snapshot
-        currentSnapshot = nextSnapshot;
-        transitioning = false;
-        lastChangeTime = time;
-      }
-    }
-
-    const t = transitioning
-      ? Math.min((time - transitionStart) / config.transitionDuration, 1)
-      : 1;
+    const currentSnapshot = shapes[Math.min(shapeIndex, cycles - 1)];
+    const nextSnapshot = shapes[Math.min(shapeIndex + 1, cycles)];
     const bgColor = currentSnapshot.bg;
 
     context.fillStyle = bgColor;
@@ -575,6 +560,10 @@ export const sketch = async ({ wrap, context, ...props }: SketchProps) => {
     context.save();
     context.translate(config.margin, config.margin);
 
+    // Transition happens in the last fraction of each segment
+    const holdEnd = 1 - config.transitionDuration;
+    const animT = t <= holdEnd ? 0 : (t - holdEnd) / config.transitionDuration;
+
     for (let i = 0; i < currentSnapshot.grid.length; i++) {
       const fromCell = currentSnapshot.grid[i];
       const toCell = nextSnapshot.grid[i];
@@ -584,10 +573,10 @@ export const sketch = async ({ wrap, context, ...props }: SketchProps) => {
       const changing =
         fromCell.type !== toCell.type || fromCell.color !== toCell.color;
 
-      if (!changing) {
+      if (!changing || animT === 0) {
         drawCellFull(context, fromCell, bgColor, x, y, w, h);
       } else {
-        const p = smoothstep(t);
+        const p = smoothstep(animT);
         // Current slides out to the right: 0 → +w
         drawCellSlid(context, fromCell, bgColor, x, y, w, h, p * w);
         // Next slides in from the left: -w → 0
@@ -610,11 +599,11 @@ export const sketch = async ({ wrap, context, ...props }: SketchProps) => {
 export const settings: SketchSettings = {
   mode: '2d',
   // dimensions: [640, 840],
-  // dimensions: [1080, 1080],
-  dimensions: [1040, 640],
+  dimensions: [1080, 1080],
+  // dimensions: [1040, 640],
   pixelRatio: window.devicePixelRatio,
   animate: true,
-  duration: 40_000,
+  duration: 10_000,
   framesFormat: ['mp4'],
   prefix: `arcs-reduction-`,
 };
