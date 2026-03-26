@@ -27,7 +27,7 @@ const config = {
   margin: 20,
   r: 10,
   changeInterval: 5000, // ms between shape changes
-  transitionDuration: 600, // ms for the scale animation
+  transitionDuration: 600, // ms for the slide animation
 };
 
 const pane = new Pane() as any;
@@ -410,8 +410,9 @@ function roundCorners(grid: GridCell[]) {
   });
 }
 
-function generateSnapshot(): GridSnapshot {
-  const palette = Random.pick(palettes);
+function generateSnapshot(
+  palette: { bg: string; ink: string[] } = Random.pick(palettes),
+): GridSnapshot {
   const inkColor = palette.ink[0];
   logColors([inkColor]);
   const grid = makeEmptyGrid();
@@ -472,18 +473,6 @@ function drawCornerNotches(
   }
 }
 
-function hexToRgb(hex: string): [number, number, number] {
-  let h = hex.trim().replace('#', '');
-  if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
-  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
-}
-
-function lerpColor(a: string, b: string, t: number): string {
-  const [r1, g1, b1] = hexToRgb(a);
-  const [r2, g2, b2] = hexToRgb(b);
-  return `rgb(${Math.round(r1 + (r2 - r1) * t)},${Math.round(g1 + (g2 - g1) * t)},${Math.round(b1 + (b2 - b1) * t)})`;
-}
-
 function smoothstep(t: number): number {
   const c = Math.max(0, Math.min(1, t));
   return c * c * (3 - 2 * c);
@@ -513,8 +502,8 @@ function drawCellFull(
   }
 }
 
-// clipX0/clipX1 are fractions of w (0..1) defining the visible horizontal slice
-function drawCellSwiped(
+// Draws cell translated by offsetX (pixels), clipped to the cell rect
+function drawCellSlid(
   ctx: CanvasRenderingContext2D,
   cell: GridCell,
   bgColor: string,
@@ -522,25 +511,18 @@ function drawCellSwiped(
   y: number,
   w: number,
   h: number,
-  clipX0: number,
-  clipX1: number,
-  alpha: number,
+  offsetX: number,
 ) {
-  if (cell.type === 'blank' || alpha <= 0.001 || clipX1 <= clipX0) return;
+  if (cell.type === 'blank') return;
   ctx.save();
-  ctx.globalAlpha = alpha;
   ctx.beginPath();
-  ctx.rect(x + clipX0 * w, y - 1, (clipX1 - clipX0) * w, h + 2);
+  ctx.rect(x, y - 1, w, h + 2);
   ctx.clip();
-  drawCellFull(ctx, cell, bgColor, x, y, w, h);
+  drawCellFull(ctx, cell, bgColor, x + offsetX, y, w, h);
   ctx.restore();
 }
 
-export const sketch = async ({
-  wrap,
-  context,
-  ...props
-}: SketchProps) => {
+export const sketch = async ({ wrap, context, ...props }: SketchProps) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => wrap.dispose());
     import.meta.hot.accept(() => wrap.hotReload());
@@ -551,8 +533,9 @@ export const sketch = async ({
     props.exportFrame();
   });
 
-  let currentSnapshot = generateSnapshot();
-  let nextSnapshot = generateSnapshot();
+  const palette = Random.pick(palettes);
+  let currentSnapshot = generateSnapshot(palette);
+  let nextSnapshot = generateSnapshot(palette);
   let lastChangeTime = 0;
   let transitioning = false;
   let transitionStart = 0;
@@ -564,7 +547,7 @@ export const sketch = async ({
     if (!transitioning && sinceChange >= config.changeInterval) {
       transitioning = true;
       transitionStart = time;
-      nextSnapshot = generateSnapshot();
+      nextSnapshot = generateSnapshot(palette);
     }
 
     // Advance the transition
@@ -581,7 +564,7 @@ export const sketch = async ({
     const t = transitioning
       ? Math.min((time - transitionStart) / config.transitionDuration, 1)
       : 1;
-    const bgColor = lerpColor(currentSnapshot.bg, nextSnapshot.bg, t);
+    const bgColor = currentSnapshot.bg;
 
     context.fillStyle = bgColor;
     context.fillRect(0, 0, width, height);
@@ -604,13 +587,11 @@ export const sketch = async ({
       if (!changing) {
         drawCellFull(context, fromCell, bgColor, x, y, w, h);
       } else {
-        // Out phase: 0 → 0.75, in phase: 0.25 → 1 (25% overlap)
-        const tOut = smoothstep(Math.min(1, t / 0.75));
-        const tIn = smoothstep(Math.max(0, (t - 0.25) / 0.75));
-        // Current: right portion stays visible as left edge sweeps right; fades out
-        drawCellSwiped(context, fromCell, bgColor, x, y, w, h, tOut, 1, 1 - tOut);
-        // New: left portion grows visible as right edge sweeps right; fades in
-        drawCellSwiped(context, toCell, bgColor, x, y, w, h, 0, tIn, tIn);
+        const p = smoothstep(t);
+        // Current slides out to the right: 0 → +w
+        drawCellSlid(context, fromCell, bgColor, x, y, w, h, p * w);
+        // Next slides in from the left: -w → 0
+        drawCellSlid(context, toCell, bgColor, x, y, w, h, (p - 1) * w);
       }
     }
 
