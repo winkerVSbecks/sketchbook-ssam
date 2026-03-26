@@ -28,7 +28,7 @@ const config = {
   margin: 20,
   r: 10,
   shapeCount: 8, // number of distinct shapes (first and last are the same)
-  transitionDuration: 0.15, // fraction of each segment spent animating (0–1)
+  transitionDuration: 0.1, // fraction of each segment spent animating (0–1)
 };
 
 const pane = new Pane() as any;
@@ -503,7 +503,10 @@ function drawCellFull(
   }
 }
 
-// Draws cell translated by offsetX (pixels), clipped to the cell rect
+type SlideDirection = 'ltr' | 'rtl' | 'ttb' | 'btt';
+const slideDirections: SlideDirection[] = ['ltr', 'rtl', 'ttb', 'btt'];
+
+// Draws cell translated by offset along the slide direction, clipped to the cell rect
 function drawCellSlid(
   ctx: CanvasRenderingContext2D,
   cell: GridCell,
@@ -512,14 +515,17 @@ function drawCellSlid(
   y: number,
   w: number,
   h: number,
-  offsetX: number,
+  offset: number,
+  direction: SlideDirection,
 ) {
   if (cell.type === 'blank') return;
+  const dx = direction === 'ltr' ? offset : direction === 'rtl' ? -offset : 0;
+  const dy = direction === 'ttb' ? offset : direction === 'btt' ? -offset : 0;
   ctx.save();
   ctx.beginPath();
-  ctx.rect(x, y - 1, w, h + 2);
+  ctx.rect(x - 1, y - 1, w + 2, h + 2);
   ctx.clip();
-  drawCellFull(ctx, cell, bgColor, x + offsetX, y, w, h);
+  drawCellFull(ctx, cell, bgColor, x + dx, y + dy, w, h);
   ctx.restore();
 }
 
@@ -541,6 +547,12 @@ export const sketch = async ({ wrap, context, ...props }: SketchProps) => {
     shapes.push(generateSnapshot(palette));
   }
   shapes.push(shapes[0]);
+
+  // Precompute a random slide direction for each transition
+  const directions: SlideDirection[] = [];
+  for (let i = 0; i < shapes.length - 1; i++) {
+    directions.push(Random.pick(slideDirections));
+  }
 
   wrap.render = ({ width, height, playhead }: SketchProps) => {
     const cycles = shapes.length - 1;
@@ -576,11 +588,13 @@ export const sketch = async ({ wrap, context, ...props }: SketchProps) => {
       if (!changing || animT === 0) {
         drawCellFull(context, fromCell, bgColor, x, y, w, h);
       } else {
+        const dir = directions[Math.min(shapeIndex, directions.length - 1)];
+        const size = dir === 'ltr' || dir === 'rtl' ? w : h;
         const p = smoothstep(animT);
-        // Current slides out to the right: 0 → +w
-        drawCellSlid(context, fromCell, bgColor, x, y, w, h, p * w);
-        // Next slides in from the left: -w → 0
-        drawCellSlid(context, toCell, bgColor, x, y, w, h, (p - 1) * w);
+        // Current slides out: 0 → +size
+        drawCellSlid(context, fromCell, bgColor, x, y, w, h, p * size, dir);
+        // Next slides in: -size → 0
+        drawCellSlid(context, toCell, bgColor, x, y, w, h, (p - 1) * size, dir);
       }
     }
 
