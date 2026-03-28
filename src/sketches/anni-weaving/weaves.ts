@@ -178,9 +178,9 @@ function makePointTwillDiamond(s: number): PatternFn {
     const rm = ((r % period) + period) % period;
     const cFolded = cm < s ? cm : period - cm;
     const rFolded = rm < s ? rm : period - rm;
+    const shift = offset * s;
     return (
-      (((cFolded - rFolded + offset + 10000 * s) % s) + s) % s <
-      Math.ceil(s / 3)
+      (((cFolded - rFolded + shift + 10000 * s) % s) + s) % s < Math.ceil(s / 3)
     );
   };
 }
@@ -213,6 +213,7 @@ const [warpColor, weftColor, bgColor] = Random.shuffle(palette).slice(0, 3);
 
 const config = {
   threads: 80,
+  fibers: 4,
   pad: 0.05,
   threadGap: 0.15,
 };
@@ -222,6 +223,7 @@ pane.containerElem_.style.zIndex = 1;
 pane.addBinding(config, 'threads', { min: 16, max: 200, step: 1 });
 pane.addBinding(config, 'pad', { min: 0, max: 0.15, step: 0.005 });
 pane.addBinding(config, 'threadGap', { min: 0, max: 0.5, step: 0.01 });
+pane.addBinding(config, 'fibers', { min: 1, max: 8, step: 1 });
 
 export const sketch = ({ wrap, context }: SketchProps) => {
   if (import.meta.hot) {
@@ -243,23 +245,42 @@ export const sketch = ({ wrap, context }: SketchProps) => {
     context.save();
     context.translate(pad, pad);
 
-    // Draw warp threads (vertical) as background
-    context.fillStyle = warpColor;
+    const fiberW = (threadW - inset * 2) / config.fibers;
+    const fiberGap = fiberW * 0.2;
+
+    // Draw warp threads (vertical) as background — fiber lines running vertically
+    context.strokeStyle = warpColor;
+    context.lineWidth = fiberW - fiberGap;
     for (let c = 0; c < config.threads; c++) {
-      context.fillRect(c * threadW + inset, 0, threadW - inset * 2, weaveH);
+      const x0 = c * threadW + inset;
+      for (let f = 0; f < config.fibers; f++) {
+        const fx = x0 + f * fiberW + fiberW * 0.5;
+        context.beginPath();
+        context.moveTo(fx, 0);
+        context.lineTo(fx, weaveH);
+        context.stroke();
+      }
     }
 
-    // Draw weft threads (horizontal) where weft is on top
-    context.fillStyle = weftColor;
+    // Draw weft threads (horizontal) where weft is on top — fiber lines running vertically within each cell
+    context.strokeStyle = weftColor;
     for (let r = 0; r < config.threads; r++) {
       for (let c = 0; c < config.threads; c++) {
         if (!pattern(c, r, playhead)) {
-          context.fillRect(
-            c * threadW,
-            r * threadH + inset,
-            threadW,
-            threadH - inset * 2,
-          );
+          const x0 = c * threadW;
+          const y0 = r * threadH + inset;
+          const h = threadH - inset * 2;
+          context.lineWidth = fiberW - fiberGap;
+          for (let f = 0; f < config.fibers; f++) {
+            const fx =
+              x0 +
+              f * (threadW / config.fibers) +
+              (threadW / config.fibers) * 0.5;
+            context.beginPath();
+            context.moveTo(fx, y0);
+            context.lineTo(fx, y0 + h);
+            context.stroke();
+          }
         }
       }
     }
