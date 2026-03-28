@@ -100,8 +100,10 @@ function makeZigzag(s: number, amplitude: number): PatternFn {
   return (c, r, offset) => {
     const rMod = ((r % period) + period) % period;
     const zigzagOffset = rMod < amplitude ? rMod : period - rMod;
+    // offset drives a full period horizontal scroll for smooth looping
+    const shift = offset * s;
     return (
-      (((c - zigzagOffset + offset + 10000 * s) % s) + s) % s < Math.ceil(s / 2)
+      (((c - zigzagOffset + shift + 10000 * s) % s) + s) % s < Math.ceil(s / 2)
     );
   };
 }
@@ -251,7 +253,7 @@ export const sketch = ({ wrap, context }: SketchProps) => {
     context.fillStyle = weftColor;
     for (let r = 0; r < config.threads; r++) {
       for (let c = 0; c < config.threads; c++) {
-        if (!pattern(c, r, playhead * 8)) {
+        if (!pattern(c, r, playhead)) {
           context.fillRect(
             c * threadW,
             r * threadH + inset,
