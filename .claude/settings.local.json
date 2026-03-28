@@ -11,7 +11,10 @@
       "Bash(git -C /Users/varunvachhar/Documents/projects/sketchbook-ssam status)",
       "Bash(git -C /Users/varunvachhar/Documents/projects/sketchbook-ssam diff)",
       "Bash(git -C /Users/varunvachhar/Documents/projects/sketchbook-ssam log --oneline -5)",
-      "Bash(git:*)"
+      "Bash(git:*)",
+      "Bash(npm view:*)",
+      "Bash(python3 -m json.tool)",
+      "Bash(tar xz:*)"
     ]
   }
 }
