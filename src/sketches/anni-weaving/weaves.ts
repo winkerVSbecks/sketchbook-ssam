@@ -216,6 +216,7 @@ const config = {
   fibers: 4,
   pad: 0.05,
   threadGap: 0.15,
+  warp: 0.3,
 };
 
 const pane = new Pane() as any;
@@ -224,6 +225,7 @@ pane.addBinding(config, 'threads', { min: 16, max: 200, step: 1 });
 pane.addBinding(config, 'pad', { min: 0, max: 0.15, step: 0.005 });
 pane.addBinding(config, 'threadGap', { min: 0, max: 0.5, step: 0.01 });
 pane.addBinding(config, 'fibers', { min: 1, max: 8, step: 1 });
+pane.addBinding(config, 'warp', { min: 0, max: 1, step: 0.01 });
 
 export const sketch = ({ wrap, context }: SketchProps) => {
   if (import.meta.hot) {
@@ -248,7 +250,7 @@ export const sketch = ({ wrap, context }: SketchProps) => {
     const fiberW = (threadW - inset * 2) / config.fibers;
     const fiberGap = fiberW * 0.2;
 
-    // Draw warp threads (vertical) as background — fiber lines running vertically
+    // Draw warp threads (vertical) as background — fiber lines
     context.strokeStyle = warpColor;
     context.lineWidth = fiberW - fiberGap;
     for (let c = 0; c < config.threads; c++) {
@@ -262,20 +264,18 @@ export const sketch = ({ wrap, context }: SketchProps) => {
       }
     }
 
-    // Draw weft threads (horizontal) where weft is on top — fiber lines running vertically within each cell
+    // Draw weft threads (horizontal) where weft is on top — fiber lines
     context.strokeStyle = weftColor;
+    context.lineWidth = fiberW - fiberGap;
     for (let r = 0; r < config.threads; r++) {
       for (let c = 0; c < config.threads; c++) {
         if (!pattern(c, r, playhead)) {
           const x0 = c * threadW;
           const y0 = r * threadH + inset;
           const h = threadH - inset * 2;
-          context.lineWidth = fiberW - fiberGap;
+          const fiberStep = threadW / config.fibers;
           for (let f = 0; f < config.fibers; f++) {
-            const fx =
-              x0 +
-              f * (threadW / config.fibers) +
-              (threadW / config.fibers) * 0.5;
+            const fx = x0 + f * fiberStep + fiberStep * 0.5;
             context.beginPath();
             context.moveTo(fx, y0);
             context.lineTo(fx, y0 + h);
@@ -286,6 +286,36 @@ export const sketch = ({ wrap, context }: SketchProps) => {
     }
 
     context.restore();
+
+    // Apply whole-image noise warp
+    if (config.warp > 0) {
+      const dpr = window.devicePixelRatio;
+      const pw = Math.round(width * dpr);
+      const ph = Math.round(height * dpr);
+      const imgData = context.getImageData(0, 0, pw, ph);
+      const src = new Uint8ClampedArray(imgData.data);
+      const dst = imgData.data;
+      const noiseScale = 0.005;
+      const maxDisp = config.warp * pw * 0.05;
+
+      for (let py = 0; py < ph; py++) {
+        for (let px = 0; px < pw; px++) {
+          const dx = Random.noise2D(px * noiseScale, py * noiseScale) * maxDisp;
+          const dy = Random.noise2D(px * noiseScale + 500, py * noiseScale + 500) * maxDisp;
+          const sx = Math.round(px + dx);
+          const sy = Math.round(py + dy);
+          const di = (py * pw + px) * 4;
+          if (sx >= 0 && sx < pw && sy >= 0 && sy < ph) {
+            const si = (sy * pw + sx) * 4;
+            dst[di] = src[si];
+            dst[di + 1] = src[si + 1];
+            dst[di + 2] = src[si + 2];
+            dst[di + 3] = src[si + 3];
+          }
+        }
+      }
+      context.putImageData(imgData, 0, 0);
+    }
   };
 };
 
