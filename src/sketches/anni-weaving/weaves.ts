@@ -2,6 +2,7 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 import { Pane } from 'tweakpane';
+import { randomPalette } from '../../colors';
 
 Random.setSeed(Random.getRandomSeed());
 
@@ -99,7 +100,9 @@ function makeZigzag(s: number, amplitude: number): PatternFn {
   return (c, r, offset) => {
     const rMod = ((r % period) + period) % period;
     const zigzagOffset = rMod < amplitude ? rMod : period - rMod;
-    return (((c - zigzagOffset + offset + 10000 * s) % s) + s) % s < Math.ceil(s / 2);
+    return (
+      (((c - zigzagOffset + offset + 10000 * s) % s) + s) % s < Math.ceil(s / 2)
+    );
   };
 }
 
@@ -108,8 +111,11 @@ function makeOvershot(blockSize: number): PatternFn {
   return (c, r, _offset) => {
     const cm = ((c % period) + period) % period;
     const rm = ((r % period) + period) % period;
-    const inBlock = cm >= blockSize / 2 && cm < blockSize * 3 / 2 &&
-                    rm >= blockSize / 2 && rm < blockSize * 3 / 2;
+    const inBlock =
+      cm >= blockSize / 2 &&
+      cm < (blockSize * 3) / 2 &&
+      rm >= blockSize / 2 &&
+      rm < (blockSize * 3) / 2;
     if (inBlock) {
       const bc = cm - blockSize / 2;
       const br = rm - blockSize / 2;
@@ -170,7 +176,10 @@ function makePointTwillDiamond(s: number): PatternFn {
     const rm = ((r % period) + period) % period;
     const cFolded = cm < s ? cm : period - cm;
     const rFolded = rm < s ? rm : period - rm;
-    return (((cFolded - rFolded + offset + 10000 * s) % s) + s) % s < Math.ceil(s / 3);
+    return (
+      (((cFolded - rFolded + offset + 10000 * s) % s) + s) % s <
+      Math.ceil(s / 3)
+    );
   };
 }
 
@@ -197,18 +206,8 @@ const pattern: PatternFn = Random.pick([
   () => makePointTwillDiamond(Random.pick([6, 8, 10])),
 ])();
 
-const warpColor = Random.pick([
-  'oklch(0.55 0.18 20deg)',
-  'oklch(0.50 0.16 25deg)',
-  'oklch(0.52 0.19 15deg)',
-  'oklch(0.48 0.14 30deg)',
-]);
-const weftColor = Random.pick([
-  'oklch(0.93 0.01 80deg)',
-  'oklch(0.95 0.01 90deg)',
-  'oklch(0.90 0.02 70deg)',
-]);
-const bgColor = 'oklch(0.95 0.01 85deg)';
+const palette = randomPalette();
+const [warpColor, weftColor, bgColor] = Random.shuffle(palette).slice(0, 3);
 
 const config = {
   threads: 80,
