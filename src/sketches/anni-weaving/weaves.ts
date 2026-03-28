@@ -212,6 +212,7 @@ const palette = randomPalette();
 const [warpColor, weftColor, bgColor] = Random.shuffle(palette).slice(0, 3);
 
 const config = {
+  mode: 'fibers' as 'rect' | 'fibers',
   threads: 80,
   fibers: 4,
   pad: 0.05,
@@ -221,6 +222,7 @@ const config = {
 
 const pane = new Pane() as any;
 pane.containerElem_.style.zIndex = 1;
+pane.addBinding(config, 'mode', { options: { rect: 'rect', fibers: 'fibers' } });
 pane.addBinding(config, 'threads', { min: 16, max: 200, step: 1 });
 pane.addBinding(config, 'pad', { min: 0, max: 0.15, step: 0.005 });
 pane.addBinding(config, 'threadGap', { min: 0, max: 0.5, step: 0.01 });
@@ -247,39 +249,63 @@ export const sketch = ({ wrap, context }: SketchProps) => {
     context.save();
     context.translate(pad, pad);
 
-    const fiberW = (threadW - inset * 2) / config.fibers;
-    const fiberGap = fiberW * 0.2;
+    if (config.mode === 'fibers') {
+      const fiberW = (threadW - inset * 2) / config.fibers;
+      const fiberGap = fiberW * 0.2;
 
-    // Draw warp threads (vertical) as background — fiber lines
-    context.strokeStyle = warpColor;
-    context.lineWidth = fiberW - fiberGap;
-    for (let c = 0; c < config.threads; c++) {
-      const x0 = c * threadW + inset;
-      for (let f = 0; f < config.fibers; f++) {
-        const fx = x0 + f * fiberW + fiberW * 0.5;
-        context.beginPath();
-        context.moveTo(fx, 0);
-        context.lineTo(fx, weaveH);
-        context.stroke();
-      }
-    }
-
-    // Draw weft threads (horizontal) where weft is on top — fiber lines
-    context.strokeStyle = weftColor;
-    context.lineWidth = fiberW - fiberGap;
-    for (let r = 0; r < config.threads; r++) {
+      // Warp threads (vertical) — fiber lines
+      context.strokeStyle = warpColor;
+      context.lineWidth = fiberW - fiberGap;
       for (let c = 0; c < config.threads; c++) {
-        if (!pattern(c, r, playhead)) {
-          const x0 = c * threadW;
-          const y0 = r * threadH + inset;
-          const h = threadH - inset * 2;
-          const fiberStep = threadW / config.fibers;
-          for (let f = 0; f < config.fibers; f++) {
-            const fx = x0 + f * fiberStep + fiberStep * 0.5;
-            context.beginPath();
-            context.moveTo(fx, y0);
-            context.lineTo(fx, y0 + h);
-            context.stroke();
+        const x0 = c * threadW + inset;
+        for (let f = 0; f < config.fibers; f++) {
+          const fx = x0 + f * fiberW + fiberW * 0.5;
+          context.beginPath();
+          context.moveTo(fx, 0);
+          context.lineTo(fx, weaveH);
+          context.stroke();
+        }
+      }
+
+      // Weft threads (horizontal) where weft is on top — fiber lines
+      context.strokeStyle = weftColor;
+      context.lineWidth = fiberW - fiberGap;
+      for (let r = 0; r < config.threads; r++) {
+        for (let c = 0; c < config.threads; c++) {
+          if (!pattern(c, r, playhead)) {
+            const x0 = c * threadW;
+            const y0 = r * threadH + inset;
+            const h = threadH - inset * 2;
+            const fiberStep = threadW / config.fibers;
+            for (let f = 0; f < config.fibers; f++) {
+              const fx = x0 + f * fiberStep + fiberStep * 0.5;
+              context.beginPath();
+              context.moveTo(fx, y0);
+              context.lineTo(fx, y0 + h);
+              context.stroke();
+            }
+          }
+        }
+      }
+    } else {
+      // Rect mode — solid rectangles
+      // Warp columns
+      context.fillStyle = warpColor;
+      for (let c = 0; c < config.threads; c++) {
+        context.fillRect(c * threadW + inset, 0, threadW - inset * 2, weaveH);
+      }
+
+      // Weft cells where weft is on top
+      context.fillStyle = weftColor;
+      for (let r = 0; r < config.threads; r++) {
+        for (let c = 0; c < config.threads; c++) {
+          if (!pattern(c, r, playhead)) {
+            context.fillRect(
+              c * threadW,
+              r * threadH + inset,
+              threadW,
+              threadH - inset * 2,
+            );
           }
         }
       }
