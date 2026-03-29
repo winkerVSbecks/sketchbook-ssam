@@ -267,11 +267,18 @@ function buildScene(playhead: number): Face[] {
       const d = isWarp ? config.raiseDepth : config.baseDepth;
       const color = isWarp ? warpColor : weftColor;
 
+      const edgeColor = isColorLight(color)
+        ? `oklch(from ${color} calc(l * 0.6) c h)`
+        : `oklch(from ${color} calc(l * 1.4) c h)`;
       h.addBox({
         position: [c, r, -(d - 1)],
         size: [1, 1, d],
         style: {
           default: { fill: color, ...strokeStyle },
+          left: { fill: color, stroke: edgeColor },
+          right: { fill: color, stroke: edgeColor },
+          top: { fill: color, stroke: edgeColor },
+          bottom: { fill: color, stroke: edgeColor },
         },
       });
     }
@@ -362,3 +369,11 @@ export const settings: SketchSettings = {
 };
 
 ssam(sketch as Sketch<'2d'>, settings);
+
+function isColorLight(hex: string): boolean {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return luminance > 0.5;
+}
