@@ -18,6 +18,7 @@ declare module 'load-asset';
 declare module 'chromotome';
 declare module 'convert-length';
 declare module 'toxiclibsjs';
+declare module 'heerich';
 
 type Point = [number, number];
 type Line = Point[];
