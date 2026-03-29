@@ -264,19 +264,16 @@ function buildScene(playhead: number): Face[] {
   for (let r = 0; r < n; r++) {
     for (let c = 0; c < n; c++) {
       const isWarp = pattern(c, r, playhead);
-      // Warp color raises up, weft stays at base depth
       const d = isWarp ? config.raiseDepth : config.baseDepth;
       const color = isWarp ? warpColor : weftColor;
 
-      for (let z = -(d - 1); z <= 0; z++) {
-        h.addBox({
-          position: [c, r, z],
-          size: [1, 1, 1],
-          style: {
-            default: { fill: color, ...strokeStyle },
-          },
-        });
-      }
+      h.addBox({
+        position: [c, r, -(d - 1)],
+        size: [1, 1, d],
+        style: {
+          default: { fill: color, ...strokeStyle },
+        },
+      });
     }
   }
 
@@ -358,7 +355,7 @@ export const settings: SketchSettings = {
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
   animate: true,
-  duration: 4000,
+  duration: 1000,
   framesFormat: ['mp4'],
   playFps: 60,
   exportFps: 60,
