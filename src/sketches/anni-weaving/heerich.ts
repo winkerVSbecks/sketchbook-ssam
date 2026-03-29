@@ -212,9 +212,10 @@ const [warpColor, weftColor, bgColor] = Random.shuffle(palette).slice(0, 3);
 
 const config = {
   threads: 24,
-  tileSize: 20,
-  cameraAngle: 45,
-  cameraDistance: 8,
+  depth: 24,
+  tileSize: 30,
+  cameraAngle: Random.range(0, 90),
+  cameraDistance: Random.range(4, 12),
   strokeWidth: 0.5,
   strokeColor: '#333333',
   bg: bgColor,
@@ -223,6 +224,7 @@ const config = {
 const pane = new Pane() as any;
 pane.containerElem_.style.zIndex = 1;
 pane.addBinding(config, 'threads', { min: 8, max: 60, step: 1 });
+pane.addBinding(config, 'depth', { min: 1, max: 60, step: 1 });
 pane.addBinding(config, 'tileSize', { min: 5, max: 50, step: 1 });
 pane.addBinding(config, 'cameraAngle', { min: 0, max: 90, step: 1 });
 pane.addBinding(config, 'cameraDistance', { min: 1, max: 30, step: 1 });
@@ -252,21 +254,37 @@ function buildScene(playhead: number): Face[] {
   });
 
   const n = config.threads;
+  const d = config.depth;
 
-  for (let r = 0; r < n; r++) {
-    for (let c = 0; c < n; c++) {
-      const isWarp = pattern(c, r, playhead);
-      h.addBox({
-        position: [c, r, 0],
-        size: [1, 1, 1],
-        style: {
-          default: {
-            fill: isWarp ? warpColor : weftColor,
-            stroke: config.strokeColor,
-            strokeWidth: config.strokeWidth,
+  const strokeStyle = {
+    stroke: config.strokeColor,
+    strokeWidth: config.strokeWidth,
+  };
+
+  for (let z = 0; z < d; z++) {
+    for (let r = 0; r < n; r++) {
+      for (let c = 0; c < n; c++) {
+        // Front/back faces: pattern mapped to (c, r)
+        const fb = pattern(c, r, playhead) ? warpColor : weftColor;
+        // Left/right faces: pattern mapped to (z, r)
+        const lr = pattern(z, r, playhead) ? warpColor : weftColor;
+        // Top/bottom faces: pattern mapped to (c, z)
+        const tb = pattern(c, z, playhead) ? warpColor : weftColor;
+
+        h.addBox({
+          position: [c, r, z],
+          size: [1, 1, 1],
+          style: {
+            default: { fill: fb, ...strokeStyle },
+            front: { fill: fb, ...strokeStyle },
+            back: { fill: fb, ...strokeStyle },
+            left: { fill: lr, ...strokeStyle },
+            right: { fill: lr, ...strokeStyle },
+            top: { fill: tb, ...strokeStyle },
+            bottom: { fill: tb, ...strokeStyle },
           },
-        },
-      });
+        });
+      }
     }
   }
 
@@ -277,21 +295,15 @@ function drawFaces(
   context: CanvasRenderingContext2D,
   faces: Face[],
   offsetX: number,
-  offsetY: number
+  offsetY: number,
 ) {
   for (const face of faces) {
     if (face.type === 'content' || face.points.length === 0) continue;
 
     context.beginPath();
-    context.moveTo(
-      face.points[0][0] + offsetX,
-      face.points[0][1] + offsetY
-    );
+    context.moveTo(face.points[0][0] + offsetX, face.points[0][1] + offsetY);
     for (let i = 1; i < face.points.length; i++) {
-      context.lineTo(
-        face.points[i][0] + offsetX,
-        face.points[i][1] + offsetY
-      );
+      context.lineTo(face.points[i][0] + offsetX, face.points[i][1] + offsetY);
     }
     context.closePath();
 
@@ -337,6 +349,8 @@ export const sketch = ({ wrap, context }: SketchProps) => {
   wrap.render = ({ width, height, playhead }: SketchProps) => {
     context.fillStyle = config.bg;
     context.fillRect(0, 0, width, height);
+
+    config.cameraAngle = (playhead * 360) % 360; // Rotate camera around the scene
 
     const faces = buildScene(playhead);
     const { minX, minY, maxX, maxY } = computeBounds(faces);
