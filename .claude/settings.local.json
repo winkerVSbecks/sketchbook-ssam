@@ -14,7 +14,12 @@
       "Bash(git:*)",
       "Bash(npm view:*)",
       "Bash(python3 -m json.tool)",
-      "Bash(tar xz:*)"
+      "Bash(tar xz:*)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(grep -A 10 \"settings: SketchSettings\" /Users/varunvachhar/Documents/projects/sketchbook-ssam/src/sketches/*.ts)",
+      "Bash(ls /Users/varunvachhar/Documents/projects/sketchbook-ssam/src/sketches/*.ts)",
+      "Bash(VITE_SKETCH=\"sketches/penplot-example\" npx vite --host)",
+      "Bash(node:*)"
     ]
   }
 }
