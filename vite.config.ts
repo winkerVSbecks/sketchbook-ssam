@@ -4,6 +4,7 @@ import { ssamExport } from 'vite-plugin-ssam-export';
 import { ssamFfmpeg } from 'vite-plugin-ssam-ffmpeg';
 import { ssamGit } from 'vite-plugin-ssam-git';
 import { ssamTimelapse } from 'vite-plugin-ssam-timelapse';
+import { ssamPenplot } from './src/plugins/vite-plugin-ssam-penplot';
 
 export default defineConfig({
   base: './',
@@ -15,6 +16,7 @@ export default defineConfig({
     ssamGit(),
     ssamFfmpeg(),
     ssamTimelapse(),
+    ssamPenplot(),
     {
       name: 'custom-server',
       configureServer(server) {
