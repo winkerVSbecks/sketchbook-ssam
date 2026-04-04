@@ -10,7 +10,7 @@ console.log({ seed: Random.getSeed() });
 
 interface Face {
   type: string;
-  points: [number, number][];
+  points: { data: number[] };
   depth: number;
   style: { fill?: string; stroke?: string; strokeWidth?: number };
 }
@@ -81,7 +81,8 @@ function buildScene(playhead: number): Face[] {
   for (let y = 0; y < config.rows; y++) {
     for (let x = 0; x < config.cols; x++) {
       const ht = colH(x, y, off);
-      h.addBox({
+      h.applyGeometry({
+        type: 'box',
         position: [x, y, -(ht - 1)],
         size: [1, 1, ht],
         style: {
@@ -107,13 +108,14 @@ function drawFaces(
   oy: number,
 ) {
   for (const face of faces) {
-    if (face.type === 'content' || face.points.length === 0) continue;
+    if (face.type === 'content') continue;
 
+    const d = face.points.data;
     ctx.beginPath();
-    ctx.moveTo(face.points[0][0] + ox, face.points[0][1] + oy);
-    for (let i = 1; i < face.points.length; i++) {
-      ctx.lineTo(face.points[i][0] + ox, face.points[i][1] + oy);
-    }
+    ctx.moveTo(d[0] + ox, d[1] + oy);
+    ctx.lineTo(d[2] + ox, d[3] + oy);
+    ctx.lineTo(d[4] + ox, d[5] + oy);
+    ctx.lineTo(d[6] + ox, d[7] + oy);
     ctx.closePath();
 
     if (face.style.fill) {
@@ -133,8 +135,11 @@ function sceneBounds(faces: Face[]) {
     minY = Infinity,
     maxX = -Infinity,
     maxY = -Infinity;
-  for (const { points } of faces) {
-    for (const [px, py] of points) {
+  for (const face of faces) {
+    if (face.type === 'content') continue;
+    const d = face.points.data;
+    for (let i = 0; i < d.length; i += 2) {
+      const px = d[i], py = d[i + 1];
       if (px < minX) minX = px;
       if (py < minY) minY = py;
       if (px > maxX) maxX = px;

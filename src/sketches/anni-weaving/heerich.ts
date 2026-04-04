@@ -234,7 +234,7 @@ pane.addBinding(config, 'bg');
 
 interface Face {
   type: string;
-  points: [number, number][];
+  points: { data: number[] };
   depth: number;
   style: {
     fill?: string;
@@ -271,7 +271,8 @@ function buildScene(playhead: number): Face[] {
         // Top/bottom faces: pattern mapped to (c, z)
         const tb = pattern(c, z, playhead) ? warpColor : weftColor;
 
-        h.addBox({
+        h.applyGeometry({
+          type: 'box',
           position: [c, r, z],
           size: [1, 1, 1],
           style: {
@@ -298,13 +299,14 @@ function drawFaces(
   offsetY: number,
 ) {
   for (const face of faces) {
-    if (face.type === 'content' || face.points.length === 0) continue;
+    if (face.type === 'content') continue;
 
+    const d = face.points.data;
     context.beginPath();
-    context.moveTo(face.points[0][0] + offsetX, face.points[0][1] + offsetY);
-    for (let i = 1; i < face.points.length; i++) {
-      context.lineTo(face.points[i][0] + offsetX, face.points[i][1] + offsetY);
-    }
+    context.moveTo(d[0] + offsetX, d[1] + offsetY);
+    context.lineTo(d[2] + offsetX, d[3] + offsetY);
+    context.lineTo(d[4] + offsetX, d[5] + offsetY);
+    context.lineTo(d[6] + offsetX, d[7] + offsetY);
     context.closePath();
 
     if (face.style.fill) {
@@ -330,7 +332,10 @@ function computeBounds(faces: Face[]): {
     maxX = -Infinity,
     maxY = -Infinity;
   for (const face of faces) {
-    for (const [px, py] of face.points) {
+    if (face.type === 'content') continue;
+    const d = face.points.data;
+    for (let i = 0; i < d.length; i += 2) {
+      const px = d[i], py = d[i + 1];
       if (px < minX) minX = px;
       if (py < minY) minY = py;
       if (px > maxX) maxX = px;

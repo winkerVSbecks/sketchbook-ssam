@@ -54,10 +54,18 @@ declare module 'heerich' {
     back?: StyleObject;
   }
 
-  interface AddBoxOptions {
-    position: Coord3D;
-    size: Coord3D;
+  interface ApplyGeometryOptions {
+    type: 'box' | 'sphere' | 'line' | 'fill';
+    position?: Coord3D;
+    center?: Coord3D;
+    size?: Coord3D;
+    radius?: number;
+    from?: Coord3D;
+    to?: Coord3D;
+    mode?: 'union' | 'subtract' | 'intersect' | 'exclude';
     style?: BoxStyle | StyleParam;
+    opaque?: boolean;
+    meta?: Record<string, unknown>;
   }
 
   interface ViewBoxBounds {
@@ -75,7 +83,9 @@ declare module 'heerich' {
 
   class Heerich {
     constructor(options?: HeerichOptions);
-    addBox(options: AddBoxOptions): this;
+    applyGeometry(options: ApplyGeometryOptions): this;
+    addGeometry(options: Omit<ApplyGeometryOptions, 'mode'>): this;
+    removeGeometry(options: Omit<ApplyGeometryOptions, 'mode'>): this;
     getFaces(): Face[];
     getViewBoxBounds(): ViewBoxBounds;
     toSVG(options?: ToSVGOptions): string;
@@ -113,7 +123,7 @@ interface RotateOptions {
 }
 
 interface CameraOptions {
-  type?: 'oblique' | 'perspective';
+  type?: 'oblique' | 'perspective' | 'isometric' | 'orthographic';
   angle?: number;
   distance?: number;
   position?: [number, number];
@@ -127,16 +137,8 @@ interface HeerichOptions {
 
 interface Face {
   type: string;
-  voxel?: any;
-  vertices?: Coord3D[];
-  points?: [number, number][];
-  depth?: number;
-  style?: StyleObject;
-  n?: [number, number, number];
-  c?: Coord3D;
-  content?: string;
-  _pos?: Coord3D;
-  _px?: number;
-  _py?: number;
-  _scale?: number;
+  points: { data: number[] };
+  style: StyleObject;
+  depth: number;
+  voxel: { x: number; y: number; z: number; meta?: Record<string, unknown> };
 }

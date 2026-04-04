@@ -10,7 +10,7 @@ console.log({ seed: Random.getSeed() });
 
 interface Face {
   type: string;
-  points: [number, number][];
+  points: { data: number[] };
   depth: number;
   style: { fill?: string; stroke?: string; strokeWidth?: number };
 }
@@ -61,7 +61,8 @@ function buildScene(): Face[] {
   };
 
   // Add a back wall of height maxH to hide the faces of boxes at the back of the scene
-  h.addBox({
+  h.applyGeometry({
+    type: 'box',
     position: [0, 0, 0],
     size: [config.res, config.res, 1],
     style,
@@ -72,7 +73,8 @@ function buildScene(): Face[] {
     for (let x = 0; x < config.count; x++) {
       if (x % 2 === 0) {
         for (let i = 0; i < period; i++) {
-          h.addBox({
+          h.applyGeometry({
+            type: 'box',
             position: [
               (x * period + i + yShift) % config.res,
               y * period + period - i - 1,
@@ -84,7 +86,8 @@ function buildScene(): Face[] {
         }
       } else {
         for (let i = 0; i < period; i++) {
-          h.addBox({
+          h.applyGeometry({
+            type: 'box',
             position: [
               (x * period + yShift) % config.res,
               y * period + period - i - 1,
@@ -108,13 +111,14 @@ function drawFaces(
   oy: number,
 ) {
   for (const face of faces) {
-    if (face.type === 'content' || face.points.length === 0) continue;
+    if (face.type === 'content') continue;
 
+    const d = face.points.data;
     ctx.beginPath();
-    ctx.moveTo(face.points[0][0] + ox, face.points[0][1] + oy);
-    for (let i = 1; i < face.points.length; i++) {
-      ctx.lineTo(face.points[i][0] + ox, face.points[i][1] + oy);
-    }
+    ctx.moveTo(d[0] + ox, d[1] + oy);
+    ctx.lineTo(d[2] + ox, d[3] + oy);
+    ctx.lineTo(d[4] + ox, d[5] + oy);
+    ctx.lineTo(d[6] + ox, d[7] + oy);
     ctx.closePath();
 
     if (face.style.fill) {
@@ -134,8 +138,13 @@ function sceneBounds(faces: Face[]) {
     minY = Infinity,
     maxX = -Infinity,
     maxY = -Infinity;
-  for (const { points } of faces) {
-    for (const [px, py] of points) {
+  for (const face of faces) {
+    if (face.type === 'content') continue;
+
+    const d = face.points.data;
+    for (let i = 0; i < d.length; i += 2) {
+      const px = d[i],
+        py = d[i + 1];
       if (px < minX) minX = px;
       if (py < minY) minY = py;
       if (px > maxX) maxX = px;
@@ -156,6 +165,7 @@ export const sketch = ({ wrap, context }: SketchProps) => {
     context.fillRect(0, 0, width, height);
 
     const faces = buildScene();
+
     const { minX, minY, maxX, maxY } = sceneBounds(faces);
     const ox = (width - (maxX - minX)) / 2 - minX;
     const oy = (height - (maxY - minY)) / 2 - minY;
