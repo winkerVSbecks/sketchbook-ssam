@@ -18,13 +18,9 @@ interface Face {
 const palette = Random.shuffle(randomPalette());
 const [bg, shade, face, top] = palette;
 
-// period = 2 * max_chebyshev_dist for one clean bowl→dome cycle
 const config = {
-  cols: 40,
-  rows: 40,
-  period: 20,
-  minH: 1,
-  maxH: 11,
+  res: 40,
+  count: 8,
   tileSize: 16,
   angle: 35,
   dist: 3,
@@ -38,11 +34,8 @@ const config = {
 
 const pane = new Pane() as any;
 pane.containerElem_.style.zIndex = 1;
-pane.addBinding(config, 'cols', { min: 8, max: 40, step: 2 });
-pane.addBinding(config, 'rows', { min: 8, max: 40, step: 2 });
-pane.addBinding(config, 'period', { min: 6, max: 40, step: 2 });
-pane.addBinding(config, 'minH', { min: 1, max: 6, step: 1 });
-pane.addBinding(config, 'maxH', { min: 4, max: 24, step: 1 });
+pane.addBinding(config, 'res', { min: 8, max: 40, step: 2 });
+pane.addBinding(config, 'count', { min: 2, max: 10, step: 1 });
 pane.addBinding(config, 'tileSize', { min: 8, max: 60, step: 1 });
 pane.addBinding(config, 'angle', { min: 0, max: 90, step: 1 });
 pane.addBinding(config, 'dist', { min: 1, max: 20, step: 0.5 });
@@ -55,41 +48,50 @@ function buildScene(): Face[] {
     camera: { type: 'oblique', angle: config.angle, distance: config.dist },
   });
 
-  const count = 8;
-  const period = config.cols / count;
+  const period = config.res / config.count;
   const strokeStyle = { stroke: config.bg, strokeWidth: config.sw };
+  const style = {
+    default: { fill: config.face, ...strokeStyle },
+    front: { fill: config.face, ...strokeStyle },
+    back: { fill: config.face, ...strokeStyle },
+    top: { fill: config.top, ...strokeStyle },
+    left: { fill: config.shade, ...strokeStyle },
+    right: { fill: config.shade, ...strokeStyle },
+    bottom: { fill: config.shade, ...strokeStyle },
+  };
 
   // Add a back wall of height maxH to hide the faces of boxes at the back of the scene
   h.addBox({
-    // position: [config.cols / 2 - 0.5, config.rows / 2 - 0.5, 0],
     position: [0, 0, 0],
-    size: [config.cols, config.rows, 1],
-    style: {
-      default: { fill: config.face, ...strokeStyle },
-    },
+    size: [config.res, config.res, 1],
+    style,
   });
 
-  for (let y = 0; y < count; y++) {
-    for (let x = 0; x < count; x++) {
+  for (let y = 0; y < config.count; y++) {
+    const yShift = y % 2 === 1 ? period : 0;
+    for (let x = 0; x < config.count; x++) {
       if (x % 2 === 0) {
         for (let i = 0; i < period; i++) {
           h.addBox({
-            position: [x * period + i, y * period + period - i - 1, -1],
-            size: [period - i, 1, 1],
-            style: {
-              default: { fill: config.top, ...strokeStyle },
-            },
+            position: [
+              (x * period + i + yShift) % config.res,
+              y * period + period - i - 1,
+              -1 - y,
+            ],
+            size: [period - i, 1, 1 + y],
+            style,
           });
         }
       } else {
-        // next set fill be mirror of these steps
         for (let i = 0; i < period; i++) {
           h.addBox({
-            position: [x * period, y * period + period - i - 1, -1],
-            size: [period - i, 1, 1],
-            style: {
-              default: { fill: config.top, ...strokeStyle },
-            },
+            position: [
+              (x * period + yShift) % config.res,
+              y * period + period - i - 1,
+              -1 - y,
+            ],
+            size: [period - i, 1, 1 + y],
+            style,
           });
         }
       }
