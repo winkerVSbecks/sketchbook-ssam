@@ -284,7 +284,8 @@ function computeBounds(faces: Face[]): {
     if (face.type === 'content') continue;
     const d = face.points.data;
     for (let i = 0; i < d.length; i += 2) {
-      const px = d[i], py = d[i + 1];
+      const px = d[i],
+        py = d[i + 1];
       if (px < minX) minX = px;
       if (py < minY) minY = py;
       if (px > maxX) maxX = px;
@@ -321,7 +322,7 @@ function drawFaces(
  * Uses toSVG() directly for plotter-ready SVG export.
  */
 function buildSvg(h: Heerich): string {
-  const bounds = h.getViewBoxBounds();
+  const bounds = h.getBounds();
   const sceneW = bounds.w;
   const sceneH = bounds.h;
 

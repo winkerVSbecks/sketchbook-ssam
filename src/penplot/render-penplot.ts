@@ -93,6 +93,16 @@ export function renderPenplot(paths: any[], opts: PenplotOptions): string {
   });
 }
 
+function formatDatetime(date: Date): string {
+  const offset = date.getTimezoneOffset();
+  date.setMinutes(date.getMinutes() - offset);
+  const isoString = date.toISOString();
+  const match = isoString.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
+  if (!match) return '';
+  const [, yyyy, mo, dd, hh, mm, ss] = match;
+  return `${yyyy}.${mo}.${dd}-${hh}.${mm}.${ss}`;
+}
+
 /**
  * Listens for Cmd+S / Ctrl+S and exports the SVG file alongside
  * ssam's normal PNG export. Returns a cleanup function to remove
@@ -100,17 +110,18 @@ export function renderPenplot(paths: any[], opts: PenplotOptions): string {
  */
 export function setupPenplotExport(
   settings: SketchSettings,
-  getSvg: () => string | null
+  getSvg: () => string | null,
 ): () => void {
   const handleKeydown = (ev: KeyboardEvent) => {
     if ((ev.metaKey || ev.ctrlKey) && !ev.shiftKey && ev.key === 's') {
       const svg = getSvg();
       if (svg && import.meta.hot) {
-        const parts = [
-          settings.prefix,
-          settings.filename || settings.suffix || 'sketch',
-        ].filter(Boolean);
-        const filename = parts.join('-');
+        const s = settings as any;
+        const prefix = s.prefix ?? '';
+        const suffix = s.suffix ?? '';
+        const filename = s.filename
+          ? `${prefix}${s.filename}${suffix}`.trim()
+          : `${prefix}${formatDatetime(new Date())}${suffix}`.trim();
 
         import.meta.hot.send('ssam:export-svg', { svg, filename });
       }

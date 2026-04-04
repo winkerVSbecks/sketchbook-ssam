@@ -79,6 +79,7 @@ declare module 'heerich' {
     padding?: number;
     viewBox?: [number, number, number, number];
     style?: StyleObject;
+    occlusion?: boolean;
   }
 
   class Heerich {
@@ -87,7 +88,7 @@ declare module 'heerich' {
     addGeometry(options: Omit<ApplyGeometryOptions, 'mode'>): this;
     removeGeometry(options: Omit<ApplyGeometryOptions, 'mode'>): this;
     getFaces(): Face[];
-    getViewBoxBounds(): ViewBoxBounds;
+    getBounds(): ViewBoxBounds;
     toSVG(options?: ToSVGOptions): string;
   }
 
