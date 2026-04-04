@@ -16,120 +16,84 @@ interface Face {
 }
 
 const palette = Random.shuffle(randomPalette());
+const [bg, shade, face, top] = palette;
 
+// period = 2 * max_chebyshev_dist for one clean bowl→dome cycle
 const config = {
-  layers: 6,
-  tileSize: 32,
-  angle: 45,
+  cols: 40,
+  rows: 40,
+  period: 20,
+  minH: 1,
+  maxH: 11,
+  tileSize: 16,
+  angle: 35,
   dist: 3,
   sw: 0.4,
   sc: 'rgba(0,0,0,0.15)',
-  bg: palette[0],
-  colors: palette.slice(1),
+  bg,
+  face,
+  top,
+  shade,
 };
 
 const pane = new Pane() as any;
 pane.containerElem_.style.zIndex = 1;
-pane.addBinding(config, 'layers', { min: 2, max: 12, step: 1 });
-pane.addBinding(config, 'tileSize', { min: 8, max: 80, step: 1 });
+pane.addBinding(config, 'cols', { min: 8, max: 40, step: 2 });
+pane.addBinding(config, 'rows', { min: 8, max: 40, step: 2 });
+pane.addBinding(config, 'period', { min: 6, max: 40, step: 2 });
+pane.addBinding(config, 'minH', { min: 1, max: 6, step: 1 });
+pane.addBinding(config, 'maxH', { min: 4, max: 24, step: 1 });
+pane.addBinding(config, 'tileSize', { min: 8, max: 60, step: 1 });
 pane.addBinding(config, 'angle', { min: 0, max: 90, step: 1 });
 pane.addBinding(config, 'dist', { min: 1, max: 20, step: 0.5 });
 pane.addBinding(config, 'sw', { min: 0, max: 2, step: 0.1 });
 pane.addBinding(config, 'sc');
-pane.addBinding(config, 'bg');
 
-function layerColor(layer: number): string {
-  return config.colors[layer % config.colors.length];
-}
-
-function shadeColor(color: string, amount: number): string {
-  // Parse hex color and apply brightness adjustment
-  const hex = color.replace('#', '');
-  const r = Math.max(0, Math.min(255, parseInt(hex.slice(0, 2), 16) + amount));
-  const g = Math.max(0, Math.min(255, parseInt(hex.slice(2, 4), 16) + amount));
-  const b = Math.max(0, Math.min(255, parseInt(hex.slice(4, 6), 16) + amount));
-  return `rgb(${r}, ${g}, ${b})`;
-}
-
-// Determine which face of the diamond a voxel belongs to and return shade amount
-function getDiamondFaceShade(x: number, z: number): number {
-  // 4 faces of the diamond based on quadrant
-  // Simulating light from top-right
-  if (x >= 0 && z <= 0) return 0; // front-right face (brightest)
-  if (x >= 0 && z > 0) return -25; // back-right face
-  if (x < 0 && z <= 0) return -40; // front-left face
-  return -60; // back-left face (darkest)
-}
-
-interface Voxel {
-  x: number;
-  y: number;
-  z: number;
-  layer: number;
-}
-
-function generateDiamond(layers: number): Voxel[] {
-  const baseRadius = layers - 1;
-  const voxels: Voxel[] = [];
-
-  for (let layer = 0; layer < layers; layer++) {
-    const radius = baseRadius - layer;
-    for (let r = -radius; r <= radius; r++) {
-      for (let c = -radius; c <= radius; c++) {
-        if (Math.abs(c) + Math.abs(r) > radius) continue;
-        // Top half
-        voxels.push({ x: c, z: r, y: -layer, layer });
-        // Bottom half (mirror, skip shared base at layer 0)
-        if (layer > 0) {
-          voxels.push({ x: c, z: r, y: layer, layer });
-        }
-      }
-    }
-  }
-  return voxels;
-}
-
-function buildScene(rotationAngle: number): Face[] {
-  const layers = config.layers;
-  const baseRadius = layers - 1;
-
+function buildScene(): Face[] {
   const h = new Heerich({
     tile: [config.tileSize, config.tileSize],
     camera: { type: 'oblique', angle: config.angle, distance: config.dist },
   });
 
-  const ss = { stroke: config.sc, strokeWidth: config.sw };
-  const voxels = generateDiamond(layers);
+  const count = 8;
+  const period = config.cols / count;
+  const strokeStyle = { stroke: config.bg, strokeWidth: config.sw };
 
-  // Rotate around Y and snap to grid
-  const cos = Math.cos(rotationAngle);
-  const sin = Math.sin(rotationAngle);
-  const occupied = new Set<string>();
+  // Add a back wall of height maxH to hide the faces of boxes at the back of the scene
+  h.addBox({
+    // position: [config.cols / 2 - 0.5, config.rows / 2 - 0.5, 0],
+    position: [0, 0, 0],
+    size: [config.cols, config.rows, 1],
+    style: {
+      default: { fill: config.face, ...strokeStyle },
+    },
+  });
 
-  for (const v of voxels) {
-    const rx = Math.round(v.x * cos - v.z * sin);
-    const rz = Math.round(v.x * sin + v.z * cos);
-    const key = `${rx},${v.y},${rz}`;
-    if (occupied.has(key)) continue;
-    occupied.add(key);
-
-    const color = layerColor(v.layer);
-    const faceShade = getDiamondFaceShade(rx, rz);
-    const shadedColor = shadeColor(color, faceShade);
-    const topColor = shadedColor;
-    const rightColor = shadeColor(shadedColor, -20);
-    const leftColor = shadeColor(shadedColor, -40);
-
-    h.addBox({
-      position: [rx + baseRadius, v.y, rz + baseRadius],
-      size: [1, 1, 1],
-      style: {
-        default: { fill: shadedColor, ...ss },
-        top: { fill: topColor, ...ss },
-        left: { fill: leftColor, ...ss },
-        right: { fill: rightColor, ...ss },
-      },
-    });
+  for (let y = 0; y < count; y++) {
+    for (let x = 0; x < count; x++) {
+      if (x % 2 === 0) {
+        for (let i = 0; i < period; i++) {
+          h.addBox({
+            position: [x * period + i, y * period + period - i - 1, -1],
+            size: [period - i, 1, 1],
+            style: {
+              default: { fill: config.top, ...strokeStyle },
+            },
+          });
+        }
+      } else {
+        // next set fill be mirror of these steps
+        for (let i = 0; i < period; i++) {
+          h.addBox({
+            position: [x * period, y * period + period - i - 1, -1],
+            size: [period - i, 1, 1],
+            style: {
+              default: { fill: config.top, ...strokeStyle },
+            },
+          });
+        }
+      }
+    }
   }
 
   return h.getFaces() as Face[];
@@ -189,8 +153,7 @@ export const sketch = ({ wrap, context }: SketchProps) => {
     context.fillStyle = config.bg;
     context.fillRect(0, 0, width, height);
 
-    const rotation = playhead * Math.PI * 2;
-    const faces = buildScene(rotation);
+    const faces = buildScene();
     const { minX, minY, maxX, maxY } = sceneBounds(faces);
     const ox = (width - (maxX - minX)) / 2 - minX;
     const oy = (height - (maxY - minY)) / 2 - minY;
@@ -204,7 +167,7 @@ export const settings: SketchSettings = {
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
   animate: true,
-  duration: 3_000,
+  duration: 2000,
   framesFormat: ['mp4'],
   playFps: 60,
   exportFps: 60,
