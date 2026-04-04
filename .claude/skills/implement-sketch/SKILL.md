@@ -18,9 +18,16 @@ Read the sketch file the user wants to implement in. If they haven't specified o
 
 Also briefly scan related sketches for relevant patterns if the idea involves a technique not already present in the target file (e.g. noise fields, particle systems, grid layouts, packing algorithms).
 
+If the target file imports a third-party library you don't have API knowledge of (e.g. `heerich`, an unfamiliar renderer), **grep the project for other sketches that use it** and read one to learn the API — don't guess method names or signatures.
+
 ## Step 2: Understand the idea
 
 If the idea is vague or ambiguous, ask one focused clarifying question. Otherwise proceed with reasonable creative interpretation — don't over-ask.
+
+**When to ask before proceeding:**
+- The idea involves 3D or spatial arrangement (voxels, isometric, oblique) and no visual reference is provided — ask for one or a description of the target output.
+- The element placement follows a non-obvious algorithmic rule (staggered offsets, interlocking patterns, shrinking/growing sequences) — ask the user to spell out the rule rather than inferring it from a vague description.
+- The camera/projection style is unspecified for a 3D sketch — ask (isometric? oblique? perspective? angle?).
 
 Think through:
 - What visual elements are being drawn?
