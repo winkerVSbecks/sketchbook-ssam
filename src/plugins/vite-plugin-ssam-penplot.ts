@@ -17,7 +17,7 @@ export const ssamPenplot = (opts: { outDir?: string } = {}): Plugin => ({
   configureServer(server) {
     const { outDir } = Object.assign({}, defaultOptions, opts);
 
-    server.hot.on('ssam:export-svg', (data) => {
+    server.hot.on('ssam:export-svg', (data, client) => {
       if (!fs.existsSync(outDir)) {
         fs.mkdirSync(outDir, { recursive: true });
         console.log(`${prefix()} created directory at ${path.resolve(outDir)}`);
@@ -29,10 +29,14 @@ export const ssamPenplot = (opts: { outDir?: string } = {}): Plugin => ({
       fs.promises
         .writeFile(filePath, svg, 'utf-8')
         .then(() => {
-          console.log(`${prefix()} ${filePath} exported`);
+          const msg = `${prefix()} ${filePath} exported`;
+          console.log(msg);
+          client.send('ssam:log', { msg });
         })
         .catch((err) => {
-          console.error(`${prefix()} ${err}`);
+          const msg = `${prefix()} ${err}`;
+          console.error(msg);
+          client.send('ssam:warn', { msg });
         });
     });
   },

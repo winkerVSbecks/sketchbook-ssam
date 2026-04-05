@@ -80,6 +80,7 @@ declare module 'heerich' {
     viewBox?: [number, number, number, number];
     style?: StyleObject;
     occlusion?: boolean;
+    faces?: Face[];
   }
 
   class Heerich {

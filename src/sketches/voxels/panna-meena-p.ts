@@ -9,13 +9,6 @@ import { getDimensionsFromPreset } from '../../penplot/distances';
 Random.setSeed(Random.getRandomSeed());
 console.log({ seed: Random.getSeed() });
 
-interface Face {
-  type: string;
-  points: { data: number[] };
-  depth: number;
-  style: { fill?: string; stroke?: string; strokeWidth?: number };
-}
-
 const units = 'cm';
 const [physicalWidth, physicalHeight] = getDimensionsFromPreset('a4', units);
 
@@ -56,42 +49,49 @@ function buildScene(): { h: Heerich; faces: Face[] } {
   h.applyGeometry({
     type: 'box',
     position: [0, 0, 0],
-    size: [config.res, config.res, 1],
+    size: [5, 5, 1],
     style: styleObj,
   });
 
-  for (let y = 0; y < config.count; y++) {
-    const yShift = y % 2 === 1 ? period : 0;
-    for (let x = 0; x < config.count; x++) {
-      if (x % 2 === 0) {
-        for (let i = 0; i < period; i++) {
-          h.applyGeometry({
-            type: 'box',
-            position: [
-              (x * period + i + yShift) % config.res,
-              y * period + period - i - 1,
-              -1 - y,
-            ],
-            size: [period - i, 1, 1 + y],
-            style: styleObj,
-          });
-        }
-      } else {
-        for (let i = 0; i < period; i++) {
-          h.applyGeometry({
-            type: 'box',
-            position: [
-              (x * period + yShift) % config.res,
-              y * period + period - i - 1,
-              -1 - y,
-            ],
-            size: [period - i, 1, 1 + y],
-            style: styleObj,
-          });
-        }
-      }
-    }
-  }
+  h.applyGeometry({
+    type: 'box',
+    position: [0, 0, -1],
+    size: [2, 2, 1],
+    style: styleObj,
+  });
+
+  // for (let y = 0; y < config.count; y++) {
+  //   const yShift = y % 2 === 1 ? period : 0;
+  //   for (let x = 0; x < config.count; x++) {
+  //     if (x % 2 === 0) {
+  //       for (let i = 0; i < period; i++) {
+  //         h.applyGeometry({
+  //           type: 'box',
+  //           position: [
+  //             (x * period + i + yShift) % config.res,
+  //             y * period + period - i - 1,
+  //             -1 - y,
+  //           ],
+  //           size: [period - i, 1, 1 + y],
+  //           style: styleObj,
+  //         });
+  //       }
+  //     } else {
+  //       for (let i = 0; i < period; i++) {
+  //         h.applyGeometry({
+  //           type: 'box',
+  //           position: [
+  //             (x * period + yShift) % config.res,
+  //             y * period + period - i - 1,
+  //             -1 - y,
+  //           ],
+  //           size: [period - i, 1, 1 + y],
+  //           style: styleObj,
+  //         });
+  //       }
+  //     }
+  //   }
+  // }
 
   return { h, faces: h.getFaces() as Face[] };
 }
@@ -152,7 +152,18 @@ function buildSvg(h: Heerich): string {
   const vbW = physicalWidth / scale;
   const vbH = physicalHeight / scale;
 
+  const faces = h.getFaces() as Face[];
+  for (const face of faces) {
+    if (face.type === 'content') continue;
+    face.style = {
+      fill: 'white',
+      stroke: 'black',
+      strokeWidth: 0.5,
+    };
+  }
+
   const svg = h.toSVG({
+    // faces,
     padding: 0,
     viewBox: [vbX, vbY, vbW, vbH],
     occlusion: true,
