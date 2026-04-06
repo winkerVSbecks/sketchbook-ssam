@@ -1,7 +1,12 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import { Heerich } from 'heerich';
+import Random from 'canvas-sketch-util/random';
+import { Pane } from 'tweakpane';
 import { randomPalette } from '../../colors';
+import { createNaleeSystem } from '../nalee/nalee-system';
+import { makeDomain } from '../nalee/domain';
+import type { Config, Walker } from '../nalee/types';
 
 interface Face {
   type: string;
@@ -10,188 +15,118 @@ interface Face {
   style: { fill?: string; stroke?: string; strokeWidth?: number };
 }
 
-const COLS = 20;
-const ROWS = 20;
-const WALKER_COUNT = 8;
-const TILE = 24;
-
-const bg = '#111111';
-const sw = 0.4;
+Random.setSeed(Random.getRandomSeed());
+console.log({ seed: Random.getSeed() });
 
 const palette = randomPalette();
+const bg = Random.pick(palette);
+const seed = Random.getSeed();
 
-function adjustHex(hex: string, amount: number): string {
-  const n = parseInt(hex.replace('#', ''), 16);
-  const r = Math.min(255, Math.max(0, (n >> 16) + amount));
-  const g = Math.min(255, Math.max(0, ((n >> 8) & 0xff) + amount));
-  const b = Math.min(255, Math.max(0, (n & 0xff) + amount));
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
-}
+const config = {
+  cols: 20,
+  rows: 20,
+  walkerCount: 8,
+  tileSize: 16,
+  cameraAngle: 45,
+  pathHeight: 34,
+  sw: 0.1,
+};
 
-// --- Space-filling walker simulation ---
+const pane = new Pane() as any;
+pane.containerElem_.style.zIndex = 1;
+pane.addBinding(config, 'cols', { min: 4, max: 40, step: 2 });
+pane.addBinding(config, 'rows', { min: 4, max: 40, step: 2 });
+pane.addBinding(config, 'walkerCount', { min: 1, max: 20, step: 1 });
+pane.addBinding(config, 'tileSize', { min: 8, max: 60, step: 1 });
+pane.addBinding(config, 'cameraAngle', { min: 0, max: 90, step: 1 });
+pane.addBinding(config, 'pathHeight', { min: 1, max: 40, step: 1 });
+pane.addBinding(config, 'sw', { min: 0, max: 2, step: 0.1 });
 
-interface Walker {
-  id: number;
-  path: { x: number; y: number }[]; // ordered sequence of visited cells
-  x: number;
-  y: number;
-  preferH: boolean;
-  preferFwd: boolean;
-  alive: boolean;
-}
+function buildScene(
+  context: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+): Face[] {
+  // Re-seed so layout stays consistent while tweaking other params
+  Random.setSeed(seed);
 
-function runNalee(): { walkers: Walker[]; totalWalkers: number } {
-  const occupied = Array.from({ length: ROWS }, () =>
-    new Array<boolean>(COLS).fill(false)
-  );
-
-  const isValid = (x: number, y: number): boolean => {
-    if (x < 0 || x >= COLS || y < 0 || y >= ROWS) return false;
-    return !occupied[y][x];
-  };
-
-  const walkers: Walker[] = [];
-  let nextId = 0;
-
-  function spawnWalker(): boolean {
-    const free: { x: number; y: number }[] = [];
-    for (let y = 0; y < ROWS; y++)
-      for (let x = 0; x < COLS; x++)
-        if (!occupied[y][x]) free.push({ x, y });
-    if (free.length === 0) return false;
-
-    const start = free[Math.floor(Math.random() * free.length)];
-    occupied[start.y][start.x] = true;
-    walkers.push({
-      id: nextId++,
-      path: [{ x: start.x, y: start.y }],
-      x: start.x,
-      y: start.y,
-      preferH: Math.random() < 0.5,
-      preferFwd: Math.random() < 0.5,
-      alive: true,
-    });
-    return true;
-  }
-
-  function stepWalker(w: Walker) {
-    const dirs = [
-      { x: w.x + 1, y: w.y },
-      { x: w.x - 1, y: w.y },
-      { x: w.x, y: w.y + 1 },
-      { x: w.x, y: w.y - 1 },
-    ];
-    const axisPair = w.preferH ? [0, 1] : [2, 3];
-    const [fwdIdx, bwdIdx] = w.preferFwd
-      ? [axisPair[0], axisPair[1]]
-      : [axisPair[1], axisPair[0]];
-
-    let next = dirs[fwdIdx];
-    if (!isValid(next.x, next.y)) {
-      next = dirs[bwdIdx];
-      if (!isValid(next.x, next.y)) {
-        const valid = dirs.filter((d) => isValid(d.x, d.y));
-        if (valid.length === 0) {
-          w.alive = false;
-          return;
-        }
-        next = valid[Math.floor(Math.random() * valid.length)];
-      }
-    }
-
-    occupied[next.y][next.x] = true;
-    w.x = next.x;
-    w.y = next.y;
-    w.path.push({ x: next.x, y: next.y });
-  }
-
-  for (let i = 0; i < WALKER_COUNT; i++) spawnWalker();
-
-  let allFilled = false;
-  while (!allFilled) {
-    for (const w of walkers) {
-      if (w.alive) stepWalker(w);
-    }
-
-    if (walkers.every((w) => !w.alive)) {
-      if (!spawnWalker()) allFilled = true;
-    }
-
-    if (occupied.every((row) => row.every(Boolean))) {
-      allFilled = true;
-    }
-  }
-
-  return { walkers, totalWalkers: nextId };
-}
-
-// --- Scene building ---
-
-function walkerStyle(id: number, _total: number) {
-  const base = palette[id % palette.length];
-  const top = adjustHex(base, 60);
-  const shade = adjustHex(base, -60);
-  return {
-    default: { fill: base, stroke: bg, strokeWidth: sw },
-    top: { fill: top, stroke: bg, strokeWidth: sw },
-    left: { fill: shade, stroke: bg, strokeWidth: sw },
-    right: { fill: shade, stroke: bg, strokeWidth: sw },
-    bottom: { fill: shade, stroke: bg, strokeWidth: sw },
-    front: { fill: base, stroke: bg, strokeWidth: sw },
-    back: { fill: base, stroke: bg, strokeWidth: sw },
-  };
-}
-
-function buildScene(): Face[] {
-  const { walkers, totalWalkers } = runNalee();
-
-  const h = new Heerich({
-    tile: [TILE, TILE],
-    camera: { type: 'isometric', angle: 45 },
+  const heerich = new Heerich({
+    tile: [config.tileSize, config.tileSize],
+    camera: { type: 'isometric', angle: config.cameraAngle },
   });
-
-  // Deduplicate: multiple walkers could claim the same voxel position in edge cases
   const placed = new Set<string>();
-  const place = (px: number, pz: number, walkerId: number) => {
-    const key = `${px},${pz}`;
-    if (placed.has(key)) return;
-    placed.add(key);
-    h.applyGeometry({
-      type: 'box',
-      position: [px, 0, pz],
-      size: [1, 1, 1],
-      style: walkerStyle(walkerId, totalWalkers),
-    });
-  };
 
-  for (const walker of walkers) {
-    for (let i = 0; i < walker.path.length; i++) {
-      const { x, y } = walker.path[i];
-      // Main cell voxel at stride-2 position
-      place(x * 2, y * 2, walker.id);
+  const voxelStyle = (
+    _ctx: CanvasRenderingContext2D,
+    walker: Walker,
+    pts: Point[],
+    _playhead: number,
+  ) => {
+    const base = walker.color;
+    const lighter = `oklch(from ${base} calc(l + 0.15) c h)`;
+    const darker = `oklch(from ${base} calc(l - 0.15) c h)`;
+    const style = {
+      default: { fill: base, stroke: bg, strokeWidth: config.sw },
+      top: { fill: lighter, stroke: bg, strokeWidth: config.sw },
+      left: { fill: darker, stroke: bg, strokeWidth: config.sw },
+      right: { fill: darker, stroke: bg, strokeWidth: config.sw },
+      bottom: { fill: darker, stroke: bg, strokeWidth: config.sw },
+      front: { fill: base, stroke: bg, strokeWidth: config.sw },
+      back: { fill: base, stroke: bg, strokeWidth: config.sw },
+    };
 
-      // Connector to the next cell in path sequence only —
-      // parallel segments of the same walker are NOT connected,
-      // so gaps appear between them (matching the 2D nalee line aesthetic)
-      if (i + 1 < walker.path.length) {
-        const next = walker.path[i + 1];
-        const dx = next.x - x; // ±1 in one axis, 0 in other
-        const dy = next.y - y;
-        place(x * 2 + dx, y * 2 + dy, walker.id);
+    const placeVoxel = (px: number, pz: number) => {
+      const key = `${px},${pz}`;
+      if (placed.has(key)) return;
+      placed.add(key);
+      heerich.applyGeometry({
+        type: 'box',
+        position: [px, 0, pz],
+        size: [1, config.pathHeight, 1],
+        style,
+      });
+    };
+
+    for (let i = 0; i < pts.length; i++) {
+      const [x, y] = pts[i];
+      placeVoxel(x * 2, y * 2);
+      if (i + 1 < pts.length) {
+        const [nx, ny] = pts[i + 1];
+        placeVoxel(x * 2 + (nx - x), y * 2 + (ny - y));
       }
     }
-  }
+  };
 
-  return h.getFaces() as Face[];
+  const domainToWorld = (x: number, y: number): Point => [x, y];
+
+  const naleeConfig = {
+    resolution: [config.cols, config.rows],
+    size: 1,
+    stepSize: 0.33,
+    walkerCount: config.walkerCount,
+    padding: 0,
+    flat: true,
+    pathStyle: voxelStyle,
+  } satisfies Config;
+
+  const domain = makeDomain(naleeConfig.resolution, domainToWorld);
+  const naleeRender = createNaleeSystem(
+    domain,
+    naleeConfig,
+    domainToWorld,
+    palette,
+    bg,
+  );
+  naleeRender({ context, playhead: 0, width, height } as SketchProps);
+
+  return heerich.getFaces() as Face[];
 }
-
-// --- Canvas rendering helpers (from panna-meena pattern) ---
 
 function drawFaces(
   ctx: CanvasRenderingContext2D,
   faces: Face[],
   ox: number,
-  oy: number
+  oy: number,
 ) {
   for (const face of faces) {
     if (face.type === 'content') continue;
@@ -234,19 +169,17 @@ function sceneBounds(faces: Face[]) {
   return { minX, minY, maxX, maxY };
 }
 
-// --- Sketch ---
-
 export const sketch = ({ wrap, context }: SketchProps) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => wrap.dispose());
     import.meta.hot.accept(() => wrap.hotReload());
   }
 
-  const faces = buildScene();
-
   wrap.render = ({ width, height }: SketchProps) => {
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
+
+    const faces = buildScene(context, width, height);
 
     const { minX, minY, maxX, maxY } = sceneBounds(faces);
     const ox = (width - (maxX - minX)) / 2 - minX;
@@ -260,7 +193,7 @@ export const settings: SketchSettings = {
   mode: '2d',
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
-  animate: false,
+  animate: true,
 };
 
 ssam(sketch as Sketch<'2d'>, settings);
