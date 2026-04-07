@@ -97,6 +97,14 @@ declare module 'heerich' {
   export { Heerich };
 }
 
+interface HatchOptions {
+  angle?: number;
+  period?: number;
+  stroke?: string;
+  strokeWidth?: number;
+  opacity?: number;
+}
+
 interface StyleObject {
   fill?: string;
   stroke?: string;
@@ -107,7 +115,8 @@ interface StyleObject {
   strokeLinejoin?: string;
   fillOpacity?: number;
   strokeOpacity?: number;
-  [key: string]: string | number | undefined;
+  hatch?: HatchOptions;
+  [key: string]: string | number | HatchOptions | undefined;
 }
 
 type StyleParam =
