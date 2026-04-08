@@ -2,6 +2,7 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import { Heerich } from 'heerich';
 import Random from 'canvas-sketch-util/random';
+import { mapRange } from 'canvas-sketch-util/math';
 import { Pane } from 'tweakpane';
 import { randomPalette } from '../../colors';
 import { createNaleeSystem } from '../nalee/nalee-system';
@@ -23,12 +24,17 @@ const bg = Random.pick(palette);
 const seed = Random.getSeed();
 
 const config = {
-  cols: 60,
-  rows: 60,
+  // cols: 30,
+  // rows: 30,
+  // walkerCount: 1,
+  // tileSize: 18,
+  cols: 20,
+  rows: 20,
   walkerCount: 1,
-  tileSize: 18,
+  tileSize: 16,
   cameraAngle: 45,
-  pathHeight: 34,
+  pathHeightMin: 10,
+  pathHeightMax: 50,
   flat: true,
   sw: 0.1,
 };
@@ -40,7 +46,8 @@ pane.addBinding(config, 'rows', { min: 4, max: 80, step: 2 });
 pane.addBinding(config, 'walkerCount', { min: 1, max: 20, step: 1 });
 pane.addBinding(config, 'tileSize', { min: 8, max: 60, step: 1 });
 pane.addBinding(config, 'cameraAngle', { min: 0, max: 90, step: 1 });
-pane.addBinding(config, 'pathHeight', { min: 1, max: 60, step: 1 });
+pane.addBinding(config, 'pathHeightMin', { min: 1, max: 60, step: 1 });
+pane.addBinding(config, 'pathHeightMax', { min: 1, max: 80, step: 1 });
 pane.addBinding(config, 'flat');
 pane.addBinding(config, 'sw', { min: 0, max: 2, step: 0.1 });
 
@@ -105,14 +112,25 @@ function buildScene(
       },
     };
 
+    const maxPathLength = config.cols * config.rows;
+    const pathHeight = Math.round(
+      mapRange(
+        pts.length,
+        1,
+        maxPathLength,
+        config.pathHeightMax,
+        config.pathHeightMin,
+      ),
+    );
+
     const placeVoxel = (px: number, pz: number) => {
       const key = `${px},${pz}`;
       if (placed.has(key)) return;
       placed.add(key);
       heerich.applyGeometry({
         type: 'box',
-        position: [px, 0, pz],
-        size: [1, config.pathHeight, 1],
+        position: [px, config.pathHeightMax - pathHeight, pz],
+        size: [1, pathHeight, 1],
         style,
       });
     };
