@@ -11,7 +11,7 @@ export function randomPalette(): string[] {
 export function logColors(colors: string[], skipName = false) {
   console.log(
     colors.map((color) => `%c ${skipName ? 'color' : color}`).join(' '),
-    ...colors.map((color) => `background: ${color}; color: ${color}`)
+    ...colors.map((color) => `background: ${color}; color: ${color}`),
   );
 }
 
