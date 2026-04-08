@@ -3,6 +3,7 @@ import type { Sketch, SketchSettings } from 'ssam';
 import { Mesh, Program, Renderer, Triangle, Vec2 } from 'ogl';
 import { Pane } from 'tweakpane';
 import Random from 'canvas-sketch-util/random';
+import { parse, rgb as toRgb } from 'culori';
 import { randomPalette } from '../colors';
 
 // -------------------------------------------------------------------------
@@ -138,27 +139,11 @@ interface Particle {
   offsetY: number;
 }
 
-function hexToRgb01(hex: string): [number, number, number] {
-  const clean = hex.replace('#', '');
-  const full =
-    clean.length === 3
-      ? clean
-          .split('')
-          .map((c) => c + c)
-          .join('')
-      : clean;
-  const r = parseInt(full.slice(0, 2), 16) / 255;
-  const g = parseInt(full.slice(2, 4), 16) / 255;
-  const b = parseInt(full.slice(4, 6), 16) / 255;
-  return [r, g, b];
-}
-
 function cssToRgb01(css: string): [number, number, number] {
-  if (css.startsWith('#')) return hexToRgb01(css);
-  const m = css.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
-  if (m)
-    return [parseInt(m[1]) / 255, parseInt(m[2]) / 255, parseInt(m[3]) / 255];
-  return [1, 1, 1];
+  const parsed = parse(css);
+  if (!parsed) return [1, 1, 1];
+  const { r, g, b } = toRgb(parsed)!;
+  return [r ?? 0, g ?? 0, b ?? 0];
 }
 
 // Boost saturation of an RGB 0-1 color via HSL
