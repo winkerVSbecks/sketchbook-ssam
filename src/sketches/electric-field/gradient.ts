@@ -60,7 +60,6 @@ function electricField(pos: Vec2, particles: ParticleState[]): Vec2 {
   for (const p of particles) {
     const r = cxSub(pos, p.pos);
     const rAbs = cxAbs(r);
-    if (rAbs * 2.5 < RAD && p.charge < 0) return cx(0, 0);
     const ur = cxScaleDiv(r, rAbs);
     res = cxAdd(res, cxScale(ur, p.charge / (rAbs * rAbs)));
   }
@@ -156,30 +155,30 @@ function drawDirectedPath(
   path: Vec2[],
   colorStart: string,
   colorEnd: string,
+  widths: number[],
 ) {
   if (path.length < 2) return;
-
-  const MAX_DIST = 150;
-  const TIP_SIZE = 15;
 
   const x0 = path[0].re;
   const y0 = path[0].im;
   const xN = path[path.length - 1].re;
   const yN = path[path.length - 1].im;
 
-  // Gradient along the bounding line from start to end of path
+  // Gradient defined in canvas-space — still applies correctly per segment
   const grad = ctx.createLinearGradient(x0, y0, xN, yN);
   grad.addColorStop(0, colorStart);
   grad.addColorStop(1, colorEnd);
-
   ctx.strokeStyle = grad;
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(x0, y0);
+  ctx.lineCap = 'round';
+
   for (let i = 1; i < path.length; i++) {
+    const w = (widths[i - 1] + (widths[i] ?? widths[i - 1])) / 2;
+    ctx.lineWidth = w;
+    ctx.beginPath();
+    ctx.moveTo(path[i - 1].re, path[i - 1].im);
     ctx.lineTo(path[i].re, path[i].im);
+    ctx.stroke();
   }
-  ctx.stroke();
 }
 
 /**
@@ -279,6 +278,8 @@ export const sketch = ({
   let paths: Vec2[][] = [];
   // Track which particle index "owns" each path (for gradient color)
   let pathOwners: number[] = [];
+  // Per-point stroke widths: thick where sparse, thin where dense
+  let pathWidths: number[][] = [];
 
   function getCanvasPos(e: MouseEvent): Vec2 {
     const rect = canvas.getBoundingClientRect();
@@ -292,6 +293,7 @@ export const sketch = ({
     moving.length = 0;
     paths.length = 0;
     pathOwners.length = 0;
+    pathWidths.length = 0;
   }
 
   function randomParticle(sign: 1 | -1, color: string) {
@@ -334,6 +336,16 @@ export const sketch = ({
     clearFlux();
   }
 
+  function fieldWidth(pos: Vec2): number {
+    const f = cxScale(electricField(pos, particles), 1e15);
+    const mag = cxAbs(f);
+    return clamp(
+      params.widthFalloff / (mag + 1),
+      params.minWidth,
+      params.maxWidth,
+    );
+  }
+
   function generatePaths() {
     const di = (Math.PI * 2) / 30;
     for (let pi = 0; pi < particles.length; pi++) {
@@ -342,8 +354,9 @@ export const sketch = ({
         for (let j = 0; j <= Math.PI * 2; j += di) {
           const pt = cxAdd(p.pos, cxFromPolar(RAD / 4, j));
           moving.push({ ...pt });
-          paths.push([{ ...pt }]);
+          paths.push([{ ...p.pos }, { ...pt }]);
           pathOwners.push(pi);
+          pathWidths.push([params.minWidth, fieldWidth(pt)]);
         }
       }
     }
@@ -354,17 +367,21 @@ export const sketch = ({
         moving.push(cx(i, 2));
         paths.push([cx(i, 2)]);
         pathOwners.push(-1);
+        pathWidths.push([fieldWidth(cx(i, 2))]);
         moving.push(cx(i, height - 2));
         paths.push([cx(i, height - 2)]);
         pathOwners.push(-1);
+        pathWidths.push([fieldWidth(cx(i, height - 2))]);
       }
       if (i <= height) {
         moving.push(cx(2, i));
         paths.push([cx(2, i)]);
         pathOwners.push(-1);
+        pathWidths.push([fieldWidth(cx(2, i))]);
         moving.push(cx(width - 2, i));
         paths.push([cx(width - 2, i)]);
         pathOwners.push(-1);
+        pathWidths.push([fieldWidth(cx(width - 2, i))]);
       }
     }
   }
@@ -426,6 +443,11 @@ export const sketch = ({
   const params = {
     showParticles: false,
     showArrows: false,
+    minWidth: 0,
+    maxWidth: 12 * 2,
+    widthFalloff: 256, //80,
+    stepMin: 2,
+    stepMax: 6,
   };
 
   pane = new Pane({ title: 'Electric Field' });
@@ -436,6 +458,36 @@ export const sketch = ({
   pane.addButton({ title: 'Clear' }).on('click', clearFlux);
   pane.addBinding(params, 'showParticles', { label: 'Show Particles' });
   pane.addBinding(params, 'showArrows', { label: 'Show Arrows' });
+  pane.addBinding(params, 'minWidth', {
+    label: 'Min Width',
+    min: 0.1,
+    max: 10,
+    step: 0.1,
+  });
+  pane.addBinding(params, 'maxWidth', {
+    label: 'Max Width',
+    min: 0.1,
+    max: 200,
+    step: 0.1,
+  });
+  pane.addBinding(params, 'widthFalloff', {
+    label: 'Width Falloff',
+    min: 1,
+    max: 500,
+    step: 1,
+  });
+  pane.addBinding(params, 'stepMin', {
+    label: 'Step Min',
+    min: 0.5,
+    max: 20,
+    step: 0.5,
+  });
+  pane.addBinding(params, 'stepMax', {
+    label: 'Step Max',
+    min: 0.5,
+    max: 50,
+    step: 0.5,
+  });
 
   wrap.render = ({ width, height, frame }: SketchProps) => {
     ctx.fillStyle = bg;
@@ -464,17 +516,36 @@ export const sketch = ({
     for (let i = 0; i < moving.length; i++) {
       const p = moving[i];
       if (p.re < 0 || p.re > width || p.im < 0 || p.im > height) continue;
+
+      // Snap to negative particle center and terminate when close enough
+      let absorbed = false;
+      for (const particle of particles) {
+        if (particle.charge < 0 && cxAbs(cxSub(p, particle.pos)) < RAD * 0.4) {
+          paths[i].push({ ...particle.pos });
+          pathWidths[i].push(params.minWidth);
+          moving[i] = cx(-1, p.im);
+          absorbed = true;
+          break;
+        }
+      }
+      if (absorbed) continue;
+
       const field = cxScale(electricField(p, particles), 1e15);
       const fieldAbs = cxAbs(field);
       if (fieldAbs === 0) continue;
-      const step = cxScale(field, clamp(fieldAbs, 6, 15) / fieldAbs);
+      const step = cxScale(
+        field,
+        clamp(fieldAbs, params.stepMin, params.stepMax) / fieldAbs,
+      );
       moving[i] = cxAdd(p, step);
       paths[i].push({ ...moving[i] });
-      // dot at head
-      // ctx.fillStyle = 'white';
-      // ctx.beginPath();
-      // ctx.arc(moving[i].re, moving[i].im, 5, 0, Math.PI * 2);
-      // ctx.fill();
+      pathWidths[i].push(
+        clamp(
+          params.widthFalloff / (fieldAbs + 1),
+          params.minWidth,
+          params.maxWidth,
+        ),
+      );
       if (step.re === 0 && step.im === 0) moving[i] = cx(-1, p.im);
     }
 
@@ -485,7 +556,7 @@ export const sketch = ({
       const ownerIdx = pathOwners[i];
       const colorStart = ownerIdx >= 0 ? particles[ownerIdx].color : palette[0];
       const colorEnd = nearestParticleColor(path[path.length - 1]);
-      drawDirectedPath(ctx, path, colorStart, colorEnd);
+      drawDirectedPath(ctx, path, colorStart, colorEnd, pathWidths[i]);
     }
 
     // Draw charged particles
