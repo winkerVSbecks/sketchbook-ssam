@@ -25,10 +25,11 @@ const seed = Random.getSeed();
 const config = {
   cols: 20,
   rows: 20,
-  walkerCount: 8,
+  walkerCount: 1,
   tileSize: 16,
   cameraAngle: 45,
   pathHeight: 34,
+  flat: true,
   sw: 0.1,
 };
 
@@ -40,6 +41,7 @@ pane.addBinding(config, 'walkerCount', { min: 1, max: 20, step: 1 });
 pane.addBinding(config, 'tileSize', { min: 8, max: 60, step: 1 });
 pane.addBinding(config, 'cameraAngle', { min: 0, max: 90, step: 1 });
 pane.addBinding(config, 'pathHeight', { min: 1, max: 40, step: 1 });
+pane.addBinding(config, 'flat');
 pane.addBinding(config, 'sw', { min: 0, max: 2, step: 0.1 });
 
 function buildScene(
@@ -66,13 +68,41 @@ function buildScene(
     const lighter = `oklch(from ${base} calc(l + 0.15) c h)`;
     const darker = `oklch(from ${base} calc(l - 0.15) c h)`;
     const style = {
-      default: { fill: base, stroke: bg, strokeWidth: config.sw },
-      top: { fill: lighter, stroke: bg, strokeWidth: config.sw },
-      left: { fill: darker, stroke: bg, strokeWidth: config.sw },
-      right: { fill: darker, stroke: bg, strokeWidth: config.sw },
-      bottom: { fill: darker, stroke: bg, strokeWidth: config.sw },
-      front: { fill: base, stroke: bg, strokeWidth: config.sw },
-      back: { fill: base, stroke: bg, strokeWidth: config.sw },
+      default: {
+        fill: base,
+        stroke: config.flat ? base : bg,
+        strokeWidth: config.sw,
+      },
+      top: {
+        fill: lighter,
+        stroke: config.flat ? lighter : bg,
+        strokeWidth: config.sw,
+      },
+      left: {
+        fill: darker,
+        stroke: config.flat ? darker : bg,
+        strokeWidth: config.sw,
+      },
+      right: {
+        fill: darker,
+        stroke: config.flat ? darker : bg,
+        strokeWidth: config.sw,
+      },
+      bottom: {
+        fill: darker,
+        stroke: config.flat ? darker : bg,
+        strokeWidth: config.sw,
+      },
+      front: {
+        fill: base,
+        stroke: config.flat ? base : bg,
+        strokeWidth: config.sw,
+      },
+      back: {
+        fill: base,
+        stroke: config.flat ? base : bg,
+        strokeWidth: config.sw,
+      },
     };
 
     const placeVoxel = (px: number, pz: number) => {
@@ -193,7 +223,7 @@ export const settings: SketchSettings = {
   mode: '2d',
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
-  animate: true,
+  animate: false,
 };
 
 ssam(sketch as Sketch<'2d'>, settings);

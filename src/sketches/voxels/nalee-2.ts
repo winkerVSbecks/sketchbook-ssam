@@ -3,8 +3,7 @@ import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import { Heerich } from 'heerich';
 import Random from 'canvas-sketch-util/random';
 import { Pane } from 'tweakpane';
-import { setupPenplotExport } from '../../penplot/render-penplot';
-import { getDimensionsFromPreset } from '../../penplot/distances';
+import { randomPalette } from '../../colors';
 import { createNaleeSystem } from '../nalee/nalee-system';
 import { makeDomain } from '../nalee/domain';
 import type { Config, Walker } from '../nalee/types';
@@ -19,65 +18,98 @@ interface Face {
 Random.setSeed(Random.getRandomSeed());
 console.log({ seed: Random.getSeed() });
 
+const palette = randomPalette();
+const bg = Random.pick(palette);
 const seed = Random.getSeed();
 
-const units = 'cm';
-const [physicalWidth, physicalHeight] = getDimensionsFromPreset('a4', units);
-
 const config = {
-  cols: 20,
-  rows: 20,
-  walkerCount: 8,
-  tileSize: 16,
+  cols: 60,
+  rows: 60,
+  walkerCount: 1,
+  tileSize: 18,
   cameraAngle: 45,
-  pathHeight: 1, //34,
+  pathHeight: 34,
+  flat: true,
+  sw: 0.1,
 };
 
 const pane = new Pane() as any;
 pane.containerElem_.style.zIndex = 1;
-pane.addBinding(config, 'cols', { min: 4, max: 40, step: 2 });
-pane.addBinding(config, 'rows', { min: 4, max: 40, step: 2 });
+pane.addBinding(config, 'cols', { min: 4, max: 80, step: 2 });
+pane.addBinding(config, 'rows', { min: 4, max: 80, step: 2 });
 pane.addBinding(config, 'walkerCount', { min: 1, max: 20, step: 1 });
 pane.addBinding(config, 'tileSize', { min: 8, max: 60, step: 1 });
 pane.addBinding(config, 'cameraAngle', { min: 0, max: 90, step: 1 });
-pane.addBinding(config, 'pathHeight', { min: 1, max: 40, step: 1 });
+pane.addBinding(config, 'pathHeight', { min: 1, max: 60, step: 1 });
+pane.addBinding(config, 'flat');
+pane.addBinding(config, 'sw', { min: 0, max: 2, step: 0.1 });
 
 function buildScene(
   context: CanvasRenderingContext2D,
   width: number,
   height: number,
-): { h: Heerich; faces: Face[] } {
+): Face[] {
   // Re-seed so layout stays consistent while tweaking other params
   Random.setSeed(seed);
 
-  const h = new Heerich({
+  const heerich = new Heerich({
     tile: [config.tileSize, config.tileSize],
     camera: { type: 'isometric', angle: config.cameraAngle },
   });
   const placed = new Set<string>();
 
-  const plotterStyle = { stroke: 'black', strokeWidth: 0.03 };
-  const style = {
-    default: plotterStyle,
-    top: { ...plotterStyle, hatch: { angle: 45, period: 8 } },
-    left: { ...plotterStyle, hatch: { angle: 90, period: 5 } },
-    right: { ...plotterStyle, hatch: { angle: 0, period: 5 } },
-    front: { ...plotterStyle, hatch: { angle: 90, period: 5 } },
-    back: { ...plotterStyle, hatch: { angle: 0, period: 5 } },
-    bottom: plotterStyle,
-  };
-
   const voxelStyle = (
     _ctx: CanvasRenderingContext2D,
-    _walker: Walker,
+    walker: Walker,
     pts: Point[],
     _playhead: number,
   ) => {
+    const base = walker.color;
+    const lighter = `oklch(from ${base} calc(l + 0.15) c h)`;
+    const darker = `oklch(from ${base} calc(l - 0.15) c h)`;
+    const style = {
+      default: {
+        fill: base,
+        stroke: config.flat ? base : bg,
+        strokeWidth: config.sw,
+      },
+      top: {
+        fill: lighter,
+        stroke: config.flat ? lighter : bg,
+        strokeWidth: config.sw,
+      },
+      left: {
+        fill: darker,
+        stroke: config.flat ? darker : bg,
+        strokeWidth: config.sw,
+      },
+      right: {
+        fill: darker,
+        stroke: config.flat ? darker : bg,
+        strokeWidth: config.sw,
+      },
+      bottom: {
+        fill: darker,
+        stroke: config.flat ? darker : bg,
+        strokeWidth: config.sw,
+      },
+      front: {
+        fill: base,
+        stroke: config.flat ? base : bg,
+        strokeWidth: config.sw,
+      },
+      back: {
+        fill: base,
+        stroke: config.flat ? base : bg,
+        strokeWidth: config.sw,
+      },
+    };
+
     const placeVoxel = (px: number, pz: number) => {
       const key = `${px},${pz}`;
       if (placed.has(key)) return;
       placed.add(key);
-      h.applyGeometry({
+      heerich.applyGeometry({
         type: 'box',
         position: [px, 0, pz],
         size: [1, config.pathHeight, 1],
@@ -112,12 +144,12 @@ function buildScene(
     domain,
     naleeConfig,
     domainToWorld,
-    [],
-    'white',
+    palette,
+    bg,
   );
   naleeRender({ context, playhead: 0, width, height } as SketchProps);
 
-  return { h, faces: h.getFaces() as Face[] };
+  return heerich.getFaces() as Face[];
 }
 
 function drawFaces(
@@ -136,9 +168,16 @@ function drawFaces(
     ctx.lineTo(d[4] + ox, d[5] + oy);
     ctx.lineTo(d[6] + ox, d[7] + oy);
     ctx.closePath();
-    ctx.fillStyle = 'white';
-    ctx.fill();
-    ctx.stroke();
+
+    if (face.style.fill) {
+      ctx.fillStyle = face.style.fill;
+      ctx.fill();
+    }
+    if (face.style.stroke) {
+      ctx.strokeStyle = face.style.stroke;
+      ctx.lineWidth = face.style.strokeWidth ?? 1;
+      ctx.stroke();
+    }
   }
 }
 
@@ -160,78 +199,31 @@ function sceneBounds(faces: Face[]) {
   return { minX, minY, maxX, maxY };
 }
 
-function buildSvg(h: Heerich): string {
-  const bounds = h.getBounds();
-  const sceneW = bounds.w;
-  const sceneH = bounds.h;
-
-  const margin = 1; // cm
-  const availW = physicalWidth - margin * 2;
-  const availH = physicalHeight - margin * 2;
-  const scale = Math.min(availW / sceneW, availH / sceneH);
-
-  const vbX = bounds.x - (physicalWidth / scale - sceneW) / 2;
-  const vbY = bounds.y - (physicalHeight / scale - sceneH) / 2;
-  const vbW = physicalWidth / scale;
-  const vbH = physicalHeight / scale;
-
-  const faces = h.getFaces() as Face[];
-  for (const face of faces) {
-    if (face.type === 'content') continue;
-    face.style = {
-      fill: 'white',
-      stroke: 'black',
-      strokeWidth: 0.5,
-    };
-  }
-
-  const svg = h.toSVG({
-    padding: 0,
-    viewBox: [vbX, vbY, vbW, vbH],
-    occlusion: true,
-  });
-
-  return svg.replace(
-    'style="width:100%; height:100%;"',
-    `width="${physicalWidth}${units}" height="${physicalHeight}${units}"`,
-  );
-}
-
 export const sketch = ({ wrap, context }: SketchProps) => {
-  let latestSvg: string | null = null;
-  const cleanupExport = setupPenplotExport(settings, () => latestSvg);
-
   if (import.meta.hot) {
-    import.meta.hot.dispose(() => {
-      cleanupExport();
-      wrap.dispose();
-    });
+    import.meta.hot.dispose(() => wrap.dispose());
     import.meta.hot.accept(() => wrap.hotReload());
   }
 
   wrap.render = ({ width, height }: SketchProps) => {
-    context.fillStyle = 'white';
+    context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
-    context.strokeStyle = 'black';
-    context.lineWidth = 1;
 
-    const { h, faces } = buildScene(context, width, height);
+    const faces = buildScene(context, width, height);
 
     const { minX, minY, maxX, maxY } = sceneBounds(faces);
     const ox = (width - (maxX - minX)) / 2 - minX;
     const oy = (height - (maxY - minY)) / 2 - minY;
 
     drawFaces(context, faces, ox, oy);
-
-    latestSvg = buildSvg(h);
   };
 };
 
 export const settings: SketchSettings = {
   mode: '2d',
-  dimensions: [1080, Math.round(1080 * (physicalHeight / physicalWidth))],
+  dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
-  animate: true,
+  animate: false,
 };
 
 ssam(sketch as Sketch<'2d'>, settings);
