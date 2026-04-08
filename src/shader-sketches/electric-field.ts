@@ -34,6 +34,7 @@ uniform vec3  uParticleColor[${MAX_P}]; // RGB 0-1
 uniform vec3  uBgColor;
 uniform float uPotentialScale;  // tanh stretch for gradient t
 uniform float uBandCount;       // number of flux-line bands
+uniform float uBandSharpness;   // pow exponent for band narrowing
 
 void main() {
   // Convert UV → pixel space (Y is flipped: UV(0,0) = bottom-left in OGL)
@@ -112,7 +113,7 @@ void main() {
   // pow() sharpens the cosine-bell so lines are thin relative to gaps.
   // -----------------------------------------------------------------------
   float band = abs(sin(psi * uBandCount));       // 0 at boundaries, 1 at centers
-  float sharpBand = pow(band, 2.5);              // narrow bright lines, wide dark gaps
+  float sharpBand = pow(band, uBandSharpness);   // narrow bright lines, wide dark gaps
 
   vec3 lineColor = mix(uBgColor * 0.55, gradColor, sharpBand);
 
@@ -160,6 +161,38 @@ function cssToRgb01(css: string): [number, number, number] {
   return [1, 1, 1];
 }
 
+// Boost saturation of an RGB 0-1 color via HSL
+function saturate(
+  rgb: [number, number, number],
+  amount: number,
+): [number, number, number] {
+  const [r, g, b] = rgb;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  if (max === min) return rgb; // achromatic — can't saturate
+  const d = max - min;
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  const sNew = Math.min(s * amount, 1);
+  // Convert back via HSL → RGB
+  const q = l < 0.5 ? l * (1 + sNew) : l + sNew - l * sNew;
+  const p = 2 * l - q;
+  let h = 0;
+  if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+  else if (max === g) h = (b - r) / d + 2;
+  else h = (r - g) / d + 4;
+  h /= 6;
+  function hue2rgb(p: number, q: number, t: number) {
+    if (t < 0) t += 1;
+    if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
+  }
+  return [hue2rgb(p, q, h + 1 / 3), hue2rgb(p, q, h), hue2rgb(p, q, h - 1 / 3)];
+}
+
 // -------------------------------------------------------------------------
 // Sketch
 // -------------------------------------------------------------------------
@@ -204,7 +237,7 @@ const sketch: Sketch<'webgl2'> = ({
       baseY: y,
       phase: Math.random() * Math.PI * 2,
       charge: sign,
-      color: cssToRgb01(colorCss),
+      color: saturate(cssToRgb01(colorCss), 2.0),
       dragging: false,
       rollover: false,
       offsetX: 0,
@@ -247,6 +280,7 @@ const sketch: Sketch<'webgl2'> = ({
   const params = {
     potentialScale: 40,
     bandCount: 4.0,
+    bandSharpness: 2.5,
     noiseRadius: 1.0,
     noiseAmplitude: 80,
   };
@@ -265,6 +299,7 @@ const sketch: Sketch<'webgl2'> = ({
       uBgColor: { value: bgRgb },
       uPotentialScale: { value: params.potentialScale },
       uBandCount: { value: params.bandCount },
+      uBandSharpness: { value: params.bandSharpness },
     },
   });
 
@@ -321,6 +356,16 @@ const sketch: Sketch<'webgl2'> = ({
     })
     .on('change', () => {
       program.uniforms.uBandCount.value = params.bandCount;
+    });
+  pane
+    .addBinding(params, 'bandSharpness', {
+      label: 'Band Sharpness',
+      min: 0.1,
+      max: 10.0,
+      step: 0.1,
+    })
+    .on('change', () => {
+      program.uniforms.uBandSharpness.value = params.bandSharpness;
     });
   pane.addBinding(params, 'noiseAmplitude', {
     label: 'Noise Amplitude',
@@ -418,7 +463,7 @@ export const settings: SketchSettings = {
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
   animate: true,
-  duration: 8_000,
+  duration: 12_000,
   playFps: 60,
   exportFps: 60,
   framesFormat: ['mp4'],
