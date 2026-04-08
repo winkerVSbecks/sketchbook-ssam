@@ -20,7 +20,9 @@
       "Bash(ls /Users/varunvachhar/Documents/projects/sketchbook-ssam/src/sketches/*.ts)",
       "Bash(VITE_SKETCH=\"sketches/penplot-example\" npx vite --host)",
       "Bash(node:*)",
-      "Bash(npm info:*)"
+      "Bash(npm info:*)",
+      "WebFetch(domain:api.editor.p5js.org)",
+      "Bash(grep -r \"canvas\" /Users/varunvachhar/Documents/projects/sketchbook-ssam/node_modules/ssam/dist/*.d.ts)"
     ]
   }
 }
