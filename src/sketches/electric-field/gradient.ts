@@ -361,27 +361,29 @@ export const sketch = ({
       }
     }
     const di1 = 70;
+    // Keep seeds far enough from the border that round line caps don't show as dots
+    const edgeMargin = params.maxWidth + 2;
     for (let i = 0; i <= Math.max(width, height); i += di1) {
       // Edge seeds have no owner — use index -1, will fall back to first particle color
       if (i <= width) {
-        moving.push(cx(i, 2));
-        paths.push([cx(i, 2)]);
+        moving.push(cx(i, edgeMargin));
+        paths.push([cx(i, edgeMargin)]);
         pathOwners.push(-1);
-        pathWidths.push([fieldWidth(cx(i, 2))]);
-        moving.push(cx(i, height - 2));
-        paths.push([cx(i, height - 2)]);
+        pathWidths.push([params.minWidth]);
+        moving.push(cx(i, height - edgeMargin));
+        paths.push([cx(i, height - edgeMargin)]);
         pathOwners.push(-1);
-        pathWidths.push([fieldWidth(cx(i, height - 2))]);
+        pathWidths.push([params.minWidth]);
       }
       if (i <= height) {
-        moving.push(cx(2, i));
-        paths.push([cx(2, i)]);
+        moving.push(cx(edgeMargin, i));
+        paths.push([cx(edgeMargin, i)]);
         pathOwners.push(-1);
-        pathWidths.push([fieldWidth(cx(2, i))]);
-        moving.push(cx(width - 2, i));
-        paths.push([cx(width - 2, i)]);
+        pathWidths.push([params.minWidth]);
+        moving.push(cx(width - edgeMargin, i));
+        paths.push([cx(width - edgeMargin, i)]);
         pathOwners.push(-1);
-        pathWidths.push([fieldWidth(cx(width - 2, i))]);
+        pathWidths.push([params.minWidth]);
       }
     }
   }
