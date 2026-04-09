@@ -412,17 +412,27 @@ function buildScene(playhead: number): Face[] {
   const stepY = 9 * letterH + gapY;
   const chars = getTextChars();
 
-  // Pre-compute x offset for each character using its actual bitmap width
-  const xOffsets: number[] = [];
-  let rowX = 0;
+  // Find the max bitmap width for each column slot so letters can be centred
+  const colMaxW: number[] = Array(config.cols).fill(0);
   chars.forEach((char, idx) => {
-    if (idx % config.cols === 0) rowX = 0;
-    xOffsets.push(rowX);
-    if (char === ' ') {
-      rowX += 4 * letterW + gapX;
-    } else {
-      rowX += FONT[char][0].length * letterW + gapX;
-    }
+    const col = idx % config.cols;
+    const w = char === ' ' ? 4 : FONT[char][0].length;
+    colMaxW[col] = Math.max(colMaxW[col], w);
+  });
+
+  // Starting x position for each column slot
+  const colStartX: number[] = [];
+  let runX = 0;
+  for (let c = 0; c < config.cols; c++) {
+    colStartX.push(runX);
+    runX += colMaxW[c] * letterW + gapX;
+  }
+
+  // Centre each character within its column slot
+  const xOffsets: number[] = chars.map((char, idx) => {
+    const col = idx % config.cols;
+    const charW = char === ' ' ? 4 : FONT[char][0].length;
+    return colStartX[col] + ((colMaxW[col] - charW) * letterW) / 2;
   });
 
   chars.forEach((char, idx) => {
