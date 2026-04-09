@@ -328,17 +328,18 @@ const palette = Random.shuffle(randomPalette());
 const [bg, faceColor, topColor, shadeColor] = palette;
 
 const config = {
+  text: 'HEERICH',
+  axis: 'Y' as 'X' | 'Y' | 'Z',
   // Letter shape controls
   letterW: 1, // voxels per bitmap column (X stretch)
   letterH: 1, // voxels per bitmap row (Y stretch)
   voxelH: 8, // extrusion height of each column
   // Layout
-  cols: 6, // letters per row
+  cols: 7, // letters per row
   gapX: 3, // gap between letters in X
   gapY: 3, // gap between letters in Y
   // Rendering
-  tileSize: 14,
-  angle: 35,
+  tileSize: 20,
   dist: 3,
   sw: 0.3,
   sc: 'rgba(0,0,0,0.15)',
@@ -346,6 +347,13 @@ const config = {
 
 const pane = new Pane() as any;
 pane.containerElem_.style.zIndex = 1;
+
+const textFolder = pane.addFolder({ title: 'Text' });
+textFolder.addBinding(config, 'text', { label: 'text' });
+textFolder.addBinding(config, 'axis', {
+  label: 'axis',
+  options: { X: 'X', Y: 'Y', Z: 'Z' },
+});
 
 const letterFolder = pane.addFolder({ title: 'Letter Shape' });
 letterFolder.addBinding(config, 'letterW', {
@@ -374,38 +382,57 @@ layoutFolder.addBinding(config, 'gapY', { min: 0, max: 10, step: 1 });
 
 const renderFolder = pane.addFolder({ title: 'Render' });
 renderFolder.addBinding(config, 'tileSize', { min: 4, max: 40, step: 1 });
-renderFolder.addBinding(config, 'angle', { min: 0, max: 90, step: 1 });
 renderFolder.addBinding(config, 'dist', { min: 1, max: 10, step: 0.5 });
 renderFolder.addBinding(config, 'sw', { min: 0, max: 2, step: 0.1 });
 
-const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+function getTextChars(): string[] {
+  return config.text
+    .toUpperCase()
+    .split('')
+    .filter((c) => c === ' ' || c in FONT);
+}
 
-function buildScene(): Face[] {
+function buildScene(playhead: number): Face[] {
+  const a = playhead * 360;
+  const camera =
+    config.axis === 'X'
+      ? { type: 'orthographic' as const, angle: 45, pitch: a }
+      : config.axis === 'Z'
+        ? { type: 'orthographic' as const, angle: 45, pitch: 35.264 }
+        : { type: 'orthographic' as const, angle: a, pitch: 35.264 };
+
   const h = new Heerich({
     tile: [config.tileSize, config.tileSize],
-    camera: { type: 'isometric', angle: config.angle, distance: config.dist },
+    camera,
   });
 
   const ss = { stroke: config.sc, strokeWidth: config.sw };
   const { letterW, letterH, voxelH, gapX, gapY } = config;
 
   const stepY = 9 * letterH + gapY;
+  const chars = getTextChars();
 
-  // Pre-compute x offset for each letter using its actual bitmap width
+  // Pre-compute x offset for each character using its actual bitmap width
   const xOffsets: number[] = [];
   let rowX = 0;
-  LETTERS.forEach((letter, idx) => {
+  chars.forEach((char, idx) => {
     if (idx % config.cols === 0) rowX = 0;
     xOffsets.push(rowX);
-    rowX += FONT[letter][0].length * letterW + gapX;
+    if (char === ' ') {
+      rowX += 4 * letterW + gapX;
+    } else {
+      rowX += FONT[char][0].length * letterW + gapX;
+    }
   });
 
-  LETTERS.forEach((letter, idx) => {
+  chars.forEach((char, idx) => {
+    if (char === ' ') return;
+
     const row = Math.floor(idx / config.cols);
     const ox = xOffsets[idx];
     const oy = row * stepY;
 
-    const bitmap = FONT[letter];
+    const bitmap = FONT[char];
     for (let by = 0; by < 9; by++) {
       for (let bx = 0; bx < bitmap[by].length; bx++) {
         if (bitmap[by][bx] === '#') {
@@ -484,34 +511,26 @@ export const sketch = ({ wrap, context }: SketchProps) => {
     import.meta.hot.accept(() => wrap.hotReload());
   }
 
-  // Cache faces; invalidate when any pane control changes
-  let cached: {
-    faces: Face[];
-    minX: number;
-    minY: number;
-    maxX: number;
-    maxY: number;
-  } | null = null;
-
-  pane.on('change', () => {
-    cached = null;
-  });
-
-  wrap.render = ({ width, height }: SketchProps) => {
-    if (!cached) {
-      const faces = buildScene();
-      const { minX, minY, maxX, maxY } = sceneBounds(faces);
-      cached = { faces, minX, minY, maxX, maxY };
-    }
+  wrap.render = ({ width, height, playhead }: SketchProps) => {
+    const faces = buildScene(playhead);
+    const { minX, minY, maxX, maxY } = sceneBounds(faces);
 
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
 
-    const { faces, minX, minY, maxX, maxY } = cached;
     const ox = (width - (maxX - minX)) / 2 - minX;
     const oy = (height - (maxY - minY)) / 2 - minY;
 
-    drawFaces(context, faces, ox, oy);
+    if (config.axis === 'Z') {
+      context.save();
+      context.translate(width / 2, height / 2);
+      context.rotate(playhead * Math.PI * 2);
+      context.translate(-width / 2, -height / 2);
+      drawFaces(context, faces, ox, oy);
+      context.restore();
+    } else {
+      drawFaces(context, faces, ox, oy);
+    }
   };
 };
 
@@ -520,6 +539,7 @@ export const settings: SketchSettings = {
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
   animate: true,
+  duration: 8000,
   framesFormat: ['mp4'],
   playFps: 60,
   exportFps: 60,
