@@ -38,6 +38,9 @@ uniform float uBandCount;       // number of flux-line bands
 uniform float uBandSharpness;   // pow exponent for band narrowing
 uniform float uBgDim;           // background darkening factor
 uniform float uWeightExp;       // exponent for inverse-distance color blending
+uniform float uPsiOffset;       // phase offset on stream function bands
+uniform float uSpiralTwist;     // mixes phi into psi → spiral field lines
+uniform float uChargeAsymmetry; // scales positive charge strength (1.0 = symmetric)
 
 void main() {
   // Convert UV → pixel space (Y is flipped: UV(0,0) = bottom-left in OGL)
@@ -65,8 +68,12 @@ void main() {
     if (i >= uNumParticles) break;
     vec2  r = pos - uParticlePos[i];
     float d = max(length(r), 1.0);      // clamp to avoid singularity
-    phi += uParticleCharge[i] / d;
-    psi += uParticleCharge[i] * atan(r.y, r.x);
+    // Scale positive charges by chargeAsymmetry, leaving negatives at 1.0
+    float effectiveCharge = uParticleCharge[i] > 0.0
+      ? uParticleCharge[i] * uChargeAsymmetry
+      : uParticleCharge[i];
+    phi += effectiveCharge / d;
+    psi += effectiveCharge * atan(r.y, r.x);
   }
 
   // -----------------------------------------------------------------------
@@ -115,7 +122,9 @@ void main() {
   //
   // pow() sharpens the cosine-bell so lines are thin relative to gaps.
   // -----------------------------------------------------------------------
-  float band = abs(sin(psi * uBandCount));       // 0 at boundaries, 1 at centers
+  // Normalize phi to a similar scale as psi (psi ~ π, phi ~ 1/px → scale by canvas half-width)
+  float phiNorm = phi * (uResolution.x * 0.5);
+  float band = abs(sin((psi + phiNorm * uSpiralTwist) * uBandCount + uPsiOffset)); // 0 at boundaries, 1 at centers
   float sharpBand = pow(band, uBandSharpness);   // narrow bright lines, wide dark gaps
 
   vec3 lineColor = mix(uBgColor * uBgDim, gradColor, sharpBand);
@@ -224,6 +233,9 @@ const sketch: Sketch<'webgl2'> = ({
     bgDim: 0.55,
     weightExp: 2.0,
     saturationBoost: 2.0,
+    psiOffset: 0.0,
+    spiralTwist: 0.0,
+    chargeAsymmetry: 1.0,
   };
 
   function makeParticle(sign: 1 | -1, colorCss: string): Particle {
@@ -294,6 +306,9 @@ const sketch: Sketch<'webgl2'> = ({
       uBandSharpness: { value: params.bandSharpness },
       uBgDim: { value: params.bgDim },
       uWeightExp: { value: params.weightExp },
+      uPsiOffset: { value: params.psiOffset },
+      uSpiralTwist: { value: params.spiralTwist },
+      uChargeAsymmetry: { value: params.chargeAsymmetry },
     },
   });
 
@@ -380,6 +395,36 @@ const sketch: Sketch<'webgl2'> = ({
     })
     .on('change', () => {
       program.uniforms.uWeightExp.value = params.weightExp;
+    });
+  pane
+    .addBinding(params, 'psiOffset', {
+      label: 'Psi Offset',
+      min: 0,
+      max: Math.PI * 2,
+      step: 0.01,
+    })
+    .on('change', () => {
+      program.uniforms.uPsiOffset.value = params.psiOffset;
+    });
+  pane
+    .addBinding(params, 'spiralTwist', {
+      label: 'Spiral Twist',
+      min: -2.0,
+      max: 2.0,
+      step: 0.01,
+    })
+    .on('change', () => {
+      program.uniforms.uSpiralTwist.value = params.spiralTwist;
+    });
+  pane
+    .addBinding(params, 'chargeAsymmetry', {
+      label: 'Charge Asymmetry',
+      min: 0.1,
+      max: 5.0,
+      step: 0.05,
+    })
+    .on('change', () => {
+      program.uniforms.uChargeAsymmetry.value = params.chargeAsymmetry;
     });
   pane
     .addBinding(params, 'saturationBoost', {
