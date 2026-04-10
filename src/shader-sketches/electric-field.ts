@@ -36,6 +36,8 @@ uniform vec3  uBgColor;
 uniform float uPotentialScale;  // tanh stretch for gradient t
 uniform float uBandCount;       // number of flux-line bands
 uniform float uBandSharpness;   // pow exponent for band narrowing
+uniform float uBgDim;           // background darkening factor
+uniform float uWeightExp;       // exponent for inverse-distance color blending
 
 void main() {
   // Convert UV → pixel space (Y is flipped: UV(0,0) = bottom-left in OGL)
@@ -87,7 +89,7 @@ void main() {
   for (int i = 0; i < ${MAX_P}; i++) {
     if (i >= uNumParticles) break;
     float d = max(length(pos - uParticlePos[i]), 1.0);
-    float w = 1.0 / (d * d);
+    float w = 1.0 / pow(d, uWeightExp);
     if (uParticleCharge[i] > 0.0) {
       colorPos  += uParticleColor[i] * w;
       weightPos += w;
@@ -116,7 +118,7 @@ void main() {
   float band = abs(sin(psi * uBandCount));       // 0 at boundaries, 1 at centers
   float sharpBand = pow(band, uBandSharpness);   // narrow bright lines, wide dark gaps
 
-  vec3 lineColor = mix(uBgColor * 0.55, gradColor, sharpBand);
+  vec3 lineColor = mix(uBgColor * uBgDim, gradColor, sharpBand);
 
   gl_FragColor = vec4(lineColor, 1.0);
 }`;
@@ -132,7 +134,8 @@ interface Particle {
   baseY: number;
   phase: number;
   charge: 1 | -1;
-  color: [number, number, number]; // RGB 0-1
+  baseColor: [number, number, number]; // RGB 0-1 before saturation
+  color: [number, number, number]; // RGB 0-1 after saturation
   dragging: boolean;
   rollover: boolean;
   offsetX: number;
@@ -212,6 +215,17 @@ const sketch: Sketch<'webgl2'> = ({
 
   const RAD = 50;
 
+  const params = {
+    potentialScale: 40,
+    bandCount: 4.0,
+    bandSharpness: 2.5,
+    noiseRadius: 1.0,
+    noiseAmplitude: 80,
+    bgDim: 0.55,
+    weightExp: 2.0,
+    saturationBoost: 2.0,
+  };
+
   function makeParticle(sign: 1 | -1, colorCss: string): Particle {
     const x = RAD * 2 + Math.random() * (width - RAD * 4);
     const y = RAD * 2 + Math.random() * (height - RAD * 4);
@@ -222,7 +236,8 @@ const sketch: Sketch<'webgl2'> = ({
       baseY: y,
       phase: Math.random() * Math.PI * 2,
       charge: sign,
-      color: saturate(cssToRgb01(colorCss), 2.0),
+      baseColor: cssToRgb01(colorCss),
+      color: saturate(cssToRgb01(colorCss), params.saturationBoost),
       dragging: false,
       rollover: false,
       offsetX: 0,
@@ -262,14 +277,6 @@ const sketch: Sketch<'webgl2'> = ({
   // -----------------------------------------------------------------------
   const geometry = new Triangle(gl);
 
-  const params = {
-    potentialScale: 40,
-    bandCount: 4.0,
-    bandSharpness: 2.5,
-    noiseRadius: 1.0,
-    noiseAmplitude: 80,
-  };
-
   const { pos, charges, colors } = buildUniforms();
 
   const program = new Program(gl, {
@@ -285,6 +292,8 @@ const sketch: Sketch<'webgl2'> = ({
       uPotentialScale: { value: params.potentialScale },
       uBandCount: { value: params.bandCount },
       uBandSharpness: { value: params.bandSharpness },
+      uBgDim: { value: params.bgDim },
+      uWeightExp: { value: params.weightExp },
     },
   });
 
@@ -351,6 +360,39 @@ const sketch: Sketch<'webgl2'> = ({
     })
     .on('change', () => {
       program.uniforms.uBandSharpness.value = params.bandSharpness;
+    });
+  pane
+    .addBinding(params, 'bgDim', {
+      label: 'Bg Dim',
+      min: 0,
+      max: 1,
+      step: 0.01,
+    })
+    .on('change', () => {
+      program.uniforms.uBgDim.value = params.bgDim;
+    });
+  pane
+    .addBinding(params, 'weightExp', {
+      label: 'Weight Exp',
+      min: 0.5,
+      max: 8.0,
+      step: 0.1,
+    })
+    .on('change', () => {
+      program.uniforms.uWeightExp.value = params.weightExp;
+    });
+  pane
+    .addBinding(params, 'saturationBoost', {
+      label: 'Saturation',
+      min: 0.5,
+      max: 5.0,
+      step: 0.1,
+    })
+    .on('change', () => {
+      for (const p of particles) {
+        p.color = saturate(p.baseColor, params.saturationBoost);
+      }
+      pushUniforms();
     });
   pane.addBinding(params, 'noiseAmplitude', {
     label: 'Noise Amplitude',
