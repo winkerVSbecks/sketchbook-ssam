@@ -22,7 +22,8 @@
       "Bash(node:*)",
       "Bash(npm info:*)",
       "WebFetch(domain:api.editor.p5js.org)",
-      "Bash(grep -r \"canvas\" /Users/varunvachhar/Documents/projects/sketchbook-ssam/node_modules/ssam/dist/*.d.ts)"
+      "Bash(grep -r \"canvas\" /Users/varunvachhar/Documents/projects/sketchbook-ssam/node_modules/ssam/dist/*.d.ts)",
+      "mcp__Claude_Preview__preview_start"
     ]
   }
 }
