@@ -2,7 +2,7 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 import { Pane } from 'tweakpane';
-import { generateColors } from '../../colors/subtractive-hue';
+import { threeHueHighContrastScheme } from '../../colors/hsluv';
 import { logColors } from '../../colors';
 
 interface Rect {
@@ -16,9 +16,8 @@ interface ColoredRect extends Rect {
   color: string;
 }
 
-const hue = Random.range(0, 360);
-const ramp = generateColors('hex', hue);
-logColors(ramp);
+const [tintLight, tintDark, accent] = threeHueHighContrastScheme();
+logColors([tintLight, tintDark, accent]);
 
 const config = {
   columns: Random.rangeFloor(3, 11),
@@ -44,13 +43,13 @@ const config = {
   accentMinHeight: Random.range(0.05, 0.5),
   accentMaxHeight: Random.range(0.05, 0.5),
   accentAttachment: Random.range(0, 1),
-  red: ramp[1],
-  blue: ramp[2],
-  yellow: ramp[3],
-  lightBlue: ramp[4],
-  black: ramp[5],
-  white: ramp[0],
-  grey: ramp[3],
+  red: tintLight,
+  blue: tintDark,
+  yellow: tintLight,
+  lightBlue: tintDark,
+  black: accent,
+  white: tintLight,
+  grey: tintDark,
 };
 
 const pane = new Pane() as any;
