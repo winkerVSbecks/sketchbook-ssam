@@ -2,6 +2,8 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 import { Pane } from 'tweakpane';
+import { generateColors } from '../../colors/subtractive-hue';
+import { logColors } from '../../colors';
 
 interface Rect {
   x: number;
@@ -14,39 +16,43 @@ interface ColoredRect extends Rect {
   color: string;
 }
 
+const hue = Random.range(0, 360);
+const ramp = generateColors('hex', hue);
+logColors(ramp);
+
 const config = {
-  columns: 6,
-  columnWidthVariance: 0.55,
-  minRowsPerColumn: 2,
-  maxRowsPerColumn: 4,
-  rowHeightVariance: 0.55,
-  leftAnchorX: 0.3,
-  leftAnchorY: 0.48,
-  rightAnchorX: 0.78,
-  rightAnchorY: 0.55,
-  anchorJitter: 0.03,
-  baseMinCols: 2,
-  baseMaxCols: 3,
-  baseMinHeight: 0.4,
-  baseMaxHeight: 0.62,
-  extensionChance: 1,
-  extensionInsideChance: 0.7,
-  extensionMinHeight: 0.38,
-  extensionMaxHeight: 0.62,
-  extensionOffset: 0.18,
-  accentChance: 0.85,
-  accentMinCols: 1,
-  accentMaxCols: 2,
-  accentMinHeight: 0.16,
-  accentMaxHeight: 0.32,
-  accentAttachment: 0.65,
-  red: '#CC3A1B',
-  blue: '#1B2694',
-  yellow: '#D9A018',
-  lightBlue: '#84A0B5',
-  black: '#1C1B19',
-  white: '#E4DAC8',
-  grey: '#9A9486',
+  columns: Random.rangeFloor(3, 11),
+  columnWidthVariance: Random.range(0, 1),
+  minRowsPerColumn: Random.rangeFloor(1, 6),
+  maxRowsPerColumn: Random.rangeFloor(1, 7),
+  rowHeightVariance: Random.range(0, 1),
+  leftAnchorX: Random.range(0, 1),
+  leftAnchorY: Random.range(0, 1),
+  rightAnchorX: Random.range(0, 1),
+  rightAnchorY: Random.range(0, 1),
+  anchorJitter: Random.range(0, 0.2),
+  baseMinCols: Random.rangeFloor(1, 6),
+  baseMaxCols: Random.rangeFloor(1, 6),
+  baseMinHeight: Random.range(0.1, 1),
+  baseMaxHeight: Random.range(0.1, 1),
+  extensionChance: Random.range(0, 1),
+  extensionInsideChance: Random.range(0, 1),
+  extensionMinHeight: Random.range(0.1, 1),
+  extensionMaxHeight: Random.range(0.1, 1),
+  extensionOffset: Random.range(0, 0.5),
+  accentChance: Random.range(0, 1),
+  accentMinCols: Random.rangeFloor(1, 5),
+  accentMaxCols: Random.rangeFloor(1, 5),
+  accentMinHeight: Random.range(0.05, 0.5),
+  accentMaxHeight: Random.range(0.05, 0.5),
+  accentAttachment: Random.range(0, 1),
+  red: ramp[1],
+  blue: ramp[2],
+  yellow: ramp[3],
+  lightBlue: ramp[4],
+  black: ramp[5],
+  white: ramp[0],
+  grey: ramp[3],
 };
 
 const pane = new Pane() as any;
