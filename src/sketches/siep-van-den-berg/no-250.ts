@@ -26,11 +26,9 @@ const config = {
   minRowsPerColumn: Random.rangeFloor(1, 6),
   maxRowsPerColumn: Random.rangeFloor(1, 7),
   rowHeightVariance: Random.range(0, 1),
-  leftAnchorX: Random.range(0, 1),
-  leftAnchorY: Random.range(0, 1),
-  rightAnchorX: Random.range(0, 1),
-  rightAnchorY: Random.range(0, 1),
-  anchorJitter: Random.range(0, 0.2),
+  quietZoneSize: Random.range(0.3, 0.5),
+  clusterSpread: Random.range(0.3, 0.8),
+  anchorJitter: Random.range(0, 0.1),
   baseMinCols: Random.rangeFloor(1, 6),
   baseMaxCols: Random.rangeFloor(1, 6),
   baseMinHeight: Random.range(0.1, 1),
@@ -74,21 +72,19 @@ bgFolder.addBinding(config, 'rowHeightVariance', {
 });
 
 const clusterFolder = pane.addFolder({ title: 'Clusters' });
-clusterFolder.addBinding(config, 'leftAnchorX', { min: 0, max: 1, step: 0.01 });
-clusterFolder.addBinding(config, 'leftAnchorY', { min: 0, max: 1, step: 0.01 });
-clusterFolder.addBinding(config, 'rightAnchorX', {
-  min: 0,
-  max: 1,
+clusterFolder.addBinding(config, 'quietZoneSize', {
+  min: 0.2,
+  max: 0.55,
   step: 0.01,
 });
-clusterFolder.addBinding(config, 'rightAnchorY', {
-  min: 0,
-  max: 1,
+clusterFolder.addBinding(config, 'clusterSpread', {
+  min: 0.1,
+  max: 0.9,
   step: 0.01,
 });
 clusterFolder.addBinding(config, 'anchorJitter', {
   min: 0,
-  max: 0.2,
+  max: 0.15,
   step: 0.005,
 });
 
@@ -179,22 +175,52 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
     const { cells, xs } = buildBackground(width, height);
     bg = cells;
 
+    const quietOnTop = Random.chance(0.5);
+    const qSize = config.quietZoneSize;
+    const activeYmin = quietOnTop ? height * qSize : 0;
+    const activeYmax = quietOnTop ? height : height * (1 - qSize);
+    const activeH = activeYmax - activeYmin;
+    const activeCX = width / 2;
+    const activeCY = (activeYmin + activeYmax) / 2;
+
+    const baseMin = Math.min(config.baseMinCols, config.baseMaxCols);
+    const baseMax = Math.max(config.baseMinCols, config.baseMaxCols);
+    const sharedBaseCols = Random.rangeFloor(baseMin, baseMax + 1);
+    const rawBaseH =
+      height * Random.range(config.baseMinHeight, config.baseMaxHeight);
+    const sharedBaseH = Math.min(rawBaseH, activeH);
+
+    const spreadAngle = Random.range(-Math.PI / 8, Math.PI / 8);
+    const offsetX =
+      width * 0.5 * config.clusterSpread * Math.cos(spreadAngle);
+    const offsetY =
+      activeH * 0.3 * config.clusterSpread * Math.sin(spreadAngle);
+
     const jx = width * config.anchorJitter;
-    const jy = height * config.anchorJitter;
+    const jy = activeH * config.anchorJitter;
+
     forms = [
       ...buildCluster(
         width,
         height,
         xs,
-        width * config.leftAnchorX + Random.range(-jx, jx),
-        height * config.leftAnchorY + Random.range(-jy, jy),
+        activeCX - offsetX + Random.range(-jx, jx),
+        activeCY - offsetY + Random.range(-jy, jy),
+        sharedBaseCols,
+        sharedBaseH,
+        activeYmin,
+        activeYmax,
       ),
       ...buildCluster(
         width,
         height,
         xs,
-        width * config.rightAnchorX + Random.range(-jx, jx),
-        height * config.rightAnchorY + Random.range(-jy, jy),
+        activeCX + offsetX + Random.range(-jx, jx),
+        activeCY + offsetY + Random.range(-jy, jy),
+        sharedBaseCols,
+        sharedBaseH,
+        activeYmin,
+        activeYmax,
       ),
     ];
   };
@@ -344,6 +370,10 @@ function buildCluster(
   xs: number[],
   anchorX: number,
   anchorY: number,
+  sharedBaseCols: number,
+  sharedBaseH: number,
+  activeYmin: number,
+  activeYmax: number,
 ): Rect[] {
   const cols = xs.length - 1;
   let anchorCol = 0;
@@ -355,10 +385,9 @@ function buildCluster(
   }
 
   const forms: Rect[] = [];
+  const activeH = activeYmax - activeYmin;
 
-  const baseMin = Math.min(config.baseMinCols, config.baseMaxCols);
-  const baseMax = Math.max(config.baseMinCols, config.baseMaxCols);
-  const baseCols = Random.rangeFloor(baseMin, baseMax + 1);
+  const baseCols = Math.min(sharedBaseCols, cols);
   const baseColStart = clamp(
     anchorCol - Math.floor(baseCols / 2) + Random.rangeFloor(-1, 2),
     0,
@@ -366,10 +395,8 @@ function buildCluster(
   );
   const baseX = xs[baseColStart];
   const baseW = xs[baseColStart + baseCols] - baseX;
-  const baseHRaw =
-    height * Random.range(config.baseMinHeight, config.baseMaxHeight);
-  const baseH = Math.min(clampAspect(baseW, baseHRaw), height);
-  const baseY = clamp(anchorY - baseH / 2, 0, height - baseH);
+  const baseH = Math.min(clampAspect(baseW, sharedBaseH), activeH);
+  const baseY = clamp(anchorY - baseH / 2, activeYmin, activeYmax - baseH);
   const base: Rect = { x: baseX, y: baseY, w: baseW, h: baseH };
   forms.push(base);
 
@@ -388,13 +415,13 @@ function buildCluster(
     const extHRaw =
       height *
       Random.range(config.extensionMinHeight, config.extensionMaxHeight);
-    const extH = Math.min(clampAspect(extW, extHRaw), height);
+    const extH = Math.min(clampAspect(extW, extHRaw), activeH);
     const extOffset =
       height * Random.range(-config.extensionOffset, config.extensionOffset);
     const extY = clamp(
       baseY + (baseH - extH) / 2 + extOffset,
-      0,
-      height - extH,
+      activeYmin,
+      activeYmax - extH,
     );
     forms.push({ x: extX, y: extY, w: extW, h: extH });
   }
@@ -412,15 +439,19 @@ function buildCluster(
     const accentW = xs[accentColStart + accentCols] - accentX;
     const accentHRaw =
       height * Random.range(config.accentMinHeight, config.accentMaxHeight);
-    const accentH = Math.min(clampAspect(accentW, accentHRaw), height);
+    const accentH = Math.min(clampAspect(accentW, accentHRaw), activeH);
     const attachTop = Random.chance(0.5);
     const attach = config.accentAttachment;
     const accentY = attachTop
-      ? clamp(baseY - accentH * attach * 0.5, 0, height - accentH)
+      ? clamp(
+          baseY - accentH * attach * 0.5,
+          activeYmin,
+          activeYmax - accentH,
+        )
       : clamp(
           baseY + baseH - accentH * (1 - attach * 0.5),
-          0,
-          height - accentH,
+          activeYmin,
+          activeYmax - accentH,
         );
     forms.push({ x: accentX, y: accentY, w: accentW, h: accentH });
   }
