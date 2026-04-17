@@ -60,38 +60,94 @@ if (pane.containerElem_) pane.containerElem_.style.zIndex = '1';
 
 const bgFolder = pane.addFolder({ title: 'Background' });
 bgFolder.addBinding(config, 'columns', { min: 3, max: 10, step: 1 });
-bgFolder.addBinding(config, 'columnWidthVariance', { min: 0, max: 1, step: 0.01 });
+bgFolder.addBinding(config, 'columnWidthVariance', {
+  min: 0,
+  max: 1,
+  step: 0.01,
+});
 bgFolder.addBinding(config, 'minRowsPerColumn', { min: 1, max: 5, step: 1 });
 bgFolder.addBinding(config, 'maxRowsPerColumn', { min: 1, max: 6, step: 1 });
-bgFolder.addBinding(config, 'rowHeightVariance', { min: 0, max: 1, step: 0.01 });
+bgFolder.addBinding(config, 'rowHeightVariance', {
+  min: 0,
+  max: 1,
+  step: 0.01,
+});
 
 const clusterFolder = pane.addFolder({ title: 'Clusters' });
 clusterFolder.addBinding(config, 'leftAnchorX', { min: 0, max: 1, step: 0.01 });
 clusterFolder.addBinding(config, 'leftAnchorY', { min: 0, max: 1, step: 0.01 });
-clusterFolder.addBinding(config, 'rightAnchorX', { min: 0, max: 1, step: 0.01 });
-clusterFolder.addBinding(config, 'rightAnchorY', { min: 0, max: 1, step: 0.01 });
-clusterFolder.addBinding(config, 'anchorJitter', { min: 0, max: 0.2, step: 0.005 });
+clusterFolder.addBinding(config, 'rightAnchorX', {
+  min: 0,
+  max: 1,
+  step: 0.01,
+});
+clusterFolder.addBinding(config, 'rightAnchorY', {
+  min: 0,
+  max: 1,
+  step: 0.01,
+});
+clusterFolder.addBinding(config, 'anchorJitter', {
+  min: 0,
+  max: 0.2,
+  step: 0.005,
+});
 
 const baseFolder = pane.addFolder({ title: 'Base form' });
 baseFolder.addBinding(config, 'baseMinCols', { min: 1, max: 5, step: 1 });
 baseFolder.addBinding(config, 'baseMaxCols', { min: 1, max: 5, step: 1 });
-baseFolder.addBinding(config, 'baseMinHeight', { min: 0.1, max: 1, step: 0.01 });
-baseFolder.addBinding(config, 'baseMaxHeight', { min: 0.1, max: 1, step: 0.01 });
+baseFolder.addBinding(config, 'baseMinHeight', {
+  min: 0.1,
+  max: 1,
+  step: 0.01,
+});
+baseFolder.addBinding(config, 'baseMaxHeight', {
+  min: 0.1,
+  max: 1,
+  step: 0.01,
+});
 
 const extFolder = pane.addFolder({ title: 'Extension' });
 extFolder.addBinding(config, 'extensionChance', { min: 0, max: 1, step: 0.05 });
-extFolder.addBinding(config, 'extensionInsideChance', { min: 0, max: 1, step: 0.05 });
-extFolder.addBinding(config, 'extensionMinHeight', { min: 0.1, max: 1, step: 0.01 });
-extFolder.addBinding(config, 'extensionMaxHeight', { min: 0.1, max: 1, step: 0.01 });
-extFolder.addBinding(config, 'extensionOffset', { min: 0, max: 0.5, step: 0.01 });
+extFolder.addBinding(config, 'extensionInsideChance', {
+  min: 0,
+  max: 1,
+  step: 0.05,
+});
+extFolder.addBinding(config, 'extensionMinHeight', {
+  min: 0.1,
+  max: 1,
+  step: 0.01,
+});
+extFolder.addBinding(config, 'extensionMaxHeight', {
+  min: 0.1,
+  max: 1,
+  step: 0.01,
+});
+extFolder.addBinding(config, 'extensionOffset', {
+  min: 0,
+  max: 0.5,
+  step: 0.01,
+});
 
 const accFolder = pane.addFolder({ title: 'Accent' });
 accFolder.addBinding(config, 'accentChance', { min: 0, max: 1, step: 0.05 });
 accFolder.addBinding(config, 'accentMinCols', { min: 1, max: 4, step: 1 });
 accFolder.addBinding(config, 'accentMaxCols', { min: 1, max: 4, step: 1 });
-accFolder.addBinding(config, 'accentMinHeight', { min: 0.05, max: 0.5, step: 0.01 });
-accFolder.addBinding(config, 'accentMaxHeight', { min: 0.05, max: 0.5, step: 0.01 });
-accFolder.addBinding(config, 'accentAttachment', { min: 0, max: 1, step: 0.01 });
+accFolder.addBinding(config, 'accentMinHeight', {
+  min: 0.05,
+  max: 0.5,
+  step: 0.01,
+});
+accFolder.addBinding(config, 'accentMaxHeight', {
+  min: 0.05,
+  max: 0.5,
+  step: 0.01,
+});
+accFolder.addBinding(config, 'accentAttachment', {
+  min: 0,
+  max: 1,
+  step: 0.01,
+});
 
 const palFolder = pane.addFolder({ title: 'Palette', expanded: false });
 palFolder.addBinding(config, 'red');
@@ -199,7 +255,7 @@ function distribute(total: number, n: number, variance: number): number[] {
   const weights: number[] = [];
   let sum = 0;
   for (let i = 0; i < n; i++) {
-    const w = 1 + Random.range(-variance, variance);
+    const w = Math.max(0.6, 1 + Random.range(-variance, variance));
     weights.push(w);
     sum += w;
   }
@@ -216,6 +272,11 @@ function clamp(v: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, v));
 }
 
+function clampAspect(w: number, h: number): number {
+  const maxAspect = 3;
+  return clamp(h, w / maxAspect, w * maxAspect);
+}
+
 function intersect(a: Rect, b: Rect): Rect | null {
   const x = Math.max(a.x, b.x);
   const y = Math.max(a.y, b.y);
@@ -230,7 +291,11 @@ function buildBackground(
   height: number,
 ): { cells: ColoredRect[]; xs: number[] } {
   const palette = [config.red, config.blue, config.yellow, config.lightBlue];
-  const colWidths = distribute(width, config.columns, config.columnWidthVariance);
+  const colWidths = distribute(
+    width,
+    config.columns,
+    config.columnWidthVariance,
+  );
   const xs = cumulative(colWidths);
   const cells: ColoredRect[] = [];
   const columnCells: ColoredRect[][] = [];
@@ -295,10 +360,12 @@ function buildCluster(
     0,
     cols - baseCols,
   );
-  const baseH = height * Random.range(config.baseMinHeight, config.baseMaxHeight);
-  const baseY = clamp(anchorY - baseH / 2, 0, height - baseH);
   const baseX = xs[baseColStart];
   const baseW = xs[baseColStart + baseCols] - baseX;
+  const baseHRaw =
+    height * Random.range(config.baseMinHeight, config.baseMaxHeight);
+  const baseH = Math.min(clampAspect(baseW, baseHRaw), height);
+  const baseY = clamp(anchorY - baseH / 2, 0, height - baseH);
   const base: Rect = { x: baseX, y: baseY, w: baseW, h: baseH };
   forms.push(base);
 
@@ -312,11 +379,19 @@ function buildCluster(
     }
     extCol = clamp(extCol, 0, cols - 1);
 
-    const extH = height * Random.range(config.extensionMinHeight, config.extensionMaxHeight);
-    const extOffset = height * Random.range(-config.extensionOffset, config.extensionOffset);
-    const extY = clamp(baseY + (baseH - extH) / 2 + extOffset, 0, height - extH);
     const extX = xs[extCol];
     const extW = xs[extCol + 1] - extX;
+    const extHRaw =
+      height *
+      Random.range(config.extensionMinHeight, config.extensionMaxHeight);
+    const extH = Math.min(clampAspect(extW, extHRaw), height);
+    const extOffset =
+      height * Random.range(-config.extensionOffset, config.extensionOffset);
+    const extY = clamp(
+      baseY + (baseH - extH) / 2 + extOffset,
+      0,
+      height - extH,
+    );
     forms.push({ x: extX, y: extY, w: extW, h: extH });
   }
 
@@ -329,14 +404,20 @@ function buildCluster(
       0,
       cols - accentCols,
     );
-    const accentH = height * Random.range(config.accentMinHeight, config.accentMaxHeight);
+    const accentX = xs[accentColStart];
+    const accentW = xs[accentColStart + accentCols] - accentX;
+    const accentHRaw =
+      height * Random.range(config.accentMinHeight, config.accentMaxHeight);
+    const accentH = Math.min(clampAspect(accentW, accentHRaw), height);
     const attachTop = Random.chance(0.5);
     const attach = config.accentAttachment;
     const accentY = attachTop
       ? clamp(baseY - accentH * attach * 0.5, 0, height - accentH)
-      : clamp(baseY + baseH - accentH * (1 - attach * 0.5), 0, height - accentH);
-    const accentX = xs[accentColStart];
-    const accentW = xs[accentColStart + accentCols] - accentX;
+      : clamp(
+          baseY + baseH - accentH * (1 - attach * 0.5),
+          0,
+          height - accentH,
+        );
     forms.push({ x: accentX, y: accentY, w: accentW, h: accentH });
   }
 
