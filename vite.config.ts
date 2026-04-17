@@ -22,10 +22,22 @@ export default defineConfig({
       configureServer(server) {
         server.middlewares.use('/export', (req, res) => {
           res.setHeader('Content-Type', 'application/json');
-          server.hot.send('mcp:export');
-          server.hot.on('ssam:export', (data) => {
+          const handler = (data: unknown) => {
+            clearTimeout(timer);
+            server.hot.off('ssam:export', handler);
             res.end(JSON.stringify(data));
-          });
+          };
+          const timer = setTimeout(() => {
+            server.hot.off('ssam:export', handler);
+            res.statusCode = 504;
+            res.end(
+              JSON.stringify({
+                error: 'export timed out — is mcp:export wired up in the sketch?',
+              }),
+            );
+          }, 10_000);
+          server.hot.on('ssam:export', handler);
+          server.hot.send('mcp:export');
         });
       },
     },

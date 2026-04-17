@@ -160,11 +160,15 @@ palFolder.addBinding(config, 'grey');
 
 const regenBtn = pane.addButton({ title: 'Regenerate' });
 
-export const sketch = ({ wrap, context, width, height }: SketchProps) => {
+export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => wrap.dispose());
     import.meta.hot.accept(() => wrap.hotReload());
   }
+
+  import.meta.hot?.on('mcp:export', () => {
+    props.exportFrame();
+  });
 
   let bg: ColoredRect[] = [];
   let forms: Rect[] = [];

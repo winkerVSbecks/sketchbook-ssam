@@ -1,0 +1,35 @@
+{
+  "skill_name": "render-sketch",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "show me the current render of no-250",
+      "expected_output": "Skill is used. Reads src/sketches/siep-van-den-berg/no-250.ts, detects mcp:export is missing, injects the handler (modifying the destructured signature to include ...props if needed). Checks dev server at localhost:5173, triggers GET /export, finds newest output/*.png by mtime, Reads it so Claude Code displays the image inline. Does NOT start the dev server itself.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "looks good, see it",
+      "expected_output": "Skill is used (triggered by 'see it'). Same flow as above for whatever sketch was last being edited. If the mcp:export handler is already present in the file, skips the injection step and goes straight to the curl + latest-PNG flow.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "export a frame",
+      "expected_output": "Skill is used. If the dev server is not reachable at localhost:5173, the skill prints the `VITE_SKETCH=... npm run dev` command and asks the user to start it — does NOT background-start the server. If reachable, triggers the render and displays the PNG.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "can you render it as a video?",
+      "expected_output": "Skill is used but explains that iteration uses image exports (fast, sufficient for composition/color judgment). Offers to sample multiple playheads via repeated image triggers, or to extract a frame from an existing ./output/*.mp4 via ffmpeg. Does not attempt to add a new video-export endpoint.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "after implementing a change to a sketch, proactive check",
+      "expected_output": "Skill is invoked proactively (without explicit user ask) right after another skill like implement-sketch or clrs modifies a sketch. Ensures handler exists, triggers render, displays PNG, and briefly summarizes what the output looks like.",
+      "files": []
+    }
+  ]
+}
