@@ -50,6 +50,7 @@ const config = {
   accentMinHeight: Random.range(0.05, 0.5),
   accentMaxHeight: Random.range(0.05, 0.5),
   accentAttachment: Random.range(0, 1),
+  pistonSharpness: 0.4,
   red: tintLight,
   blue: tintDark,
   yellow: tintLight,
@@ -92,6 +93,13 @@ clusterFolder.addBinding(config, 'anchorJitter', {
   min: 0,
   max: 0.15,
   step: 0.005,
+});
+
+const motionFolder = pane.addFolder({ title: 'Motion' });
+motionFolder.addBinding(config, 'pistonSharpness', {
+  min: 0,
+  max: 1,
+  step: 0.01,
 });
 
 const baseFolder = pane.addFolder({ title: 'Base form' });
@@ -192,13 +200,13 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     const rawBaseH =
       height * Random.range(config.baseMinHeight, config.baseMaxHeight);
     const sharedBaseH = Math.min(
-      rawBaseH * (1 + 0.12 * phases.baseHPhase),
+      rawBaseH * (1 + 0.2 * phases.baseHPhase),
       activeH,
     );
 
     const spreadAngle = Random.range(-Math.PI / 8, Math.PI / 8);
     const offsetX = width * 0.5 * config.clusterSpread * Math.cos(spreadAngle);
-    const offsetY = activeH * 0.35 * config.clusterSpread * phases.yPhase;
+    const offsetY = activeH * 0.45 * config.clusterSpread * phases.yPhase;
 
     const jx = width * config.anchorJitter;
     const jy = activeH * config.anchorJitter;
@@ -240,10 +248,10 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   wrap.render = ({ width, height, playhead }: SketchProps) => {
     const t = playhead * Math.PI * 2;
     const phases: Phases = {
-      yPhase: Math.sin(t),
-      baseHPhase: Math.cos(t),
-      extSlidePhase: Math.sin(t * 2),
-      accentSlidePhase: Math.cos(t * 2),
+      yPhase: piston(Math.sin(t)),
+      baseHPhase: piston(Math.cos(t * 2)),
+      extSlidePhase: piston(Math.sin(t * 2)),
+      accentSlidePhase: piston(Math.cos(t * 3)),
     };
     const { bg, forms } = buildFrame(width, height, phases);
 
@@ -321,6 +329,11 @@ function clamp(v: number, lo: number, hi: number): number {
 function clampAspect(w: number, h: number): number {
   const maxAspect = 3;
   return clamp(h, w / maxAspect, w * maxAspect);
+}
+
+function piston(s: number): number {
+  const exp = 1 - 0.7 * config.pistonSharpness;
+  return Math.sign(s) * Math.pow(Math.abs(s), exp);
 }
 
 function intersect(a: Rect, b: Rect): Rect | null {
@@ -432,7 +445,10 @@ function buildCluster(
     const extHRaw =
       height *
       Random.range(config.extensionMinHeight, config.extensionMaxHeight);
-    const extH = Math.min(clampAspect(extW, extHRaw), activeH);
+    const extH = Math.min(
+      clampAspect(extW, extHRaw * (1 + 0.5 * Math.abs(phases.extSlidePhase))),
+      activeH,
+    );
     const extOffset =
       height * config.extensionOffset * phases.extSlidePhase;
     const extY = clamp(
@@ -456,7 +472,13 @@ function buildCluster(
     const accentW = xs[accentColStart + accentCols] - accentX;
     const accentHRaw =
       height * Random.range(config.accentMinHeight, config.accentMaxHeight);
-    const accentH = Math.min(clampAspect(accentW, accentHRaw), activeH);
+    const accentH = Math.min(
+      clampAspect(
+        accentW,
+        accentHRaw * (1 + 0.45 * Math.abs(phases.accentSlidePhase)),
+      ),
+      activeH,
+    );
     const attachTop = Random.chance(0.5);
     const attach = clamp(
       config.accentAttachment + 0.35 * phases.accentSlidePhase,
