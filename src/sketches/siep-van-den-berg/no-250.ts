@@ -16,6 +16,13 @@ interface ColoredRect extends Rect {
   color: string;
 }
 
+interface Phases {
+  yPhase: number;
+  baseHPhase: number;
+  extSlidePhase: number;
+  accentSlidePhase: number;
+}
+
 const [tintLight, tintDark, accent] = threeHueHighContrastScheme();
 logColors([tintLight, tintDark, accent]);
 
@@ -155,7 +162,7 @@ palFolder.addBinding(config, 'grey');
 
 const regenBtn = pane.addButton({ title: 'Regenerate' });
 
-export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) => {
+export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => wrap.dispose());
     import.meta.hot.accept(() => wrap.hotReload());
@@ -165,14 +172,11 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
     props.exportFrame();
   });
 
-  let bg: ColoredRect[] = [];
-  let forms: Rect[] = [];
   let seed = Random.getRandomSeed();
 
-  const rebuild = () => {
+  const buildFrame = (width: number, height: number, phases: Phases) => {
     Random.setSeed(seed);
     const { cells, xs } = buildBackground(width, height);
-    bg = cells;
 
     const quietOnTop = Random.chance(0.5);
     const qSize = config.quietZoneSize;
@@ -187,18 +191,19 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
     const sharedBaseCols = Random.rangeFloor(baseMin, baseMax + 1);
     const rawBaseH =
       height * Random.range(config.baseMinHeight, config.baseMaxHeight);
-    const sharedBaseH = Math.min(rawBaseH, activeH);
+    const sharedBaseH = Math.min(
+      rawBaseH * (1 + 0.12 * phases.baseHPhase),
+      activeH,
+    );
 
     const spreadAngle = Random.range(-Math.PI / 8, Math.PI / 8);
-    const offsetX =
-      width * 0.5 * config.clusterSpread * Math.cos(spreadAngle);
-    const offsetY =
-      activeH * 0.3 * config.clusterSpread * Math.sin(spreadAngle);
+    const offsetX = width * 0.5 * config.clusterSpread * Math.cos(spreadAngle);
+    const offsetY = activeH * 0.35 * config.clusterSpread * phases.yPhase;
 
     const jx = width * config.anchorJitter;
     const jy = activeH * config.anchorJitter;
 
-    forms = [
+    const forms: Rect[] = [
       ...buildCluster(
         width,
         height,
@@ -209,6 +214,7 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
         sharedBaseH,
         activeYmin,
         activeYmax,
+        phases,
       ),
       ...buildCluster(
         width,
@@ -220,18 +226,27 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
         sharedBaseH,
         activeYmin,
         activeYmax,
+        phases,
       ),
     ];
+
+    return { bg: cells, forms };
   };
 
-  rebuild();
-  pane.on('change', rebuild);
   regenBtn.on('click', () => {
     seed = Random.getRandomSeed();
-    rebuild();
   });
 
-  wrap.render = ({ width, height }: SketchProps) => {
+  wrap.render = ({ width, height, playhead }: SketchProps) => {
+    const t = playhead * Math.PI * 2;
+    const phases: Phases = {
+      yPhase: Math.sin(t),
+      baseHPhase: Math.cos(t),
+      extSlidePhase: Math.sin(t * 2),
+      accentSlidePhase: Math.cos(t * 2),
+    };
+    const { bg, forms } = buildFrame(width, height, phases);
+
     context.fillStyle = config.black;
     context.fillRect(0, 0, width, height);
 
@@ -276,6 +291,8 @@ export const settings: SketchSettings = {
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
   animate: true,
+  duration: 8_000,
+  framesFormat: ['mp4'],
 };
 
 ssam(sketch as Sketch<'2d'>, settings);
@@ -373,6 +390,7 @@ function buildCluster(
   sharedBaseH: number,
   activeYmin: number,
   activeYmax: number,
+  phases: Phases,
 ): Rect[] {
   const cols = xs.length - 1;
   let anchorCol = 0;
@@ -416,7 +434,7 @@ function buildCluster(
       Random.range(config.extensionMinHeight, config.extensionMaxHeight);
     const extH = Math.min(clampAspect(extW, extHRaw), activeH);
     const extOffset =
-      height * Random.range(-config.extensionOffset, config.extensionOffset);
+      height * config.extensionOffset * phases.extSlidePhase;
     const extY = clamp(
       baseY + (baseH - extH) / 2 + extOffset,
       activeYmin,
@@ -440,13 +458,13 @@ function buildCluster(
       height * Random.range(config.accentMinHeight, config.accentMaxHeight);
     const accentH = Math.min(clampAspect(accentW, accentHRaw), activeH);
     const attachTop = Random.chance(0.5);
-    const attach = config.accentAttachment;
+    const attach = clamp(
+      config.accentAttachment + 0.35 * phases.accentSlidePhase,
+      0,
+      1,
+    );
     const accentY = attachTop
-      ? clamp(
-          baseY - accentH * attach * 0.5,
-          activeYmin,
-          activeYmax - accentH,
-        )
+      ? clamp(baseY - accentH * attach * 0.5, activeYmin, activeYmax - accentH)
       : clamp(
           baseY + baseH - accentH * (1 - attach * 0.5),
           activeYmin,
