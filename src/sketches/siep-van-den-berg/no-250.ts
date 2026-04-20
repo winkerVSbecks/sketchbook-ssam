@@ -16,6 +16,21 @@ interface ColoredRect extends Rect {
   color: string;
 }
 
+type FormType = 'base' | 'extension' | 'accent';
+
+interface TypedRect extends Rect {
+  type: FormType;
+}
+
+const debugColors = {
+  bg: '#00ffff',
+  base: '#ff00ff',
+  extension: '#ffff00',
+  accent: '#00ff00',
+  pair: '#ff8800',
+  triple: '#ff3030',
+};
+
 interface Phases {
   yPhase: number;
   baseHPhase: number;
@@ -51,6 +66,7 @@ const config = {
   accentMaxHeight: Random.range(0.05, 0.5),
   accentAttachment: Random.range(0, 1),
   pistonSharpness: 0.4,
+  debug: false,
   red: tintLight,
   blue: tintDark,
   yellow: tintLight,
@@ -63,7 +79,7 @@ const config = {
 const pane = new Pane() as any;
 if (pane.containerElem_) pane.containerElem_.style.zIndex = '1';
 
-const bgFolder = pane.addFolder({ title: 'Background' });
+const bgFolder = pane.addFolder({ title: 'Background', expanded: false });
 bgFolder.addBinding(config, 'columns', { min: 3, max: 10, step: 1 });
 bgFolder.addBinding(config, 'columnWidthVariance', {
   min: 0,
@@ -78,7 +94,7 @@ bgFolder.addBinding(config, 'rowHeightVariance', {
   step: 0.01,
 });
 
-const clusterFolder = pane.addFolder({ title: 'Clusters' });
+const clusterFolder = pane.addFolder({ title: 'Clusters', expanded: false });
 clusterFolder.addBinding(config, 'quietZoneSize', {
   min: 0.2,
   max: 0.55,
@@ -95,14 +111,14 @@ clusterFolder.addBinding(config, 'anchorJitter', {
   step: 0.005,
 });
 
-const motionFolder = pane.addFolder({ title: 'Motion' });
+const motionFolder = pane.addFolder({ title: 'Motion', expanded: false });
 motionFolder.addBinding(config, 'pistonSharpness', {
   min: 0,
   max: 1,
   step: 0.01,
 });
 
-const baseFolder = pane.addFolder({ title: 'Base form' });
+const baseFolder = pane.addFolder({ title: 'Base form', expanded: false });
 baseFolder.addBinding(config, 'baseMinCols', { min: 1, max: 5, step: 1 });
 baseFolder.addBinding(config, 'baseMaxCols', { min: 1, max: 5, step: 1 });
 baseFolder.addBinding(config, 'baseMinHeight', {
@@ -116,7 +132,7 @@ baseFolder.addBinding(config, 'baseMaxHeight', {
   step: 0.01,
 });
 
-const extFolder = pane.addFolder({ title: 'Extension' });
+const extFolder = pane.addFolder({ title: 'Extension', expanded: false });
 extFolder.addBinding(config, 'extensionChance', { min: 0, max: 1, step: 0.05 });
 extFolder.addBinding(config, 'extensionInsideChance', {
   min: 0,
@@ -139,7 +155,7 @@ extFolder.addBinding(config, 'extensionOffset', {
   step: 0.01,
 });
 
-const accFolder = pane.addFolder({ title: 'Accent' });
+const accFolder = pane.addFolder({ title: 'Accent', expanded: false });
 accFolder.addBinding(config, 'accentChance', { min: 0, max: 1, step: 0.05 });
 accFolder.addBinding(config, 'accentMinCols', { min: 1, max: 4, step: 1 });
 accFolder.addBinding(config, 'accentMaxCols', { min: 1, max: 4, step: 1 });
@@ -167,6 +183,9 @@ palFolder.addBinding(config, 'lightBlue');
 palFolder.addBinding(config, 'black');
 palFolder.addBinding(config, 'white');
 palFolder.addBinding(config, 'grey');
+
+const debugFolder = pane.addFolder({ title: 'Debug', expanded: false });
+debugFolder.addBinding(config, 'debug');
 
 const regenBtn = pane.addButton({ title: 'Regenerate' });
 
@@ -211,7 +230,7 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     const jx = width * config.anchorJitter;
     const jy = activeH * config.anchorJitter;
 
-    const forms: Rect[] = [
+    const forms: TypedRect[] = [
       ...buildCluster(
         width,
         height,
@@ -290,6 +309,10 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
           }
         }
       }
+    }
+
+    if (config.debug) {
+      drawDebugOutlines(context, bg, forms);
     }
   };
 };
@@ -393,6 +416,43 @@ function buildBackground(
   return { cells, xs };
 }
 
+function drawDebugOutlines(
+  ctx: CanvasRenderingContext2D,
+  bg: ColoredRect[],
+  forms: TypedRect[],
+): void {
+  ctx.save();
+  ctx.lineWidth = 2;
+
+  ctx.strokeStyle = debugColors.bg;
+  for (const r of bg) ctx.strokeRect(r.x, r.y, r.w, r.h);
+
+  for (const f of forms) {
+    ctx.strokeStyle = debugColors[f.type];
+    ctx.lineWidth = 4;
+    ctx.strokeRect(f.x, f.y, f.w, f.h);
+  }
+
+  ctx.lineWidth = 3;
+  for (let i = 0; i < forms.length; i++) {
+    for (let j = i + 1; j < forms.length; j++) {
+      const ij = intersect(forms[i], forms[j]);
+      if (!ij) continue;
+      ctx.strokeStyle = debugColors.pair;
+      ctx.strokeRect(ij.x, ij.y, ij.w, ij.h);
+      for (let k = j + 1; k < forms.length; k++) {
+        const tri = intersect(ij, forms[k]);
+        if (tri) {
+          ctx.strokeStyle = debugColors.triple;
+          ctx.strokeRect(tri.x, tri.y, tri.w, tri.h);
+        }
+      }
+    }
+  }
+
+  ctx.restore();
+}
+
 function buildCluster(
   width: number,
   height: number,
@@ -404,7 +464,7 @@ function buildCluster(
   activeYmin: number,
   activeYmax: number,
   phases: Phases,
-): Rect[] {
+): TypedRect[] {
   const cols = xs.length - 1;
   let anchorCol = 0;
   for (let i = 0; i < cols; i++) {
@@ -414,7 +474,7 @@ function buildCluster(
     }
   }
 
-  const forms: Rect[] = [];
+  const forms: TypedRect[] = [];
   const activeH = activeYmax - activeYmin;
 
   const baseCols = Math.min(sharedBaseCols, cols);
@@ -427,7 +487,13 @@ function buildCluster(
   const baseW = xs[baseColStart + baseCols] - baseX;
   const baseH = Math.min(clampAspect(baseW, sharedBaseH), activeH);
   const baseY = clamp(anchorY - baseH / 2, activeYmin, activeYmax - baseH);
-  const base: Rect = { x: baseX, y: baseY, w: baseW, h: baseH };
+  const base: TypedRect = {
+    x: baseX,
+    y: baseY,
+    w: baseW,
+    h: baseH,
+    type: 'base',
+  };
   forms.push(base);
 
   if (Random.chance(config.extensionChance)) {
@@ -456,7 +522,7 @@ function buildCluster(
       activeYmin,
       activeYmax - extH,
     );
-    forms.push({ x: extX, y: extY, w: extW, h: extH });
+    forms.push({ x: extX, y: extY, w: extW, h: extH, type: 'extension' });
   }
 
   if (Random.chance(config.accentChance)) {
@@ -492,7 +558,13 @@ function buildCluster(
           activeYmin,
           activeYmax - accentH,
         );
-    forms.push({ x: accentX, y: accentY, w: accentW, h: accentH });
+    forms.push({
+      x: accentX,
+      y: accentY,
+      w: accentW,
+      h: accentH,
+      type: 'accent',
+    });
   }
 
   return forms;
