@@ -24,7 +24,17 @@
       "WebFetch(domain:api.editor.p5js.org)",
       "Bash(grep -r \"canvas\" /Users/varunvachhar/Documents/projects/sketchbook-ssam/node_modules/ssam/dist/*.d.ts)",
       "mcp__Claude_Preview__preview_start",
-      "Bash(ffmpeg -version)"
+      "Bash(ffmpeg -version)",
+      "Bash(rtk ls *)",
+      "Bash(rtk read *)",
+      "Bash(python3 -c ' *)",
+      "Bash(python3)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('deps:', list\\(d.get\\('dependencies', {}\\).keys\\(\\)\\)\\); print\\('scripts:', d.get\\('scripts'\\)\\)\")",
+      "Bash(rm *)",
+      "Bash(rtk find *)",
+      "Bash(rtk grep *)",
+      "mcp__plugin_oh-my-claudecode_t__state_write",
+      "mcp__plugin_oh-my-claudecode_t__state_clear"
     ]
   }
 }

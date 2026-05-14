@@ -1,0 +1,166 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1778771581570,
+  "projectRoot": "/Users/varunvachhar/Documents/projects/sketchbook-ssam",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      },
+      {
+        "name": "TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "tsconfig.json"
+        ]
+      }
+    ],
+    "frameworks": [
+      {
+        "name": "vite",
+        "version": "5.1.4",
+        "category": "build"
+      }
+    ],
+    "packageManager": "npm",
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": "npm run build",
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": "npm run dev",
+    "scripts": {
+      "dev": "vite",
+      "build": "vite build",
+      "preview": "vite preview"
+    }
+  },
+  "conventions": {
+    "namingStyle": "camelCase",
+    "importStyle": "ES modules",
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "assets",
+      "src"
+    ],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "assets": {
+      "path": "assets",
+      "purpose": "Static assets",
+      "fileCount": 3,
+      "lastAccessed": 1778771581503,
+      "keyFiles": [
+        "skeletor.svg",
+        "varun.svg"
+      ]
+    },
+    "output": {
+      "path": "output",
+      "purpose": null,
+      "fileCount": 4644,
+      "lastAccessed": 1778771581548,
+      "keyFiles": [
+        "2023.12.13-15.21.58.mp4",
+        "2023.12.13-15.33.09.mp4",
+        "2023.12.13-19.32.58.mp4",
+        "2023.12.14-19.50.27.mp4",
+        "2023.12.14-19.56.44.mp4"
+      ]
+    },
+    "src": {
+      "path": "src",
+      "purpose": "Source code",
+      "fileCount": 13,
+      "lastAccessed": 1778771581553,
+      "keyFiles": [
+        "dither.ts",
+        "generate-build-logs.ts",
+        "global.d.ts",
+        "grid.ts",
+        "index.ts"
+      ]
+    },
+    "timelapse": {
+      "path": "timelapse",
+      "purpose": null,
+      "fileCount": 77,
+      "lastAccessed": 1778771581554,
+      "keyFiles": [
+        "00000.png",
+        "00001.png",
+        "00002.png",
+        "00003.png",
+        "00004.png"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "vite.config.ts",
+      "accessCount": 4,
+      "lastAccessed": 1778773937963,
+      "type": "file"
+    },
+    {
+      "path": ".claude/skills/render-sketch/SKILL.md",
+      "accessCount": 4,
+      "lastAccessed": 1778773938076,
+      "type": "file"
+    },
+    {
+      "path": "src/index.ts",
+      "accessCount": 3,
+      "lastAccessed": 1778773941830,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/siep-van-den-berg/no-250.ts",
+      "accessCount": 2,
+      "lastAccessed": 1778772411183,
+      "type": "file"
+    },
+    {
+      "path": "package.json",
+      "accessCount": 2,
+      "lastAccessed": 1778773849333,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/growth-paths.ts",
+      "accessCount": 1,
+      "lastAccessed": 1778772193987,
+      "type": "file"
+    },
+    {
+      "path": "index.html",
+      "accessCount": 1,
+      "lastAccessed": 1778772398953,
+      "type": "file"
+    },
+    {
+      "path": "src/plugins/vite-plugin-ssam-penplot.ts",
+      "accessCount": 1,
+      "lastAccessed": 1778772410799,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

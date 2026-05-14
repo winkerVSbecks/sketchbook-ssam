@@ -230,22 +230,6 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     const jx = width * config.anchorJitter;
     const jy = activeH * config.anchorJitter;
 
-    const addExt: [boolean, boolean] = [
-      Random.chance(config.extensionChance),
-      Random.chance(config.extensionChance),
-    ];
-    const addAcc: [boolean, boolean] = [
-      Random.chance(config.accentChance),
-      Random.chance(config.accentChance),
-    ];
-    if (!addExt[0] && !addExt[1] && !addAcc[0] && !addAcc[1]) {
-      const slot = Random.rangeFloor(0, 4);
-      if (slot === 0) addExt[0] = true;
-      else if (slot === 1) addExt[1] = true;
-      else if (slot === 2) addAcc[0] = true;
-      else addAcc[1] = true;
-    }
-
     const forms: TypedRect[] = [
       ...buildCluster(
         width,
@@ -258,8 +242,6 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
         activeYmin,
         activeYmax,
         phases,
-        addExt[0],
-        addAcc[0],
       ),
       ...buildCluster(
         width,
@@ -272,8 +254,6 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
         activeYmin,
         activeYmax,
         phases,
-        addExt[1],
-        addAcc[1],
       ),
     ];
 
@@ -296,11 +276,6 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
 
     context.fillStyle = config.black;
     context.fillRect(0, 0, width, height);
-
-    for (const r of bg) {
-      context.fillStyle = r.color;
-      context.fillRect(r.x, r.y, r.w, r.h);
-    }
 
     for (const f of forms) {
       context.fillStyle = config.black;
@@ -415,31 +390,15 @@ function buildBackground(
     for (let j = 0; j < nRows; j++) {
       const y = ys[j];
       const h = rowHeights[j];
-      const forbiddenList: string[] = [];
-      if (prevInColumn) forbiddenList.push(prevInColumn);
+      const forbidden = new Set<string>();
+      if (prevInColumn) forbidden.add(prevInColumn);
       if (i > 0) {
         for (const left of columnCells[i - 1]) {
-          if (left.y < y + h && left.y + left.h > y) {
-            forbiddenList.push(left.color);
-          }
+          if (left.y < y + h && left.y + left.h > y) forbidden.add(left.color);
         }
       }
-      const forbidden = new Set(forbiddenList);
       const pool = palette.filter((c) => !forbidden.has(c));
-      let color: string;
-      if (pool.length) {
-        color = Random.pick(pool);
-      } else {
-        // Every palette entry conflicts with a neighbor; pick the one that
-        // conflicts with the fewest neighbors so violations are minimized.
-        const counts = new Map<string, number>();
-        for (const f of forbiddenList) {
-          counts.set(f, (counts.get(f) ?? 0) + 1);
-        }
-        const minCount = Math.min(...palette.map((c) => counts.get(c) ?? 0));
-        const best = palette.filter((c) => (counts.get(c) ?? 0) === minCount);
-        color = Random.pick(best);
-      }
+      const color = Random.pick(pool.length ? pool : palette);
       prevInColumn = color;
       const cell = { x: xs[i], y, w: colWidths[i], h, color };
       cells.push(cell);
@@ -500,8 +459,6 @@ function buildCluster(
   activeYmin: number,
   activeYmax: number,
   phases: Phases,
-  addExtension: boolean,
-  addAccent: boolean,
 ): TypedRect[] {
   const cols = xs.length - 1;
   let anchorCol = 0;
@@ -534,7 +491,7 @@ function buildCluster(
   };
   forms.push(base);
 
-  if (addExtension) {
+  if (Random.chance(config.extensionChance)) {
     const insideBase = Random.chance(config.extensionInsideChance);
     let extCol: number;
     if (insideBase) {
@@ -563,7 +520,7 @@ function buildCluster(
     forms.push({ x: extX, y: extY, w: extW, h: extH, type: 'extension' });
   }
 
-  if (addAccent) {
+  if (Random.chance(config.accentChance)) {
     const accMin = Math.min(config.accentMinCols, config.accentMaxCols);
     const accMax = Math.max(config.accentMinCols, config.accentMaxCols);
     const accentCols = Random.rangeFloor(accMin, accMax + 1);
