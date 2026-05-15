@@ -198,7 +198,25 @@ async function ensureVite(sketchPath: string): Promise<VitePidRecord> {
   return record;
 }
 
+// The sandbox pre-installs playwright browser binaries at /opt/pw-browsers, but the
+// revision may not match playwright-core's expected revision. Detect any usable binary
+// there directly so we can skip the (blocked) download on first use.
+function findSystemChromiumExecutable(): string | null {
+  const searchBase = '/opt/pw-browsers';
+  if (!existsSync(searchBase)) return null;
+  try {
+    const found = execSync(
+      `find "${searchBase}" \\( -name "headless_shell" -o -name "chrome-headless-shell" \\) -type f 2>/dev/null | head -1`,
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
+    ).trim();
+    return found && existsSync(found) ? found : null;
+  } catch {
+    return null;
+  }
+}
+
 function chromiumExecutableMissing(): boolean {
+  if (findSystemChromiumExecutable()) return false;
   try {
     const path = chromium.executablePath();
     return !path || !existsSync(path);
@@ -253,8 +271,13 @@ async function renderOnce(sketchPath: string): Promise<string> {
     }
   }
 
+  const systemExec = findSystemChromiumExecutable();
+  if (systemExec) {
+    process.stdout.write(`[cloud-render] using system Chromium: ${systemExec}\n`);
+  }
   const browser = await chromium.launch({
     headless: true,
+    executablePath: systemExec ?? undefined,
     args: [
       '--use-gl=swiftshader',
       '--enable-unsafe-swiftshader',
