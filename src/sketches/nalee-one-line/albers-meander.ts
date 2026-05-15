@@ -13,14 +13,15 @@ console.log('seed:', seed);
 
 const bg = '#F4D5C4';
 const fg = '#C75C3B';
+const light = '#DBAA97'; // ghost layer: lighter terracotta between bg and fg
 const white = '#F8F2EE';
 
 const config = {
-  walkerRes: [16, 20] as [number, number],
+  walkerRes: [12, 15] as [number, number], // fewer, larger cells → more space between lines
   flat: true,
   padding: 0.1,
-  size: 52,
-  stepSize: 8,
+  size: 34,
+  stepSize: 6,
   startOnCorners: true,
 };
 
@@ -159,27 +160,22 @@ class HamiltonianPathState {
   }
 }
 
-function meanderStyle(
+function strokePaths(
   context: CanvasRenderingContext2D,
-  walker: Walker,
-  pts: Point[],
+  paths: Point[][],
+  color: string,
+  lineWidth: number,
 ) {
   context.save();
-  context.lineCap = 'round';
-  context.lineJoin = 'round';
-
-  context.globalAlpha = 0.88;
-  context.strokeStyle = fg;
-  context.lineWidth = walker.size - walker.stepSize;
-  drawShape(context, pts, false);
-  context.stroke();
-
-  context.globalAlpha = 0.55;
-  context.strokeStyle = bg;
-  context.lineWidth = (walker.size - walker.stepSize) * 0.38;
-  drawShape(context, pts, false);
-  context.stroke();
-
+  context.lineCap = 'square';
+  context.lineJoin = 'miter';
+  context.miterLimit = 10;
+  context.strokeStyle = color;
+  context.lineWidth = lineWidth;
+  paths.forEach((pts) => {
+    drawShape(context, pts, false);
+    context.stroke();
+  });
   context.restore();
 }
 
@@ -268,11 +264,9 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
   }
 
   wrap.render = ({ width, height }: SketchProps) => {
-    // White outer border
     context.fillStyle = white;
     context.fillRect(0, 0, width, height);
 
-    // Light pink interior
     context.fillStyle = bg;
     context.fillRect(margin, margin, width - 2 * margin, height - 2 * margin);
 
@@ -282,9 +276,13 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
     const paths = walkerToPaths(walker);
     const pathsInWorld = paths.map((pts) => pts.map(([x, y]) => domainToWorld(x, y)));
 
-    pathsInWorld.forEach((pts) => {
-      meanderStyle(context, walker, pts);
-    });
+    const lineW = walker.size - walker.stepSize;
+
+    // Layer 1: wide light ghost meander — all paths before any red
+    strokePaths(context, pathsInWorld, light, lineW + 10);
+
+    // Layer 2: narrower solid red meander on top
+    strokePaths(context, pathsInWorld, fg, lineW);
   };
 };
 
