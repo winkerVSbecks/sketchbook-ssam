@@ -179,25 +179,7 @@ function strokePaths(
   context.restore();
 }
 
-export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) => {
-  if (import.meta.hot) {
-    import.meta.hot.dispose(() => wrap.dispose());
-    import.meta.hot.accept(() => wrap.hotReload());
-  }
-  import.meta.hot?.on('mcp:export', () => {
-    props.exportFrame();
-  });
-
-  const margin = width * 0.07;
-
-  const domainToWorld: DomainToWorld = (x, y) => {
-    const pad = width * config.padding + margin;
-    return [
-      mapRange(x, 0, config.walkerRes[0], pad, width - pad),
-      mapRange(y, 0, config.walkerRes[1], pad, height - pad),
-    ];
-  };
-
+function runHamiltonianSim(domainToWorld: DomainToWorld): Walker {
   const walkerDomain = makeWalkerDomain(config.walkerRes, domainToWorld);
   const state = new HamiltonianPathState(walkerDomain);
 
@@ -206,13 +188,8 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
     const start = state.getStartPoint();
     if (!start) return null;
     const walker = makeWalker(
-      start,
-      fg,
-      fg,
-      'solidStyle',
-      config.flat,
-      config.size,
-      config.stepSize,
+      start, fg, fg, 'solidStyle',
+      config.flat, config.size, config.stepSize,
       state.validOption,
     );
     state.setOccupied(start);
@@ -222,7 +199,7 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
 
   let currentWalker = spawnWalker();
 
-  function* simulationGenerator(): Generator<void, void, unknown> {
+  function* gen(): Generator<void, void, unknown> {
     for (let attempt = 0; attempt < 200 && state.mode === 'draw'; attempt++) {
       let stuck = false;
       while (!stuck && state.mode === 'draw') {
@@ -245,23 +222,51 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
       }
 
       if (stuck && state.mode === 'draw') {
-        state.walkerDomain.forEach((node) => {
-          node.occupied = false;
-          node.moveTo = false;
-        });
+        state.walkerDomain.forEach((n) => { n.occupied = false; n.moveTo = false; });
         state.walkers = [];
         currentWalker = spawnWalker();
         yield;
       }
     }
-
     if (state.mode === 'draw') state.mode = 'complete';
   }
 
-  const simulation = simulationGenerator();
-  while (state.mode !== 'complete') {
-    simulation.next();
+  const sim = gen();
+  while (state.mode !== 'complete') sim.next();
+  return state.walkers[0];
+}
+
+export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) => {
+  if (import.meta.hot) {
+    import.meta.hot.dispose(() => wrap.dispose());
+    import.meta.hot.accept(() => wrap.hotReload());
   }
+  import.meta.hot?.on('mcp:export', () => {
+    props.exportFrame();
+  });
+
+  const margin = width * 0.07;
+
+  const domainToWorld: DomainToWorld = (x, y) => {
+    const pad = width * config.padding + margin;
+    return [
+      mapRange(x, 0, config.walkerRes[0], pad, width - pad),
+      mapRange(y, 0, config.walkerRes[1], pad, height - pad),
+    ];
+  };
+
+  // Two independent runs — different random paths on the same grid
+  const ghostWalker = runHamiltonianSim(domainToWorld);
+  const redWalker = runHamiltonianSim(domainToWorld);
+
+  const lineW = config.size - config.stepSize;
+
+  const ghostPaths = walkerToPaths(ghostWalker).map((pts) =>
+    pts.map(([x, y]) => domainToWorld(x, y)),
+  );
+  const redPaths = walkerToPaths(redWalker).map((pts) =>
+    pts.map(([x, y]) => domainToWorld(x, y)),
+  );
 
   wrap.render = ({ width, height }: SketchProps) => {
     context.fillStyle = white;
@@ -270,19 +275,11 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
     context.fillStyle = bg;
     context.fillRect(margin, margin, width - 2 * margin, height - 2 * margin);
 
-    const walker = state.walkers[0];
-    if (!walker) return;
+    // Layer 1: ghost meander — independent path, drawn light and wide
+    strokePaths(context, ghostPaths, light, lineW + 10);
 
-    const paths = walkerToPaths(walker);
-    const pathsInWorld = paths.map((pts) => pts.map(([x, y]) => domainToWorld(x, y)));
-
-    const lineW = walker.size - walker.stepSize;
-
-    // Layer 1: wide light ghost meander — all paths before any red
-    strokePaths(context, pathsInWorld, light, lineW + 10);
-
-    // Layer 2: narrower solid red meander on top
-    strokePaths(context, pathsInWorld, fg, lineW);
+    // Layer 2: red meander on top — different independent path
+    strokePaths(context, redPaths, fg, lineW);
   };
 };
 
