@@ -17,12 +17,12 @@ const light = '#DBAA97'; // ghost layer: lighter terracotta between bg and fg
 const white = '#F8F2EE';
 
 const config = {
-  walkerRes: [12, 15] as [number, number], // fewer, larger cells → more space between lines
+  walkerRes: [12, 12] as [number, number],
   flat: true,
   padding: 0.1,
   size: 34,
   stepSize: 6,
-  startOnCorners: true,
+  startOnCorners: false,
 };
 
 function makeWalkerDomain(
@@ -130,21 +130,14 @@ class HamiltonianPathState {
     const scored = neighbors.map((n) => {
       this.setOccupied(n);
       const degree = this.getDegree(n);
-      let sumNeighborDegrees = 0;
-      for (const nn of this.getValidNeighbors(n)) {
-        sumNeighborDegrees += this.getDegree(nn);
-      }
       this.setUnoccupied(n);
-      return { coord: n, degree, sumNeighborDegrees, randomFactor: Random.value() };
+      // Add ±0.7 noise to the degree so near-equal options compete randomly,
+      // breaking the predictable spiral without abandoning dead-end avoidance.
+      const noisyDegree = degree + Random.range(-0.7, 0.7);
+      return { coord: n, noisyDegree };
     });
 
-    scored.sort((a, b) => {
-      if (a.degree !== b.degree) return a.degree - b.degree;
-      if (a.sumNeighborDegrees !== b.sumNeighborDegrees)
-        return a.sumNeighborDegrees - b.sumNeighborDegrees;
-      return a.randomFactor - b.randomFactor;
-    });
-
+    scored.sort((a, b) => a.noisyDegree - b.noisyDegree);
     return scored[0].coord;
   }
 
@@ -285,7 +278,7 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
 
 export const settings: SketchSettings = {
   mode: '2d',
-  dimensions: [1080, 1350],
+  dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
   animate: false,
 };
