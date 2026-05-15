@@ -6,15 +6,17 @@ import { makeWalker, walkerToPaths } from '../nalee/walker';
 import { drawShape } from '../nalee/paths';
 import { xyToId } from '../nalee/utils';
 import type { Node, Walker, Coord, DomainToWorld } from '../nalee/types';
+import { randomPalette } from '../../colors/riso';
+import { logColors } from '../../colors';
 
 const seed = Random.getRandomSeed();
 Random.setSeed(seed);
 console.log('seed:', seed);
 
-const bg = '#F4D5C4';
-const fg = '#C75C3B';
-const light = '#DBAA97'; // ghost layer: lighter terracotta between bg and fg
-const white = '#F8F2EE';
+const { bg, inkColors } = randomPalette(2.5);
+const white = '#F5F0EC';
+const [light, fg] = Random.shuffle([...inkColors]);
+logColors([white, bg, light, fg]);
 
 const config = {
   walkerRes: [12, 12] as [number, number],
