@@ -114,21 +114,51 @@
   },
   "hotPaths": [
     {
+      "path": "scripts/cloud-render.ts",
+      "accessCount": 10,
+      "lastAccessed": 1778805445699,
+      "type": "file"
+    },
+    {
+      "path": ".claude/skills/render-sketch/SKILL.md",
+      "accessCount": 8,
+      "lastAccessed": 1778805240398,
+      "type": "file"
+    },
+    {
+      "path": "src/index.ts",
+      "accessCount": 6,
+      "lastAccessed": 1778805238694,
+      "type": "file"
+    },
+    {
+      "path": "package.json",
+      "accessCount": 6,
+      "lastAccessed": 1778805239094,
+      "type": "file"
+    },
+    {
       "path": "vite.config.ts",
       "accessCount": 4,
       "lastAccessed": 1778773937963,
       "type": "file"
     },
     {
-      "path": ".claude/skills/render-sketch/SKILL.md",
-      "accessCount": 4,
-      "lastAccessed": 1778773938076,
+      "path": ".claude/settings.json",
+      "accessCount": 3,
+      "lastAccessed": 1778805239614,
       "type": "file"
     },
     {
-      "path": "src/index.ts",
+      "path": "scripts/cloud-render-smoke.ts",
       "accessCount": 3,
-      "lastAccessed": 1778773941830,
+      "lastAccessed": 1778805447906,
+      "type": "file"
+    },
+    {
+      "path": "scripts/cloud-bootstrap.sh",
+      "accessCount": 3,
+      "lastAccessed": 1778805451394,
       "type": "file"
     },
     {
@@ -138,9 +168,21 @@
       "type": "file"
     },
     {
-      "path": "package.json",
+      "path": "src/sketches/_test/cloud-render-2d.ts",
       "accessCount": 2,
-      "lastAccessed": 1778773849333,
+      "lastAccessed": 1778805236849,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/_test/cloud-render-webgl.ts",
+      "accessCount": 2,
+      "lastAccessed": 1778805237314,
+      "type": "file"
+    },
+    {
+      "path": "docs/cloud-rendering.md",
+      "accessCount": 2,
+      "lastAccessed": 1778805238170,
       "type": "file"
     },
     {

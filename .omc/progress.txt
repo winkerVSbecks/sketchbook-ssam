@@ -1,0 +1,72 @@
+# Ralph progress log — cloud-rendering for ssam sketches in claude.ai/code
+
+## Iteration 1 (initial)
+
+Plan source: .omc/plans/cloud-sketch-rendering.md
+Consensus: Architect APPROVE_WITH_IMPROVEMENTS + Critic APPROVE_WITH_IMPROVEMENTS — all 14 findings merged before execution.
+
+Story breakdown derived from plan steps:
+- US-001 ↔ Plan Step 0 (provisioning-hook research)
+- US-002 ↔ Plan Step 1 (package.json)
+- US-003 ↔ Plan Step 4 (src/index.ts __ssam_ready flag)
+- US-004 ↔ Plan Step 3 (scripts/cloud-render.ts) — the bulk
+- US-005 ↔ Plan Step 2 (provisioning hook, conditional on US-001)
+- US-006 ↔ Plan Step 5 (render-sketch skill update)
+- US-007 ↔ Plan Step 6 (smoke test + WebGL/2D test sketches)
+- US-008 ↔ Plan Step 7 (docs/cloud-rendering.md)
+- US-009 ↔ Verification (local regression + smoke where runnable)
+
+## Codebase patterns noted
+
+- ssam Sketch signature: `({ wrap, context, ...props }: SketchProps) => { ... }`
+- Sketches register HMR handlers: `import.meta.hot?.on('mcp:export', () => props.exportFrame())`
+- Each sketch file calls `ssam(sketch as Sketch<'2d'>, settings)` at the bottom — THAT is the entry point that runs the framework. src/index.ts only side-effect-imports the file.
+- This rules out monkey-patching `wrap.render` from index.ts. Will use canvas-existence + 2-rAF settle instead for `__ssam_ready`.
+- vite.config.ts /export middleware is HMR-coupled: it requires a live browser page with the handler installed
+- Repo has zero WebGL sketches today — Step 6 must author one
+
+## US-001 outcome (Step 0 research, completed)
+
+NO file-based provisioning hook exists in claude.ai/code. Source: code.claude.com docs.
+Two mechanisms exist instead:
+1. **UI-configured Setup Script** (per-environment, UI only — cannot ship in repo). Runs ONCE per environment before Claude Code launches; result is filesystem-snapshotted for subsequent sessions. Fast for repeat sessions.
+2. **SessionStart hook** in .claude/settings.json (repo-committed). Runs on EVERY session start/resume, AFTER Claude Code launches. `CLAUDE_CODE_REMOTE=true` is the cloud-detection env var.
+
+Decision: ship the SessionStart hook as the repo-committed automatic path. Document the UI Setup Script as the recommended faster path. The bootstrap script must short-circuit on cached browser to keep resumed-session latency negligible.
+
+## Iteration 1 outcomes
+
+Files added:
+- scripts/cloud-render.ts — the per-render driver (lock, PID validation, SIGTERM→port-poll→SIGKILL, lazy install, Node-side /export fetch)
+- scripts/cloud-render-smoke.ts — drives 2D + WebGL test renders with wall-clock budget assertions
+- scripts/cloud-bootstrap.sh — SessionStart hook, no-ops locally, lazy-installs chromium-headless-shell in cloud
+- src/sketches/_test/cloud-render-2d.ts — deterministic 2D test sketch (12 bars + center square)
+- src/sketches/_test/cloud-render-webgl.ts — minimal mode:'webgl2' shader gradient test sketch
+- docs/cloud-rendering.md — sandbox bootstrap + debugging doc
+
+Files edited:
+- package.json — added playwright-core, tsx, pngjs, proper-lockfile to devDeps; added cloud:install/render/stop/smoke scripts
+- src/index.ts — added DEV-gated __ssam_ready signal via canvas-existence + 2-rAF settle (with vite:beforeUpdate HMR reset)
+- .claude/settings.json — added SessionStart hook + Bash(npm run cloud:*) permission, preserved existing permissions and worktree config
+- .claude/skills/render-sketch/SKILL.md — added cloud branch keyed on presence of .cloud-render/vite.pid; updated Troubleshooting with cloud-specific failure modes
+- .gitignore — added .cloud-render
+
+Verification status:
+- TypeScript typecheck: PASS (npx tsc --noEmit on new scripts → 0 errors)
+- npm install: PASS, no chromium pulled into the project tree
+- Local Mac dev server: PASS (npm run dev with the new 2D test sketch, port 5173 returns 200, /src/index.ts compiles via Vite)
+- `npm run build`: FAILS due to a pre-existing top-level-await issue in the ORIGINAL src/index.ts (confirmed by stashing my changes and re-running). Out of scope for this work; the fix is one line in vite.config.ts (build.target: 'es2022') if/when the user wants production builds.
+- End-to-end `npm run cloud:smoke`: DEFERRED to the user's claude.ai/code session. Running it on macOS would download ~60MB chromium-headless-shell to .cloud-render/browsers/ — which AC #6 explicitly says we must NOT do on local installs. The mechanical verification (typecheck + dev-server smoke + Vite log) gives high confidence the wiring is correct; final pass/fail is the user running cloud:smoke in the cloud sandbox.
+
+Architect/Critic findings applied (sanity check):
+- Per-render Chromium, Vite-only long-lived state ✓
+- proper-lockfile with SIGINT/SIGTERM cleanup ✓
+- PID validation via kill -0 AND cmdline match (cross-platform: /proc on Linux, ps on macOS) ✓
+- SIGTERM → port-free poll → SIGKILL escalation in killViteGracefully() ✓
+- Node-side fetch to /export (NOT inside page context) ✓
+- __ssam_ready set after first paint via canvas-detect + 2-rAF settle (not at import time) ✓
+- HMR re-mount resets __ssam_ready via vite:beforeUpdate listener ✓
+- chrome-headless-shell install failure path writes .cloud-render/install.log and exits non-zero with actionable error ✓
+- .cloud-render/vite.pid is the canonical cloud-mode signal (no env-var sniffing) ✓
+- WebGL test sketch authored — AC #5 satisfiable ✓
+- PLAYWRIGHT_BROWSERS_PATH respects external override (e.g. persistent volume), defaults to .cloud-render/browsers ✓

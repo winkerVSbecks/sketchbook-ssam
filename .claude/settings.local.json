@@ -34,7 +34,23 @@
       "Bash(rtk find *)",
       "Bash(rtk grep *)",
       "mcp__plugin_oh-my-claudecode_t__state_write",
-      "mcp__plugin_oh-my-claudecode_t__state_clear"
+      "mcp__plugin_oh-my-claudecode_t__state_clear",
+      "Skill(oh-my-claudecode:ralph)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "Bash(chmod +x /Users/varunvachhar/Documents/projects/sketchbook-ssam/scripts/cloud-bootstrap.sh)",
+      "Bash(rtk tsc *)",
+      "Bash(VITE_SKETCH=\"sketches/_test/cloud-render-2d\" rtk npm run build)",
+      "Bash(lsof -ti:5173)",
+      "Bash(rtk curl *)",
+      "Bash(rtk git *)",
+      "Bash(VITE_SKETCH=sketches/_test/cloud-render-2d timeout 60 npm run build)",
+      "Bash(VITE_SKETCH=sketches/_test/cloud-render-2d rtk npm run build)",
+      "Skill(oh-my-claudecode:ai-slop-cleaner)",
+      "Bash(bash -n /Users/varunvachhar/Documents/projects/sketchbook-ssam/scripts/cloud-bootstrap.sh)",
+      "Bash(CLAUDE_CODE_REMOTE=false /Users/varunvachhar/Documents/projects/sketchbook-ssam/scripts/cloud-bootstrap.sh)",
+      "Bash(echo \"local short-circuit exit=$?\")",
+      "Skill(oh-my-claudecode:cancel)",
+      "mcp__plugin_oh-my-claudecode_t__state_list_active"
     ]
   }
 }

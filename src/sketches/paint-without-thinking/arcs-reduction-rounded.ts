@@ -102,7 +102,7 @@ const cells = {
     y: number,
     w: number,
     h: number,
-    corners: Corners
+    corners: Corners,
   ) => {
     context.beginPath();
     context.roundRect(
@@ -110,7 +110,7 @@ const cells = {
       y,
       w,
       h,
-      corners.map((c) => (c ? config.r : 0))
+      corners.map((c) => (c ? config.r : 0)),
     );
     context.fill();
   },
@@ -120,7 +120,7 @@ const cells = {
     y: number,
     w: number,
     h: number,
-    _corners: Corners
+    _corners: Corners,
   ) => {
     context.beginPath();
     context.moveTo(x, y);
@@ -135,7 +135,7 @@ const cells = {
     y: number,
     w: number,
     h: number,
-    _corners: Corners
+    _corners: Corners,
   ) => {
     context.beginPath();
     context.moveTo(x, y);
@@ -150,7 +150,7 @@ const cells = {
     y: number,
     w: number,
     h: number,
-    _corners: Corners
+    _corners: Corners,
   ) => {
     context.beginPath();
     context.moveTo(x, y);
@@ -165,7 +165,7 @@ const cells = {
     y: number,
     w: number,
     h: number,
-    _corners: Corners
+    _corners: Corners,
   ) => {
     context.beginPath();
     context.moveTo(x + w, y);
@@ -364,7 +364,7 @@ function reduce() {
         }
       });
       const sortedColors = Object.entries(colorCounts).sort(
-        (a, b) => b[1] - a[1]
+        (a, b) => b[1] - a[1],
       );
       if (sortedColors.length > 0) {
         cell.color = sortedColors[0][0];
@@ -394,7 +394,7 @@ function roundCorners() {
     // Helper to check if neighbour exists and its edge is closed
     const isNeighbourOpen = (
       neighbour: GridCell | undefined,
-      edge: keyof Edge
+      edge: keyof Edge,
     ) => !(neighbour && edges[neighbour.type][edge]);
     const isCellOpen = (cell: GridCell, edge: keyof Edge) =>
       !edges[cell.type][edge];
@@ -439,7 +439,7 @@ function drawCornerNotches(
   y: number,
   w: number,
   h: number,
-  corners: Corners
+  corners: Corners,
 ) {
   const r = config.r;
   const [tl, tr, br, bl] = corners;

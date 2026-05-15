@@ -1,0 +1,139 @@
+{
+  "title": "Cloud-rendering path for ssam sketches in claude.ai/code",
+  "planPath": "/Users/varunvachhar/Documents/projects/sketchbook-ssam/.omc/plans/cloud-sketch-rendering.md",
+  "globalConstraints": [
+    "Local macOS workflow must remain behavior-identical (npm install does NOT pull chromium; npm run dev unchanged)",
+    "The render-sketch skill's user-facing surface does not change — cloud is an internal branch only",
+    "No env-var or host-sniffing detection — presence of .cloud-render/vite.pid is the only cloud-mode signal",
+    "Cross-platform cmdline validation (Linux /proc/$pid/cmdline OR macOS ps -o command=) — sketchbook is developed on macOS, runs in Linux sandbox"
+  ],
+  "stories": [
+    {
+      "id": "US-001",
+      "title": "Step 0 — Resolve claude.ai/code provisioning-hook contract",
+      "priority": 1,
+      "passes": true,
+      "outcome": "NO_HOOK_FOUND for any file-based provisioning hook (e.g. .claude/sandbox-setup.sh). claude.ai/code's per-environment Setup Script is UI-configured only. The repo-committed alternative is the SessionStart hook in .claude/settings.json, which runs on every session (incl. resumed), AFTER Claude Code launches, with CLAUDE_CODE_REMOTE=true available as the cloud-detection env var. Plan US-005 should be reframed: add a SessionStart hook that lazy-installs chrome-headless-shell when missing, gated by CLAUDE_CODE_REMOTE. AC #1's ≤15s cold first render is realistic only when the UI-configured Setup Script has run OR a prior session's filesystem snapshot persists the browser. Otherwise the first render of a fresh environment pays the ~30-45s install (covered by AC #8).",
+      "acceptanceCriteria": [
+        "Anthropic/claude.ai/code documentation is consulted via web search for the actual project-level setup-hook convention",
+        "Outcome recorded: either a real documented hook path, or an explicit 'no hook supported' decision",
+        "If no hook is supported, AC #1 (cold first render ≤15s) is annotated as conditional in the plan and the lazy-install path becomes the only entry point",
+        "No invented hook filename — only a documented path or no path"
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Step 1 — Add cloud-only deps + scripts to package.json",
+      "priority": 2,
+      "passes": true,
+      "acceptanceCriteria": [
+        "package.json has playwright-core in devDependencies",
+        "package.json has tsx in devDependencies (if not already present)",
+        "package.json has proper-lockfile in devDependencies (used by cloud-render for render.lock)",
+        "package.json scripts include cloud:install, cloud:render, cloud:stop, cloud:smoke",
+        "A fresh npm install does NOT trigger a Playwright browser download (verified by absence of a Playwright postinstall script and the install being gated behind cloud:install)",
+        "Local user running `npm run dev` after the change still gets the same experience"
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "Step 4 — Set window.__ssam_ready from first-frame callback in src/index.ts",
+      "priority": 3,
+      "passes": true,
+      "acceptanceCriteria": [
+        "src/index.ts sets (window as any).__ssam_ready = true from inside the sketch's first wrap.render invocation, NOT after the dynamic import resolves",
+        "The assignment is gated behind import.meta.env.DEV so production builds are unaffected",
+        "The flag is reset to undefined before each new sketch module loads so HMR re-mounts cannot leave a stale true value",
+        "Existing local Mac dev workflow is unaffected — npm run dev with a 2D sketch still runs, displays, and supports HMR"
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "Step 3 — Implement scripts/cloud-render.ts per normative pseudocode",
+      "priority": 4,
+      "passes": true,
+      "acceptanceCriteria": [
+        "File exists at scripts/cloud-render.ts and is invocable via `npm run cloud:render -- <sketchPath>`",
+        "On start: mkdir -p output && mkdir -p .cloud-render, then acquires exclusive lock on .cloud-render/render.lock via proper-lockfile",
+        "Registers SIGINT and SIGTERM handlers that release the lock and kill any spawned Chromium child before exiting",
+        "Validates .cloud-render/vite.pid by checking kill -0 AND that the process cmdline contains 'vite' — cross-platform: /proc/$pid/cmdline on Linux, `ps -o command= -p $pid` on macOS",
+        "On Vite respawn: SIGTERM the old process, poll port 5173 (via lsof or net check) until free OR 5s elapsed, then SIGKILL if still alive",
+        "Writes { pid, sketch, port } JSON to .cloud-render/vite.pid",
+        "Redirects spawned Vite stdout/stderr to .cloud-render/vite.log",
+        "On chrome-headless-shell missing: runs `npm run cloud:install`, captures exit code, on failure writes .cloud-render/install.log and exits non-zero with an actionable error",
+        "Launches Chromium with --use-gl=swiftshader --enable-unsafe-swiftshader --ignore-gpu-blocklist --no-sandbox --disable-dev-shm-usage",
+        "Waits for window.__ssam_ready === true with a 15s timeout",
+        "Issues GET /export from Node (using global fetch or undici), NOT via page.evaluate inside Chromium — 12s timeout",
+        "Closes Chromium and releases the lock before exiting",
+        "Prints the JSON filename from /export response to stdout (so the skill can parse it)",
+        "Subcommand `cloud:render stop` (or `npm run cloud:stop`): SIGTERM the Vite PID, port-free poll, SIGKILL if needed, remove vite.pid"
+      ]
+    },
+    {
+      "id": "US-005",
+      "title": "Step 2 — SessionStart hook + .gitignore (reframed per US-001 findings)",
+      "priority": 5,
+      "passes": true,
+      "acceptanceCriteria": [
+        ".claude/settings.json includes a SessionStart hook that runs scripts/cloud-bootstrap.sh on startup and resume",
+        "scripts/cloud-bootstrap.sh: exits 0 silently when CLAUDE_CODE_REMOTE != 'true' (local Mac path); when in cloud, checks for chromium-headless-shell binary under .cloud-render/browsers and runs `npm run cloud:install` only if missing (idempotent + fast on cached sessions)",
+        ".gitignore includes .cloud-render/",
+        "docs/cloud-rendering.md documents the recommended UI-configured Setup Script content (faster path) AND the SessionStart hook as the auto-fallback"
+      ]
+    },
+    {
+      "id": "US-006",
+      "title": "Step 5 — Update render-sketch skill with cloud branch",
+      "priority": 6,
+      "passes": true,
+      "acceptanceCriteria": [
+        ".claude/skills/render-sketch/SKILL.md is updated such that presence of .cloud-render/vite.pid is the canonical cloud-mode signal",
+        "If vite.pid is absent → local Mac browser flow (today's behavior, unchanged)",
+        "If vite.pid is present → skill invokes `npm run cloud:render -- <sketchPath>` and parses the printed filename",
+        "No env-var or host detection logic in the skill",
+        "Step numbering / Troubleshooting section reflects the new branch"
+      ]
+    },
+    {
+      "id": "US-007",
+      "title": "Step 6 — Smoke test + WebGL test sketch + 2D test sketch",
+      "priority": 7,
+      "passes": true,
+      "acceptanceCriteria": [
+        "src/sketches/_test/cloud-render-2d.ts: a deterministic 2D ssam sketch (mode '2d'), simple colored composition, exposes mcp:export handler",
+        "src/sketches/_test/cloud-render-webgl.ts: a minimal ssam sketch with mode 'webgl' or 'webgl2', renders a fullscreen non-uniform shader gradient, exposes mcp:export handler",
+        "scripts/cloud-render-smoke.ts: drives cloud-render against both test sketches, asserts each PNG exists, file size > 1KB, and pixel variance > 0 along a sampled row near image middle",
+        "Smoke records wall-clock per render and prints a labeled table at exit",
+        "Smoke exits 0 only if assertions pass AND timings are within AC budgets (first render ≤15s, warm ≤7s, switch ≤15s) with 20% sandbox-jitter slack",
+        "Smoke cleans up after itself: kills Vite, removes any locked state, leaves .cloud-render/ in a clean state"
+      ]
+    },
+    {
+      "id": "US-008",
+      "title": "Step 7 — Author docs/cloud-rendering.md",
+      "priority": 8,
+      "passes": true,
+      "acceptanceCriteria": [
+        "docs/cloud-rendering.md exists, ~60 lines",
+        "States the provisioning model resolved in US-001 (hook path or 'no hook — lazy install')",
+        "Describes manual session bootstrap commands: npm install && npm run cloud:install",
+        "Documents debugging: tail .cloud-render/vite.log, cat .cloud-render/install.log",
+        "Includes a top-of-file note: 'Local users: ignore this file — it's only relevant in claude.ai/code'",
+        "Documents the --no-sandbox security tradeoff (localhost-only navigation)"
+      ]
+    },
+    {
+      "id": "US-009",
+      "title": "Verification — local regression + typecheck + deferred cloud smoke",
+      "priority": 9,
+      "passes": true,
+      "outcome": "Verified: (1) npx tsc --noEmit on scripts/cloud-render.ts + scripts/cloud-render-smoke.ts reports zero errors. (2) Vite dev server starts on port 5173 with the modified src/index.ts and serves /src/index.ts with HTTP 200 — local Mac flow behavior-identical. (3) npm install completed exit 0 without writing playwright-core/.local-browsers (no project-tree chromium download). NOTE: `npm run build` fails with a top-level-await error, but this is PRE-EXISTING (confirmed by stashing src/index.ts and re-running — fails identically). Unrelated to this work; can be fixed by raising vite build.target to es2022 but that's out of scope. DEFERRED: end-to-end `npm run cloud:smoke` not run on macOS because it would download ~60MB of chromium-headless-shell to .cloud-render/browsers — pollution the user explicitly excluded via AC #6. The full smoke must run in the user's claude.ai/code session.",
+      "acceptanceCriteria": [
+        "TypeScript typecheck (tsc --noEmit) on new scripts exits 0",
+        "Existing local Mac workflow is unchanged: `npm run dev` starts and serves on 5173",
+        "`npm install` from a clean state does NOT download chromium binaries to the project tree",
+        "End-to-end smoke deferral documented if cloud:smoke would pollute the local dev environment"
+      ]
+    }
+  ]
+}
