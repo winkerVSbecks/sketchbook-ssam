@@ -8,14 +8,26 @@ import { xyToId } from '../nalee/utils';
 import type { Node, Walker, Coord, DomainToWorld } from '../nalee/types';
 import { randomPalette } from '../../colors/riso';
 import { logColors } from '../../colors';
+import riso from 'riso-colors';
+import paper from 'paper-colors';
+import Color from 'canvas-sketch-util/color';
 
 const seed = Random.getRandomSeed();
 Random.setSeed(seed);
 console.log('seed:', seed);
 
-const { bg, inkColors } = randomPalette(2.5);
+const { bg, inkColors } = randomPalette(3);
 const white = '#F5F0EC';
-const [light, fg] = Random.shuffle([...inkColors]);
+const fg = Random.pick(inkColors);
+
+// Ghost layer: another paper color — paper tones are pale by definition,
+// giving naturally low contrast against the paper bg.
+const paperHexes = paper.map((h: { hex: string }) => h.hex).filter((c: string) => c !== bg);
+const lightCandidates = [...paperHexes]
+  .sort((a: string, b: string) => Color.contrastRatio(bg, a) - Color.contrastRatio(bg, b))
+  .slice(0, 6);
+const light = Random.pick(lightCandidates);
+
 logColors([white, bg, light, fg]);
 
 const config = {
