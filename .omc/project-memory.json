@@ -141,8 +141,8 @@
   "hotPaths": [
     {
       "path": "scripts/cloud-render.ts",
-      "accessCount": 7,
-      "lastAccessed": 1779041651763,
+      "accessCount": 8,
+      "lastAccessed": 1779045308544,
       "type": "file"
     },
     {
@@ -152,9 +152,21 @@
       "type": "file"
     },
     {
+      "path": "scripts/archive-render-html.ts",
+      "accessCount": 6,
+      "lastAccessed": 1779046449782,
+      "type": "file"
+    },
+    {
       "path": "package.json",
       "accessCount": 5,
       "lastAccessed": 1779040187840,
+      "type": "file"
+    },
+    {
+      "path": "src/index.ts",
+      "accessCount": 4,
+      "lastAccessed": 1779045437251,
       "type": "file"
     },
     {
@@ -167,12 +179,6 @@
       "path": ".claude/skills/render-sketch/SKILL.md",
       "accessCount": 3,
       "lastAccessed": 1779041677650,
-      "type": "file"
-    },
-    {
-      "path": "src/index.ts",
-      "accessCount": 3,
-      "lastAccessed": 1779041819061,
       "type": "file"
     },
     {
@@ -197,6 +203,12 @@
       "path": "scripts/cloud-render-smoke.ts",
       "accessCount": 2,
       "lastAccessed": 1779040120651,
+      "type": "file"
+    },
+    {
+      "path": "index.html",
+      "accessCount": 2,
+      "lastAccessed": 1779045404610,
       "type": "file"
     },
     {
@@ -230,12 +242,6 @@
       "type": "file"
     },
     {
-      "path": "index.html",
-      "accessCount": 1,
-      "lastAccessed": 1779039377603,
-      "type": "file"
-    },
-    {
       "path": "src/sketches/siep-van-den-berg/no-250.ts",
       "accessCount": 1,
       "lastAccessed": 1779039399023,
@@ -245,12 +251,6 @@
       "path": "src/sketches/_test/cloud-render-2d.ts",
       "accessCount": 1,
       "lastAccessed": 1779039402275,
-      "type": "file"
-    },
-    {
-      "path": "scripts/archive-render-html.ts",
-      "accessCount": 1,
-      "lastAccessed": 1779040089032,
       "type": "file"
     },
     {

@@ -55,7 +55,12 @@
       "mcp__plugin_oh-my-claudecode_t__notepad_read",
       "mcp__plugin_oh-my-claudecode_t__wiki_list",
       "WebFetch(domain:cloudinary.com)",
-      "Bash(grep -E \"\\\\.ts$\")"
+      "Bash(grep -E \"\\\\.ts$\")",
+      "Bash(ps -eo pid,command)",
+      "Bash(pkill -f \"node_modules/.bin/vite\")",
+      "Bash(pkill -f \"npm run dev\")",
+      "Bash(rtk ps *)",
+      "Bash(rtk npm *)"
     ]
   }
 }
