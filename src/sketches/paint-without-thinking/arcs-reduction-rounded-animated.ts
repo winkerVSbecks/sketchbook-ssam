@@ -535,11 +535,6 @@ export const sketch = async ({ wrap, context, ...props }: SketchProps) => {
     import.meta.hot.accept(() => wrap.hotReload());
   }
 
-  import.meta.hot?.on('mcp:export', () => {
-    console.log('Export triggered from custom server endpoint');
-    props.exportFrame();
-  });
-
   // Precompute all shapes; first and last are the same for seamless looping
   const palette = Random.pick(palettes);
   const shapes: GridSnapshot[] = [];

@@ -7,6 +7,8 @@ type SsamSketchModule = {
 
 type ReadyWindow = Window & { __ssam_ready?: boolean };
 
+const EXPORT_WARMUP_MS = 2_000;
+
 if (import.meta.env.DEV) {
   (window as ReadyWindow).__ssam_ready = false;
 }
@@ -18,7 +20,12 @@ const importedModule: SsamSketchModule = await import(
 );
 
 if (import.meta.hot) {
-  import.meta.hot.on('mcp:export', () => {
+  import.meta.hot.on('mcp:export', async () => {
+    // Animated sketches export the first frame unless we let ssam play first;
+    // give it a fixed warm-up so stateful sims accumulate something visible.
+    if (importedModule.settings.animate !== false) {
+      await new Promise((resolve) => setTimeout(resolve, EXPORT_WARMUP_MS));
+    }
     window.dispatchEvent(
       new KeyboardEvent('keydown', {
         key: 's',

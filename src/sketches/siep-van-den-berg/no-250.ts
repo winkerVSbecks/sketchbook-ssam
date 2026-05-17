@@ -195,10 +195,6 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     import.meta.hot.accept(() => wrap.hotReload());
   }
 
-  import.meta.hot?.on('mcp:export', () => {
-    props.exportFrame();
-  });
-
   let seed = Random.getRandomSeed();
 
   const buildFrame = (width: number, height: number, phases: Phases) => {
