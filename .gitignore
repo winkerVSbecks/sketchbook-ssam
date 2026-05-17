@@ -27,3 +27,6 @@ process
 output
 timelapse
 .cloud-render
+
+.env
+.env.local
