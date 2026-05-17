@@ -140,15 +140,39 @@
   },
   "hotPaths": [
     {
+      "path": "scripts/cloud-render.ts",
+      "accessCount": 7,
+      "lastAccessed": 1779041651763,
+      "type": "file"
+    },
+    {
+      "path": "scripts/archive.ts",
+      "accessCount": 6,
+      "lastAccessed": 1779041359878,
+      "type": "file"
+    },
+    {
       "path": "package.json",
-      "accessCount": 3,
-      "lastAccessed": 1779039398359,
+      "accessCount": 5,
+      "lastAccessed": 1779040187840,
       "type": "file"
     },
     {
       "path": "CLAUDE.md",
-      "accessCount": 2,
-      "lastAccessed": 1779039348737,
+      "accessCount": 3,
+      "lastAccessed": 1779040196416,
+      "type": "file"
+    },
+    {
+      "path": ".claude/skills/render-sketch/SKILL.md",
+      "accessCount": 3,
+      "lastAccessed": 1779041677650,
+      "type": "file"
+    },
+    {
+      "path": "src/index.ts",
+      "accessCount": 3,
+      "lastAccessed": 1779041819061,
       "type": "file"
     },
     {
@@ -164,27 +188,15 @@
       "type": "file"
     },
     {
-      "path": ".claude/skills/render-sketch/SKILL.md",
-      "accessCount": 2,
-      "lastAccessed": 1779039394744,
-      "type": "file"
-    },
-    {
       "path": "vite.config.ts",
       "accessCount": 2,
       "lastAccessed": 1779039449953,
       "type": "file"
     },
     {
-      "path": "src/index.ts",
+      "path": "scripts/cloud-render-smoke.ts",
       "accessCount": 2,
-      "lastAccessed": 1779039450996,
-      "type": "file"
-    },
-    {
-      "path": "scripts/cloud-render.ts",
-      "accessCount": 2,
-      "lastAccessed": 1779039451484,
+      "lastAccessed": 1779040120651,
       "type": "file"
     },
     {
@@ -218,12 +230,6 @@
       "type": "file"
     },
     {
-      "path": "scripts/cloud-render-smoke.ts",
-      "accessCount": 1,
-      "lastAccessed": 1779039377436,
-      "type": "file"
-    },
-    {
       "path": "index.html",
       "accessCount": 1,
       "lastAccessed": 1779039377603,
@@ -239,6 +245,30 @@
       "path": "src/sketches/_test/cloud-render-2d.ts",
       "accessCount": 1,
       "lastAccessed": 1779039402275,
+      "type": "file"
+    },
+    {
+      "path": "scripts/archive-render-html.ts",
+      "accessCount": 1,
+      "lastAccessed": 1779040089032,
+      "type": "file"
+    },
+    {
+      "path": "scripts/archive-types.ts",
+      "accessCount": 1,
+      "lastAccessed": 1779040090903,
+      "type": "file"
+    },
+    {
+      "path": "archive/index.html",
+      "accessCount": 1,
+      "lastAccessed": 1779040270738,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/nalee/index.ts",
+      "accessCount": 1,
+      "lastAccessed": 1779040330044,
       "type": "file"
     }
   ],
