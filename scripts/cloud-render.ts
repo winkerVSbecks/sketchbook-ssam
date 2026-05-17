@@ -15,6 +15,7 @@ import {
   mkdirSync,
   writeFileSync,
   readFileSync,
+  readdirSync,
   existsSync,
   openSync,
   appendFileSync,
@@ -198,13 +199,36 @@ async function ensureVite(sketchPath: string): Promise<VitePidRecord> {
   return record;
 }
 
-function chromiumExecutableMissing(): boolean {
+function findHeadlessShellPath(): string | null {
+  if (!existsSync(BROWSERS_PATH)) return null;
+  let dirs: string[];
   try {
-    const path = chromium.executablePath();
-    return !path || !existsSync(path);
+    dirs = readdirSync(BROWSERS_PATH).filter((e) =>
+      e.startsWith('chromium_headless_shell-'),
+    );
   } catch {
-    return true;
+    return null;
   }
+  if (dirs.length === 0) return null;
+  dirs.sort();
+  const versionDir = dirs[dirs.length - 1];
+  let platformDirs: string[];
+  try {
+    platformDirs = readdirSync(join(BROWSERS_PATH, versionDir)).filter((e) =>
+      e.startsWith('chrome-headless-shell-'),
+    );
+  } catch {
+    return null;
+  }
+  if (platformDirs.length === 0) return null;
+  const binary =
+    process.platform === 'win32' ? 'chrome-headless-shell.exe' : 'chrome-headless-shell';
+  const candidate = join(BROWSERS_PATH, versionDir, platformDirs[0], binary);
+  return existsSync(candidate) ? candidate : null;
+}
+
+function chromiumExecutableMissing(): boolean {
+  return findHeadlessShellPath() === null;
 }
 
 function runInstall(): void {
@@ -253,7 +277,14 @@ async function renderOnce(sketchPath: string): Promise<string> {
     }
   }
 
+  const executablePath = findHeadlessShellPath();
+  if (!executablePath) {
+    throw new Error(
+      `chrome-headless-shell binary not found under ${BROWSERS_PATH} — see ${INSTALL_LOG_FILE}`,
+    );
+  }
   const browser = await chromium.launch({
+    executablePath,
     headless: true,
     args: [
       '--use-gl=swiftshader',
