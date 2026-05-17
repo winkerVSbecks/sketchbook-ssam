@@ -53,7 +53,9 @@
       "mcp__plugin_oh-my-claudecode_t__state_list_active",
       "mcp__plugin_oh-my-claudecode_t__session_search",
       "mcp__plugin_oh-my-claudecode_t__notepad_read",
-      "mcp__plugin_oh-my-claudecode_t__wiki_list"
+      "mcp__plugin_oh-my-claudecode_t__wiki_list",
+      "WebFetch(domain:cloudinary.com)",
+      "Bash(grep -E \"\\\\.ts$\")"
     ]
   }
 }

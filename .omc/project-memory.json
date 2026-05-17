@@ -140,27 +140,51 @@
   },
   "hotPaths": [
     {
-      "path": "docs/cloud-rendering.md",
-      "accessCount": 1,
-      "lastAccessed": 1779022837214,
+      "path": "package.json",
+      "accessCount": 3,
+      "lastAccessed": 1779039398359,
       "type": "file"
     },
     {
       "path": "CLAUDE.md",
-      "accessCount": 1,
-      "lastAccessed": 1779022839996,
+      "accessCount": 2,
+      "lastAccessed": 1779039348737,
       "type": "file"
     },
     {
       "path": "README.md",
-      "accessCount": 1,
-      "lastAccessed": 1779022840508,
+      "accessCount": 2,
+      "lastAccessed": 1779039348845,
       "type": "file"
     },
     {
-      "path": "package.json",
-      "accessCount": 1,
-      "lastAccessed": 1779022852038,
+      "path": "docs/cloud-rendering.md",
+      "accessCount": 2,
+      "lastAccessed": 1779039348942,
+      "type": "file"
+    },
+    {
+      "path": ".claude/skills/render-sketch/SKILL.md",
+      "accessCount": 2,
+      "lastAccessed": 1779039394744,
+      "type": "file"
+    },
+    {
+      "path": "vite.config.ts",
+      "accessCount": 2,
+      "lastAccessed": 1779039449953,
+      "type": "file"
+    },
+    {
+      "path": "src/index.ts",
+      "accessCount": 2,
+      "lastAccessed": 1779039450996,
+      "type": "file"
+    },
+    {
+      "path": "scripts/cloud-render.ts",
+      "accessCount": 2,
+      "lastAccessed": 1779039451484,
       "type": "file"
     },
     {
@@ -188,15 +212,33 @@
       "type": "file"
     },
     {
-      "path": ".claude/skills/render-sketch/SKILL.md",
-      "accessCount": 1,
-      "lastAccessed": 1779022858585,
-      "type": "file"
-    },
-    {
       "path": ".claude/skills/art-philosophy/SKILL.md",
       "accessCount": 1,
       "lastAccessed": 1779022859048,
+      "type": "file"
+    },
+    {
+      "path": "scripts/cloud-render-smoke.ts",
+      "accessCount": 1,
+      "lastAccessed": 1779039377436,
+      "type": "file"
+    },
+    {
+      "path": "index.html",
+      "accessCount": 1,
+      "lastAccessed": 1779039377603,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/siep-van-den-berg/no-250.ts",
+      "accessCount": 1,
+      "lastAccessed": 1779039399023,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/_test/cloud-render-2d.ts",
+      "accessCount": 1,
+      "lastAccessed": 1779039402275,
       "type": "file"
     }
   ],
