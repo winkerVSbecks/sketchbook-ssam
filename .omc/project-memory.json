@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1778771581570,
+  "lastScanned": 1779022814052,
   "projectRoot": "/Users/varunvachhar/Documents/projects/sketchbook-ssam",
   "techStack": {
     "languages": [
@@ -39,7 +39,11 @@
     "scripts": {
       "dev": "vite",
       "build": "vite build",
-      "preview": "vite preview"
+      "preview": "vite preview",
+      "cloud:install": "npx --yes playwright@1 install chromium-headless-shell",
+      "cloud:render": "tsx scripts/cloud-render.ts",
+      "cloud:stop": "tsx scripts/cloud-render.ts stop",
+      "cloud:smoke": "tsx scripts/cloud-render-smoke.ts"
     }
   },
   "conventions": {
@@ -53,6 +57,8 @@
     "workspaces": [],
     "mainDirectories": [
       "assets",
+      "docs",
+      "scripts",
       "src"
     ],
     "gitBranches": {
@@ -66,17 +72,26 @@
       "path": "assets",
       "purpose": "Static assets",
       "fileCount": 3,
-      "lastAccessed": 1778771581503,
+      "lastAccessed": 1779022814015,
       "keyFiles": [
         "skeletor.svg",
         "varun.svg"
       ]
     },
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 1,
+      "lastAccessed": 1779022814016,
+      "keyFiles": [
+        "cloud-rendering.md"
+      ]
+    },
     "output": {
       "path": "output",
       "purpose": null,
-      "fileCount": 4644,
-      "lastAccessed": 1778771581548,
+      "fileCount": 4647,
+      "lastAccessed": 1779022814035,
       "keyFiles": [
         "2023.12.13-15.21.58.mp4",
         "2023.12.13-15.33.09.mp4",
@@ -85,11 +100,22 @@
         "2023.12.14-19.56.44.mp4"
       ]
     },
+    "scripts": {
+      "path": "scripts",
+      "purpose": "Build/utility scripts",
+      "fileCount": 3,
+      "lastAccessed": 1779022814039,
+      "keyFiles": [
+        "cloud-bootstrap.sh",
+        "cloud-render-smoke.ts",
+        "cloud-render.ts"
+      ]
+    },
     "src": {
       "path": "src",
       "purpose": "Source code",
       "fileCount": 13,
-      "lastAccessed": 1778771581553,
+      "lastAccessed": 1779022814039,
       "keyFiles": [
         "dither.ts",
         "generate-build-logs.ts",
@@ -102,7 +128,7 @@
       "path": "timelapse",
       "purpose": null,
       "fileCount": 77,
-      "lastAccessed": 1778771581554,
+      "lastAccessed": 1779022814040,
       "keyFiles": [
         "00000.png",
         "00001.png",
@@ -114,93 +140,63 @@
   },
   "hotPaths": [
     {
-      "path": "scripts/cloud-render.ts",
-      "accessCount": 10,
-      "lastAccessed": 1778805445699,
+      "path": "docs/cloud-rendering.md",
+      "accessCount": 1,
+      "lastAccessed": 1779022837214,
       "type": "file"
     },
     {
-      "path": ".claude/skills/render-sketch/SKILL.md",
-      "accessCount": 8,
-      "lastAccessed": 1778805240398,
+      "path": "CLAUDE.md",
+      "accessCount": 1,
+      "lastAccessed": 1779022839996,
       "type": "file"
     },
     {
-      "path": "src/index.ts",
-      "accessCount": 6,
-      "lastAccessed": 1778805238694,
+      "path": "README.md",
+      "accessCount": 1,
+      "lastAccessed": 1779022840508,
       "type": "file"
     },
     {
       "path": "package.json",
-      "accessCount": 6,
-      "lastAccessed": 1778805239094,
-      "type": "file"
-    },
-    {
-      "path": "vite.config.ts",
-      "accessCount": 4,
-      "lastAccessed": 1778773937963,
-      "type": "file"
-    },
-    {
-      "path": ".claude/settings.json",
-      "accessCount": 3,
-      "lastAccessed": 1778805239614,
-      "type": "file"
-    },
-    {
-      "path": "scripts/cloud-render-smoke.ts",
-      "accessCount": 3,
-      "lastAccessed": 1778805447906,
-      "type": "file"
-    },
-    {
-      "path": "scripts/cloud-bootstrap.sh",
-      "accessCount": 3,
-      "lastAccessed": 1778805451394,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/siep-van-den-berg/no-250.ts",
-      "accessCount": 2,
-      "lastAccessed": 1778772411183,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/_test/cloud-render-2d.ts",
-      "accessCount": 2,
-      "lastAccessed": 1778805236849,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/_test/cloud-render-webgl.ts",
-      "accessCount": 2,
-      "lastAccessed": 1778805237314,
-      "type": "file"
-    },
-    {
-      "path": "docs/cloud-rendering.md",
-      "accessCount": 2,
-      "lastAccessed": 1778805238170,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/growth-paths.ts",
       "accessCount": 1,
-      "lastAccessed": 1778772193987,
+      "lastAccessed": 1779022852038,
       "type": "file"
     },
     {
-      "path": "index.html",
+      "path": ".claude/skills/create-sketch/SKILL.md",
       "accessCount": 1,
-      "lastAccessed": 1778772398953,
+      "lastAccessed": 1779022855419,
       "type": "file"
     },
     {
-      "path": "src/plugins/vite-plugin-ssam-penplot.ts",
+      "path": ".claude/skills/implement-sketch/SKILL.md",
       "accessCount": 1,
-      "lastAccessed": 1778772410799,
+      "lastAccessed": 1779022856591,
+      "type": "file"
+    },
+    {
+      "path": ".claude/skills/fork-sketch/SKILL.md",
+      "accessCount": 1,
+      "lastAccessed": 1779022857018,
+      "type": "file"
+    },
+    {
+      "path": ".claude/skills/clrs/SKILL.md",
+      "accessCount": 1,
+      "lastAccessed": 1779022857523,
+      "type": "file"
+    },
+    {
+      "path": ".claude/skills/render-sketch/SKILL.md",
+      "accessCount": 1,
+      "lastAccessed": 1779022858585,
+      "type": "file"
+    },
+    {
+      "path": ".claude/skills/art-philosophy/SKILL.md",
+      "accessCount": 1,
+      "lastAccessed": 1779022859048,
       "type": "file"
     }
   ],

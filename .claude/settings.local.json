@@ -50,7 +50,10 @@
       "Bash(CLAUDE_CODE_REMOTE=false /Users/varunvachhar/Documents/projects/sketchbook-ssam/scripts/cloud-bootstrap.sh)",
       "Bash(echo \"local short-circuit exit=$?\")",
       "Skill(oh-my-claudecode:cancel)",
-      "mcp__plugin_oh-my-claudecode_t__state_list_active"
+      "mcp__plugin_oh-my-claudecode_t__state_list_active",
+      "mcp__plugin_oh-my-claudecode_t__session_search",
+      "mcp__plugin_oh-my-claudecode_t__notepad_read",
+      "mcp__plugin_oh-my-claudecode_t__wiki_list"
     ]
   }
 }
