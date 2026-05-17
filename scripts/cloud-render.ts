@@ -102,10 +102,12 @@ function isViteProcess(pid: number): boolean {
   } catch {
     return false;
   }
-  // Step 2: cmdline identity check — guards against PID reuse
+  // Step 2: cmdline identity check — guards against PID reuse.
+  // We spawn `npm run dev`, so the recorded PID is the npm wrapper, not the
+  // vite child it execs. Accept either: direct vite, or `npm … dev` / `npm-cli.js … dev`.
   const cmdline = getProcessCmdline(pid);
   if (!cmdline) return false;
-  return cmdline.includes('vite');
+  return /\bvite\b/.test(cmdline) || /\bnpm(-cli\.js)?\b.*\bdev\b/.test(cmdline);
 }
 
 function isPortInUse(port: number): Promise<boolean> {
