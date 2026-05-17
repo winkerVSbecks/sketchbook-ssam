@@ -15,7 +15,11 @@ export function renderHtml(archive: Archive): string {
   }
 
   const total = archive.sketches.filter((s) => s.cloudinary).length;
-  const generated = new Date(archive.generatedAt).toLocaleDateString('en-CA');
+  const generated = new Date(archive.generatedAt).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
 
   const sections = years
     .map((year) => {
@@ -48,7 +52,7 @@ ${items}
 <body>
   <header>
     <h1>Sketchbook</h1>
-    <p class="meta">${total} sketches · generated ${generated}</p>
+    <p class="meta">By <a href="https://varun.ca">Varun Vachhar</a> · ${total} sketches · Generated ${generated}</p>
   </header>
   <main>
 ${empty}${sections}
@@ -61,11 +65,16 @@ ${empty}${sections}
 function renderItem(entry: SketchEntry): string {
   const c = entry.cloudinary!;
   const thumb = thumbnailUrl(c.url);
-  const date = entry.firstCommitDate.slice(0, 10);
+  const date = new Date(entry.firstCommitDate).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+  const name = entry.id.replace(/^sketches\//, '');
   return `        <a class="card" href="${escapeAttr(c.url)}" target="_blank" rel="noopener">
-          <img src="${escapeAttr(thumb)}" alt="${escapeAttr(entry.name)}" loading="lazy" width="400" height="400">
+          <img src="${escapeAttr(thumb)}" alt="${escapeAttr(name)}" loading="lazy" width="400" height="400">
           <div class="caption">
-            <span class="name">${escapeText(entry.name)}</span>
+            <span class="name">${escapeText(name)}</span>
             <span class="date">${date}</span>
           </div>
         </a>`;
@@ -113,6 +122,15 @@ header h1 {
   color: var(--muted);
   font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
+}
+.meta a {
+  color: var(--fg);
+  text-decoration: underline;
+  text-decoration-color: var(--hairline);
+  text-underline-offset: 3px;
+}
+.meta a:hover {
+  text-decoration-color: var(--fg);
 }
 main {
   max-width: 1400px;
