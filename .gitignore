@@ -30,3 +30,5 @@ timelapse
 
 .env
 .env.local
+.omc/state
+.omc/sessions
