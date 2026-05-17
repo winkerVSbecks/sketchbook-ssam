@@ -17,6 +17,19 @@ const importedModule: SsamSketchModule = await import(
   `./${import.meta.env.VITE_SKETCH}.ts`
 );
 
+if (import.meta.hot) {
+  import.meta.hot.on('mcp:export', () => {
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 's',
+        metaKey: true,
+        ctrlKey: true,
+        bubbles: true,
+      }),
+    );
+  });
+}
+
 if (import.meta.env.DEV) {
   const w = window as ReadyWindow;
   const armReadySignal = () => {
