@@ -141,8 +141,8 @@
   "hotPaths": [
     {
       "path": "scripts/archive-render-html.ts",
-      "accessCount": 26,
-      "lastAccessed": 1779055940073,
+      "accessCount": 32,
+      "lastAccessed": 1779068393472,
       "type": "file"
     },
     {
@@ -159,8 +159,8 @@
     },
     {
       "path": "scripts/archive.ts",
-      "accessCount": 9,
-      "lastAccessed": 1779061214509,
+      "accessCount": 11,
+      "lastAccessed": 1779068321129,
       "type": "file"
     },
     {
@@ -206,6 +206,12 @@
       "type": "file"
     },
     {
+      "path": "scripts/archive-types.ts",
+      "accessCount": 3,
+      "lastAccessed": 1779068256977,
+      "type": "file"
+    },
+    {
       "path": "README.md",
       "accessCount": 2,
       "lastAccessed": 1779039348845,
@@ -227,12 +233,6 @@
       "path": "index.html",
       "accessCount": 2,
       "lastAccessed": 1779045404610,
-      "type": "file"
-    },
-    {
-      "path": "scripts/archive-types.ts",
-      "accessCount": 2,
-      "lastAccessed": 1779048465961,
       "type": "file"
     },
     {
