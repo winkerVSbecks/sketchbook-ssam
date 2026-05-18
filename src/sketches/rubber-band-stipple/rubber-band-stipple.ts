@@ -55,32 +55,27 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
     }
   }
 
-  // Sparse k-NN edge graph: each node connects to at most MAX_CONNECTIONS neighbours
+  // Collect all valid pairs within distance range, shuffle, then greedily assign edges.
+  // Shuffling first prevents chains — connections are random rather than nearest-neighbour sorted.
+  const allPairs: [number, number][] = [];
+  for (let i = 0; i < positions.length; i++) {
+    for (let j = i + 1; j < positions.length; j++) {
+      const d = Math.hypot(
+        positions[j].x - positions[i].x,
+        positions[j].y - positions[i].y,
+      );
+      if (d <= maxConnDist) allPairs.push([i, j]);
+    }
+  }
+
   const edges: [number, number][] = [];
-  const edgeSet = new Set<string>();
   const connCount = new Array(positions.length).fill(0);
 
-  for (let i = 0; i < positions.length; i++) {
-    if (connCount[i] >= MAX_CONNECTIONS) continue;
-
-    const candidates = positions
-      .map((p, j) => ({
-        j,
-        d: Math.hypot(p.x - positions[i].x, p.y - positions[i].y),
-      }))
-      .filter(({ j, d }) => j !== i && d <= maxConnDist)
-      .sort((a, b) => a.d - b.d);
-
-    for (const { j } of candidates) {
-      if (connCount[i] >= MAX_CONNECTIONS) break;
-      if (connCount[j] >= MAX_CONNECTIONS) continue;
-      const key = `${Math.min(i, j)}-${Math.max(i, j)}`;
-      if (!edgeSet.has(key)) {
-        edgeSet.add(key);
-        edges.push([i, j]);
-        connCount[i]++;
-        connCount[j]++;
-      }
+  for (const [i, j] of Random.shuffle(allPairs)) {
+    if (connCount[i] < MAX_CONNECTIONS && connCount[j] < MAX_CONNECTIONS) {
+      edges.push([i, j]);
+      connCount[i]++;
+      connCount[j]++;
     }
   }
 
