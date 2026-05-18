@@ -1,0 +1,10 @@
+- terminal-charts with audio. Each "machine" should have a sound, and the sound should change based on the machine's state.
+- anni-weaving was interesting and well received. See what else is possible and eventually add it to my portfolio.
+- conformal-mapping/nalee was also well received. Maybe print some.
+- Combine rubber-banding with stipling-noise to create a "rubber-stipple" effect. This could be used to create interesting textures or patterns.
+- boids, especially with gradient tails, was super cool. Needs to be elevated to a full project.
+- xor: I've basically created an aesthetic. But it lacks any concept. Not sure what "art" style is a good fit for it.
+- development-of-concrete-art, quantum-equivalence, gravura, red-and-black are all related to the idea of rectangular grid compositions.
+- curve-particles is very basic but was also popular.
+- domain-polygon needs to be developed further. There is something interesting there, but it's not fully realized yet.
+- Never really found a good application for clixo

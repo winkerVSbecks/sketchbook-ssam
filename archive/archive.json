@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-18T01:25:45.669Z",
+  "generatedAt": "2026-05-18T01:31:33.862Z",
   "sketches": [
     {
       "id": "sketches/42-loc",
@@ -344,13 +344,13 @@
       "firstCommitDate": "2024-01-20T11:17:28-05:00",
       "year": 2024,
       "lastCommitSha": "06da8daa16bdce2bf00e448393bb6f060c8b34b8",
-      "archivedAt": "2026-05-17T18:21:46.521Z",
+      "archivedAt": "2026-05-18T01:31:32.876Z",
       "cloudinary": {
         "publicId": "sketchbook/2024/bauhaus-truchet",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779042106/sketchbook/2024/bauhaus-truchet.png",
-        "version": 1779042106,
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779067892/sketchbook/2024/bauhaus-truchet.png",
+        "version": 1779067892,
         "width": 2160,
-        "height": 2160
+        "height": 3200
       }
     },
     {
@@ -4424,13 +4424,13 @@
       "firstCommitDate": "2026-01-15T19:24:12-05:00",
       "year": 2026,
       "lastCommitSha": "8752caa73a7756a333ff1c26be0298b848cc56ae",
-      "archivedAt": "2026-05-18T00:15:59.531Z",
+      "archivedAt": "2026-05-18T01:27:55.856Z",
       "cloudinary": {
         "publicId": "sketchbook/2026/raycasting-grid",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779063358/sketchbook/2026/raycasting-grid.png",
-        "version": 1779063358,
-        "width": 1080,
-        "height": 1080
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779067675/sketchbook/2026/raycasting-grid.png",
+        "version": 1779067675,
+        "width": 2160,
+        "height": 2160
       }
     },
     {
