@@ -53,13 +53,17 @@ export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
   const radius2 = width * 0.25;
   const [cx2, cy2] = [width * 0.6, height * 0.5];
 
-  const domainToWorld: DomainToWorld = polarDomainToWorld(
+  const domainToWorld1: DomainToWorld = polarDomainToWorld(
     radiusRes,
     thetaRes,
     [cx, cy],
     radius,
   );
-  const domain = makePolarDomain([10, radiusRes], [0, thetaRes], domainToWorld);
+  const domain = makePolarDomain(
+    [10, radiusRes],
+    [0, thetaRes],
+    domainToWorld1,
+  );
   const clippedDomain = clipPolarDomainWithWorldCoords(
     domain,
     [cx2, cy2],

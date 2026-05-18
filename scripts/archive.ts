@@ -40,21 +40,28 @@ type Flags = {
   siteOnly: boolean;
   dryRun: boolean;
   only: string | null;
+  animated: boolean;
 };
 
 function parseFlags(argv: string[]): Flags {
-  const flags: Flags = { force: false, siteOnly: false, dryRun: false, only: null };
+  const flags: Flags = { force: false, siteOnly: false, dryRun: false, only: null, animated: false };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === '--force') flags.force = true;
     else if (arg === '--site-only') flags.siteOnly = true;
     else if (arg === '--dry-run') flags.dryRun = true;
+    else if (arg === '--animated') flags.animated = true;
     else if (arg === '--only') flags.only = argv[++i] ?? null;
     else if (arg.startsWith('--only=')) flags.only = arg.slice('--only='.length);
     else throw new Error(`Unknown flag: ${arg}`);
   }
   if (flags.only) flags.only = flags.only.replace(/\.ts$/, '').replace(/^src\//, '');
   return flags;
+}
+
+function isAnimatedSketch(absPath: string): boolean {
+  const src = readFileSync(absPath, 'utf8');
+  return !/\banimate\s*:\s*false\b/.test(src);
 }
 
 function walk(dir: string, out: string[]): void {
@@ -249,6 +256,7 @@ async function main(): Promise<void> {
   const plan: { entry: typeof discovered[number]; reason: string }[] = [];
   for (const entry of discovered) {
     if (flags.only && !matchOnly(entry.id, flags.only)) continue;
+    if (flags.animated && !isAnimatedSketch(entry.absPath)) continue;
     const existing = byId.get(entry.id);
     const currentSha = gitLastCommitSha(entry.relPath);
     if (flags.force) {

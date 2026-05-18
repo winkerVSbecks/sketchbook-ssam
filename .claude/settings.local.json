@@ -60,7 +60,10 @@
       "Bash(pkill -f \"node_modules/.bin/vite\")",
       "Bash(pkill -f \"npm run dev\")",
       "Bash(rtk ps *)",
-      "Bash(rtk npm *)"
+      "Bash(rtk npm *)",
+      "Skill(render-sketch)",
+      "Bash(tee .omc/state/archive-animated-run.log)",
+      "Bash(rtk wc *)"
     ]
   }
 }

@@ -146,15 +146,21 @@
       "type": "file"
     },
     {
+      "path": "src/index.ts",
+      "accessCount": 16,
+      "lastAccessed": 1779064213904,
+      "type": "file"
+    },
+    {
       "path": "scripts/cloud-render.ts",
-      "accessCount": 8,
-      "lastAccessed": 1779045308544,
+      "accessCount": 13,
+      "lastAccessed": 1779064419554,
       "type": "file"
     },
     {
       "path": "scripts/archive.ts",
-      "accessCount": 6,
-      "lastAccessed": 1779041359878,
+      "accessCount": 9,
+      "lastAccessed": 1779061214509,
       "type": "file"
     },
     {
@@ -164,9 +170,9 @@
       "type": "file"
     },
     {
-      "path": "src/index.ts",
-      "accessCount": 4,
-      "lastAccessed": 1779045437251,
+      "path": "vite.config.ts",
+      "accessCount": 5,
+      "lastAccessed": 1779064413601,
       "type": "file"
     },
     {
@@ -182,6 +188,24 @@
       "type": "file"
     },
     {
+      "path": "src/sketches/paint-without-thinking/arcs-reduction-rounded-animated.ts",
+      "accessCount": 3,
+      "lastAccessed": 1779060790343,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/siep-van-den-berg/no-250.ts",
+      "accessCount": 3,
+      "lastAccessed": 1779060797180,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/voxels/nalee-2.ts",
+      "accessCount": 3,
+      "lastAccessed": 1779063691866,
+      "type": "file"
+    },
+    {
       "path": "README.md",
       "accessCount": 2,
       "lastAccessed": 1779039348845,
@@ -191,12 +215,6 @@
       "path": "docs/cloud-rendering.md",
       "accessCount": 2,
       "lastAccessed": 1779039348942,
-      "type": "file"
-    },
-    {
-      "path": "vite.config.ts",
-      "accessCount": 2,
-      "lastAccessed": 1779039449953,
       "type": "file"
     },
     {
@@ -215,6 +233,36 @@
       "path": "scripts/archive-types.ts",
       "accessCount": 2,
       "lastAccessed": 1779048465961,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/_test/cloud-render-2d.ts",
+      "accessCount": 2,
+      "lastAccessed": 1779057041426,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/paint-without-thinking/arcs-reduction-rounded.ts",
+      "accessCount": 2,
+      "lastAccessed": 1779060795172,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/siep-van-den-berg/no-251.ts",
+      "accessCount": 2,
+      "lastAccessed": 1779060798758,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/bauhaus/nalee-composition.ts",
+      "accessCount": 2,
+      "lastAccessed": 1779063518784,
+      "type": "file"
+    },
+    {
+      "path": "archive/archive.json",
+      "accessCount": 2,
+      "lastAccessed": 1779067539486,
       "type": "file"
     },
     {
@@ -248,18 +296,6 @@
       "type": "file"
     },
     {
-      "path": "src/sketches/siep-van-den-berg/no-250.ts",
-      "accessCount": 1,
-      "lastAccessed": 1779039399023,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/_test/cloud-render-2d.ts",
-      "accessCount": 1,
-      "lastAccessed": 1779039402275,
-      "type": "file"
-    },
-    {
       "path": "archive/index.html",
       "accessCount": 1,
       "lastAccessed": 1779040270738,
@@ -269,6 +305,48 @@
       "path": "src/sketches/nalee/index.ts",
       "accessCount": 1,
       "lastAccessed": 1779040330044,
+      "type": "file"
+    },
+    {
+      "path": "output/arcs-reduction-2026.05.17-18.45.50.png",
+      "accessCount": 1,
+      "lastAccessed": 1779057957418,
+      "type": "file"
+    },
+    {
+      "path": "output/2026.05.17-18.46.34.png",
+      "accessCount": 1,
+      "lastAccessed": 1779058003144,
+      "type": "file"
+    },
+    {
+      "path": "output/2026.05.17-19.32.34.png",
+      "accessCount": 1,
+      "lastAccessed": 1779060758471,
+      "type": "file"
+    },
+    {
+      "path": "output/arcs-reduction-2026.05.17-19.33.59.png",
+      "accessCount": 1,
+      "lastAccessed": 1779060842502,
+      "type": "file"
+    },
+    {
+      "path": "output/2026.05.17-19.36.37.png",
+      "accessCount": 1,
+      "lastAccessed": 1779061018533,
+      "type": "file"
+    },
+    {
+      "path": "output/2026.05.17-19.36.45.png",
+      "accessCount": 1,
+      "lastAccessed": 1779061019073,
+      "type": "file"
+    },
+    {
+      "path": "output/2026.05.17-19.36.53.png",
+      "accessCount": 1,
+      "lastAccessed": 1779061019683,
       "type": "file"
     }
   ],
