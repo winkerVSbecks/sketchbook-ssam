@@ -201,6 +201,23 @@ async function ensureVite(sketchPath: string): Promise<VitePidRecord> {
   return record;
 }
 
+// The sandbox pre-installs playwright browser binaries at /opt/pw-browsers, but the
+// revision may not match playwright-core's expected revision. Detect any usable binary
+// there directly so we can skip the (blocked) download on first use.
+function findSystemChromiumExecutable(): string | null {
+  const searchBase = '/opt/pw-browsers';
+  if (!existsSync(searchBase)) return null;
+  try {
+    const found = execSync(
+      `find "${searchBase}" \\( -name "headless_shell" -o -name "chrome-headless-shell" \\) -type f 2>/dev/null | head -1`,
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
+    ).trim();
+    return found && existsSync(found) ? found : null;
+  } catch {
+    return null;
+  }
+}
+
 function findHeadlessShellPath(): string | null {
   if (!existsSync(BROWSERS_PATH)) return null;
   let dirs: string[];
@@ -230,6 +247,7 @@ function findHeadlessShellPath(): string | null {
 }
 
 function chromiumExecutableMissing(): boolean {
+  if (findSystemChromiumExecutable()) return false;
   return findHeadlessShellPath() === null;
 }
 
@@ -279,11 +297,13 @@ async function renderOnce(sketchPath: string): Promise<string> {
     }
   }
 
-  const executablePath = findHeadlessShellPath();
-  if (!executablePath) {
-    throw new Error(
-      `chrome-headless-shell binary not found under ${BROWSERS_PATH} — see ${INSTALL_LOG_FILE}`,
-    );
+  const systemExec = findSystemChromiumExecutable();
+  const localExec = findHeadlessShellPath();
+  const executablePath = systemExec ?? localExec ?? undefined;
+  if (systemExec) {
+    process.stdout.write(`[cloud-render] using system Chromium: ${systemExec}\n`);
+  } else if (localExec) {
+    process.stdout.write(`[cloud-render] using local Chromium: ${localExec}\n`);
   }
   const browser = await chromium.launch({
     executablePath,
