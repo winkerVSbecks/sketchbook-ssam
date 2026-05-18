@@ -1,8 +1,9 @@
+import { join } from 'node:path';
 import type { Archive, SketchEntry } from './archive-types.ts';
 
 const GITHUB_REPO = 'winkerVSbecks/sketchbook-ssam';
 
-export function renderHtml(archive: Archive): string {
+export function renderHtml(archive: Archive, projectRoot: string): string {
   const byYear = new Map<number, SketchEntry[]>();
   for (const entry of archive.sketches) {
     if (!entry.cloudinary) continue;
@@ -27,7 +28,7 @@ export function renderHtml(archive: Archive): string {
     .map((year) => {
       const items = byYear
         .get(year)!
-        .map((entry) => renderItem(entry))
+        .map((entry) => renderItem(entry, projectRoot))
         .join('\n');
       return `    <section class="year">
       <h2>${year}</h2>
@@ -64,7 +65,7 @@ ${empty}${sections}
 `;
 }
 
-function renderItem(entry: SketchEntry): string {
+function renderItem(entry: SketchEntry, projectRoot: string): string {
   const c = entry.cloudinary!;
   const thumb = thumbnailUrl(c.url);
   const date = new Date(entry.firstCommitDate).toLocaleDateString('en-US', {
@@ -75,6 +76,7 @@ function renderItem(entry: SketchEntry): string {
   const name = entry.id.replace(/^sketches\//, '');
   const ref = entry.lastCommitSha || 'main';
   const source = `https://github.com/${GITHUB_REPO}/blob/${ref}/${entry.path}`;
+  const vscode = `vscode://file${join(projectRoot, entry.path)}`;
   return `        <div class="card">
           <a class="thumb" href="${escapeAttr(c.url)}" target="_blank" rel="noopener">
             <img src="${escapeAttr(thumb)}" alt="${escapeAttr(name)}" loading="lazy" width="400" height="400">
@@ -82,7 +84,10 @@ function renderItem(entry: SketchEntry): string {
           <div class="caption">
             <div class="name-row">
               <div class="name">${escapeText(name)}</div>
-              <a class="source" href="${escapeAttr(source)}" target="_blank" rel="noopener" aria-label="View source on GitHub">
+              <a class="icon" href="${escapeAttr(vscode)}" aria-label="Open in VS Code">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              </a>
+              <a class="icon" href="${escapeAttr(source)}" target="_blank" rel="noopener" aria-label="View source on GitHub">
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
               </a>
             </div>
@@ -212,17 +217,22 @@ main {
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
-.source {
+.icon {
   display: inline-flex;
-  margin-left: auto;
   flex-shrink: 0;
   color: var(--muted);
   transition: color 0.15s ease;
 }
-.source:hover {
+.icon:first-of-type {
+  margin-left: auto;
+}
+.icon + .icon {
+  margin-left: 0.5rem;
+}
+.icon:hover {
   color: var(--fg);
 }
-.source svg {
+.icon svg {
   display: block;
 }
 .empty {

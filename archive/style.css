@@ -114,17 +114,22 @@ main {
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
-.source {
+.icon {
   display: inline-flex;
-  margin-left: auto;
   flex-shrink: 0;
   color: var(--muted);
   transition: color 0.15s ease;
 }
-.source:hover {
+.icon:first-of-type {
+  margin-left: auto;
+}
+.icon + .icon {
+  margin-left: 0.5rem;
+}
+.icon:hover {
   color: var(--fg);
 }
-.source svg {
+.icon svg {
   display: block;
 }
 .empty {

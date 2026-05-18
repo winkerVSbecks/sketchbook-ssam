@@ -224,7 +224,7 @@ function stopVite(): void {
 
 function writeSite(archive: Archive): void {
   mkdirSync(ARCHIVE_DIR, { recursive: true });
-  writeFileSync(ARCHIVE_HTML, renderHtml(archive));
+  writeFileSync(ARCHIVE_HTML, renderHtml(archive, PROJECT_ROOT));
   writeFileSync(ARCHIVE_CSS, renderCss());
 }
 
