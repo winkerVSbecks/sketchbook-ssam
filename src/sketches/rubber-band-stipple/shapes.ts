@@ -20,11 +20,11 @@ interface Circle {
 }
 
 const config = {
-  count: 140 * 2,
+  count: 16,
   maxConnections: 2,
-  maxConnDistFactor: 0.22,
-  minR: 3, //6,
-  maxR: 20, //30,
+  maxConnDistFactor: 0.75,
+  minR: 20,
+  maxR: 160,
   showVoronoi: false,
 };
 
@@ -61,7 +61,9 @@ export const sketch = ({
     return Random.noise4D(x / 100, y / 100, polarT[0], polarT[1], 0.25, 1);
   };
 
-  const margin = 60;
+  // Keep every circle (including its noise drift) fully inside the canvas
+  const driftAmt = width * 0.025;
+  const margin = config.maxR + driftAmt + 4;
   const minDist = ((width - 2 * margin) / Math.sqrt(config.count)) * 0.75;
   const positions: Vec2[] = [];
   let attempts = 0;
@@ -101,11 +103,61 @@ export const sketch = ({
     }
   }
 
+  // No orphans: every circle gets at least one edge. Prefer a partner that is
+  // still under the cap; otherwise allow exceeding maxConnections.
+  for (let i = 0; i < positions.length; i++) {
+    if (connCount[i] > 0) continue;
+    let underCapJ = -1;
+    let underCapD = Infinity;
+    let anyJ = -1;
+    let anyD = Infinity;
+    for (let j = 0; j < positions.length; j++) {
+      if (j === i) continue;
+      const d = Math.hypot(
+        positions[j].x - positions[i].x,
+        positions[j].y - positions[i].y,
+      );
+      if (d < anyD) {
+        anyD = d;
+        anyJ = j;
+      }
+      if (connCount[j] < config.maxConnections && d < underCapD) {
+        underCapD = d;
+        underCapJ = j;
+      }
+    }
+    const partner = underCapJ !== -1 ? underCapJ : anyJ;
+    if (partner !== -1) {
+      edges.push([i, partner]);
+      connCount[i]++;
+      connCount[partner]++;
+    }
+  }
+
+  // Union-find: every circle reachable via edges shares a component id
+  const componentId = computeComponents(positions.length, edges);
+  const isConnected = new Array(positions.length).fill(false);
+  for (const [i, j] of edges) {
+    isConnected[i] = true;
+    isConnected[j] = true;
+  }
+
+  // Stable per-component color: seeded by the smallest index in the component,
+  // then spread across the palette via the golden-ratio sequence
+  const componentColor = new Map<number, string>();
+  const seenComponent = new Map<number, number>();
+  for (let i = 0; i < positions.length; i++) {
+    const cid = componentId[i];
+    if (!seenComponent.has(cid)) seenComponent.set(cid, i);
+  }
+  for (const [cid, minIdx] of seenComponent) {
+    const t = (minIdx * 0.6180339887) % 1;
+    componentColor.set(cid, colorMap(t));
+  }
+
   wrap.render = ({ width, height, playhead }: SketchProps) => {
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
-
-    const driftAmt = width * 0.025;
 
     const circles: Circle[] = positions.map((p) => {
       const t = noise(p.x, p.y, playhead);
@@ -134,8 +186,18 @@ export const sketch = ({
       }
     }
 
-    // Rubber bands
-    context.strokeStyle = strokeColor;
+    // Connected circles: solid disks in component color (so short bands that
+    // get skipped still render as part of the shape)
+    for (let i = 0; i < circles.length; i++) {
+      if (!isConnected[i]) continue;
+      const c = circles[i];
+      context.fillStyle = componentColor.get(componentId[i])!;
+      context.beginPath();
+      drawCircle(context, [c.x, c.y] as Point, c.r * 2);
+      context.fill();
+    }
+
+    // Rubber bands: fill the band area with the component color, then stroke
     context.lineWidth = 2.5;
     context.lineJoin = 'round';
     for (const [i, j] of edges) {
@@ -143,19 +205,24 @@ export const sketch = ({
       const cj = circles[j];
       const d = Math.hypot(cj.x - ci.x, cj.y - ci.y);
       if (d > ci.r + cj.r + 2) {
-        drawRubberBand(context, [ci, cj]);
+        rubberBandPath(context, [ci, cj]);
+        context.fillStyle = componentColor.get(componentId[i])!;
+        context.fill();
+        context.strokeStyle = strokeColor;
+        context.stroke();
       }
     }
 
-    // Stipple circles colored by noise value
-    for (const c of circles) {
+    // Solo (unconnected) circles: keep the stipple aesthetic
+    for (let i = 0; i < circles.length; i++) {
+      if (isConnected[i]) continue;
+      const c = circles[i];
       const t = noise(c.x, c.y, playhead);
       context.fillStyle = colorMap(mapRange(t, -1, 1, 0, 1, true));
       context.beginPath();
       drawCircle(context, [c.x, c.y] as Point, c.r * 2);
       context.fill();
 
-      // Small bg-colored inner dot (from stipling-noise aesthetic)
       context.fillStyle = bg;
       context.beginPath();
       drawCircle(context, [c.x, c.y] as Point, 7);
@@ -207,7 +274,7 @@ function getTangentPoints(c1: Circle, c2: Circle): { t1: Vec2; t2: Vec2 } {
   };
 }
 
-function drawRubberBand(
+function rubberBandPath(
   ctx: CanvasRenderingContext2D,
   circles: Circle[],
 ): void {
@@ -231,6 +298,26 @@ function drawRubberBand(
     ctx.arc(c.x, c.y, c.r, aAngle, dAngle, false);
     ctx.lineTo(edges[i].t2.x, edges[i].t2.y);
   }
+  ctx.closePath();
+}
 
-  ctx.stroke();
+// Union-find over the edge list, returning each node's representative
+function computeComponents(
+  numNodes: number,
+  edges: [number, number][],
+): number[] {
+  const parent = new Array(numNodes).fill(0).map((_, i) => i);
+  const find = (x: number): number => {
+    while (parent[x] !== x) {
+      parent[x] = parent[parent[x]];
+      x = parent[x];
+    }
+    return x;
+  };
+  for (const [a, b] of edges) {
+    const ra = find(a);
+    const rb = find(b);
+    if (ra !== rb) parent[ra] = rb;
+  }
+  return parent.map((_, i) => find(i));
 }

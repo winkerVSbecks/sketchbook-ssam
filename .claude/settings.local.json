@@ -63,7 +63,8 @@
       "Bash(rtk npm *)",
       "Skill(render-sketch)",
       "Bash(tee .omc/state/archive-animated-run.log)",
-      "Bash(rtk wc *)"
+      "Bash(rtk wc *)",
+      "Skill(implement-sketch)"
     ]
   }
 }

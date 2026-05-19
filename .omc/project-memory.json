@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1779022814052,
+  "lastScanned": 1779127199043,
   "projectRoot": "/Users/varunvachhar/Documents/projects/sketchbook-ssam",
   "techStack": {
     "languages": [
@@ -43,7 +43,10 @@
       "cloud:install": "npx --yes playwright@1 install chromium-headless-shell",
       "cloud:render": "tsx scripts/cloud-render.ts",
       "cloud:stop": "tsx scripts/cloud-render.ts stop",
-      "cloud:smoke": "tsx scripts/cloud-render-smoke.ts"
+      "cloud:smoke": "tsx scripts/cloud-render-smoke.ts",
+      "archive": "tsx scripts/archive.ts",
+      "archive:site": "tsx scripts/archive.ts --site-only",
+      "archive:force": "tsx scripts/archive.ts --force"
     }
   },
   "conventions": {
@@ -68,11 +71,22 @@
   },
   "customNotes": [],
   "directoryMap": {
+    "archive": {
+      "path": "archive",
+      "purpose": null,
+      "fileCount": 3,
+      "lastAccessed": 1779127199012,
+      "keyFiles": [
+        "archive.json",
+        "index.html",
+        "style.css"
+      ]
+    },
     "assets": {
       "path": "assets",
       "purpose": "Static assets",
       "fileCount": 3,
-      "lastAccessed": 1779022814015,
+      "lastAccessed": 1779127199013,
       "keyFiles": [
         "skeletor.svg",
         "varun.svg"
@@ -81,17 +95,18 @@
     "docs": {
       "path": "docs",
       "purpose": "Documentation",
-      "fileCount": 1,
-      "lastAccessed": 1779022814016,
+      "fileCount": 2,
+      "lastAccessed": 1779127199015,
       "keyFiles": [
-        "cloud-rendering.md"
+        "cloud-rendering.md",
+        "ideas.md"
       ]
     },
     "output": {
       "path": "output",
       "purpose": null,
-      "fileCount": 4647,
-      "lastAccessed": 1779022814035,
+      "fileCount": 5304,
+      "lastAccessed": 1779127199037,
       "keyFiles": [
         "2023.12.13-15.21.58.mp4",
         "2023.12.13-15.33.09.mp4",
@@ -100,22 +115,33 @@
         "2023.12.14-19.56.44.mp4"
       ]
     },
+    "previews": {
+      "path": "previews",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1779127199038,
+      "keyFiles": [
+        "albers-meander.png"
+      ]
+    },
     "scripts": {
       "path": "scripts",
       "purpose": "Build/utility scripts",
-      "fileCount": 3,
-      "lastAccessed": 1779022814039,
+      "fileCount": 6,
+      "lastAccessed": 1779127199038,
       "keyFiles": [
+        "archive-render-html.ts",
+        "archive-types.ts",
+        "archive.ts",
         "cloud-bootstrap.sh",
-        "cloud-render-smoke.ts",
-        "cloud-render.ts"
+        "cloud-render-smoke.ts"
       ]
     },
     "src": {
       "path": "src",
       "purpose": "Source code",
       "fileCount": 13,
-      "lastAccessed": 1779022814039,
+      "lastAccessed": 1779127199038,
       "keyFiles": [
         "dither.ts",
         "generate-build-logs.ts",
@@ -128,7 +154,7 @@
       "path": "timelapse",
       "purpose": null,
       "fileCount": 77,
-      "lastAccessed": 1779022814040,
+      "lastAccessed": 1779127199039,
       "keyFiles": [
         "00000.png",
         "00001.png",
@@ -146,9 +172,21 @@
       "type": "file"
     },
     {
+      "path": "src/sketches/rubber-band-stipple/weaving-techniques.ts",
+      "accessCount": 23,
+      "lastAccessed": 1779119627493,
+      "type": "file"
+    },
+    {
       "path": "src/index.ts",
       "accessCount": 16,
       "lastAccessed": 1779064213904,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/rubber-band-stipple/shape.ts",
+      "accessCount": 14,
+      "lastAccessed": 1779145162524,
       "type": "file"
     },
     {
@@ -161,6 +199,18 @@
       "path": "scripts/archive.ts",
       "accessCount": 11,
       "lastAccessed": 1779068321129,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/rubber-band-stipple/rubber-band-stipple.ts",
+      "accessCount": 9,
+      "lastAccessed": 1779117337487,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/rubber-band-stipple/shapes.ts",
+      "accessCount": 8,
+      "lastAccessed": 1779143090151,
       "type": "file"
     },
     {
@@ -347,6 +397,72 @@
       "path": "output/2026.05.17-19.36.53.png",
       "accessCount": 1,
       "lastAccessed": 1779061019683,
+      "type": "file"
+    },
+    {
+      "path": "output/2026.05.18-11.12.23.png",
+      "accessCount": 1,
+      "lastAccessed": 1779117149633,
+      "type": "file"
+    },
+    {
+      "path": "output/2026.05.18-11.30.41.png",
+      "accessCount": 1,
+      "lastAccessed": 1779118246245,
+      "type": "file"
+    },
+    {
+      "path": "output/2026.05.18-11.34.47.png",
+      "accessCount": 1,
+      "lastAccessed": 1779118492102,
+      "type": "file"
+    },
+    {
+      "path": "output/2026.05.18-11.36.15.png",
+      "accessCount": 1,
+      "lastAccessed": 1779118579837,
+      "type": "file"
+    },
+    {
+      "path": "output/2026.05.18-11.45.00.png",
+      "accessCount": 1,
+      "lastAccessed": 1779119105034,
+      "type": "file"
+    },
+    {
+      "path": "output/2026.05.18-11.53.51.png",
+      "accessCount": 1,
+      "lastAccessed": 1779119636284,
+      "type": "file"
+    },
+    {
+      "path": "output/2026.05.18-14.18.24.png",
+      "accessCount": 1,
+      "lastAccessed": 1779128308534,
+      "type": "file"
+    },
+    {
+      "path": "output/2026.05.18-18.23.34.png",
+      "accessCount": 1,
+      "lastAccessed": 1779143020832,
+      "type": "file"
+    },
+    {
+      "path": "output/2026.05.18-18.24.54.png",
+      "accessCount": 1,
+      "lastAccessed": 1779143098725,
+      "type": "file"
+    },
+    {
+      "path": "output/2026.05.18-18.31.50.png",
+      "accessCount": 1,
+      "lastAccessed": 1779143514483,
+      "type": "file"
+    },
+    {
+      "path": "output/2026.05.18-18.33.51.png",
+      "accessCount": 1,
+      "lastAccessed": 1779143635545,
       "type": "file"
     }
   ],
