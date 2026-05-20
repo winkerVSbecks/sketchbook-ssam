@@ -173,20 +173,20 @@
     },
     {
       "path": "src/sketches/rubber-band-stipple/weaving-techniques.ts",
-      "accessCount": 23,
-      "lastAccessed": 1779119627493,
+      "accessCount": 24,
+      "lastAccessed": 1779298298104,
       "type": "file"
     },
     {
       "path": "src/index.ts",
-      "accessCount": 16,
-      "lastAccessed": 1779064213904,
+      "accessCount": 18,
+      "lastAccessed": 1779299515541,
       "type": "file"
     },
     {
       "path": "src/sketches/rubber-band-stipple/shape.ts",
-      "accessCount": 14,
-      "lastAccessed": 1779145162524,
+      "accessCount": 15,
+      "lastAccessed": 1779298293219,
       "type": "file"
     },
     {
@@ -203,26 +203,26 @@
     },
     {
       "path": "src/sketches/rubber-band-stipple/rubber-band-stipple.ts",
-      "accessCount": 9,
-      "lastAccessed": 1779117337487,
+      "accessCount": 10,
+      "lastAccessed": 1779298292585,
       "type": "file"
     },
     {
       "path": "src/sketches/rubber-band-stipple/shapes.ts",
-      "accessCount": 8,
-      "lastAccessed": 1779143090151,
+      "accessCount": 9,
+      "lastAccessed": 1779298299052,
       "type": "file"
     },
     {
       "path": "package.json",
-      "accessCount": 5,
-      "lastAccessed": 1779040187840,
+      "accessCount": 7,
+      "lastAccessed": 1779300407492,
       "type": "file"
     },
     {
       "path": "vite.config.ts",
-      "accessCount": 5,
-      "lastAccessed": 1779064413601,
+      "accessCount": 7,
+      "lastAccessed": 1779300685699,
       "type": "file"
     },
     {
@@ -262,6 +262,12 @@
       "type": "file"
     },
     {
+      "path": "index.html",
+      "accessCount": 3,
+      "lastAccessed": 1779299257481,
+      "type": "file"
+    },
+    {
       "path": "README.md",
       "accessCount": 2,
       "lastAccessed": 1779039348845,
@@ -277,12 +283,6 @@
       "path": "scripts/cloud-render-smoke.ts",
       "accessCount": 2,
       "lastAccessed": 1779040120651,
-      "type": "file"
-    },
-    {
-      "path": "index.html",
-      "accessCount": 2,
-      "lastAccessed": 1779045404610,
       "type": "file"
     },
     {

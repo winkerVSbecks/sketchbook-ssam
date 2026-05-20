@@ -64,7 +64,10 @@
       "Skill(render-sketch)",
       "Bash(tee .omc/state/archive-animated-run.log)",
       "Bash(rtk wc *)",
-      "Skill(implement-sketch)"
+      "Skill(implement-sketch)",
+      "mcp__plugin_oh-my-claudecode_t__lsp_diagnostics",
+      "Bash(awk -F: '{print $1}')",
+      "Bash(lsof -nP -iTCP -sTCP:LISTEN)"
     ]
   }
 }
