@@ -261,29 +261,29 @@ export const sketch = ({
       context.arc(c.x, c.y, config.dotRadius, 0, Math.PI * 2);
       context.fill();
 
-      // Top shadow rim: wider, subtler arc opposite the light source.
+      // Top shadow rim sits inside the dot; bottom highlight kicks just
+      // outside the dot like a bright spill from the lit lower edge.
       context.strokeStyle = shiftLightness(bg, -config.bevelStrength);
       context.lineWidth = 2;
       context.beginPath();
       context.arc(
         c.x,
         c.y,
-        config.dotRadius,
-        (7 * Math.PI) / 6,
-        (11 * Math.PI) / 6,
+        config.dotRadius - 1,
+        (13 * Math.PI) / 12,
+        (23 * Math.PI) / 12,
       );
       context.stroke();
 
-      // Bottom highlight: thin, bright sliver of bounced light.
-      context.strokeStyle = shiftLightness(bg, config.bevelStrength * 2.5);
+      context.strokeStyle = shiftLightness(bg, config.bevelStrength * 5);
       context.lineWidth = 1.5;
       context.beginPath();
       context.arc(
         c.x,
         c.y,
-        config.dotRadius,
-        Math.PI / 3,
-        (2 * Math.PI) / 3,
+        config.dotRadius + 0.75,
+        Math.PI / 4,
+        (3 * Math.PI) / 4,
       );
       context.stroke();
     }
