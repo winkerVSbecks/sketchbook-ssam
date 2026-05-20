@@ -2,7 +2,7 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 import { mapRange } from 'canvas-sketch-util/math';
-import { interpolate, formatCss } from 'culori';
+import { interpolate, formatCss, converter } from 'culori';
 import { Pane } from 'tweakpane';
 import { generateColors } from '../../subtractive-color';
 
@@ -22,9 +22,12 @@ const config = {
   maxR: 160,
   driftFactor: 0.025,
   hullSamples: 360,
-  strokeWidth: 2.5,
+  strokeWidth: 2,
   dotRadius: 7,
   connectionsPerInside: 2,
+  relaxIterations: 24,
+  circleStrokeWidth: 2,
+  bevelStrength: 14,
 };
 
 const pane = new Pane() as any;
@@ -37,6 +40,9 @@ pane.addBinding(config, 'hullSamples', { min: 32, max: 1440, step: 1 });
 pane.addBinding(config, 'strokeWidth', { min: 0, max: 12, step: 0.1 });
 pane.addBinding(config, 'dotRadius', { min: 0, max: 30, step: 0.5 });
 pane.addBinding(config, 'connectionsPerInside', { min: 1, max: 6, step: 1 });
+pane.addBinding(config, 'relaxIterations', { min: 0, max: 24, step: 1 });
+pane.addBinding(config, 'circleStrokeWidth', { min: 0, max: 30, step: 0.5 });
+pane.addBinding(config, 'bevelStrength', { min: 0, max: 40, step: 1 });
 
 export const sketch = ({
   wrap,
@@ -59,6 +65,13 @@ export const sketch = ({
   const strokeColor = `hsl(from ${colors.pop()!} h s l / 0.5)`;
   const colorScale = interpolate(colors);
   const colorMap = (t: number) => formatCss(colorScale(t));
+  // canvas gradient.addColorStop can't parse `hsl(from ... calc(...))`, so
+  // shift lightness in culori-land and format a plain string for the stop.
+  const toHsl = converter('hsl');
+  const shiftLightness = (color: string, deltaPct: number): string => {
+    const c = toHsl(color)!;
+    return formatCss({ ...c, l: Math.min(1, Math.max(0, c.l + deltaPct / 100)) });
+  };
 
   const noise = (x: number, y: number, t: number): number => {
     const angle = Math.PI * 2 * t * 2;
@@ -91,7 +104,9 @@ export const sketch = ({
         x: Random.range(margin, width - margin),
         y: Random.range(margin, height - margin),
       };
-      if (!positions.some((p) => Math.hypot(p.x - pt.x, p.y - pt.y) < minDist)) {
+      if (
+        !positions.some((p) => Math.hypot(p.x - pt.x, p.y - pt.y) < minDist)
+      ) {
         positions.push(pt);
       }
     }
@@ -145,15 +160,60 @@ export const sketch = ({
       return { x: p.x + dx, y: p.y + dy, r };
     });
 
+    // Each circle wears a bg-colored halo of width `circleStrokeWidth`, half
+    // outside its noise-driven radius. Collision/hull/band calcs use the
+    // inflated outer extent so halos never overlap and the bands wrap them.
+    const halfCS = config.circleStrokeWidth / 2;
+
+    // Resolve overlaps: each colliding pair separates along their centerline,
+    // weighted so the larger circle barely moves and the smaller is displaced.
+    for (let iter = 0; iter < config.relaxIterations; iter++) {
+      for (let i = 0; i < circles.length; i++) {
+        for (let j = i + 1; j < circles.length; j++) {
+          const a = circles[i];
+          const b = circles[j];
+          const ra = a.r + halfCS;
+          const rb = b.r + halfCS;
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const d = Math.hypot(dx, dy);
+          const minD = ra + rb;
+          if (d >= minD || d < 1e-6) continue;
+          const overlap = minD - d;
+          const nx = dx / d;
+          const ny = dy / d;
+          const totalR = ra + rb;
+          const aShare = rb / totalR;
+          const bShare = ra / totalR;
+          a.x -= nx * overlap * aShare;
+          a.y -= ny * overlap * aShare;
+          b.x += nx * overlap * bShare;
+          b.y += ny * overlap * bShare;
+        }
+      }
+      for (const c of circles) {
+        const r = c.r + halfCS;
+        c.x = Math.min(Math.max(c.x, r), width - r);
+        c.y = Math.min(Math.max(c.y, r), height - r);
+      }
+    }
+
+    // Inflated copies (outer-halo extent) drive the band geometry.
+    const haloCircles: Circle[] = circles.map((c) => ({
+      x: c.x,
+      y: c.y,
+      r: c.r + halfCS,
+    }));
+
     // Visual hull is recomputed per frame so any circle that drifts/grows out
     // past the band is still wrapped. The stable boundary set above is only
     // used for connection topology.
-    const hullCircles = hullIndices(circles, config.hullSamples).map(
-      (i) => circles[i],
+    const hullCircles = hullIndices(haloCircles, config.hullSamples).map(
+      (i) => haloCircles[i],
     );
     if (hullCircles.length < 2) return;
 
-    // Skeleton: rubber-band hull wrapping every circle
+    // Skeleton: rubber-band hull wrapping every circle (around its halo)
     rubberBandPath(context, hullCircles);
     context.fillStyle = colorMap(0.5);
     context.fill();
@@ -165,8 +225,8 @@ export const sketch = ({
     // Tendons: rubber bands around each pair of connected circles (stroke only)
     context.strokeStyle = strokeColor;
     for (const [i, j] of edges) {
-      const ci = circles[i];
-      const cj = circles[j];
+      const ci = haloCircles[i];
+      const cj = haloCircles[j];
       const d = Math.hypot(cj.x - ci.x, cj.y - ci.y);
       if (d > ci.r + cj.r + 2) {
         rubberBandPath(context, [ci, cj]);
@@ -174,13 +234,27 @@ export const sketch = ({
       }
     }
 
-    // Stipple aesthetic: each circle as a noise-colored disk with a bg dot
+    // Stipple aesthetic: each circle gets a two-stop bevel gradient (light
+    // top-left → dark bottom-right) suggesting a soft 3D rim under a single
+    // overhead-left light source, then a thin halo stroke and a center dot.
+    context.lineWidth = config.circleStrokeWidth;
     for (const c of circles) {
       const t = noise(c.x, c.y, playhead);
-      context.fillStyle = colorMap(mapRange(t, -1, 1, 0, 1, true));
+      const baseColor = colorMap(mapRange(t, -1, 1, 0, 1, true));
+      const grad = context.createLinearGradient(
+        c.x - c.r,
+        c.y - c.r,
+        c.x + c.r,
+        c.y + c.r,
+      );
+      grad.addColorStop(0, shiftLightness(baseColor, config.bevelStrength));
+      grad.addColorStop(1, shiftLightness(baseColor, -config.bevelStrength));
+      context.fillStyle = grad;
       context.beginPath();
       context.arc(c.x, c.y, c.r, 0, Math.PI * 2);
       context.fill();
+      context.strokeStyle = strokeColor;
+      context.stroke();
 
       context.fillStyle = bg;
       context.beginPath();
