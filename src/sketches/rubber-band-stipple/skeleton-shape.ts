@@ -237,7 +237,6 @@ export const sketch = ({
     // Stipple aesthetic: each circle gets a two-stop bevel gradient (light
     // top-left → dark bottom-right) suggesting a soft 3D rim under a single
     // overhead-left light source, then a thin halo stroke and a center dot.
-    context.lineWidth = config.circleStrokeWidth;
     for (const c of circles) {
       const t = noise(c.x, c.y, playhead);
       const baseColor = colorMap(mapRange(t, -1, 1, 0, 1, true));
@@ -254,12 +253,39 @@ export const sketch = ({
       context.arc(c.x, c.y, c.r, 0, Math.PI * 2);
       context.fill();
       context.strokeStyle = strokeColor;
+      context.lineWidth = config.circleStrokeWidth;
       context.stroke();
 
       context.fillStyle = bg;
       context.beginPath();
       context.arc(c.x, c.y, config.dotRadius, 0, Math.PI * 2);
       context.fill();
+
+      // Top shadow rim: wider, subtler arc opposite the light source.
+      context.strokeStyle = shiftLightness(bg, -config.bevelStrength);
+      context.lineWidth = 2;
+      context.beginPath();
+      context.arc(
+        c.x,
+        c.y,
+        config.dotRadius,
+        (7 * Math.PI) / 6,
+        (11 * Math.PI) / 6,
+      );
+      context.stroke();
+
+      // Bottom highlight: thin, bright sliver of bounced light.
+      context.strokeStyle = shiftLightness(bg, config.bevelStrength * 2.5);
+      context.lineWidth = 1.5;
+      context.beginPath();
+      context.arc(
+        c.x,
+        c.y,
+        config.dotRadius,
+        Math.PI / 3,
+        (2 * Math.PI) / 3,
+      );
+      context.stroke();
     }
   };
 };
