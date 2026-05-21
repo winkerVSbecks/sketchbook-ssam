@@ -6,6 +6,7 @@
   "main": "./dist/index.js",
   "scripts": {
     "dev": "vite",
+    "gallery": "vite --open=/gallery.html",
     "build": "vite build",
     "preview": "vite preview",
     "cloud:install": "npx --yes playwright@1 install chromium-headless-shell",

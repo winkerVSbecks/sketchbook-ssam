@@ -13,10 +13,19 @@ if (import.meta.env.DEV) {
   (window as ReadyWindow).__ssam_ready = false;
 }
 
+const params = new URLSearchParams(location.search);
+const sketchPath = params.get('sketch') ?? import.meta.env.VITE_SKETCH;
+const galleryMode = params.has('gallery');
+
+if (galleryMode) {
+  const style = document.createElement('style');
+  style.textContent = '.tp-dfwv { display: none !important; }';
+  document.head.appendChild(style);
+}
+
 const importedModule: SsamSketchModule = await import(
-  // defined in env via CLI
   /* @vite-ignore */
-  `./${import.meta.env.VITE_SKETCH}.ts`
+  `./${sketchPath}.ts`
 );
 
 if (import.meta.hot) {

@@ -8,3 +8,5 @@
 - curve-particles is very basic but was also popular.
 - domain-polygon needs to be developed further. There is something interesting there, but it's not fully realized yet.
 - Never really found a good application for clixo
+- https://x.com/FigsFromPlums/status/2040534876584128631
+- Nalee construction: https://x.com/caleb_ogg/status/1896021613231087754/photo/1 and https://x.com/caleb_ogg/status/1895893007515472126/photo/1
