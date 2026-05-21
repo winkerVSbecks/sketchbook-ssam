@@ -22,14 +22,11 @@ const config = {
   maxR: 160,
   driftFactor: 0.025,
   hullSamples: 360,
-  hullStrokeWidth: 2,
-  tendonStrokeWidth: 1,
-  ringCount: 3,
-  ringSpacing: 14,
-  ringStrokeWidth: 1.5,
+  strokeWidth: 2,
+  layers: 4,
+  layerSpacing: 14,
+  hullLayerSpacing: 14,
   centerRingRadius: 7,
-  tendonLayers: 3,
-  tendonLayerSpacing: 14,
   connectionsPerInside: 2,
   relaxIterations: 24,
 };
@@ -41,14 +38,11 @@ pane.addBinding(config, 'minR', { min: 4, max: 200, step: 1 });
 pane.addBinding(config, 'maxR', { min: 20, max: 300, step: 1 });
 pane.addBinding(config, 'driftFactor', { min: 0, max: 0.1, step: 0.001 });
 pane.addBinding(config, 'hullSamples', { min: 32, max: 1440, step: 1 });
-pane.addBinding(config, 'hullStrokeWidth', { min: 0.5, max: 12, step: 0.1 });
-pane.addBinding(config, 'tendonStrokeWidth', { min: 0.5, max: 8, step: 0.1 });
-pane.addBinding(config, 'ringCount', { min: 1, max: 6, step: 1 });
-pane.addBinding(config, 'ringSpacing', { min: 2, max: 40, step: 1 });
-pane.addBinding(config, 'ringStrokeWidth', { min: 0.5, max: 6, step: 0.25 });
+pane.addBinding(config, 'strokeWidth', { min: 0.5, max: 8, step: 0.1 });
+pane.addBinding(config, 'layers', { min: 1, max: 2, step: 1 });
+pane.addBinding(config, 'layerSpacing', { min: 2, max: 40, step: 1 });
+pane.addBinding(config, 'hullLayerSpacing', { min: 1, max: 20, step: 0.5 });
 pane.addBinding(config, 'centerRingRadius', { min: 2, max: 30, step: 0.5 });
-pane.addBinding(config, 'tendonLayers', { min: 1, max: 6, step: 1 });
-pane.addBinding(config, 'tendonLayerSpacing', { min: 2, max: 40, step: 1 });
 pane.addBinding(config, 'connectionsPerInside', { min: 1, max: 6, step: 1 });
 pane.addBinding(config, 'relaxIterations', { min: 0, max: 24, step: 1 });
 
@@ -204,16 +198,22 @@ export const sketch = ({
 
     context.strokeStyle = strokeColor;
     context.lineJoin = 'round';
+    context.lineWidth = config.strokeWidth;
 
-    // Hull — stroke only, no fill
-    rubberBandPath(context, hullCircles);
-    context.lineWidth = config.hullStrokeWidth;
-    context.stroke();
+    // Hull — concentric rubber-band layers stepping inward by hullLayerSpacing.
+    for (let k = 0; k < config.layers; k++) {
+      const layerHull = hullCircles.map((c) => ({
+        x: c.x,
+        y: c.y,
+        r: c.r - k * config.hullLayerSpacing,
+      }));
+      if (layerHull.some((c) => c.r <= 0)) break;
+      rubberBandPath(context, layerHull);
+      context.stroke();
+    }
 
-    // Tendons — multiple concentric bands per connection, stepping inward by
-    // tendonLayerSpacing so each layer wraps shrunk copies of the two circles.
-    // Outer-to-inner order with bg fill so inner layers occlude outer strokes.
-    context.lineWidth = config.tendonStrokeWidth;
+    // Tendons — concentric bands per connection, stepping inward by
+    // layerSpacing. Outer-to-inner with bg fill so each layer occludes prior.
     context.fillStyle = bg;
     for (const [i, j] of edges) {
       const ci = circles[i];
@@ -222,9 +222,9 @@ export const sketch = ({
       // Connection is decided by the outermost layer; if the outer band can't
       // form, drop the whole stack. Otherwise inner layers always draw.
       if (d <= ci.r + cj.r + 2) continue;
-      for (let k = 0; k < config.tendonLayers; k++) {
-        const ri = ci.r - k * config.tendonLayerSpacing;
-        const rj = cj.r - k * config.tendonLayerSpacing;
+      for (let k = 0; k < config.layers; k++) {
+        const ri = ci.r - k * config.layerSpacing;
+        const rj = cj.r - k * config.layerSpacing;
         if (ri <= 0 || rj <= 0) break;
         rubberBandPath(context, [
           { x: ci.x, y: ci.y, r: ri },
@@ -235,9 +235,7 @@ export const sketch = ({
       }
     }
 
-    // Concentric stroked rings at each circle; innermost ring at r, stepping
-    // outward by ringSpacing so rings never exceed the actual circle boundary.
-    context.lineWidth = config.ringStrokeWidth;
+    // Concentric rings inside each circle, stepping inward by layerSpacing.
     for (const c of circles) {
       context.fillStyle = bg;
       context.beginPath();
@@ -245,11 +243,11 @@ export const sketch = ({
       context.fill();
 
       const maxRings = Math.min(
-        config.ringCount,
-        Math.floor(c.r / config.ringSpacing),
+        config.layers,
+        Math.floor(c.r / config.layerSpacing),
       );
       for (let k = 0; k < maxRings; k++) {
-        const rk = c.r - k * config.ringSpacing;
+        const rk = c.r - k * config.layerSpacing;
         if (rk <= 0) break;
         context.beginPath();
         context.arc(c.x, c.y, rk, 0, Math.PI * 2);

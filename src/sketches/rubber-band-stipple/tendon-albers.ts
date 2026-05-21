@@ -23,13 +23,13 @@ const config = {
   driftFactor: 0.025,
   hullSamples: 360,
   strokeWidth: 2,
-  connectionsPerInside: 2,
   relaxIterations: 24,
   circleStrokeWidth: 2,
   lightnessStep: 8,
   hueShift: 4,
   layers: 4,
   spread: 0.6,
+  showHull: true,
 };
 
 const pane = new Pane() as any;
@@ -40,13 +40,13 @@ pane.addBinding(config, 'maxR', { min: 20, max: 300, step: 1 });
 pane.addBinding(config, 'driftFactor', { min: 0, max: 0.1, step: 0.001 });
 pane.addBinding(config, 'hullSamples', { min: 32, max: 1440, step: 1 });
 pane.addBinding(config, 'strokeWidth', { min: 0, max: 12, step: 0.1 });
-pane.addBinding(config, 'connectionsPerInside', { min: 1, max: 6, step: 1 });
 pane.addBinding(config, 'relaxIterations', { min: 0, max: 24, step: 1 });
 pane.addBinding(config, 'circleStrokeWidth', { min: 0, max: 30, step: 0.5 });
 pane.addBinding(config, 'lightnessStep', { min: 1, max: 25, step: 1 });
 pane.addBinding(config, 'hueShift', { min: 0, max: 20, step: 1 });
-pane.addBinding(config, 'layers', { min: 1, max: 8, step: 1 });
+pane.addBinding(config, 'layers', { min: 1, max: 20, step: 1 });
 pane.addBinding(config, 'spread', { min: 0.1, max: 1, step: 0.01 });
+pane.addBinding(config, 'showHull');
 
 export const sketch = ({
   wrap,
@@ -95,11 +95,10 @@ export const sketch = ({
   const driftAmt = width * config.driftFactor;
 
   let positions: Vec2[] = [];
-  let boundaryIndices: number[] = [];
   let edges: [number, number][] = [];
   let cacheKey = '';
   const ensurePositions = () => {
-    const key = `${config.count}|${config.maxR}|${config.hullSamples}|${config.connectionsPerInside}|${config.spread}`;
+    const key = `${config.count}|${config.maxR}|${config.spread}`;
     if (key === cacheKey) return;
     const margin = config.maxR + driftAmt + 4;
     // Scale the placement rectangle around its centre by config.spread —
@@ -124,33 +123,37 @@ export const sketch = ({
       }
     }
 
-    const stableDisks: Circle[] = positions.map((p) => ({
-      x: p.x,
-      y: p.y,
-      r: config.maxR,
-    }));
-    boundaryIndices = hullIndices(stableDisks, config.hullSamples);
-    const onBoundary = new Set(boundaryIndices);
-    const insideIndices: number[] = [];
-    for (let i = 0; i < positions.length; i++) {
-      if (!onBoundary.has(i)) insideIndices.push(i);
-    }
-
+    // Minimum spanning tree over circle positions via Prim's algorithm —
+    // guarantees every circle has at least one connection with the minimum
+    // total tendon length.
     edges = [];
-    for (const j of insideIndices) {
-      const sorted = [...boundaryIndices].sort((a, b) => {
-        const da = Math.hypot(
-          positions[a].x - positions[j].x,
-          positions[a].y - positions[j].y,
-        );
-        const db = Math.hypot(
-          positions[b].x - positions[j].x,
-          positions[b].y - positions[j].y,
-        );
-        return da - db;
-      });
-      const k = Math.min(config.connectionsPerInside, sorted.length);
-      for (let m = 0; m < k; m++) edges.push([j, sorted[m]]);
+    const n = positions.length;
+    if (n >= 2) {
+      const inTree = new Array(n).fill(false);
+      inTree[0] = true;
+      for (let step = 0; step < n - 1; step++) {
+        let bestI = -1;
+        let bestJ = -1;
+        let bestD = Infinity;
+        for (let i = 0; i < n; i++) {
+          if (!inTree[i]) continue;
+          for (let j = 0; j < n; j++) {
+            if (inTree[j]) continue;
+            const d = Math.hypot(
+              positions[i].x - positions[j].x,
+              positions[i].y - positions[j].y,
+            );
+            if (d < bestD) {
+              bestD = d;
+              bestI = i;
+              bestJ = j;
+            }
+          }
+        }
+        if (bestI === -1) break;
+        edges.push([bestI, bestJ]);
+        inTree[bestJ] = true;
+      }
     }
 
     cacheKey = key;
@@ -214,25 +217,23 @@ export const sketch = ({
     );
     if (hullCircles.length < 2) return;
 
-    rubberBandPath(context, hullCircles);
-    context.fillStyle = colorMap(0.5);
-    context.fill();
-    context.strokeStyle = strokeColor;
-    context.lineWidth = config.strokeWidth;
-    context.lineJoin = 'round';
-    context.stroke();
+    if (config.showHull) {
+      rubberBandPath(context, hullCircles);
+      context.fillStyle = colorMap(0.5);
+      context.fill();
+      context.strokeStyle = strokeColor;
+      context.lineWidth = config.strokeWidth;
+      context.lineJoin = 'round';
+      context.stroke();
+    }
 
-    // Tendons — each band wraps shrunken copies of both endpoint discs, filled
-    // with a linear gradient between the two endpoints' shifted base colors
-    // along the centre-to-centre axis. Shares config.layers with the disc rings
-    // so a single knob controls density everywhere.
+    // Tendons — connections cached in `edges` so the topology never changes,
+    // but geometry follows haloCircles so the bands drift with the discs.
     const numLayers = config.layers;
     context.strokeStyle = strokeColor;
     for (const [i, j] of edges) {
       const ci = haloCircles[i];
       const cj = haloCircles[j];
-      const d = Math.hypot(cj.x - ci.x, cj.y - ci.y);
-      if (d <= ci.r + cj.r + 2) continue;
 
       const baseColorI = colorMap(
         mapRange(
@@ -274,34 +275,6 @@ export const sketch = ({
         context.stroke();
       }
     }
-
-    // Albers rings: concentric flat-colored discs, outermost drawn first so
-    // inner ones clip the outer ones naturally via painter's algorithm. Each
-    // ring shifts lightness + hue outward from the base color.
-    for (let ci = 0; ci < circles.length; ci++) {
-      const c = circles[ci];
-      const t = noise(c.x, c.y, playhead);
-      const baseColor = colorMap(mapRange(t, -1, 1, 0, 1, true));
-
-      for (let ring = 0; ring < numLayers; ring++) {
-        // Ring 0 = outermost (largest). Ring numLayers-1 = innermost.
-        const outerFraction = (numLayers - ring) / numLayers;
-        const ringR = c.r * outerFraction;
-        // Lightness brightens inward (like a lit center), hue drifts outward.
-        const deltaL = (ring - (numLayers - 1) / 2) * config.lightnessStep;
-        const deltaH = (numLayers - 1 - ring) * config.hueShift;
-        context.fillStyle = shiftColor(baseColor, deltaL, deltaH);
-        context.beginPath();
-        context.arc(c.x, c.y, Math.max(1, ringR), 0, Math.PI * 2);
-        context.fill();
-      }
-
-      context.strokeStyle = strokeColor;
-      context.lineWidth = config.circleStrokeWidth;
-      context.beginPath();
-      context.arc(c.x, c.y, c.r, 0, Math.PI * 2);
-      context.stroke();
-    }
   };
 };
 
@@ -328,10 +301,6 @@ function add(a: Vec2, b: Vec2): Vec2 {
 }
 function scale(v: Vec2, s: number): Vec2 {
   return { x: v.x * s, y: v.y * s };
-}
-function normalize(v: Vec2): Vec2 {
-  const l = Math.hypot(v.x, v.y);
-  return { x: v.x / l, y: v.y / l };
 }
 function perpRight(v: Vec2): Vec2 {
   return { x: v.y, y: -v.x };
