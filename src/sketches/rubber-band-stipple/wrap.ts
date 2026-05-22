@@ -15,7 +15,6 @@ interface Circle {
   y: number;
   r: number;
 }
-type Role = 'convex' | 'concave' | 'floater';
 interface ContactPeg {
   circle: Circle;
   role: 'convex' | 'concave';
@@ -89,15 +88,18 @@ export const sketch = ({
 
   const driftAmt = width * config.driftFactor;
 
+  // Per-peg state. Identity is the position index (assigned once and never
+  // shuffled), so each peg keeps the same role for the lifetime of the run —
+  // no wrap/unwrap popping as radii fluctuate.
   let positions: Vec2[] = [];
-  let roles: Role[] = [];
-  let contactOrder: number[] = [];
-  let floaterIndices: number[] = [];
+  let stableHullSet: Set<number> = new Set();
+  let dentedSet: Set<number> = new Set();
+  let stableFloaterIndices: number[] = [];
   let cacheKey = '';
 
   const ensurePositions = () => {
     const halfCS = config.strokeWidth / 2;
-    const key = `${config.count}|${config.maxR}|${config.dentCount}`;
+    const key = `${config.count}|${config.minR}|${config.maxR}|${config.dentCount}|${config.strokeWidth}`;
     if (key === cacheKey) return;
 
     const margin = config.maxR + driftAmt + 4;
@@ -117,48 +119,46 @@ export const sketch = ({
       }
     }
 
-    // Provisional circles at maxR for topology-only hull classification
-    const provisionalCircles: Circle[] = positions.map((p) => ({
+    // Strict stable hull: pegs on the hull when every disk is at maxR. These
+    // are *definitely* hull pegs, so wrapping them as convex never produces
+    // a spike. Borderline pegs (only hull when neighbours shrink) are
+    // handled per-frame via escapee detection in the render loop.
+    const minRT = config.minR + halfCS;
+    const maxRT = config.maxR + halfCS;
+    const allIndices = positions.map((_, i) => i);
+    const strictTest: Circle[] = positions.map((p) => ({
       x: p.x,
       y: p.y,
-      r: config.maxR + halfCS,
+      r: maxRT,
     }));
+    stableHullSet = new Set(convexHullOfDisks(strictTest));
 
-    const hullSet = new Set(convexHullOfDisks(provisionalCircles));
-    const allIndices = positions.map((_, i) => i);
-    const interiorIndices = allIndices.filter((i) => !hullSet.has(i));
+    // Generous never-on-hull set: pegs that can't reach the hull even in
+    // their most-favourable radius config (peg at maxR, others at minR).
+    // These are safe to designate as concave dents — they can't escape into
+    // the current hull and trigger a role flip.
+    const neverOnHull: number[] = [];
+    for (let i = 0; i < positions.length; i++) {
+      const test: Circle[] = positions.map((p, j) => ({
+        x: p.x,
+        y: p.y,
+        r: j === i ? maxRT : minRT,
+      }));
+      const hull = new Set(convexHullOfDisks(test));
+      if (!hull.has(i)) neverOnHull.push(i);
+    }
 
-    // Shuffle interior indices with seeded Random, then pick dentCount of them
-    const shuffled = [...interiorIndices];
+    const shuffled = [...neverOnHull];
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Random.value() * (i + 1));
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
-    const dentCount = Math.min(config.dentCount, interiorIndices.length);
-    const dentedSet = new Set(shuffled.slice(0, dentCount));
+    const dentCount = Math.min(config.dentCount, neverOnHull.length);
+    dentedSet = new Set(shuffled.slice(0, dentCount));
 
-    roles = allIndices.map((i): Role => {
-      if (hullSet.has(i)) return 'convex';
-      if (dentedSet.has(i)) return 'concave';
-      return 'floater';
-    });
-
-    let cx = 0;
-    let cy = 0;
-    for (const p of positions) {
-      cx += p.x;
-      cy += p.y;
-    }
-    cx /= positions.length;
-    cy /= positions.length;
-
-    const contactIndices = allIndices.filter((i) => roles[i] !== 'floater');
-    contactOrder = [...contactIndices].sort(
-      (a, b) =>
-        Math.atan2(positions[a].y - cy, positions[a].x - cx) -
-        Math.atan2(positions[b].y - cy, positions[b].x - cx),
+    stableFloaterIndices = allIndices.filter(
+      (i) => !stableHullSet.has(i) && !dentedSet.has(i),
     );
-    floaterIndices = allIndices.filter((i) => roles[i] === 'floater');
 
     cacheKey = key;
   };
@@ -218,15 +218,52 @@ export const sketch = ({
       r: c.r + halfCS,
     }));
 
-    if (haloCircles.length < 2 || contactOrder.length < 2) return;
+    if (haloCircles.length < 2) return;
+
+    // Stable hull pegs are always convex; designated dents are always
+    // concave. Borderline pegs that are currently on the actual disk hull
+    // but not in the stable set are inserted as escapees (extra convex
+    // pegs) so the band can't leave them outside the wrap.
+    const currentHull = new Set(convexHullOfDisks(haloCircles));
+    const convexSet = new Set<number>(stableHullSet);
+    const dynamicFloaters: number[] = [];
+    for (const i of stableFloaterIndices) {
+      if (currentHull.has(i)) convexSet.add(i);
+      else dynamicFloaters.push(i);
+    }
+
+    // Contact order = angular sort around the convex centroid (kernel of a
+    // star-shaped polygon). Using current post-drift positions keeps the
+    // polygon star-shaped and tangent segments from criss-crossing.
+    let cx = 0;
+    let cy = 0;
+    for (const i of convexSet) {
+      cx += haloCircles[i].x;
+      cy += haloCircles[i].y;
+    }
+    const hullSize = Math.max(convexSet.size, 1);
+    cx /= hullSize;
+    cy /= hullSize;
+
+    const contactIndices: number[] = [];
+    for (let i = 0; i < haloCircles.length; i++) {
+      if (convexSet.has(i) || dentedSet.has(i)) contactIndices.push(i);
+    }
+    const contactOrder = contactIndices.sort(
+      (a, b) =>
+        Math.atan2(haloCircles[a].y - cy, haloCircles[a].x - cx) -
+        Math.atan2(haloCircles[b].y - cy, haloCircles[b].x - cx),
+    );
+
+    if (contactOrder.length < 2) return;
 
     const contacts: ContactPeg[] = contactOrder.map((i) => ({
       circle: haloCircles[i],
-      role: roles[i] as 'convex' | 'concave',
+      role: convexSet.has(i) ? 'convex' : 'concave',
     }));
-    const floaters = floaterIndices.map((i) => haloCircles[i]);
+    const floaters = dynamicFloaters.map((i) => haloCircles[i]);
 
-    rubberBandPath(context, contacts, floaters);
+    rubberBandPath(context, contacts, floaters, halfCS);
 
     if (config.hullFill) {
       context.fillStyle = colorMap(0.5);
@@ -336,43 +373,43 @@ function vlen(v: Vec2): number {
   return Math.hypot(v.x, v.y);
 }
 
-// --- Convex hull of disk centers (Andrew's monotone chain) ---
-// Approximation: uses centers only; valid when radius spread is modest.
+// --- Convex hull of disks (radius-aware, via support function) ---
+// A disk is on the geometric hull of the disk set iff it is the argmax of
+// the support function h(θ) = c.x·cosθ + c.y·sinθ + c.r for some direction
+// θ. Sweep N directions and collect every disk that is ever the maximiser —
+// this picks up disks whose radii push them past their neighbours even when
+// their centers are interior to other centers.
 
 function convexHullOfDisks(circles: Circle[]): number[] {
   const n = circles.length;
-  if (n < 3) return circles.map((_, i) => i);
+  if (n < 2) return circles.map((_, i) => i);
 
-  const indices = circles.map((_, i) => i).sort((a, b) => {
-    const ca = circles[a];
-    const cb = circles[b];
-    return ca.x !== cb.x ? ca.x - cb.x : ca.y - cb.y;
-  });
+  const N = 360;
+  const seen = new Set<number>();
+  const result: number[] = [];
+  let prev = -1;
 
-  const cross3 = (o: number, a: number, b: number): number => {
-    const oc = circles[o];
-    const ac = circles[a];
-    const bc = circles[b];
-    return (ac.x - oc.x) * (bc.y - oc.y) - (ac.y - oc.y) * (bc.x - oc.x);
-  };
-
-  const lower: number[] = [];
-  for (const i of indices) {
-    while (lower.length >= 2 && cross3(lower[lower.length - 2], lower[lower.length - 1], i) <= 0)
-      lower.pop();
-    lower.push(i);
+  for (let k = 0; k < N; k++) {
+    const theta = (k / N) * Math.PI * 2;
+    const cosT = Math.cos(theta);
+    const sinT = Math.sin(theta);
+    let best = 0;
+    let bestVal = -Infinity;
+    for (let i = 0; i < n; i++) {
+      const c = circles[i];
+      const v = c.x * cosT + c.y * sinT + c.r;
+      if (v > bestVal) {
+        bestVal = v;
+        best = i;
+      }
+    }
+    if (best !== prev && !seen.has(best)) {
+      seen.add(best);
+      result.push(best);
+    }
+    prev = best;
   }
-  const upper: number[] = [];
-  for (let k = indices.length - 1; k >= 0; k--) {
-    const i = indices[k];
-    while (upper.length >= 2 && cross3(upper[upper.length - 2], upper[upper.length - 1], i) <= 0)
-      upper.pop();
-    upper.push(i);
-  }
-
-  upper.pop();
-  lower.pop();
-  return lower.concat(upper);
+  return result;
 }
 
 // --- Role-aware tangent ---
@@ -431,8 +468,9 @@ function rubberBandPath(
   ctx: CanvasRenderingContext2D,
   contacts: ContactPeg[],
   floaters: Circle[],
+  clearance: number,
 ): void {
-  const expanded = expandWithFloaters(contacts, floaters);
+  const expanded = expandWithFloaters(contacts, floaters, clearance);
   const n = expanded.length;
   if (n < 2) return;
 
@@ -470,43 +508,61 @@ function rubberBandPath(
 }
 
 // Inserts floater circles as convex contacts wherever the current tangent
-// segments cross them. Each floater is inserted at most once.
+// segments cross them, inflated by `clearance` so the stroke's full
+// thickness clears the floater rather than just the centerline.
+// Iterates passes so newly-created sub-segments are re-checked against the
+// remaining floaters (cascading detection).
 function expandWithFloaters(
   contacts: ContactPeg[],
   floaters: Circle[],
+  clearance: number,
 ): ContactPeg[] {
   if (floaters.length === 0) return contacts;
 
-  const result: ContactPeg[] = [];
-  const n = contacts.length;
-  const added = new Set<Circle>();
+  let result: ContactPeg[] = [...contacts];
+  const remaining = new Set<Circle>(floaters);
+  const maxPasses = floaters.length + 1;
 
-  for (let i = 0; i < n; i++) {
-    result.push(contacts[i]);
-    const a = contacts[i];
-    const b = contacts[(i + 1) % n];
+  for (let pass = 0; pass < maxPasses; pass++) {
+    if (remaining.size === 0) break;
 
-    const { t1, t2 } = getRoleAwareTangent(
-      a.circle,
-      b.circle,
-      a.role === 'convex' ? 'outside' : 'inside',
-      b.role === 'convex' ? 'outside' : 'inside',
-    );
+    const next: ContactPeg[] = [];
+    const n = result.length;
+    let inserted = false;
 
-    const hits: { t: number; circle: Circle }[] = [];
-    for (const f of floaters) {
-      if (!added.has(f) && intersectSegmentDisk(t1, t2, f) !== null) {
+    for (let i = 0; i < n; i++) {
+      next.push(result[i]);
+      const a = result[i];
+      const b = result[(i + 1) % n];
+
+      const { t1, t2 } = getRoleAwareTangent(
+        a.circle,
+        b.circle,
+        a.role === 'convex' ? 'outside' : 'inside',
+        b.role === 'convex' ? 'outside' : 'inside',
+      );
+
+      const hits: { t: number; circle: Circle }[] = [];
+      for (const f of remaining) {
+        const inflated: Circle = { x: f.x, y: f.y, r: f.r + clearance };
+        if (intersectSegmentDisk(t1, t2, inflated) === null) continue;
         const seg = sub(t2, t1);
-        const proj = dot(sub({ x: f.x, y: f.y }, t1), seg) / Math.max(dot(seg, seg), 1e-12);
+        const proj =
+          dot(sub({ x: f.x, y: f.y }, t1), seg) /
+          Math.max(dot(seg, seg), 1e-12);
         hits.push({ t: Math.max(0, Math.min(1, proj)), circle: f });
+      }
+
+      hits.sort((x, y) => x.t - y.t);
+      for (const h of hits) {
+        next.push({ circle: h.circle, role: 'convex' });
+        remaining.delete(h.circle);
+        inserted = true;
       }
     }
 
-    hits.sort((x, y) => x.t - y.t);
-    for (const h of hits) {
-      result.push({ circle: h.circle, role: 'convex' });
-      added.add(h.circle);
-    }
+    result = next;
+    if (!inserted) break;
   }
 
   return result;
