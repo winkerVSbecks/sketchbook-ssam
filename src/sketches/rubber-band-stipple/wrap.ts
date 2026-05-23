@@ -218,6 +218,109 @@ export const sketch = ({
       }
     }
 
+    // Fixup loop: if pair-wise relaxation left any halo-halo overlap, or if
+    // a tangent segment of the band crosses a non-contact circle, shrink the
+    // offender until the wrap is clean. Shrinking is monotone, so the loop
+    // always terminates.
+    const minRadiusFloor = Math.max(2, config.minR * 0.3);
+    const fixupPasses = 8;
+
+    for (let pass = 0; pass < fixupPasses; pass++) {
+      let changed = false;
+
+      for (let i = 0; i < circles.length; i++) {
+        for (let j = i + 1; j < circles.length; j++) {
+          const a = circles[i];
+          const b = circles[j];
+          const ra = a.r + halfCS;
+          const rb = b.r + halfCS;
+          const d = Math.hypot(b.x - a.x, b.y - a.y);
+          const minD = ra + rb;
+          if (d >= minD - 0.1) continue;
+          const overlap = minD - d;
+          const totalR = a.r + b.r;
+          if (totalR < 1e-6) continue;
+          const newAR = Math.max(
+            minRadiusFloor,
+            a.r - (overlap * a.r) / totalR,
+          );
+          const newBR = Math.max(
+            minRadiusFloor,
+            b.r - (overlap * b.r) / totalR,
+          );
+          if (newAR < a.r) {
+            a.r = newAR;
+            changed = true;
+          }
+          if (newBR < b.r) {
+            b.r = newBR;
+            changed = true;
+          }
+        }
+      }
+
+      const haloProbe: Circle[] = circles.map((c) => ({
+        x: c.x,
+        y: c.y,
+        r: c.r + halfCS,
+      }));
+      if (haloProbe.length < 2 || contactOrder.length < 2) {
+        if (!changed) break;
+        continue;
+      }
+
+      const probeContacts: ContactPeg[] = contactOrder.map((i) => ({
+        circle: haloProbe[i],
+        role: roles[i] as 'convex' | 'concave',
+      }));
+      const probeFloaters = floaterIndices.map((i) => haloProbe[i]);
+      const expanded = expandWithFloaters(probeContacts, probeFloaters);
+      const expandedSet = new Set(expanded.map((cp) => cp.circle));
+      const en = expanded.length;
+      if (en < 2) {
+        if (!changed) break;
+        continue;
+      }
+
+      const edges = expanded.map((cp, i) => {
+        const next = expanded[(i + 1) % en];
+        return getRoleAwareTangent(
+          cp.circle,
+          next.circle,
+          cp.role === 'convex' ? 'outside' : 'inside',
+          next.role === 'convex' ? 'outside' : 'inside',
+        );
+      });
+
+      for (let i = 0; i < circles.length; i++) {
+        if (expandedSet.has(haloProbe[i])) continue;
+        const c = circles[i];
+        for (let e = 0; e < edges.length; e++) {
+          const ea = edges[e].t1;
+          const eb = edges[e].t2;
+          const segVec = sub(eb, ea);
+          const segLenSq = dot(segVec, segVec);
+          if (segLenSq < 1e-12) continue;
+          const tParam = Math.max(
+            0,
+            Math.min(1, dot(sub({ x: c.x, y: c.y }, ea), segVec) / segLenSq),
+          );
+          const closest = add(ea, scale(segVec, tParam));
+          const dist = vlen(sub({ x: c.x, y: c.y }, closest));
+          const safeDist = c.r + halfCS;
+          if (dist < safeDist - 0.1) {
+            const newR = Math.max(minRadiusFloor, dist - halfCS - 0.5);
+            if (newR < c.r) {
+              c.r = newR;
+              changed = true;
+            }
+          }
+        }
+      }
+
+      if (!changed) break;
+    }
+
     const haloCircles: Circle[] = circles.map((c) => ({
       x: c.x,
       y: c.y,
