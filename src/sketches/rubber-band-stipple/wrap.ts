@@ -27,6 +27,7 @@ const config = {
   bevelStrength: 14,
   bevelLayers: 6,
   hullFill: false,
+  wrapReach: 100,
 };
 
 const pane = new Pane() as any;
@@ -41,6 +42,7 @@ pane.addBinding(config, 'relaxIterations', { min: 0, max: 24, step: 1 });
 pane.addBinding(config, 'bevelStrength', { min: 0, max: 40, step: 1 });
 pane.addBinding(config, 'bevelLayers', { min: 1, max: 16, step: 1 });
 pane.addBinding(config, 'hullFill');
+pane.addBinding(config, 'wrapReach', { min: 0, max: 300, step: 1 });
 
 export const sketch = ({
   wrap,
@@ -74,7 +76,7 @@ export const sketch = ({
   // Reseed every render so the layout is deterministic for a given config.
   // animate:true keeps tweakpane edits live; the output is visually static.
   wrap.render = ({ width, height }: SketchProps) => {
-    Random.setSeed(config.seed);
+    // Random.setSeed(config.seed);
 
     const halfCS = config.strokeWidth / 2;
     const margin = config.maxR + halfCS + 8;
@@ -89,7 +91,11 @@ export const sketch = ({
         y: Random.range(margin, height - margin),
       };
       if (!circles.some((c) => Math.hypot(c.x - pt.x, c.y - pt.y) < minDist)) {
-        circles.push({ x: pt.x, y: pt.y, r: Random.range(config.minR, config.maxR) });
+        circles.push({
+          x: pt.x,
+          y: pt.y,
+          r: Random.range(config.minR, config.maxR),
+        });
       }
     }
 
@@ -97,7 +103,11 @@ export const sketch = ({
     const circleColors = circles.map(() => colorMap(Random.value()));
 
     // Inflate by half stroke so the band's inner edge is tangent to each circle
-    const halos: Circle[] = circles.map((c) => ({ x: c.x, y: c.y, r: c.r + halfCS }));
+    const halos: Circle[] = circles.map((c) => ({
+      x: c.x,
+      y: c.y,
+      r: c.r + halfCS,
+    }));
 
     // Separate overlapping halos; sync positions back to circles
     for (let iter = 0; iter < config.relaxIterations; iter++) {
@@ -130,7 +140,9 @@ export const sketch = ({
 
     // Hull of centers + obstacle pass: any circle whose boundary pokes through
     // a tangent segment is inserted into the band so the path never crosses it.
-    const bandCircles = buildBandCircles(halos);
+    // wrapReach inflates the catch radius so the band also snags nearby interior
+    // pegs that don't strictly cross the tangent.
+    const bandCircles = buildBandCircles(halos, config.wrapReach);
 
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
@@ -216,7 +228,7 @@ export const settings: SketchSettings = {
   mode: '2d',
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
-  animate: true,
+  animate: false,
   duration: 8000,
   playFps: 30,
   exportFps: 30,
@@ -265,14 +277,20 @@ function convexHull(circles: Circle[]): number[] {
 
   const lower: number[] = [];
   for (const i of idx) {
-    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], i) <= 0)
+    while (
+      lower.length >= 2 &&
+      cross(lower[lower.length - 2], lower[lower.length - 1], i) <= 0
+    )
       lower.pop();
     lower.push(i);
   }
   const upper: number[] = [];
   for (let k = idx.length - 1; k >= 0; k--) {
     const i = idx[k];
-    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], i) <= 0)
+    while (
+      upper.length >= 2 &&
+      cross(upper[upper.length - 2], upper[upper.length - 1], i) <= 0
+    )
       upper.pop();
     upper.push(i);
   }
@@ -301,15 +319,16 @@ function tangentPoints(c1: Circle, c2: Circle): { t1: Vec2; t2: Vec2 } {
 
 // --- Segment / disk intersection (parametric t ∈ [0,1] along segment a→b) ---
 
-function intersectSegmentDisk(a: Vec2, b: Vec2, c: Circle): boolean {
+function intersectSegmentDisk(a: Vec2, b: Vec2, c: Circle, slack = 0): boolean {
   const dx = b.x - a.x;
   const dy = b.y - a.y;
   const fx = a.x - c.x;
   const fy = a.y - c.y;
   const dd = dx * dx + dy * dy;
   if (dd < 1e-12) return false;
+  const r = c.r + slack;
   const fd = fx * dx + fy * dy;
-  const ff = fx * fx + fy * fy - c.r * c.r;
+  const ff = fx * fx + fy * fy - r * r;
   const disc = fd * fd - dd * ff;
   if (disc < 0) return false;
   const sq = Math.sqrt(disc);
@@ -321,7 +340,7 @@ function intersectSegmentDisk(a: Vec2, b: Vec2, c: Circle): boolean {
 // --- Build the band: hull of centers + insert any circle whose boundary pokes
 //     through a tangent segment. Iterates until no more insertions are needed. ---
 
-function buildBandCircles(halos: Circle[]): Circle[] {
+function buildBandCircles(halos: Circle[], wrapReach = 0): Circle[] {
   if (halos.length < 3) return [...halos];
 
   const hullIdx = convexHull(halos);
@@ -339,11 +358,12 @@ function buildBandCircles(halos: Circle[]): Circle[] {
       const hits: { t: number; circle: Circle }[] = [];
       for (const c of halos) {
         if (inBand.has(c)) continue;
-        if (!intersectSegmentDisk(t1, t2, c)) continue;
+        if (!intersectSegmentDisk(t1, t2, c, wrapReach)) continue;
         const sx = t2.x - t1.x;
         const sy = t2.y - t1.y;
         const dd = sx * sx + sy * sy;
-        const proj = dd > 1e-12 ? ((c.x - t1.x) * sx + (c.y - t1.y) * sy) / dd : 0;
+        const proj =
+          dd > 1e-12 ? ((c.x - t1.x) * sx + (c.y - t1.y) * sy) / dd : 0;
         hits.push({ t: Math.max(0, Math.min(1, proj)), circle: c });
       }
 
@@ -362,7 +382,10 @@ function buildBandCircles(halos: Circle[]): Circle[] {
 
 // --- Rubber band: closed path tangent to each circle in band order ---
 
-function rubberBandPath(ctx: CanvasRenderingContext2D, circles: Circle[]): void {
+function rubberBandPath(
+  ctx: CanvasRenderingContext2D,
+  circles: Circle[],
+): void {
   const n = circles.length;
   const edges = circles.map((c, i) => tangentPoints(c, circles[(i + 1) % n]));
 
