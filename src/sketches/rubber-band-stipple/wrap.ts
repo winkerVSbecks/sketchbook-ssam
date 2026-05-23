@@ -133,7 +133,8 @@ export const sketch = ({
       r: config.maxR + halfCS,
     }));
 
-    const hullSet = new Set(convexHullOfDisks(provisionalCircles));
+    const hullCcwOrder = convexHullOfDisks(provisionalCircles);
+    const hullSet = new Set(hullCcwOrder);
     const allIndices = positions.map((_, i) => i);
     const interiorIndices = allIndices.filter((i) => !hullSet.has(i));
 
@@ -152,21 +153,64 @@ export const sketch = ({
       return 'floater';
     });
 
-    let cx = 0;
-    let cy = 0;
-    for (const p of positions) {
-      cx += p.x;
-      cy += p.y;
+    // Start with the convex-hull traversal and splice each concave peg in
+    // at the position that least lengthens the cycle (cheapest insertion).
+    // Angle-sorting concave pegs around the centroid was the root cause of
+    // the band's self-crossings: a concave peg's angular position around
+    // the centroid does not always correspond to the hull edge it sits
+    // closest to.
+    const order = [...hullCcwOrder];
+    const concaveIndices = allIndices.filter((i) => roles[i] === 'concave');
+    for (const idx of concaveIndices) {
+      const p = positions[idx];
+      let bestPos = 1;
+      let bestCost = Infinity;
+      for (let i = 0; i < order.length; i++) {
+        const a = positions[order[i]];
+        const b = positions[order[(i + 1) % order.length]];
+        const cost =
+          Math.hypot(a.x - p.x, a.y - p.y) +
+          Math.hypot(p.x - b.x, p.y - b.y) -
+          Math.hypot(a.x - b.x, a.y - b.y);
+        if (cost < bestCost) {
+          bestCost = cost;
+          bestPos = i + 1;
+        }
+      }
+      order.splice(bestPos, 0, idx);
     }
-    cx /= positions.length;
-    cy /= positions.length;
 
-    const contactIndices = allIndices.filter((i) => roles[i] !== 'floater');
-    contactOrder = [...contactIndices].sort(
-      (a, b) =>
-        Math.atan2(positions[a].y - cy, positions[a].x - cx) -
-        Math.atan2(positions[b].y - cy, positions[b].x - cx),
-    );
+    // 2-opt cleanup: if any two non-adjacent center-to-center edges of the
+    // contact cycle still cross, reverse the segment between them. Each
+    // reversal removes one crossing without altering which pegs are
+    // contacts. Bounded by an iteration cap as a safety net.
+    const twoOptCap = Math.max(40, order.length * order.length);
+    let twoOptIter = 0;
+    let improved = true;
+    while (improved && twoOptIter < twoOptCap) {
+      improved = false;
+      twoOptIter++;
+      const m = order.length;
+      twoOpt: for (let i = 0; i < m; i++) {
+        for (let j = i + 2; j < m; j++) {
+          if (i === 0 && j === m - 1) continue;
+          const a = positions[order[i]];
+          const b = positions[order[(i + 1) % m]];
+          const c = positions[order[j]];
+          const d = positions[order[(j + 1) % m]];
+          if (segmentsCross(a, b, c, d)) {
+            const slice = order.slice(i + 1, j + 1).reverse();
+            for (let k = 0; k < slice.length; k++) {
+              order[i + 1 + k] = slice[k];
+            }
+            improved = true;
+            break twoOpt;
+          }
+        }
+      }
+    }
+
+    contactOrder = order;
     floaterIndices = allIndices.filter((i) => roles[i] === 'floater');
 
     cacheKey = key;
@@ -486,6 +530,22 @@ function perpRight(v: Vec2): Vec2 {
 }
 function vlen(v: Vec2): number {
   return Math.hypot(v.x, v.y);
+}
+
+// Proper open-segment crossing test: returns true only when [a,b] and [c,d]
+// strictly cross interior-to-interior. Shared endpoints and collinear overlap
+// don't count as a crossing — exactly what 2-opt wants on a closed cycle.
+function segmentsCross(a: Vec2, b: Vec2, c: Vec2, d: Vec2): boolean {
+  const orient = (p: Vec2, q: Vec2, r: Vec2): number =>
+    (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
+  const o1 = orient(a, b, c);
+  const o2 = orient(a, b, d);
+  const o3 = orient(c, d, a);
+  const o4 = orient(c, d, b);
+  return (
+    ((o1 > 0 && o2 < 0) || (o1 < 0 && o2 > 0)) &&
+    ((o3 > 0 && o4 < 0) || (o3 < 0 && o4 > 0))
+  );
 }
 
 // --- Convex hull of disk centers (Andrew's monotone chain) ---
