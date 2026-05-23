@@ -128,20 +128,21 @@ export const sketch = ({
       }
     }
 
-    // Convex hull of halo centers; band wraps only the hull pegs
-    const hullIdx = convexHull(halos);
-    const hullCircles = hullIdx.map((i) => halos[i]);
+    // Hull of centers + obstacle pass: any circle whose boundary pokes through
+    // a tangent segment is inserted into the band so the path never crosses it.
+    const bandCircles = buildBandCircles(halos);
 
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
 
-    if (hullCircles.length >= 2) {
-      rubberBandPath(context, hullCircles);
+    if (bandCircles.length >= 2) {
+      rubberBandPath(context, bandCircles);
 
       if (config.hullFill) {
         context.fillStyle = colorMap(0.5);
         context.fill();
       }
+
       context.lineJoin = 'round';
 
       const bandBase = colorMap(0.5);
@@ -237,6 +238,9 @@ function scale(v: Vec2, s: number): Vec2 {
 function perpRight(v: Vec2): Vec2 {
   return { x: v.y, y: -v.x };
 }
+function dot(a: Vec2, b: Vec2): number {
+  return a.x * b.x + a.y * b.y;
+}
 
 // --- Convex hull (Andrew's monotone chain, CCW in Y-up = CW on canvas screen) ---
 
@@ -295,7 +299,68 @@ function tangentPoints(c1: Circle, c2: Circle): { t1: Vec2; t2: Vec2 } {
   };
 }
 
-// --- Rubber band: closed path tangent to each hull circle in hull order ---
+// --- Segment / disk intersection (parametric t ∈ [0,1] along segment a→b) ---
+
+function intersectSegmentDisk(a: Vec2, b: Vec2, c: Circle): boolean {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const fx = a.x - c.x;
+  const fy = a.y - c.y;
+  const dd = dx * dx + dy * dy;
+  if (dd < 1e-12) return false;
+  const fd = fx * dx + fy * dy;
+  const ff = fx * fx + fy * fy - c.r * c.r;
+  const disc = fd * fd - dd * ff;
+  if (disc < 0) return false;
+  const sq = Math.sqrt(disc);
+  const t0 = (-fd - sq) / dd;
+  const t1 = (-fd + sq) / dd;
+  return t1 >= 0 && t0 <= 1;
+}
+
+// --- Build the band: hull of centers + insert any circle whose boundary pokes
+//     through a tangent segment. Iterates until no more insertions are needed. ---
+
+function buildBandCircles(halos: Circle[]): Circle[] {
+  if (halos.length < 3) return [...halos];
+
+  const hullIdx = convexHull(halos);
+  const band: Circle[] = hullIdx.map((i) => halos[i]);
+  const inBand = new Set<Circle>(band);
+
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (let i = 0; i < band.length; i++) {
+      const a = band[i];
+      const b = band[(i + 1) % band.length];
+      const { t1, t2 } = tangentPoints(a, b);
+
+      const hits: { t: number; circle: Circle }[] = [];
+      for (const c of halos) {
+        if (inBand.has(c)) continue;
+        if (!intersectSegmentDisk(t1, t2, c)) continue;
+        const sx = t2.x - t1.x;
+        const sy = t2.y - t1.y;
+        const dd = sx * sx + sy * sy;
+        const proj = dd > 1e-12 ? ((c.x - t1.x) * sx + (c.y - t1.y) * sy) / dd : 0;
+        hits.push({ t: Math.max(0, Math.min(1, proj)), circle: c });
+      }
+
+      if (hits.length > 0) {
+        hits.sort((x, y) => x.t - y.t);
+        band.splice(i + 1, 0, ...hits.map((h) => h.circle));
+        for (const h of hits) inBand.add(h.circle);
+        changed = true;
+        break; // restart scan with updated band
+      }
+    }
+  }
+
+  return band;
+}
+
+// --- Rubber band: closed path tangent to each circle in band order ---
 
 function rubberBandPath(ctx: CanvasRenderingContext2D, circles: Circle[]): void {
   const n = circles.length;
