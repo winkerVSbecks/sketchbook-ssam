@@ -218,12 +218,17 @@ export const sketch = ({
       }
     }
 
-    // Fixup loop: if pair-wise relaxation left any halo-halo overlap, or if
-    // a tangent segment of the band crosses a non-contact circle, shrink the
-    // offender until the wrap is clean. Shrinking is monotone, so the loop
-    // always terminates.
-    const minRadiusFloor = Math.max(2, config.minR * 0.3);
-    const fixupPasses = 8;
+    // Fixup loop: ensure no halo-halo overlap and no tangent segment of the
+    // band crosses through a non-incident circle. For band violations, first
+    // try to shrink the offending circle so its halo just clears the segment;
+    // if shrinking alone can't clear it (the segment is closer than halfCS +
+    // minRadiusFloor), shrink to the floor and nudge perpendicular to the
+    // segment to recover the rest. Every contact and floater is in scope —
+    // only the two circles incident to the current edge are skipped — because
+    // the provisional-radius hull can mis-classify pegs once drift and
+    // relaxation move things around.
+    const minRadiusFloor = Math.max(2, config.minR * 0.2);
+    const fixupPasses = 16;
 
     for (let pass = 0; pass < fixupPasses; pass++) {
       let changed = false;
@@ -234,29 +239,28 @@ export const sketch = ({
           const b = circles[j];
           const ra = a.r + halfCS;
           const rb = b.r + halfCS;
-          const d = Math.hypot(b.x - a.x, b.y - a.y);
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const d = Math.hypot(dx, dy);
           const minD = ra + rb;
-          if (d >= minD - 0.1) continue;
+          if (d >= minD - 0.1 || d < 1e-6) continue;
           const overlap = minD - d;
-          const totalR = a.r + b.r;
-          if (totalR < 1e-6) continue;
-          const newAR = Math.max(
-            minRadiusFloor,
-            a.r - (overlap * a.r) / totalR,
-          );
-          const newBR = Math.max(
-            minRadiusFloor,
-            b.r - (overlap * b.r) / totalR,
-          );
-          if (newAR < a.r) {
-            a.r = newAR;
-            changed = true;
-          }
-          if (newBR < b.r) {
-            b.r = newBR;
-            changed = true;
-          }
+          const nx = dx / d;
+          const ny = dy / d;
+          const totalR = ra + rb;
+          const aShare = rb / totalR;
+          const bShare = ra / totalR;
+          a.x -= nx * overlap * aShare;
+          a.y -= ny * overlap * aShare;
+          b.x += nx * overlap * bShare;
+          b.y += ny * overlap * bShare;
+          changed = true;
         }
+      }
+      for (const c of circles) {
+        const r = c.r + halfCS;
+        c.x = Math.min(Math.max(c.x, r), width - r);
+        c.y = Math.min(Math.max(c.y, r), height - r);
       }
 
       const haloProbe: Circle[] = circles.map((c) => ({
@@ -275,7 +279,6 @@ export const sketch = ({
       }));
       const probeFloaters = floaterIndices.map((i) => haloProbe[i]);
       const expanded = expandWithFloaters(probeContacts, probeFloaters);
-      const expandedSet = new Set(expanded.map((cp) => cp.circle));
       const en = expanded.length;
       if (en < 2) {
         if (!changed) break;
@@ -293,9 +296,13 @@ export const sketch = ({
       });
 
       for (let i = 0; i < circles.length; i++) {
-        if (expandedSet.has(haloProbe[i])) continue;
+        const haloI = haloProbe[i];
         const c = circles[i];
         for (let e = 0; e < edges.length; e++) {
+          const aCircle = expanded[e].circle;
+          const bCircle = expanded[(e + 1) % en].circle;
+          if (aCircle === haloI || bCircle === haloI) continue;
+
           const ea = edges[e].t1;
           const eb = edges[e].t2;
           const segVec = sub(eb, ea);
@@ -306,14 +313,30 @@ export const sketch = ({
             Math.min(1, dot(sub({ x: c.x, y: c.y }, ea), segVec) / segLenSq),
           );
           const closest = add(ea, scale(segVec, tParam));
-          const dist = vlen(sub({ x: c.x, y: c.y }, closest));
+          const distVec = sub({ x: c.x, y: c.y }, closest);
+          const dist = vlen(distVec);
           const safeDist = c.r + halfCS;
-          if (dist < safeDist - 0.1) {
-            const newR = Math.max(minRadiusFloor, dist - halfCS - 0.5);
-            if (newR < c.r) {
-              c.r = newR;
-              changed = true;
+          if (dist >= safeDist - 0.1) continue;
+
+          if (dist >= halfCS + minRadiusFloor + 0.5) {
+            c.r = dist - halfCS - 0.5;
+            changed = true;
+          } else {
+            c.r = minRadiusFloor;
+            const needed = minRadiusFloor + halfCS - dist + 0.5;
+            let nx: number;
+            let ny: number;
+            if (dist > 1e-6) {
+              nx = distVec.x / dist;
+              ny = distVec.y / dist;
+            } else {
+              const segLen = Math.sqrt(segLenSq);
+              nx = -segVec.y / segLen;
+              ny = segVec.x / segLen;
             }
+            c.x += nx * needed;
+            c.y += ny * needed;
+            changed = true;
           }
         }
       }
