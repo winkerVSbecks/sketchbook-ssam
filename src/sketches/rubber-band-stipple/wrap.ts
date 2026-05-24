@@ -31,6 +31,7 @@ const config = {
   minR: 20,
   maxR: 160,
   driftFactor: 0.025,
+  spread: 0.75,
   strokeWidth: 12,
   dotRadius: 7,
   relaxIterations: 24,
@@ -46,6 +47,7 @@ pane.addBinding(config, 'dentCount', { min: 0, max: 60, step: 1 });
 pane.addBinding(config, 'minR', { min: 4, max: 200, step: 1 });
 pane.addBinding(config, 'maxR', { min: 20, max: 300, step: 1 });
 pane.addBinding(config, 'driftFactor', { min: 0, max: 0.1, step: 0.001 });
+pane.addBinding(config, 'spread', { min: 0.3, max: 1.0, step: 0.01 });
 pane.addBinding(config, 'strokeWidth', { min: 0, max: 12, step: 0.1 });
 pane.addBinding(config, 'dotRadius', { min: 0, max: 30, step: 0.5 });
 pane.addBinding(config, 'relaxIterations', { min: 0, max: 24, step: 1 });
@@ -114,18 +116,24 @@ export const sketch = ({
 
   const ensurePositions = () => {
     const halfCS = config.strokeWidth / 2;
-    const key = `${config.count}|${config.maxR}|${config.dentCount}`;
+    const key = `${config.count}|${config.maxR}|${config.dentCount}|${config.spread}`;
     if (key === cacheKey) return;
 
+    const usableW = width * config.spread;
+    const usableH = height * config.spread;
+    const xLo = (width - usableW) / 2;
+    const yLo = (height - usableH) / 2;
     const margin = config.maxR + driftAmt + 4;
-    const minDist = ((width - 2 * margin) / Math.sqrt(config.count)) * 0.75;
+    const minDist =
+      ((Math.min(usableW, usableH) - 2 * margin) / Math.sqrt(config.count)) *
+      0.75;
     positions = [];
     let attempts = 0;
     while (positions.length < config.count && attempts < config.count * 40) {
       attempts++;
       const pt = {
-        x: Random.range(margin, width - margin),
-        y: Random.range(margin, height - margin),
+        x: Random.range(xLo + margin, xLo + usableW - margin),
+        y: Random.range(yLo + margin, yLo + usableH - margin),
       };
       if (
         !positions.some((p) => Math.hypot(p.x - pt.x, p.y - pt.y) < minDist)
@@ -228,6 +236,12 @@ export const sketch = ({
     ensurePositions();
 
     const halfCS = config.strokeWidth / 2;
+    const usableW = width * config.spread;
+    const usableH = height * config.spread;
+    const xLo = (width - usableW) / 2;
+    const yLo = (height - usableH) / 2;
+    const xHi = xLo + usableW;
+    const yHi = yLo + usableH;
 
     const circles: Circle[] = positions.map((p) => {
       const t = noise(p.x, p.y, SNAPSHOT_T);
@@ -265,8 +279,8 @@ export const sketch = ({
       }
       for (const c of circles) {
         const r = c.r + halfCS;
-        c.x = Math.min(Math.max(c.x, r), width - r);
-        c.y = Math.min(Math.max(c.y, r), height - r);
+        c.x = Math.min(Math.max(c.x, xLo + r), xHi - r);
+        c.y = Math.min(Math.max(c.y, yLo + r), yHi - r);
       }
     }
 
@@ -311,8 +325,8 @@ export const sketch = ({
       }
       for (const c of circles) {
         const r = c.r + halfCS;
-        c.x = Math.min(Math.max(c.x, r), width - r);
-        c.y = Math.min(Math.max(c.y, r), height - r);
+        c.x = Math.min(Math.max(c.x, xLo + r), xHi - r);
+        c.y = Math.min(Math.max(c.y, yLo + r), yHi - r);
       }
 
       const haloProbe: Circle[] = circles.map((c) => ({
