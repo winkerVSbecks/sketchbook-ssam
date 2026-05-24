@@ -69,7 +69,15 @@ export const sketch = ({
     props.exportFrame();
   });
 
-  const colors = generateColors();
+  const colors = generateColors('srgb', () => ({
+    total: 6,
+    hStart: Random.range(0, 360),
+    hCycles: Random.range(-0.15, 0.15),
+    sRange: [0.75, 1],
+    sEasing: (x) => Math.pow(x, 2),
+    lRange: [1, 0.08],
+    lEasing: (x) => Math.pow(x, 1.1),
+  }));
   const bg = '#000000';
   const colorScale = interpolate(colors);
   const colorMap = (t: number) => formatCss(colorScale(t));
