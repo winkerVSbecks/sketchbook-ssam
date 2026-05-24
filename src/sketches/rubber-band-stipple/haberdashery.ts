@@ -80,7 +80,8 @@ export const sketch = ({
   const colors = generateColors('srgb', () => ({
     total: 6,
     hStart: Random.range(0, 360),
-    hCycles: Random.range(-0.15, 0.15),
+    hCycles: 0.5,
+    hEasing: (x) => Math.pow(x, 4),
     sRange: [0.75, 1],
     sEasing: (x) => Math.pow(x, 2),
     lRange: [1, 0.08],
