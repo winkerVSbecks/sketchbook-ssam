@@ -109,8 +109,13 @@ function hsl2farbrad(h: number, s: number, l: number) {
   return ryb2rgb([rgbColor.r, rgbColor.g, rgbColor.b]);
 }
 
-export function generateColors(format: 'srgb' | 'hex' = 'srgb'): string[] {
-  const options = newOptions();
+export type ColorRampOptions = ReturnType<typeof newOptions>;
+
+export function generateColors(
+  format: 'srgb' | 'hex' = 'srgb',
+  optionsFn: () => ColorRampOptions = newOptions,
+): string[] {
+  const options = optionsFn();
   const colorHSL = generateColorRamp(options as any);
   const colors =
     format === 'srgb'
