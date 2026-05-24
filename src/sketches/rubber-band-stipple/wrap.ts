@@ -293,7 +293,7 @@ export const sketch = ({
     // only the two circles incident to the current edge are skipped — because
     // the provisional-radius hull can mis-classify pegs once drift and
     // relaxation move things around.
-    const minRadiusFloor = Math.max(2, config.minR * 0.2);
+    const minRadiusFloor = config.minR;
     const fixupPasses = 16;
 
     for (let pass = 0; pass < fixupPasses; pass++) {
