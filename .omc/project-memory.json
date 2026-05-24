@@ -32,7 +32,7 @@
     "runtime": null
   },
   "build": {
-    "buildCommand": "npm run build",
+    "buildCommand": "rtk tsc --noEmit --skipLibCheck src/sketches/rubber-band-stipple/haberdashery.ts 2>&1 | head -40",
     "testCommand": null,
     "lintCommand": null,
     "devCommand": "npm run dev",

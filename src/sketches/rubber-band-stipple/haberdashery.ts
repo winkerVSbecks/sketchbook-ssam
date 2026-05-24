@@ -30,7 +30,6 @@ const config = {
   dentCount: 4,
   minR: 20,
   maxR: 160,
-  driftFactor: 0.025,
   spread: 0.75,
   strokeWidth: 12,
   dotRadius: 7,
@@ -38,6 +37,7 @@ const config = {
   bevelStrength: 14,
   bevelLayers: 6,
   hullFill: false,
+  showPegs: true,
   dashLength: 200,
   gapLength: 4,
   loops: 2,
@@ -49,7 +49,6 @@ pane.addBinding(config, 'count', { min: 3, max: 60, step: 1 });
 pane.addBinding(config, 'dentCount', { min: 0, max: 60, step: 1 });
 pane.addBinding(config, 'minR', { min: 4, max: 200, step: 1 });
 pane.addBinding(config, 'maxR', { min: 20, max: 300, step: 1 });
-pane.addBinding(config, 'driftFactor', { min: 0, max: 0.1, step: 0.001 });
 pane.addBinding(config, 'spread', { min: 0.3, max: 1.0, step: 0.01 });
 pane.addBinding(config, 'strokeWidth', { min: 0, max: 12, step: 0.1 });
 pane.addBinding(config, 'dotRadius', { min: 0, max: 30, step: 0.5 });
@@ -57,6 +56,7 @@ pane.addBinding(config, 'relaxIterations', { min: 0, max: 24, step: 1 });
 pane.addBinding(config, 'bevelStrength', { min: 0, max: 40, step: 1 });
 pane.addBinding(config, 'bevelLayers', { min: 1, max: 16, step: 1 });
 pane.addBinding(config, 'hullFill');
+pane.addBinding(config, 'showPegs');
 pane.addBinding(config, 'dashLength', { min: 1, max: 200, step: 1 });
 pane.addBinding(config, 'gapLength', { min: 1, max: 200, step: 1 });
 pane.addBinding(config, 'loops', { min: 1, max: 20, step: 1 });
@@ -108,7 +108,6 @@ export const sketch = ({
     return Random.noise4D(x / 100, y / 100, polarT[0], polarT[1], 0.25, 1);
   };
 
-  const driftAmt = width * config.driftFactor;
   // Fixed noise time so the precomputed geometry is independent of playhead.
   const SNAPSHOT_T = 0;
 
@@ -130,7 +129,7 @@ export const sketch = ({
     const usableH = height * config.spread;
     const xLo = (width - usableW) / 2;
     const yLo = (height - usableH) / 2;
-    const margin = config.maxR + driftAmt + 4;
+    const margin = config.maxR + 4;
     const minDist =
       ((Math.min(usableW, usableH) - 2 * margin) / Math.sqrt(config.count)) *
       0.75;
@@ -253,9 +252,7 @@ export const sketch = ({
     const circles: Circle[] = positions.map((p) => {
       const t = noise(p.x, p.y, SNAPSHOT_T);
       const r = mapRange(t, -1, 1, config.minR, config.maxR, true);
-      const dx = noise(p.x + 500, p.y, SNAPSHOT_T) * driftAmt;
-      const dy = noise(p.x, p.y + 500, SNAPSHOT_T) * driftAmt;
-      return { x: p.x + dx, y: p.y + dy, r };
+      return { x: p.x, y: p.y, r };
     });
 
     // Resolve overlaps: each colliding pair separates along their centerline,
@@ -526,45 +523,47 @@ export const sketch = ({
     context.setLineDash([]);
     context.lineDashOffset = 0;
 
-    // Stipple pass: precomputed gradient + center dot + rims on every circle.
-    const rimDark = shiftLightness(bg, -config.bevelStrength);
-    const rimLight = shiftLightness(bg, config.bevelStrength * 5);
+    if (config.showPegs) {
+      // Stipple pass: precomputed gradient + center dot + rims on every circle.
+      const rimDark = shiftLightness(bg, -config.bevelStrength);
+      const rimLight = shiftLightness(bg, config.bevelStrength * 5);
 
-    for (const rc of renderCircles) {
-      const c = rc.circle;
-      context.fillStyle = rc.gradient;
-      context.beginPath();
-      context.arc(c.x, c.y, c.r, 0, Math.PI * 2);
-      context.fill();
+      for (const rc of renderCircles) {
+        const c = rc.circle;
+        context.fillStyle = rc.gradient;
+        context.beginPath();
+        context.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+        context.fill();
 
-      context.fillStyle = bg;
-      context.beginPath();
-      context.arc(c.x, c.y, config.dotRadius, 0, Math.PI * 2);
-      context.fill();
+        context.fillStyle = bg;
+        context.beginPath();
+        context.arc(c.x, c.y, config.dotRadius, 0, Math.PI * 2);
+        context.fill();
 
-      context.strokeStyle = rimDark;
-      context.lineWidth = 2;
-      context.beginPath();
-      context.arc(
-        c.x,
-        c.y,
-        config.dotRadius - 1,
-        (13 * Math.PI) / 12,
-        (23 * Math.PI) / 12,
-      );
-      context.stroke();
+        context.strokeStyle = rimDark;
+        context.lineWidth = 2;
+        context.beginPath();
+        context.arc(
+          c.x,
+          c.y,
+          config.dotRadius - 1,
+          (13 * Math.PI) / 12,
+          (23 * Math.PI) / 12,
+        );
+        context.stroke();
 
-      context.strokeStyle = rimLight;
-      context.lineWidth = 1.5;
-      context.beginPath();
-      context.arc(
-        c.x,
-        c.y,
-        config.dotRadius + 0.75,
-        Math.PI / 4,
-        (3 * Math.PI) / 4,
-      );
-      context.stroke();
+        context.strokeStyle = rimLight;
+        context.lineWidth = 1.5;
+        context.beginPath();
+        context.arc(
+          c.x,
+          c.y,
+          config.dotRadius + 0.75,
+          Math.PI / 4,
+          (3 * Math.PI) / 4,
+        );
+        context.stroke();
+      }
     }
   };
 };
