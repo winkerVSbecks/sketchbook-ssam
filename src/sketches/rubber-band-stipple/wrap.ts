@@ -294,11 +294,13 @@ export const sketch = ({
     // the provisional-radius hull can mis-classify pegs once drift and
     // relaxation move things around.
     const minRadiusFloor = config.minR;
-    const fixupPasses = 16;
+    const fixupPasses = 32;
 
     for (let pass = 0; pass < fixupPasses; pass++) {
       let changed = false;
 
+      // Phase 1: pair-separate halos by movement. Strict (no overlap tolerance)
+      // so circle fills never end up overlapping.
       for (let i = 0; i < circles.length; i++) {
         for (let j = i + 1; j < circles.length; j++) {
           const a = circles[i];
@@ -309,7 +311,7 @@ export const sketch = ({
           const dy = b.y - a.y;
           const d = Math.hypot(dx, dy);
           const minD = ra + rb;
-          if (d >= minD - 0.1 || d < 1e-6) continue;
+          if (d >= minD || d < 1e-6) continue;
           const overlap = minD - d;
           const nx = dx / d;
           const ny = dy / d;
@@ -327,6 +329,29 @@ export const sketch = ({
         const r = c.r + halfCS;
         c.x = Math.min(Math.max(c.x, xLo + r), xHi - r);
         c.y = Math.min(Math.max(c.y, yLo + r), yHi - r);
+      }
+
+      // Phase 1.5: shrink fallback. If movement + bounds clamping left a pair
+      // still overlapping (e.g. both circles are pinned against the boundary
+      // and have no room to move), shrink the larger one until they clear.
+      for (let i = 0; i < circles.length; i++) {
+        for (let j = i + 1; j < circles.length; j++) {
+          const a = circles[i];
+          const b = circles[j];
+          const ra = a.r + halfCS;
+          const rb = b.r + halfCS;
+          const d = Math.hypot(b.x - a.x, b.y - a.y);
+          const minD = ra + rb;
+          if (d >= minD || d < 1e-6) continue;
+          const overlap = minD - d;
+          if (a.r >= b.r && a.r > minRadiusFloor) {
+            a.r = Math.max(minRadiusFloor, a.r - overlap - 0.1);
+            changed = true;
+          } else if (b.r > minRadiusFloor) {
+            b.r = Math.max(minRadiusFloor, b.r - overlap - 0.1);
+            changed = true;
+          }
+        }
       }
 
       const haloProbe: Circle[] = circles.map((c) => ({
@@ -382,14 +407,21 @@ export const sketch = ({
           const distVec = sub({ x: c.x, y: c.y }, closest);
           const dist = vlen(distVec);
           const safeDist = c.r + halfCS;
-          if (dist >= safeDist - 0.1) continue;
+          // Require ≥ 0.5 px clearance; shrink/nudge to 1.0 px. The band's
+          // inner stroke edge sits halfCS inside the centerline, so 1.0 px
+          // of centerline-to-halo clearance gives the band's near edge 1.0 px
+          // of visible separation from every non-incident circle's fill.
+          // Without this, expandWithFloaters can also insert a marginal
+          // floater as a contact with a tiny-chord arc — a kink in the
+          // bevel gradient.
+          if (dist >= safeDist + 0.5) continue;
 
-          if (dist >= halfCS + minRadiusFloor + 0.5) {
-            c.r = dist - halfCS - 0.5;
+          if (dist >= halfCS + minRadiusFloor + 1.0) {
+            c.r = dist - halfCS - 1.0;
             changed = true;
           } else {
             c.r = minRadiusFloor;
-            const needed = minRadiusFloor + halfCS - dist + 0.5;
+            const needed = minRadiusFloor + halfCS - dist + 1.0;
             let nx: number;
             let ny: number;
             if (dist > 1e-6) {
@@ -692,8 +724,19 @@ function rubberBandPath(
     );
   });
 
-  const firstArrival = edges[n - 1].t2;
-  path.moveTo(firstArrival.x, firstArrival.y);
+  // Place the moveTo/closePath seam at the midpoint of the last tangent
+  // instead of at peg 0's arrival. The seam is then a join between two
+  // collinear halves of the same straight line, which lineJoin='round'
+  // renders as a true no-op — whereas a seam at a line→arc transition
+  // can produce a visible kink in the bevel gradient under nested strokes
+  // even when the path is mathematically C1 continuous.
+  const seamEdge = edges[n - 1];
+  const seamMid: Vec2 = {
+    x: (seamEdge.t1.x + seamEdge.t2.x) / 2,
+    y: (seamEdge.t1.y + seamEdge.t2.y) / 2,
+  };
+  path.moveTo(seamMid.x, seamMid.y);
+  path.lineTo(seamEdge.t2.x, seamEdge.t2.y);
 
   for (let i = 0; i < n; i++) {
     const cp = expanded[i];
@@ -708,7 +751,11 @@ function rubberBandPath(
     // Concave pegs: short arc on inside (anticlockwise in canvas Y-down).
     const anticlockwise = cp.role === 'concave';
     path.arc(c.x, c.y, c.r, aAngle, dAngle, anticlockwise);
-    path.lineTo(edges[i].t2.x, edges[i].t2.y);
+    if (i < n - 1) {
+      path.lineTo(edges[i].t2.x, edges[i].t2.y);
+    } else {
+      path.lineTo(seamMid.x, seamMid.y);
+    }
   }
 
   path.closePath();
