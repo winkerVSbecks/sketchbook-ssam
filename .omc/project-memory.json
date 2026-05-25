@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1779631728130,
+  "lastScanned": 1779721739974,
   "projectRoot": "/Users/varunvachhar/Documents/projects/sketchbook-ssam",
   "techStack": {
     "languages": [
@@ -32,7 +32,7 @@
     "runtime": null
   },
   "build": {
-    "buildCommand": "rtk tsc --noEmit --skipLibCheck src/sketches/rubber-band-stipple/haberdashery.ts 2>&1 | head -40",
+    "buildCommand": "npm run build",
     "testCommand": null,
     "lintCommand": null,
     "devCommand": "npm run dev",
@@ -76,7 +76,7 @@
       "path": "archive",
       "purpose": null,
       "fileCount": 3,
-      "lastAccessed": 1779631728097,
+      "lastAccessed": 1779721739935,
       "keyFiles": [
         "archive.json",
         "index.html",
@@ -87,7 +87,7 @@
       "path": "assets",
       "purpose": "Static assets",
       "fileCount": 3,
-      "lastAccessed": 1779631728097,
+      "lastAccessed": 1779721739935,
       "keyFiles": [
         "skeletor.svg",
         "varun.svg"
@@ -97,7 +97,7 @@
       "path": "docs",
       "purpose": "Documentation",
       "fileCount": 2,
-      "lastAccessed": 1779631728100,
+      "lastAccessed": 1779721739941,
       "keyFiles": [
         "cloud-rendering.md",
         "ideas.md"
@@ -106,8 +106,8 @@
     "output": {
       "path": "output",
       "purpose": null,
-      "fileCount": 5598,
-      "lastAccessed": 1779631728122,
+      "fileCount": 5609,
+      "lastAccessed": 1779721739968,
       "keyFiles": [
         "2023.12.13-15.21.58.mp4",
         "2023.12.13-15.33.09.mp4",
@@ -120,7 +120,7 @@
       "path": "previews",
       "purpose": null,
       "fileCount": 1,
-      "lastAccessed": 1779631728123,
+      "lastAccessed": 1779721739969,
       "keyFiles": [
         "albers-meander.png"
       ]
@@ -129,7 +129,7 @@
       "path": "scripts",
       "purpose": "Build/utility scripts",
       "fileCount": 6,
-      "lastAccessed": 1779631728123,
+      "lastAccessed": 1779721739969,
       "keyFiles": [
         "archive-render-html.ts",
         "archive-types.ts",
@@ -142,7 +142,7 @@
       "path": "src",
       "purpose": "Source code",
       "fileCount": 14,
-      "lastAccessed": 1779631728124,
+      "lastAccessed": 1779721739969,
       "keyFiles": [
         "dither.ts",
         "gallery.ts",
@@ -155,7 +155,7 @@
       "path": "timelapse",
       "purpose": null,
       "fileCount": 77,
-      "lastAccessed": 1779631728124,
+      "lastAccessed": 1779721739970,
       "keyFiles": [
         "00000.png",
         "00001.png",
