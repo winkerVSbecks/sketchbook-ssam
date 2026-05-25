@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-18T01:45:36.323Z",
+  "generatedAt": "2026-05-25T15:43:15.337Z",
   "sketches": [
     {
       "id": "sketches/42-loc",
@@ -3314,6 +3314,22 @@
       }
     },
     {
+      "id": "sketches/nalee-one-line/albers-meander",
+      "name": "albers-meander",
+      "path": "src/sketches/nalee-one-line/albers-meander.ts",
+      "firstCommitDate": "2026-05-15T14:59:36Z",
+      "year": 2026,
+      "lastCommitSha": "cc80661eda56dd0e6003ef93d082b596af4ecc4c",
+      "archivedAt": "2026-05-25T15:42:11.339Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/nalee-one-line-albers-meander",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779723730/sketchbook/2026/nalee-one-line-albers-meander.png",
+        "version": 1779723730,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
       "id": "sketches/nalee-one-line/basic",
       "name": "basic",
       "path": "src/sketches/nalee-one-line/basic.ts",
@@ -3575,12 +3591,12 @@
       "path": "src/sketches/nalee/sketches/polar-clipped.ts",
       "firstCommitDate": "2025-08-23T15:05:23-04:00",
       "year": 2025,
-      "lastCommitSha": "1919d8aa127fbe0da433f7b79c00c233dcad6e5c",
-      "archivedAt": "2026-05-18T01:22:00.370Z",
+      "lastCommitSha": "b30cf07318c8dcdac4eefae936aff99a12fb3670",
+      "archivedAt": "2026-05-25T15:42:15.978Z",
       "cloudinary": {
         "publicId": "sketchbook/2025/nalee-sketches-polar-clipped",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779067319/sketchbook/2025/nalee-sketches-polar-clipped.png",
-        "version": 1779067319,
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779723735/sketchbook/2025/nalee-sketches-polar-clipped.png",
+        "version": 1779723735,
         "width": 1080,
         "height": 1080
       }
@@ -3975,12 +3991,12 @@
       "path": "src/sketches/paint-without-thinking/arcs-reduction-rounded.ts",
       "firstCommitDate": "2025-09-26T23:02:32-04:00",
       "year": 2025,
-      "lastCommitSha": "4fc8abcbdf85b28e180f7870bf460f33aabf1449",
-      "archivedAt": "2026-05-17T19:50:14.526Z",
+      "lastCommitSha": "03ce02b02f0e675c1921e68d57577ad162147e7d",
+      "archivedAt": "2026-05-25T15:42:18.849Z",
       "cloudinary": {
         "publicId": "sketchbook/2025/paint-without-thinking-arcs-reduction-rounded",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779047414/sketchbook/2025/paint-without-thinking-arcs-reduction-rounded.png",
-        "version": 1779047414,
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779723738/sketchbook/2025/paint-without-thinking-arcs-reduction-rounded.png",
+        "version": 1779723738,
         "width": 1040,
         "height": 640
       }
@@ -4493,6 +4509,246 @@
         "publicId": "sketchbook/2025/red-and-black-spring-anticipation",
         "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779062390/sketchbook/2025/red-and-black-spring-anticipation.png",
         "version": 1779062390,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/rubber-band-stipple/haberdashery",
+      "name": "haberdashery",
+      "path": "src/sketches/rubber-band-stipple/haberdashery.ts",
+      "firstCommitDate": "2026-05-19T10:30:18-04:00",
+      "year": 2026,
+      "lastCommitSha": "0baefdd11e611f4a931814d6f31c3395d0f56934",
+      "archivedAt": "2026-05-25T15:42:21.410Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/rubber-band-stipple-haberdashery",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779723740/sketchbook/2026/rubber-band-stipple-haberdashery.png",
+        "version": 1779723740,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/rubber-band-stipple/rubber-band-stipple",
+      "name": "rubber-band-stipple",
+      "path": "src/sketches/rubber-band-stipple/rubber-band-stipple.ts",
+      "firstCommitDate": "2026-05-18T13:33:12Z",
+      "year": 2026,
+      "lastCommitSha": "62b3697df428531d7e266598188f2af97f9bc059",
+      "archivedAt": "2026-05-25T15:42:23.904Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/rubber-band-stipple-rubber-band-stipple",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779723743/sketchbook/2026/rubber-band-stipple-rubber-band-stipple.png",
+        "version": 1779723743,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/rubber-band-stipple/shape",
+      "name": "shape",
+      "path": "src/sketches/rubber-band-stipple/shape.ts",
+      "firstCommitDate": "2026-05-19T10:30:18-04:00",
+      "year": 2026,
+      "lastCommitSha": "62b3697df428531d7e266598188f2af97f9bc059",
+      "archivedAt": "2026-05-25T15:42:26.355Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/rubber-band-stipple-shape",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779723745/sketchbook/2026/rubber-band-stipple-shape.png",
+        "version": 1779723745,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/rubber-band-stipple/shapes",
+      "name": "shapes",
+      "path": "src/sketches/rubber-band-stipple/shapes.ts",
+      "firstCommitDate": "2026-05-18T13:33:12Z",
+      "year": 2026,
+      "lastCommitSha": "62b3697df428531d7e266598188f2af97f9bc059",
+      "archivedAt": "2026-05-25T15:42:28.744Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/rubber-band-stipple-shapes",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779723748/sketchbook/2026/rubber-band-stipple-shapes.png",
+        "version": 1779723748,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/rubber-band-stipple/skeleton-albers",
+      "name": "skeleton-albers",
+      "path": "src/sketches/rubber-band-stipple/skeleton-albers.ts",
+      "firstCommitDate": "2026-05-19T10:30:18-04:00",
+      "year": 2026,
+      "lastCommitSha": "ad4bef46c4177191cb370baacdcc82b3a8210471",
+      "archivedAt": "2026-05-25T15:42:31.544Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/rubber-band-stipple-skeleton-albers",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779723750/sketchbook/2026/rubber-band-stipple-skeleton-albers.png",
+        "version": 1779723750,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/rubber-band-stipple/skeleton-clusters",
+      "name": "skeleton-clusters",
+      "path": "src/sketches/rubber-band-stipple/skeleton-clusters.ts",
+      "firstCommitDate": "2026-05-19T10:30:18-04:00",
+      "year": 2026,
+      "lastCommitSha": "9964c4363fa36c7000197c5e2fdc887138d01df7",
+      "archivedAt": "2026-05-25T15:42:34.104Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/rubber-band-stipple-skeleton-clusters",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779723753/sketchbook/2026/rubber-band-stipple-skeleton-clusters.png",
+        "version": 1779723753,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/rubber-band-stipple/skeleton-field",
+      "name": "skeleton-field",
+      "path": "src/sketches/rubber-band-stipple/skeleton-field.ts",
+      "firstCommitDate": "2026-05-19T10:30:18-04:00",
+      "year": 2026,
+      "lastCommitSha": "9964c4363fa36c7000197c5e2fdc887138d01df7",
+      "archivedAt": "2026-05-25T15:42:36.599Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/rubber-band-stipple-skeleton-field",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779723756/sketchbook/2026/rubber-band-stipple-skeleton-field.png",
+        "version": 1779723756,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/rubber-band-stipple/skeleton-grid",
+      "name": "skeleton-grid",
+      "path": "src/sketches/rubber-band-stipple/skeleton-grid.ts",
+      "firstCommitDate": "2026-05-19T10:30:18-04:00",
+      "year": 2026,
+      "lastCommitSha": "9964c4363fa36c7000197c5e2fdc887138d01df7",
+      "archivedAt": "2026-05-25T15:42:39.195Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/rubber-band-stipple-skeleton-grid",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779723758/sketchbook/2026/rubber-band-stipple-skeleton-grid.png",
+        "version": 1779723758,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/rubber-band-stipple/skeleton-inverted",
+      "name": "skeleton-inverted",
+      "path": "src/sketches/rubber-band-stipple/skeleton-inverted.ts",
+      "firstCommitDate": "2026-05-19T10:30:18-04:00",
+      "year": 2026,
+      "lastCommitSha": "9964c4363fa36c7000197c5e2fdc887138d01df7",
+      "archivedAt": "2026-05-25T15:42:42.319Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/rubber-band-stipple-skeleton-inverted",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779723761/sketchbook/2026/rubber-band-stipple-skeleton-inverted.png",
+        "version": 1779723761,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/rubber-band-stipple/skeleton-line",
+      "name": "skeleton-line",
+      "path": "src/sketches/rubber-band-stipple/skeleton-line.ts",
+      "firstCommitDate": "2026-05-19T10:30:18-04:00",
+      "year": 2026,
+      "lastCommitSha": "ad4bef46c4177191cb370baacdcc82b3a8210471",
+      "archivedAt": "2026-05-25T15:42:45.072Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/rubber-band-stipple-skeleton-line",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779723764/sketchbook/2026/rubber-band-stipple-skeleton-line.png",
+        "version": 1779723764,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/rubber-band-stipple/skeleton-shape",
+      "name": "skeleton-shape",
+      "path": "src/sketches/rubber-band-stipple/skeleton-shape.ts",
+      "firstCommitDate": "2026-05-19T10:30:18-04:00",
+      "year": 2026,
+      "lastCommitSha": "7f73246ac68bbb2164420ff00e684b175d08db8c",
+      "archivedAt": "2026-05-25T15:42:47.566Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/rubber-band-stipple-skeleton-shape",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779723767/sketchbook/2026/rubber-band-stipple-skeleton-shape.png",
+        "version": 1779723767,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/rubber-band-stipple/skeleton-singular",
+      "name": "skeleton-singular",
+      "path": "src/sketches/rubber-band-stipple/skeleton-singular.ts",
+      "firstCommitDate": "2026-05-19T10:30:18-04:00",
+      "year": 2026,
+      "lastCommitSha": "9964c4363fa36c7000197c5e2fdc887138d01df7",
+      "archivedAt": "2026-05-25T15:42:50.086Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/rubber-band-stipple-skeleton-singular",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779723769/sketchbook/2026/rubber-band-stipple-skeleton-singular.png",
+        "version": 1779723769,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/rubber-band-stipple/tendon-albers",
+      "name": "tendon-albers",
+      "path": "src/sketches/rubber-band-stipple/tendon-albers.ts",
+      "firstCommitDate": "2026-05-19T10:30:18-04:00",
+      "year": 2026,
+      "lastCommitSha": "ad4bef46c4177191cb370baacdcc82b3a8210471",
+      "archivedAt": "2026-05-25T15:42:52.503Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/rubber-band-stipple-tendon-albers",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779723772/sketchbook/2026/rubber-band-stipple-tendon-albers.png",
+        "version": 1779723772,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/rubber-band-stipple/weaving-techniques",
+      "name": "weaving-techniques",
+      "path": "src/sketches/rubber-band-stipple/weaving-techniques.ts",
+      "firstCommitDate": "2026-05-19T10:30:18-04:00",
+      "year": 2026,
+      "lastCommitSha": "62b3697df428531d7e266598188f2af97f9bc059",
+      "archivedAt": "2026-05-25T15:42:55.102Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/rubber-band-stipple-weaving-techniques",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779723774/sketchbook/2026/rubber-band-stipple-weaving-techniques.png",
+        "version": 1779723774,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/rubber-band-stipple/wrap",
+      "name": "wrap",
+      "path": "src/sketches/rubber-band-stipple/wrap.ts",
+      "firstCommitDate": "2026-05-19T10:30:18-04:00",
+      "year": 2026,
+      "lastCommitSha": "a2e977b77a26f5747c12c11ee3a5fe883684fa8c",
+      "archivedAt": "2026-05-25T15:42:57.711Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/rubber-band-stipple-wrap",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779723777/sketchbook/2026/rubber-band-stipple-wrap.png",
+        "version": 1779723777,
         "width": 1080,
         "height": 1080
       }

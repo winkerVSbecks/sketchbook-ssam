@@ -32,7 +32,7 @@
     "runtime": null
   },
   "build": {
-    "buildCommand": "npm run build",
+    "buildCommand": "rtk npx tsx --eval \"import('./scripts/cloud-render.ts').catch(e => { console.error(e.message); process.exit(1); }); process.argv = ['x','x','stop'];\" 2>&1 | head -20 & sleep 2 && kill %1 2>/dev/null; wait 2>/dev/null\necho \"---\"\nnode --check scripts/cloud-render.ts 2>&1 || echo \"(node --check doesn't handle TS, falling back to tsx parse)\"\nnpx tsc --noEmit --target es2022 --module nodenext --moduleResolution nodenext --types node --allowImportingTsExtensions --skipLibCheck scripts/cloud-render.ts 2>&1 | head -20",
     "testCommand": null,
     "lintCommand": null,
     "devCommand": "npm run dev",
@@ -180,8 +180,14 @@
     },
     {
       "path": "src/index.ts",
-      "accessCount": 18,
-      "lastAccessed": 1779299515541,
+      "accessCount": 19,
+      "lastAccessed": 1779723560476,
+      "type": "file"
+    },
+    {
+      "path": "scripts/cloud-render.ts",
+      "accessCount": 16,
+      "lastAccessed": 1779723620296,
       "type": "file"
     },
     {
@@ -191,15 +197,9 @@
       "type": "file"
     },
     {
-      "path": "scripts/cloud-render.ts",
-      "accessCount": 13,
-      "lastAccessed": 1779064419554,
-      "type": "file"
-    },
-    {
       "path": "scripts/archive.ts",
-      "accessCount": 11,
-      "lastAccessed": 1779068321129,
+      "accessCount": 12,
+      "lastAccessed": 1779723547581,
       "type": "file"
     },
     {

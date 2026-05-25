@@ -128,12 +128,27 @@ function isPortInUse(port: number): Promise<boolean> {
   });
 }
 
-async function killViteGracefully(pid: number): Promise<void> {
+// Spawned with `detached: true`, so npm wrapper + vite child share a process
+// group. Signal the whole group via -pid; signalling only the npm wrapper
+// leaves the vite child orphaned and still bound to the port, which would
+// cause the next `spawnVite` to silently fail and the old sketch to keep
+// being served.
+function killGroup(pid: number, signal: NodeJS.Signals): boolean {
   try {
-    process.kill(pid, 'SIGTERM');
+    process.kill(-pid, signal);
+    return true;
   } catch {
-    return;
+    try {
+      process.kill(pid, signal);
+      return true;
+    } catch {
+      return false;
+    }
   }
+}
+
+async function killViteGracefully(pid: number): Promise<void> {
+  if (!killGroup(pid, 'SIGTERM')) return;
   const deadline = Date.now() + PORT_FREE_TIMEOUT_MS;
   while (Date.now() < deadline) {
     const stillAlive = isViteProcess(pid);
@@ -141,12 +156,15 @@ async function killViteGracefully(pid: number): Promise<void> {
     if (!stillAlive && !portBusy) return;
     await delay(150);
   }
-  try {
-    process.kill(pid, 'SIGKILL');
-  } catch {
-    /* already gone */
+  killGroup(pid, 'SIGKILL');
+  const killDeadline = Date.now() + PORT_FREE_TIMEOUT_MS;
+  while (Date.now() < killDeadline) {
+    if (!(await isPortInUse(VITE_PORT))) return;
+    await delay(150);
   }
-  await delay(200);
+  throw new Error(
+    `Vite still holds port ${VITE_PORT} after SIGKILL of pgid ${pid} — manual cleanup required`,
+  );
 }
 
 async function pollViteReady(): Promise<void> {

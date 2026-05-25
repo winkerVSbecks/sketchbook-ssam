@@ -68,7 +68,10 @@
       "mcp__plugin_oh-my-claudecode_t__lsp_diagnostics",
       "Bash(awk -F: '{print $1}')",
       "Bash(lsof -nP -iTCP -sTCP:LISTEN)",
-      "Bash(omc update *)"
+      "Bash(omc update *)",
+      "Bash(rtk npx *)",
+      "Bash(kill %1)",
+      "Bash(wait)"
     ]
   }
 }
