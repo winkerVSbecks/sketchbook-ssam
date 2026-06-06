@@ -25,122 +25,47 @@ Ask the user (in a single message, all at once):
 
 If any of these are already clear from context (e.g. the user said "animated sketch called foo"), don't re-ask for those — only ask what's missing.
 
-## Step 2: Create the file
+## Step 2: Run the scaffold script
 
-Create the file using the appropriate template below:
-- With subdirectory: `src/sketches/<dir_name>/<name>.ts` (create directory if needed)
-- Without subdirectory: `src/sketches/<name>.ts`
+Run the bundled scaffold script — it writes the file and prints the created path:
 
-### 2D template
-
-```typescript
-import { ssam } from 'ssam';
-import type { Sketch, SketchProps, SketchSettings } from 'ssam';
-// RANDOM_IMPORT
-// MATH_IMPORT
-
-export const sketch = ({ wrap, context, width, height }: SketchProps) => {
-  if (import.meta.hot) {
-    import.meta.hot.dispose(() => wrap.dispose());
-    import.meta.hot.accept(() => wrap.hotReload());
-  }
-
-  wrap.render = ({ width, height }: SketchProps) => {
-    context.fillStyle = '#fff';
-    context.fillRect(0, 0, width, height);
-  };
-};
-
-export const settings: SketchSettings = {
-  mode: '2d',
-  dimensions: [1080, 1080],
-  pixelRatio: window.devicePixelRatio,
-  animate: ANIMATE,
-  // DURATION_LINE
-  // FRAMES_LINE
-  // FPS_LINES
-};
-
-ssam(sketch as Sketch<'2d'>, settings);
+```bash
+node .claude/skills/create-sketch/scaffold.js \
+  <name> \
+  <dir_or_dot> \
+  <mode> \
+  <animated> \
+  [duration_ms] \
+  <random> \
+  <math>
 ```
 
-### WebGL/WebGL2 template
+Argument mapping from Step 1 answers:
 
-```typescript
-import { ssam } from 'ssam';
-import type { Sketch, SketchSettings } from 'ssam';
-import { Mesh, Program, Renderer, Triangle } from 'ogl';
-// RANDOM_IMPORT
-// MATH_IMPORT
-
-const sketch: Sketch<'MODE'> = ({ wrap, canvas, width, height, pixelRatio }) => {
-  if (import.meta.hot) {
-    import.meta.hot.dispose(() => wrap.dispose());
-    import.meta.hot.accept(() => wrap.hotReload());
-  }
-
-  const renderer = new Renderer({ canvas, width, height, dpr: pixelRatio });
-  const gl = renderer.gl;
-  gl.clearColor(1, 1, 1, 1);
-
-  const vert = /* glsl */ `
-    attribute vec2 position;
-    varying vec2 vUv;
-    void main() {
-      vUv = position * 0.5 + 0.5;
-      gl_Position = vec4(position, 0, 1);
-    }
-  `;
-
-  const frag = /* glsl */ `
-    precision highp float;
-    uniform float uTime;
-    varying vec2 vUv;
-    void main() {
-      gl_FragColor = vec4(vUv, 0.0, 1.0);
-    }
-  `;
-
-  const geometry = new Triangle(gl);
-  const program = new Program(gl, {
-    vertex: vert,
-    fragment: frag,
-    uniforms: { uTime: { value: 0 } },
-  });
-  const mesh = new Mesh(gl, { geometry, program });
-
-  wrap.render = ({ playhead }) => {
-    program.uniforms.uTime.value = playhead * Math.PI * 2;
-    renderer.render({ scene: mesh });
-  };
-};
-
-export const settings: SketchSettings = {
-  mode: 'MODE',
-  dimensions: [1080, 1080],
-  pixelRatio: window.devicePixelRatio,
-  animate: ANIMATE,
-  // DURATION_LINE
-  // FRAMES_LINE
-  // FPS_LINES
-};
-
-ssam(sketch, settings);
-```
-
-## Step 3: Fill in the placeholders
-
-| Placeholder | Replacement |
+| Arg | Value |
 |---|---|
-| `// RANDOM_IMPORT` | `import Random from 'canvas-sketch-util/random';` (or remove line) |
-| `// MATH_IMPORT` | `import { mapRange } from 'canvas-sketch-util/math';` (or remove line) |
-| `ANIMATE` | `true` or `false` |
-| `// DURATION_LINE` | `duration: <ms>,` (only if animated, remove comment otherwise) |
-| `// FRAMES_LINE` | `framesFormat: ['mp4'],` (only if animated, remove comment otherwise) |
-| `// FPS_LINES` | `playFps: 60,\n  exportFps: 60,` (only if animated, remove comment otherwise) |
-| `MODE` | `webgl` or `webgl2` |
+| `name` | sketch filename (no `.ts`) |
+| `dir_or_dot` | subdirectory name, or `.` for `src/sketches/` (no subdir) |
+| `mode` | `2d`, `webgl`, or `webgl2` |
+| `animated` | `true` or `false` |
+| `duration_ms` | milliseconds — **only pass when animated=true**, omit otherwise |
+| `random` | `true` or `false` |
+| `math` | `true` or `false` |
 
-Remove all comment placeholders that aren't used — don't leave `// RANDOM_IMPORT` or empty comment lines in the final file.
+Examples:
+
+```bash
+# Static 2D sketch, no subdir, no extra imports
+node .claude/skills/create-sketch/scaffold.js my-sketch . 2d false false false
+
+# Animated 2D sketch in a subdir, with random
+node .claude/skills/create-sketch/scaffold.js flow-field grids 2d true 4000 true false
+
+# WebGL sketch
+node .claude/skills/create-sketch/scaffold.js shader-demo . webgl false false false
+```
+
+The script also injects the `mcp:export` handler into the scaffold so `render-sketch` doesn't need to patch the file on first use.
 
 ## Step 4: Verify
 

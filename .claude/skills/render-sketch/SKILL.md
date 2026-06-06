@@ -45,19 +45,19 @@ test -f .cloud-render/vite.pid && echo cloud || echo local
 
 ### Local (no `.cloud-render/vite.pid`)
 
+Run the bundled render script, which checks the server, fires `/export`, and prints the newest PNG path:
+
 ```bash
-curl -s -o /dev/null -w "%{http_code}" http://localhost:5173/
+bash .claude/skills/render-sketch/render.sh
 ```
 
-If it doesn't return `200`, tell the user to start the dev server in their terminal:
+If it exits non-zero ("dev server not running"), tell the user to start it in their terminal:
 
 ```bash
 VITE_SKETCH="sketches/<path>" npm run dev
 ```
 
-Don't start it yourself — the dev server belongs in the user's terminal, not a background shell.
-
-Then go to Step 3 (curl `/export`).
+Don't start it yourself. On success the script prints the PNG path — go to Step 3.
 
 ### Cloud (`.cloud-render/vite.pid` present)
 
@@ -69,27 +69,13 @@ npm run cloud:render -- "<sketchPath>"
 
 `<sketchPath>` is the path relative to `src/` without the `.ts` extension — e.g. `sketches/siep-van-den-berg/no-250`.
 
-Parse the last stdout line as JSON to recover `{ "filename": "..." }`, then go to Step 4 to view it.
+Parse the last stdout line as JSON to recover `{ "filename": "..." }`, then go to Step 3.
 
 If the script reports a missing browser, it lazy-installs `chromium-headless-shell` on first call (≈30-45s one-time). On install failure it writes `.cloud-render/install.log` and exits non-zero with an actionable error — surface that log path to the user.
 
-## Step 3: Trigger the render (local path only)
+## Step 3: View the newest PNG
 
-```bash
-curl -s --max-time 10 http://localhost:5173/export
-```
-
-Returns JSON `{ image, filename, format }` once the file is written. If it hangs past ~10s, see Troubleshooting.
-
-In the cloud path, `cloud:render` already did the equivalent — skip this step.
-
-## Step 4: View the newest PNG
-
-```bash
-ls -t output/*.png | head -1
-```
-
-Then `Read` the returned path — Claude Code displays PNGs inline.
+`Read` the path printed by `render.sh` (local) or parsed from `cloud:render` JSON (cloud) — Claude Code displays PNGs inline.
 
 ## Video
 

@@ -30,16 +30,18 @@ Check whether the source file lives directly in `src/sketches/` (i.e. not in a s
 
 ## Step 3: Copy the source file
 
-Read the source sketch file in full, then write its contents verbatim to the new file path. Do not modify anything yet.
+Copy the source file to the new path using Bash. Do not modify anything yet.
+
+```bash
+cp <source-path> <new-path>
+```
 
 ## Step 4: Apply changes using implement-sketch
 
 Invoke the `implement-sketch` skill on the new file with the user's change description. The implement-sketch skill will read the new file and apply the modifications following all project conventions (config object, tweakpane bindings, code style, etc.).
 
-## Step 5: Verify
+## Step 5: Report
 
-Invoke the `verify-sketch` skill on the forked file. It will run TypeScript diagnostics and render a frame to confirm the changes look right.
-
-After verify-sketch reports back:
-- Confirm both file paths (original's new location if it was moved, and the forked file)
+`implement-sketch` (Step 4) already ran `verify-sketch` — no second verification needed. Report:
+- Both file paths (original's new location if it was moved, and the forked file)
 - One sentence summarising what changed relative to the source

@@ -1,5 +1,6 @@
 ---
 name: art-philosophy
+user-invocable: false
 description: >
   Explains the generative art philosophy guiding this project: digital minimalism,
   specific objects, anti-compositional methods, and thinking without thoughts.

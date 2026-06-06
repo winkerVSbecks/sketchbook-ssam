@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1779721739974,
+  "lastScanned": 1780750284377,
   "projectRoot": "/Users/varunvachhar/Documents/projects/sketchbook-ssam",
   "techStack": {
     "languages": [
@@ -32,7 +32,7 @@
     "runtime": null
   },
   "build": {
-    "buildCommand": "rtk npx tsx --eval \"import('./scripts/cloud-render.ts').catch(e => { console.error(e.message); process.exit(1); }); process.argv = ['x','x','stop'];\" 2>&1 | head -20 & sleep 2 && kill %1 2>/dev/null; wait 2>/dev/null\necho \"---\"\nnode --check scripts/cloud-render.ts 2>&1 || echo \"(node --check doesn't handle TS, falling back to tsx parse)\"\nnpx tsc --noEmit --target es2022 --module nodenext --moduleResolution nodenext --types node --allowImportingTsExtensions --skipLibCheck scripts/cloud-render.ts 2>&1 | head -20",
+    "buildCommand": "npm run build",
     "testCommand": null,
     "lintCommand": null,
     "devCommand": "npm run dev",
@@ -76,7 +76,7 @@
       "path": "archive",
       "purpose": null,
       "fileCount": 3,
-      "lastAccessed": 1779721739935,
+      "lastAccessed": 1780750284326,
       "keyFiles": [
         "archive.json",
         "index.html",
@@ -87,7 +87,7 @@
       "path": "assets",
       "purpose": "Static assets",
       "fileCount": 3,
-      "lastAccessed": 1779721739935,
+      "lastAccessed": 1780750284327,
       "keyFiles": [
         "skeletor.svg",
         "varun.svg"
@@ -97,7 +97,7 @@
       "path": "docs",
       "purpose": "Documentation",
       "fileCount": 2,
-      "lastAccessed": 1779721739941,
+      "lastAccessed": 1780750284336,
       "keyFiles": [
         "cloud-rendering.md",
         "ideas.md"
@@ -106,8 +106,8 @@
     "output": {
       "path": "output",
       "purpose": null,
-      "fileCount": 5609,
-      "lastAccessed": 1779721739968,
+      "fileCount": 5646,
+      "lastAccessed": 1780750284354,
       "keyFiles": [
         "2023.12.13-15.21.58.mp4",
         "2023.12.13-15.33.09.mp4",
@@ -120,7 +120,7 @@
       "path": "previews",
       "purpose": null,
       "fileCount": 1,
-      "lastAccessed": 1779721739969,
+      "lastAccessed": 1780750284356,
       "keyFiles": [
         "albers-meander.png"
       ]
@@ -129,7 +129,7 @@
       "path": "scripts",
       "purpose": "Build/utility scripts",
       "fileCount": 6,
-      "lastAccessed": 1779721739969,
+      "lastAccessed": 1780750284358,
       "keyFiles": [
         "archive-render-html.ts",
         "archive-types.ts",
@@ -142,7 +142,7 @@
       "path": "src",
       "purpose": "Source code",
       "fileCount": 14,
-      "lastAccessed": 1779721739969,
+      "lastAccessed": 1780750284359,
       "keyFiles": [
         "dither.ts",
         "gallery.ts",
@@ -155,7 +155,7 @@
       "path": "timelapse",
       "purpose": null,
       "fileCount": 77,
-      "lastAccessed": 1779721739970,
+      "lastAccessed": 1780750284360,
       "keyFiles": [
         "00000.png",
         "00001.png",
@@ -167,303 +167,75 @@
   },
   "hotPaths": [
     {
-      "path": "scripts/archive-render-html.ts",
-      "accessCount": 32,
-      "lastAccessed": 1779068393472,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/rubber-band-stipple/weaving-techniques.ts",
-      "accessCount": 24,
-      "lastAccessed": 1779298298104,
-      "type": "file"
-    },
-    {
-      "path": "src/index.ts",
-      "accessCount": 19,
-      "lastAccessed": 1779723560476,
-      "type": "file"
-    },
-    {
-      "path": "scripts/cloud-render.ts",
-      "accessCount": 16,
-      "lastAccessed": 1779723620296,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/rubber-band-stipple/shape.ts",
-      "accessCount": 15,
-      "lastAccessed": 1779298293219,
-      "type": "file"
-    },
-    {
-      "path": "scripts/archive.ts",
-      "accessCount": 12,
-      "lastAccessed": 1779723547581,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/rubber-band-stipple/rubber-band-stipple.ts",
-      "accessCount": 10,
-      "lastAccessed": 1779298292585,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/rubber-band-stipple/shapes.ts",
-      "accessCount": 9,
-      "lastAccessed": 1779298299052,
-      "type": "file"
-    },
-    {
-      "path": "package.json",
+      "path": ".claude/skills/fork-sketch/SKILL.md",
       "accessCount": 7,
-      "lastAccessed": 1779300407492,
-      "type": "file"
-    },
-    {
-      "path": "vite.config.ts",
-      "accessCount": 7,
-      "lastAccessed": 1779300685699,
-      "type": "file"
-    },
-    {
-      "path": "CLAUDE.md",
-      "accessCount": 3,
-      "lastAccessed": 1779040196416,
-      "type": "file"
-    },
-    {
-      "path": ".claude/skills/render-sketch/SKILL.md",
-      "accessCount": 3,
-      "lastAccessed": 1779041677650,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/paint-without-thinking/arcs-reduction-rounded-animated.ts",
-      "accessCount": 3,
-      "lastAccessed": 1779060790343,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/siep-van-den-berg/no-250.ts",
-      "accessCount": 3,
-      "lastAccessed": 1779060797180,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/voxels/nalee-2.ts",
-      "accessCount": 3,
-      "lastAccessed": 1779063691866,
-      "type": "file"
-    },
-    {
-      "path": "scripts/archive-types.ts",
-      "accessCount": 3,
-      "lastAccessed": 1779068256977,
-      "type": "file"
-    },
-    {
-      "path": "index.html",
-      "accessCount": 3,
-      "lastAccessed": 1779299257481,
-      "type": "file"
-    },
-    {
-      "path": "README.md",
-      "accessCount": 2,
-      "lastAccessed": 1779039348845,
-      "type": "file"
-    },
-    {
-      "path": "docs/cloud-rendering.md",
-      "accessCount": 2,
-      "lastAccessed": 1779039348942,
-      "type": "file"
-    },
-    {
-      "path": "scripts/cloud-render-smoke.ts",
-      "accessCount": 2,
-      "lastAccessed": 1779040120651,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/_test/cloud-render-2d.ts",
-      "accessCount": 2,
-      "lastAccessed": 1779057041426,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/paint-without-thinking/arcs-reduction-rounded.ts",
-      "accessCount": 2,
-      "lastAccessed": 1779060795172,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/siep-van-den-berg/no-251.ts",
-      "accessCount": 2,
-      "lastAccessed": 1779060798758,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/bauhaus/nalee-composition.ts",
-      "accessCount": 2,
-      "lastAccessed": 1779063518784,
-      "type": "file"
-    },
-    {
-      "path": "archive/archive.json",
-      "accessCount": 2,
-      "lastAccessed": 1779067539486,
+      "lastAccessed": 1780751155738,
       "type": "file"
     },
     {
       "path": ".claude/skills/create-sketch/SKILL.md",
-      "accessCount": 1,
-      "lastAccessed": 1779022855419,
+      "accessCount": 5,
+      "lastAccessed": 1780751233639,
       "type": "file"
     },
     {
       "path": ".claude/skills/implement-sketch/SKILL.md",
-      "accessCount": 1,
-      "lastAccessed": 1779022856591,
+      "accessCount": 4,
+      "lastAccessed": 1780750960801,
       "type": "file"
     },
     {
-      "path": ".claude/skills/fork-sketch/SKILL.md",
-      "accessCount": 1,
-      "lastAccessed": 1779022857018,
+      "path": ".claude/skills/render-sketch/SKILL.md",
+      "accessCount": 4,
+      "lastAccessed": 1780751206518,
       "type": "file"
     },
     {
       "path": ".claude/skills/clrs/SKILL.md",
-      "accessCount": 1,
-      "lastAccessed": 1779022857523,
+      "accessCount": 3,
+      "lastAccessed": 1780750730518,
       "type": "file"
     },
     {
       "path": ".claude/skills/art-philosophy/SKILL.md",
-      "accessCount": 1,
-      "lastAccessed": 1779022859048,
+      "accessCount": 3,
+      "lastAccessed": 1780751145183,
       "type": "file"
     },
     {
-      "path": "archive/index.html",
-      "accessCount": 1,
-      "lastAccessed": 1779040270738,
+      "path": ".claude/skills/verify-sketch/SKILL.md",
+      "accessCount": 2,
+      "lastAccessed": 1780750731303,
       "type": "file"
     },
     {
-      "path": "src/sketches/nalee/index.ts",
-      "accessCount": 1,
-      "lastAccessed": 1779040330044,
+      "path": ".claude/skills/create-sketch/scaffold.js",
+      "accessCount": 2,
+      "lastAccessed": 1780751261585,
       "type": "file"
     },
     {
-      "path": "output/arcs-reduction-2026.05.17-18.45.50.png",
+      "path": ".claude/skills/create-sketch/evals/evals.json",
       "accessCount": 1,
-      "lastAccessed": 1779057957418,
+      "lastAccessed": 1780750739691,
       "type": "file"
     },
     {
-      "path": "output/2026.05.17-18.46.34.png",
+      "path": ".claude/skills/render-sketch/evals/evals.json",
       "accessCount": 1,
-      "lastAccessed": 1779058003144,
+      "lastAccessed": 1780750740141,
       "type": "file"
     },
     {
-      "path": "output/2026.05.17-19.32.34.png",
+      "path": ".claude/skills/fork-sketch/evals/evals.json",
       "accessCount": 1,
-      "lastAccessed": 1779060758471,
+      "lastAccessed": 1780750740195,
       "type": "file"
     },
     {
-      "path": "output/arcs-reduction-2026.05.17-19.33.59.png",
+      "path": ".claude/skills/render-sketch/render.sh",
       "accessCount": 1,
-      "lastAccessed": 1779060842502,
-      "type": "file"
-    },
-    {
-      "path": "output/2026.05.17-19.36.37.png",
-      "accessCount": 1,
-      "lastAccessed": 1779061018533,
-      "type": "file"
-    },
-    {
-      "path": "output/2026.05.17-19.36.45.png",
-      "accessCount": 1,
-      "lastAccessed": 1779061019073,
-      "type": "file"
-    },
-    {
-      "path": "output/2026.05.17-19.36.53.png",
-      "accessCount": 1,
-      "lastAccessed": 1779061019683,
-      "type": "file"
-    },
-    {
-      "path": "output/2026.05.18-11.12.23.png",
-      "accessCount": 1,
-      "lastAccessed": 1779117149633,
-      "type": "file"
-    },
-    {
-      "path": "output/2026.05.18-11.30.41.png",
-      "accessCount": 1,
-      "lastAccessed": 1779118246245,
-      "type": "file"
-    },
-    {
-      "path": "output/2026.05.18-11.34.47.png",
-      "accessCount": 1,
-      "lastAccessed": 1779118492102,
-      "type": "file"
-    },
-    {
-      "path": "output/2026.05.18-11.36.15.png",
-      "accessCount": 1,
-      "lastAccessed": 1779118579837,
-      "type": "file"
-    },
-    {
-      "path": "output/2026.05.18-11.45.00.png",
-      "accessCount": 1,
-      "lastAccessed": 1779119105034,
-      "type": "file"
-    },
-    {
-      "path": "output/2026.05.18-11.53.51.png",
-      "accessCount": 1,
-      "lastAccessed": 1779119636284,
-      "type": "file"
-    },
-    {
-      "path": "output/2026.05.18-14.18.24.png",
-      "accessCount": 1,
-      "lastAccessed": 1779128308534,
-      "type": "file"
-    },
-    {
-      "path": "output/2026.05.18-18.23.34.png",
-      "accessCount": 1,
-      "lastAccessed": 1779143020832,
-      "type": "file"
-    },
-    {
-      "path": "output/2026.05.18-18.24.54.png",
-      "accessCount": 1,
-      "lastAccessed": 1779143098725,
-      "type": "file"
-    },
-    {
-      "path": "output/2026.05.18-18.31.50.png",
-      "accessCount": 1,
-      "lastAccessed": 1779143514483,
-      "type": "file"
-    },
-    {
-      "path": "output/2026.05.18-18.33.51.png",
-      "accessCount": 1,
-      "lastAccessed": 1779143635545,
+      "lastAccessed": 1780751161850,
       "type": "file"
     }
   ],
