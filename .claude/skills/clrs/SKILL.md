@@ -122,10 +122,10 @@ Replace only the palette-setup lines. Rules:
 
 If the user asked for "a random palette from X" but X is a factory, generate once at module scope (matching project convention) unless they explicitly want per-frame regeneration.
 
-## Step 5: Tell the user
+## Step 5: Verify
 
-After writing:
+Invoke the `verify-sketch` skill on the file just written. It will run TypeScript diagnostics and render a frame — visually confirm the new palette colors are actually visible in the output.
 
+After verify-sketch reports back:
 - One sentence naming the module swapped in and how colors are selected (e.g. "switched to a random `clrs` palette, shuffled, `bg` via `pop()`").
-- How to run: `VITE_SKETCH="sketches/<path>" npm run dev`.
 - Flag any edge cases: fewer fg slots than the sketch uses, semantic-to-flat mismatches, or needed role renames.

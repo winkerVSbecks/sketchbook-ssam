@@ -142,8 +142,9 @@ ssam(sketch, settings);
 
 Remove all comment placeholders that aren't used — don't leave `// RANDOM_IMPORT` or empty comment lines in the final file.
 
-## Step 4: Tell the user
+## Step 4: Verify
 
-After creating the file, tell them:
+Invoke the `verify-sketch` skill on the file just created. It will run TypeScript diagnostics to confirm the scaffold is error-free and render a frame (a blank white canvas is the expected output for a fresh scaffold).
+
+After verify-sketch reports back:
 - The file path created
-- How to run it: `VITE_SKETCH="sketches/<dir_name>/<name>" npm run dev` (or `VITE_SKETCH="sketches/<name>" npm run dev` if no subdirectory)

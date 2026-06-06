@@ -36,9 +36,10 @@ Read the source sketch file in full, then write its contents verbatim to the new
 
 Invoke the `implement-sketch` skill on the new file with the user's change description. The implement-sketch skill will read the new file and apply the modifications following all project conventions (config object, tweakpane bindings, code style, etc.).
 
-## Step 5: Tell the user
+## Step 5: Verify
 
-After the fork and edits are complete:
+Invoke the `verify-sketch` skill on the forked file. It will run TypeScript diagnostics and render a frame to confirm the changes look right.
+
+After verify-sketch reports back:
 - Confirm both file paths (original's new location if it was moved, and the forked file)
-- How to run each: `VITE_SKETCH="sketches/<subdir>/<name>" npm run dev`
 - One sentence summarising what changed relative to the source

@@ -163,9 +163,10 @@ if (import.meta.hot) {
 
 Implement the full sketch. Preserve the existing `settings` export unchanged unless the idea clearly requires changing `animate`, `duration`, or `dimensions`. Do not add unused imports or placeholder comments in the final file.
 
-## Step 6: Tell the user
+## Step 6: Verify
 
-After writing the file:
+Invoke the `verify-sketch` skill on the file just written. It will run TypeScript diagnostics and render a frame to confirm the output matches intent.
+
+After verify-sketch reports back:
 - One sentence describing what was implemented
-- How to run it: `VITE_SKETCH="sketches/<name>" npm run dev`
 - Any notable creative choices made (only if non-obvious)
