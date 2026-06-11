@@ -94,6 +94,9 @@ type Corners = [boolean, boolean, boolean, boolean]; // TL, TR, BR, BL
 // 0-----1
 // |     |
 // 3-----2
+// Each entry appends the cell outline as a subpath — the caller owns
+// beginPath()/fill(), so multiple cells can merge into a single fill and
+// abutting cells never show an antialiased seam.
 const cells = {
   blank: () => {},
   '0123': (
@@ -104,7 +107,6 @@ const cells = {
     h: number,
     corners: Corners,
   ) => {
-    context.beginPath();
     context.roundRect(
       x,
       y,
@@ -112,7 +114,6 @@ const cells = {
       h,
       corners.map((c) => (c ? config.r : 0)),
     );
-    context.fill();
   },
   '013-arc': (
     context: CanvasRenderingContext2D,
@@ -122,12 +123,10 @@ const cells = {
     h: number,
     _corners: Corners,
   ) => {
-    context.beginPath();
     context.moveTo(x, y);
     context.lineTo(x + w, y);
     context.arcTo(x + w, y + h, x, y + h, w);
     context.closePath();
-    context.fill();
   },
   '012-arc': (
     context: CanvasRenderingContext2D,
@@ -137,12 +136,11 @@ const cells = {
     h: number,
     _corners: Corners,
   ) => {
-    context.beginPath();
     context.moveTo(x, y);
     context.lineTo(x + w, y);
     context.lineTo(x + w, y + h);
     context.arcTo(x, y + h, x, y, w);
-    context.fill();
+    context.closePath();
   },
   '023-arc': (
     context: CanvasRenderingContext2D,
@@ -152,12 +150,10 @@ const cells = {
     h: number,
     _corners: Corners,
   ) => {
-    context.beginPath();
     context.moveTo(x, y);
     context.arcTo(x + w, y, x + w, y + h, w);
     context.lineTo(x, y + h);
     context.closePath();
-    context.fill();
   },
   '123-arc': (
     context: CanvasRenderingContext2D,
@@ -167,12 +163,11 @@ const cells = {
     h: number,
     _corners: Corners,
   ) => {
-    context.beginPath();
     context.moveTo(x + w, y);
     context.lineTo(x + w, y + h);
     context.lineTo(x, y + h);
     context.arcTo(x, y, x + w, y, w);
-    context.fill();
+    context.closePath();
   },
 } as const;
 type CellType = keyof typeof cells;
@@ -479,7 +474,9 @@ function smoothstep(t: number): number {
   return c * c * (3 - 2 * c);
 }
 
-function drawCellFull(
+// Notches run as a second pass after every cell shape, so no later fill
+// can land on top of a carved corner.
+function drawCellNotches(
   ctx: CanvasRenderingContext2D,
   cell: GridCell,
   bgColor: string,
@@ -488,46 +485,28 @@ function drawCellFull(
   w: number,
   h: number,
 ) {
-  if (cell.type === 'blank') return;
-  ctx.fillStyle = cell.color!;
-  cells[cell.type](ctx, x, y, w, h, cell.corners);
-  if (cell.type !== '0123') {
-    drawCornerNotches(ctx, bgColor, x, y, w, h, cell.corners);
-  }
-  if (config.debug === 1) {
-    ctx.fillStyle = `rgb(from ${cell.color} calc(255 - r) calc(255 - g) calc(255 - b))`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = `32px monospace`;
-    ctx.fillText(`${cell.type}`, x + w / 2, y + h / 2);
-  }
+  if (cell.type === 'blank' || cell.type === '0123') return;
+  drawCornerNotches(ctx, bgColor, x, y, w, h, cell.corners);
+}
+
+function drawCellDebugLabel(
+  ctx: CanvasRenderingContext2D,
+  cell: GridCell,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+) {
+  if (config.debug !== 1 || cell.type === 'blank') return;
+  ctx.fillStyle = `rgb(from ${cell.color} calc(255 - r) calc(255 - g) calc(255 - b))`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `32px monospace`;
+  ctx.fillText(`${cell.type}`, x + w / 2, y + h / 2);
 }
 
 type SlideDirection = 'ltr' | 'rtl' | 'ttb' | 'btt';
 const slideDirections: SlideDirection[] = ['ltr', 'rtl', 'ttb', 'btt'];
-
-// Draws cell translated by offset along the slide direction, clipped to the cell rect
-function drawCellSlid(
-  ctx: CanvasRenderingContext2D,
-  cell: GridCell,
-  bgColor: string,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  offset: number,
-  direction: SlideDirection,
-) {
-  if (cell.type === 'blank') return;
-  const dx = direction === 'ltr' ? offset : direction === 'rtl' ? -offset : 0;
-  const dy = direction === 'ttb' ? offset : direction === 'btt' ? -offset : 0;
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(x - 1, y - 1, w + 2, h + 2);
-  ctx.clip();
-  drawCellFull(ctx, cell, bgColor, x + dx, y + dy, w, h);
-  ctx.restore();
-}
 
 export const sketch = async ({ wrap, context, ...props }: SketchProps) => {
   if (import.meta.hot) {
@@ -571,26 +550,81 @@ export const sketch = async ({ wrap, context, ...props }: SketchProps) => {
     const holdEnd = 1 - config.transitionDuration;
     const animT = t <= holdEnd ? 0 : (t - holdEnd) / config.transitionDuration;
 
+    const dir = directions[Math.min(shapeIndex, directions.length - 1)];
+    const size = dir === 'ltr' || dir === 'rtl' ? w : h;
+
+    // Snap the transition endpoints to fully-resting grids once the slide
+    // offset is sub-pixel, so edge frames never show per-cell seams.
+    const pRaw = smoothstep(animT);
+    const eps = 0.75 / size;
+    const p = pRaw < eps ? 0 : pRaw > 1 - eps ? 1 : pRaw;
+
+    const changes = (i: number) =>
+      currentSnapshot.grid[i].type !== nextSnapshot.grid[i].type ||
+      currentSnapshot.grid[i].color !== nextSnapshot.grid[i].color;
+    const sliding = (i: number) => p > 0 && p < 1 && changes(i);
+    // Once the slide completes (p === 1) the changed cells rest in their
+    // next-snapshot state.
+    const restingCell = (i: number) =>
+      p === 1 && changes(i) ? nextSnapshot.grid[i] : currentSnapshot.grid[i];
+
+    // Pass 1: every resting cell merges into ONE path and fill, so abutting
+    // cells share interior coverage and no antialiased seam shows between
+    // them.
+    context.fillStyle = currentSnapshot.inkColor;
+    context.beginPath();
     for (let i = 0; i < currentSnapshot.grid.length; i++) {
-      const fromCell = currentSnapshot.grid[i];
-      const toCell = nextSnapshot.grid[i];
-      const x = fromCell.x * w;
-      const y = fromCell.y * h;
+      const cell = restingCell(i);
+      if (sliding(i) || cell.type === 'blank') continue;
+      cells[cell.type](context, cell.x * w, cell.y * h, w, h, cell.corners);
+    }
+    context.fill();
 
-      const changing =
-        fromCell.type !== toCell.type || fromCell.color !== toCell.color;
-
-      if (!changing || animT === 0) {
-        drawCellFull(context, fromCell, bgColor, x, y, w, h);
-      } else {
-        const dir = directions[Math.min(shapeIndex, directions.length - 1)];
-        const size = dir === 'ltr' || dir === 'rtl' ? w : h;
-        const p = smoothstep(animT);
-        // Current slides out: 0 → +size
-        drawCellSlid(context, fromCell, bgColor, x, y, w, h, p * size, dir);
-        // Next slides in: -size → 0
-        drawCellSlid(context, toCell, bgColor, x, y, w, h, (p - 1) * size, dir);
+    // Sliding cells all share one offset, so each group (outgoing and
+    // incoming) also draws as a single union fill, clipped to the union of
+    // the sliding cell rects.
+    const drawSlidingGroup = (snapshot: GridSnapshot, offset: number) => {
+      const dx = dir === 'ltr' ? offset : dir === 'rtl' ? -offset : 0;
+      const dy = dir === 'ttb' ? offset : dir === 'btt' ? -offset : 0;
+      context.save();
+      context.beginPath();
+      for (let i = 0; i < snapshot.grid.length; i++) {
+        if (!sliding(i)) continue;
+        const cell = currentSnapshot.grid[i];
+        context.rect(cell.x * w - 1, cell.y * h - 1, w + 2, h + 2);
       }
+      context.clip();
+      context.translate(dx, dy);
+      context.fillStyle = snapshot.inkColor;
+      context.beginPath();
+      for (let i = 0; i < snapshot.grid.length; i++) {
+        const cell = snapshot.grid[i];
+        if (!sliding(i) || cell.type === 'blank') continue;
+        cells[cell.type](context, cell.x * w, cell.y * h, w, h, cell.corners);
+      }
+      context.fill();
+      for (let i = 0; i < snapshot.grid.length; i++) {
+        if (!sliding(i)) continue;
+        const cell = snapshot.grid[i];
+        drawCellNotches(context, cell, bgColor, cell.x * w, cell.y * h, w, h);
+        drawCellDebugLabel(context, cell, cell.x * w, cell.y * h, w, h);
+      }
+      context.restore();
+    };
+
+    if (p > 0 && p < 1) {
+      // Current slides out: 0 → +size; next slides in: -size → 0
+      drawSlidingGroup(currentSnapshot, p * size);
+      drawSlidingGroup(nextSnapshot, (p - 1) * size);
+    }
+
+    // Pass 2: notches over the resting fill, so nothing paints across a
+    // carve.
+    for (let i = 0; i < currentSnapshot.grid.length; i++) {
+      if (sliding(i)) continue;
+      const cell = restingCell(i);
+      drawCellNotches(context, cell, bgColor, cell.x * w, cell.y * h, w, h);
+      drawCellDebugLabel(context, cell, cell.x * w, cell.y * h, w, h);
     }
 
     if (config.debug === 2) {
