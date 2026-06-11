@@ -72,7 +72,8 @@
       "Bash(rtk npx *)",
       "Bash(kill %1)",
       "Bash(wait)",
-      "Bash(bash -n .claude/skills/render-sketch/render.sh)"
+      "Bash(bash -n .claude/skills/render-sketch/render.sh)",
+      "Bash(bash *)"
     ]
   }
 }
