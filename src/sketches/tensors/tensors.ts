@@ -77,7 +77,8 @@ const sketch: Sketch<'webgl2'> = ({ wrap, canvas, width, height, pixelRatio, ...
   const F = emTensor(E, B);
   console.log('tensor:', kind, { E, B });
 
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  // ssam already created the WebGL2 context (settings.attributes); three.js adopts it
+  const renderer = new THREE.WebGLRenderer({ canvas });
   renderer.setPixelRatio(pixelRatio);
   renderer.setSize(width, height, false);
   renderer.setClearColor(0xffffff, 1);
@@ -162,6 +163,8 @@ export const settings: SketchSettings = {
   mode: 'webgl2',
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
+  // preserveDrawingBuffer so exportFrame can read pixels outside the draw tick
+  attributes: { antialias: true, preserveDrawingBuffer: true },
   animate: true,
   duration: 8000,
   framesFormat: ['mp4'],

@@ -32,7 +32,7 @@
     "runtime": null
   },
   "build": {
-    "buildCommand": "rtk tsc --noEmit 2>&1 | grep -E \"tensors\"; echo \"exit: done\"",
+    "buildCommand": "rtk tsc --noEmit 2>&1 | grep -E \"tensors\"; echo \"tsc done\"",
     "testCommand": null,
     "lintCommand": null,
     "devCommand": "npm run dev",
@@ -167,15 +167,75 @@
   },
   "hotPaths": [
     {
+      "path": "src/sketches/tensors/tensors-sketch.ts",
+      "accessCount": 25,
+      "lastAccessed": 1781196883606,
+      "type": "file"
+    },
+    {
+      "path": ".diag-sketch.mjs",
+      "accessCount": 9,
+      "lastAccessed": 1781201004608,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/tensors/tensors-options.ts",
+      "accessCount": 6,
+      "lastAccessed": 1781195603703,
+      "type": "file"
+    },
+    {
       "path": "src/sketches/tensors/tensors.ts",
+      "accessCount": 4,
+      "lastAccessed": 1781187866700,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/tensors/tensors-blob.ts",
       "accessCount": 2,
-      "lastAccessed": 1781186673804,
+      "lastAccessed": 1781200978714,
       "type": "file"
     },
     {
       "path": ".claude/skills/create-sketch/scaffold.js",
       "accessCount": 1,
       "lastAccessed": 1781186477316,
+      "type": "file"
+    },
+    {
+      "path": "output/2026.06.11-10.15.04.png",
+      "accessCount": 1,
+      "lastAccessed": 1781187316398,
+      "type": "file"
+    },
+    {
+      "path": "output/2026.06.11-10.18.51.png",
+      "accessCount": 1,
+      "lastAccessed": 1781187538508,
+      "type": "file"
+    },
+    {
+      "path": "scripts/cloud-render.ts",
+      "accessCount": 1,
+      "lastAccessed": 1781187604272,
+      "type": "file"
+    },
+    {
+      "path": "output/2026.06.11-10.22.21.png",
+      "accessCount": 1,
+      "lastAccessed": 1781187751887,
+      "type": "file"
+    },
+    {
+      "path": "output/2026.06.11-10.25.24.png",
+      "accessCount": 1,
+      "lastAccessed": 1781187931248,
+      "type": "file"
+    },
+    {
+      "path": "output/2026.06.11-12.33.54.png",
+      "accessCount": 1,
+      "lastAccessed": 1781195643616,
       "type": "file"
     }
   ],
