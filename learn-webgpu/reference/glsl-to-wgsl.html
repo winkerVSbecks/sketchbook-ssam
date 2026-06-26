@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Reference — GLSL → WGSL Cheat-Sheet</title>
+<link rel="stylesheet" href="../assets/course.css" />
+</head>
+<body>
+
+<header class="masthead">
+  <span class="lesson-no">Reference</span>
+  <p class="kicker">Keep this open while porting</p>
+  <h1>GLSL&nbsp;→&nbsp;WGSL</h1>
+</header>
+
+<main class="wide">
+
+<p class="lede">WGSL is GLSL's stricter cousin: same maths, fewer assumptions. It never
+guesses a type, has no <code>mod</code>, no ternary, and no <code>inout</code>.
+This sheet is the compressed translation table — every row verified against
+WebGPU Fundamentals and MDN (2026-06).</p>
+
+<div class="callout gotcha">
+  <span class="label">The five that will bite you</span>
+  <code>1</code> ≠ <code>1.0</code> (no int→float) · no <code>mod()</code>
+  (and <code>%</code> ≠ GLSL <code>mod</code> for negatives) ·
+  <code>cond ? a : b</code> → <code>select(b, a, cond)</code> (args reversed!) ·
+  no <code>inout</code> (use pointers) · bare mutable globals are illegal.
+</div>
+
+<h2>Entry points &amp; attributes</h2>
+<div class="tablescroll"><table>
+<thead><tr><th>Concept</th><th>GLSL</th><th>WGSL</th></tr></thead>
+<tbody>
+<tr><td>Fragment entry</td><td><code>void main(){ gl_FragColor=…; }</code></td><td><code>@fragment fn fs(…) -&gt; @location(0) vec4&lt;f32&gt; {…}</code></td></tr>
+<tr><td>Vertex entry</td><td><code>void main(){ gl_Position=…; }</code></td><td><code>@vertex fn vs(…) -&gt; @builtin(position) vec4&lt;f32&gt; {…}</code></td></tr>
+<tr><td>Vertex position out</td><td><code>gl_Position</code></td><td>return value tagged <code>@builtin(position)</code></td></tr>
+<tr><td>Fragment pixel coord</td><td><code>gl_FragCoord</code> (pixels)</td><td>param <code>@builtin(position): vec4&lt;f32&gt;</code> (pixels!)</td></tr>
+<tr><td>Vertex index</td><td><code>gl_VertexID</code></td><td>param <code>@builtin(vertex_index): u32</code></td></tr>
+<tr><td>Colour target</td><td><code>layout(location=0) out vec4</code></td><td>return tagged <code>@location(0) vec4&lt;f32&gt;</code></td></tr>
+<tr><td>Varying (vert→frag)</td><td><code>out</code>/<code>in vec2 v;</code></td><td>struct field tagged <code>@location(n)</code></td></tr>
+</tbody>
+</table></div>
+
+<div class="callout warn">
+  <span class="label">Obsolete syntax</span>
+  Pre-2022 WGSL used <code>[[stage(fragment)]]</code>, <code>[[location(0)]]</code>.
+  Those <code>[[ ]]</code> forms no longer parse — every one becomes <code>@…</code>.
+  If you copy old snippets and they error on the first line, that's why.
+</div>
+
+<h2>Functions, variables, constants</h2>
+<div class="tablescroll"><table>
+<thead><tr><th>GLSL</th><th>WGSL</th></tr></thead>
+<tbody>
+<tr><td><code>float f(vec3 p){ return length(p); }</code></td><td><code>fn f(p: vec3&lt;f32&gt;) -&gt; f32 { return length(p); }</code></td></tr>
+<tr><td><code>void g(){ … }</code></td><td><code>fn g() { … }</code> (omit <code>-&gt; T</code>)</td></tr>
+<tr><td>local, reassigned</td><td><code>var x = …;</code> &nbsp;(mutable, has storage)</td></tr>
+<tr><td>local, never reassigned</td><td><code>let x = …;</code> &nbsp;(immutable binding)</td></tr>
+<tr><td><code>const float PI = 3.14;</code></td><td><code>const PI = 3.14;</code> &nbsp;(compile-time only)</td></tr>
+</tbody>
+</table></div>
+<p class="fine"><strong>Rule:</strong> <code>let</code> = "I won't reassign this", <code>var</code> =
+"I will". <code>const</code> must be computable at compile time (no function args).</p>
+
+<h2>No implicit conversion</h2>
+<span class="code-label wgsl">WGSL</span>
+<pre><code>let a = 1;     // i32
+let b = 2.0;   // f32
+let c = a + b; // ERROR — can't add i32 to f32
+let c = f32(a) + b;        // fix</code></pre>
+<p><strong>Port rule of thumb:</strong> wherever a float is meant, write
+<code>1.0</code>, <code>0.0</code>, <code>2.0</code> — never bare <code>1</code>,
+<code>0</code>, <code>2</code>. Bare literals in an expression like
+<code>1 + 2.0</code> are fine (they stay "abstract"), but a value already typed
+<code>i32</code> will not auto-promote.</p>
+
+<h2>Types &amp; aliases</h2>
+<div class="tablescroll"><table>
+<thead><tr><th>Long form</th><th>Alias</th></tr></thead>
+<tbody>
+<tr><td><code>vec2&lt;f32&gt; vec3&lt;f32&gt; vec4&lt;f32&gt;</code></td><td><code>vec2f vec3f vec4f</code></td></tr>
+<tr><td><code>vec*&lt;i32&gt;</code> / <code>vec*&lt;u32&gt;</code></td><td><code>vec*i</code> / <code>vec*u</code></td></tr>
+<tr><td><code>mat3x3&lt;f32&gt;</code></td><td><code>mat3x3f</code> (also <code>mat2x2f</code>, <code>mat4x4f</code>)</td></tr>
+</tbody>
+</table></div>
+<p class="fine">Constructors compose like GLSL: <code>vec4f(a.xyz, 1.0)</code>,
+<code>vec4f(1.0, b, 4.0)</code>. Matrices are column-major, as in GLSL.</p>
+
+<h2>Swizzles — read yes, write no</h2>
+<span class="code-label wgsl">WGSL</span>
+<pre><code>let a = vec4&lt;f32&gt;(1, 2, 3, 4);
+let d = a.zzy;             // reading/reordering/repeats: fine -&gt; (3,3,2)
+
+var color = vec4f(0.25, 0.5, 0.75, 1.0);
+color.rgb = color.bgr;            // ERROR — can't assign to a swizzle
+color = vec4f(color.bgr, color.a); // fix: rebuild the vector
+p[0] = 1.0;                        // single-component by index: allowed</code></pre>
+<p class="fine">GLSL's <code>p.xy = …</code> has no direct equivalent yet —
+reconstruct the vector instead: <code>p = vec3&lt;f32&gt;(newXY, p.z);</code></p>
+
+<h2><code>inout</code> → pointers <span class="fine">(you'll need this for the torus)</span></h2>
+<span class="code-label glsl">GLSL</span>
+<pre><code>void pR(inout vec2 p, float a) {
+  p = cos(a)*p + sin(a)*vec2(p.y, -p.x);
+}
+pR(p4.zy, angle);</code></pre>
+<span class="code-label wgsl">WGSL</span>
+<pre><code>fn pR(p: ptr&lt;function, vec2&lt;f32&gt;&gt;, a: f32) {
+  *p = cos(a) * (*p) + sin(a) * vec2&lt;f32&gt;((*p).y, -(*p).x);
+}
+var v = p4.zy;          // must be a var (not let) to take its address
+pR(&amp;v, angle);
+p4 = vec4&lt;f32&gt;(v.x, v.y, p4.z, p4.w);   // write the result back yourself</code></pre>
+<p class="fine"><code>&amp;</code> takes an address, <code>*</code> dereferences. Address
+space must match: <code>ptr&lt;function, T&gt;</code> for a local <code>var</code>.
+Often it's cleaner to just <em>return</em> the value instead of mutating through a pointer.</p>
+
+<h2>Mutable module-scope globals</h2>
+<span class="code-label glsl">GLSL</span>
+<pre><code>float time;
+vec2  modelUv;   // bare mutable globals — fine in GLSL</code></pre>
+<span class="code-label wgsl">WGSL</span>
+<pre><code>var&lt;private&gt; time    : f32;          // a bare `var x: f32;` at module scope is an ERROR
+var&lt;private&gt; modelUv : vec2&lt;f32&gt;;    // `private` = mutable, per-invocation, not bound</code></pre>
+<p class="fine"><strong>Preferred:</strong> thread <code>time</code>/<code>uv</code>
+through function parameters rather than leaning on <code>private</code> globals —
+it matches WGSL's grain. Use <code>var&lt;private&gt;</code> only for a near-mechanical port.</p>
+
+<h2>Builtins</h2>
+<div class="tablescroll"><table>
+<thead><tr><th>GLSL</th><th>WGSL</th><th>Note</th></tr></thead>
+<tbody>
+<tr><td><code>mod(x,y)</code></td><td><code>%</code> or a helper</td><td>⚠ no <code>mod</code>; <code>%</code> ≠ GLSL for negatives — see below</td></tr>
+<tr><td><code>atan(y,x)</code></td><td><code>atan2(y, x)</code></td><td>1-arg <code>atan(x)</code> also exists</td></tr>
+<tr><td><code>inversesqrt(x)</code></td><td><code>inverseSqrt(x)</code></td><td>capital S</td></tr>
+<tr><td><code>mix clamp fract pow length normalize</code></td><td>same names</td><td>identical</td></tr>
+<tr><td><code>dot cross abs sign floor step smoothstep</code></td><td>same names</td><td>identical (<code>cross</code> is vec3 only)</td></tr>
+<tr><td><code>min max sin cos tan exp log sqrt</code></td><td>same names</td><td>identical</td></tr>
+</tbody>
+</table></div>
+
+<h2>Ternary → <code>select</code> <span class="fine">(mind the order)</span></h2>
+<span class="code-label wgsl">WGSL</span>
+<pre><code>// GLSL:  float r = cond ? a : b;
+let r = select(b, a, cond);   // select(whenFALSE, whenTRUE, cond)</code></pre>
+<div class="callout gotcha">
+  <span class="label">The reversal that flips your logic silently</span>
+  <code>select</code> takes the <strong>false</strong> value first, then the true
+  value. It reads backwards from a ternary. Memorise: <em>"select false, true,
+  when."</em>
+</div>
+
+<h2>Loops</h2>
+<span class="code-label wgsl">WGSL</span>
+<pre><code>for (var i = 0.0; i &lt; steps; i = i + 1.0) {
+  if (done) { break; }
+  if (skip) { continue; }
+}</code></pre>
+<p class="fine"><code>i++</code> / <code>i += 1.0</code> also work. <code>while</code> and
+bare <code>loop { … break if (cond); }</code> exist too.</p>
+
+<h2>Uniform struct alignment <span class="fine">(the #1 garbled-data bug)</span></h2>
+<div class="tablescroll"><table>
+<thead><tr><th>type</th><th>align</th><th>size</th></tr></thead>
+<tbody>
+<tr><td><code>f32</code></td><td>4</td><td>4</td></tr>
+<tr><td><code>vec2f</code></td><td>8</td><td>8</td></tr>
+<tr><td><code>vec3f</code></td><td>16</td><td><strong>12</strong> (aligns to 16, occupies 12!)</td></tr>
+<tr><td><code>vec4f</code></td><td>16</td><td>16</td></tr>
+</tbody>
+</table></div>
+<p><strong>Port rule:</strong> treat every <code>vec3</code> as a <code>vec4</code>
+for layout, put scalars <em>after</em> vectors (or group them into their own
+<code>vec4</code>), and size buffers in 16-byte chunks. A struct rounds its total
+size up to its largest member's alignment.</p>
+
+<h2>Copy-paste helpers</h2>
+<p>Drop these in when a port needs GLSL-exact behaviour:</p>
+<span class="code-label wgsl">WGSL</span>
+<pre><code>// GLSL-compatible mod (floored — result takes sign of y).
+// Use this for periodic / domain-repeat tiling with possibly-negative inputs,
+// where WGSL's % (truncated) would differ.
+fn glslMod(x: f32, y: f32) -&gt; f32 { return x - y * floor(x / y); }
+fn glslMod2(p: vec2&lt;f32&gt;, s: vec2&lt;f32&gt;) -&gt; vec2&lt;f32&gt; {
+  return p - s * floor(p / s);
+}
+
+// 2D rotation by value (cleaner than an inout/pointer port of pR):
+fn rot2(p: vec2&lt;f32&gt;, a: f32) -&gt; vec2&lt;f32&gt; {
+  return cos(a) * p + sin(a) * vec2&lt;f32&gt;(p.y, -p.x);
+}</code></pre>
+
+<div class="callout warn">
+  <span class="label">One unverified detail</span>
+  The exact float semantics of <code>%</code> (truncated vs floored) couldn't be
+  confirmed against the W3C spec this session. The <code>glslMod</code> helper
+  above sidesteps the question entirely for ports — prefer it whenever signs
+  might be negative. Confirm on the
+  <a href="https://www.w3.org/TR/WGSL/">spec</a> if you're curious.
+</div>
+
+<div class="source">
+  <div class="label">Primary sources</div>
+  <div class="title">
+    <a href="https://webgpufundamentals.org/webgpu/lessons/webgpu-wgsl.html">WebGPU Fundamentals — WGSL</a>
+    &nbsp;·&nbsp;
+    <a href="https://webgpufundamentals.org/webgpu/lessons/webgpu-wgsl-function-reference.html">Function Reference</a>
+  </div>
+  <div class="note">Every row above is verified against these two pages. The
+  function reference is the authority on which builtins exist.</div>
+</div>
+
+<div class="ask">
+  <b>Reference, not a lesson.</b> This is the page to keep open while you port.
+  When something here doesn't behave as written, that's a great question to bring
+  me — edge cases are where the real understanding gets built.
+</div>
+
+</main>
+
+<nav class="nav">
+  <span><a href="../lessons/0001-hello-wgsl.html">← Lesson 01</a></span>
+  <span class="spacer"></span>
+  <span>Used by Lesson 02 — Speaking WGSL</span>
+</nav>
+
+</body>
+</html>

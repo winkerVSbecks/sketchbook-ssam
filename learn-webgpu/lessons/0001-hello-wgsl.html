@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lesson 01 — Hello, WGSL</title>
+<link rel="stylesheet" href="../assets/course.css" />
+</head>
+<body>
+
+<header class="masthead">
+  <span class="lesson-no">Lesson 01 / WebGPU for generative art</span>
+  <p class="kicker">The blank page</p>
+  <h1>Hello, WGSL</h1>
+</header>
+
+<main class="wrap">
+
+<p class="lede">By the end of this lesson you'll have a hand-written WGSL fragment
+shader filling your ssam canvas with a colour gradient. That gradient is dull on
+purpose — it's the <em>blank page</em> every piece you make from here will start on.</p>
+
+<h2>What Shadertoy was hiding</h2>
+
+<p>On Shadertoy you write one function, <code>mainImage</code>, and the site
+quietly does everything else: makes a canvas, draws a rectangle over it, and runs
+your function once per pixel. WebGPU hands you that "everything else" to do
+yourself. In return you get full control — which is exactly what authoring your
+own pieces needs.</p>
+
+<p>The whole job is four small pieces:</p>
+
+<ol>
+  <li>a <strong>device</strong> — your handle to the GPU;</li>
+  <li>a <strong>vertex shader</strong> that draws a shape covering the screen;</li>
+  <li>a <strong>fragment shader</strong> that colours each pixel (your real work);</li>
+  <li>a <strong>render pass</strong> that ties them together and submits a frame.</li>
+</ol>
+
+<h2>The full-screen triangle</h2>
+
+<p>The fragment shader only runs on pixels covered by some geometry, so first we
+need to cover the screen. The classic trick is <em>one oversized triangle</em>:
+its three corners sit far outside the visible <code>-1…1</code> box, and the part
+that pokes into view is exactly your canvas. No vertex buffer, no data — just
+"draw 3 vertices".</p>
+
+<div class="callout">
+  <span class="label">You've seen this before</span>
+  Your existing WebGL sketch <code>src/shader-sketches/basic.ts</code> uses the
+  very same trick (OGL's <code>Triangle</code>, with a little ASCII diagram). We're
+  rebuilding that idea by hand in WGSL.
+</div>
+
+<h2>The shader</h2>
+
+<p>One WGSL module holds <em>both</em> entry points. Read it top to bottom:</p>
+
+<span class="code-label wgsl">WGSL</span>
+<pre><code>struct VSOut {
+  @builtin(position) pos : vec4&lt;f32&gt;,   // required: where the vertex lands
+  @location(0)       uv  : vec2&lt;f32&gt;,   // a value passed on to the fragment stage
+};
+
+@vertex
+fn vs(@builtin(vertex_index) vid : u32) -&gt; VSOut {
+  var corners = array&lt;vec2&lt;f32&gt;, 3&gt;(
+    vec2&lt;f32&gt;(-1.0, -1.0),
+    vec2&lt;f32&gt;( 3.0, -1.0),
+    vec2&lt;f32&gt;(-1.0,  3.0)
+  );
+  var out : VSOut;
+  let p   = corners[vid];
+  out.pos = vec4&lt;f32&gt;(p, 0.0, 1.0);
+  out.uv  = p * 0.5 + 0.5;             // clip space (-1..1) -&gt; uv (0..1)
+  return out;
+}
+
+@fragment
+fn fs(in : VSOut) -&gt; @location(0) vec4&lt;f32&gt; {
+  return vec4&lt;f32&gt;(in.uv, 0.5, 1.0);   // x-&gt;red, y-&gt;green, blue fixed at 0.5
+}</code></pre>
+
+<p>Four things to notice — these are the WGSL "accent" on top of shader ideas you
+already half-know:</p>
+
+<ul>
+  <li><code>@vertex</code> and <code>@fragment</code> mark the two entry points.
+      (GLSL used separate files; WGSL uses one file with attributes.)</li>
+  <li><code>@builtin(position)</code> is the one output the vertex stage
+      <em>must</em> return — the GLSL <code>gl_Position</code>.</li>
+  <li><code>@location(0)</code> is a "varying": a value the vertex stage computes
+      and the GPU smoothly interpolates across the triangle before the fragment
+      stage reads it. Here it carries our <code>uv</code>.</li>
+  <li>Types are spelled out in full: <code>vec4&lt;f32&gt;</code>, not
+      <code>vec4</code>. WGSL never guesses types for you.</li>
+</ul>
+
+<div class="callout gotcha">
+  <span class="label">Shortcut you'll see in the wild</span>
+  WGSL also accepts the aliases <code>vec4f</code>, <code>vec2f</code>,
+  <code>vec3f</code> for <code>vec4&lt;f32&gt;</code> etc. We use the long form
+  while you're learning the type system, then switch to the short one later.
+</div>
+
+<h2>Wiring it into ssam</h2>
+
+<p>With <code>mode: 'webgpu'</code>, ssam creates the canvas and hands your sketch
+a <code>GPUCanvasContext</code>. You bring the device and point the context at it:</p>
+
+<span class="code-label wgsl">TS · src/shader-sketches/wgpu-hello.ts</span>
+<pre><code>const sketch: Sketch&lt;'webgpu'&gt; = async ({ wrap, context }) =&gt; {
+  const adapter = await navigator.gpu?.requestAdapter();
+  if (!adapter) throw new Error('WebGPU not available in this browser.');
+  const device  = await adapter.requestDevice();
+  const format  = navigator.gpu.getPreferredCanvasFormat();
+  context.configure({ device, format, alphaMode: 'opaque' });
+  // …build the pipeline, then draw 3 vertices each frame.
+};</code></pre>
+
+<p>The full file is already written for you at
+<code>src/shader-sketches/wgpu-hello.ts</code> — open it and read the four numbered
+steps. It's about 50 lines; every line is commented.</p>
+
+<h2>Run it</h2>
+
+<span class="code-label">terminal</span>
+<pre><code>VITE_SKETCH="shader-sketches/wgpu-hello" npm run dev</code></pre>
+
+<p>Open the URL Vite prints. You should see this — dark in the bottom-left,
+red rising to the right, green rising upward:</p>
+
+<figure style="margin:1.2rem 0;">
+  <div style="position:relative; aspect-ratio:1/1; max-width:260px;
+              border-radius:8px; border:1px solid var(--rule);
+              background:linear-gradient(to top right, rgb(0,0,128), rgb(255,255,128));">
+    <span style="position:absolute; left:6px; bottom:4px; font:0.6rem var(--mono); color:#fff;">(0,0)</span>
+    <span style="position:absolute; right:6px; top:4px; font:0.6rem var(--mono); color:#222;">(1,1)</span>
+  </div>
+  <figcaption class="fine">The canvas = <code>(uv.x, uv.y, 0.5)</code>.</figcaption>
+</figure>
+
+<div class="callout warn">
+  <span class="label">If it's blank or throws</span>
+  You need a WebGPU-capable browser: Chrome/Edge 113+, Safari 18+, or a recent
+  Firefox. "WebGPU not available" means the browser, not your code.
+</div>
+
+<h2>Check yourself</h2>
+
+<div class="quiz" data-quiz data-explain="The fragment shader runs once per pixel; the vertex shader only positions the triangle's corners.">
+  <div class="q">Which stage decides the colour of each pixel?</div>
+  <button class="opt" data-correct>The fragment shader</button>
+  <button class="opt">The vertex shader.</button>
+  <button class="opt">The clearing pass</button>
+  <div class="feedback"></div>
+</div>
+
+<div class="quiz" data-quiz data-explain="One triangle big enough to overlap the whole canvas needs zero vertex data — you just ask for draw(3).">
+  <div class="q">Why cover the screen with one big triangle?</div>
+  <button class="opt" data-correct>It needs no buffer</button>
+  <button class="opt">It renders much faster</button>
+  <button class="opt">It avoids all colour</button>
+  <div class="feedback"></div>
+</div>
+
+<div class="callout">
+  <span class="label">Where this is heading</span>
+  Right now the fragment shader is one boring line. Everything interesting —
+  the Clifford torus included — happens by replacing that line with real maths.
+  But first: WGSL is <em>stricter</em> than GLSL. No automatic <code>int → float</code>,
+  no <code>mod()</code>, no <code>?:</code> ternary, no <code>inout</code>
+  parameters. <a href="../reference/glsl-to-wgsl.html">Lesson 02 &amp; the
+  GLSL → WGSL cheat-sheet</a> map every one of those — they're precisely the
+  rough edges you'll hit porting the torus.
+</div>
+
+<div class="source">
+  <div class="label">Primary source — read this next</div>
+  <div class="title"><a href="https://webgpufundamentals.org/webgpu/lessons/webgpu-fundamentals.html">WebGPU Fundamentals — "Fundamentals"</a></div>
+  <div class="note">The clearest start-to-finish walkthrough of the device →
+  pipeline → render-pass flow you just used. Pair it with its
+  "Inter-stage Variables" article to go deeper on <code>@location</code>.</div>
+</div>
+
+<div class="ask">
+  <b>I'm your teacher for this.</b> Stuck, curious, or want to poke at something?
+  Ask me directly — "why a triangle and not two?", "what's an adapter really?",
+  "show me what the interpolated uv looks like". That back-and-forth is where the
+  learning sticks.
+</div>
+
+</main>
+
+<nav class="nav">
+  <span><code>wgpu-hello.ts</code></span>
+  <span class="spacer"></span>
+  <span>Next · Lesson 02 — Speaking WGSL →</span>
+</nav>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

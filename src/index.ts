@@ -1,7 +1,7 @@
 import type { Sketch, SketchSettings } from 'ssam';
 
 type SsamSketchModule = {
-  sketch: Sketch<'2d' | 'webgl' | 'webgl2'>;
+  sketch: Sketch<'2d' | 'webgl' | 'webgl2' | 'webgpu'>;
   settings: SketchSettings;
 };
 

@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lesson 05 — The Clifford Torus</title>
+<link rel="stylesheet" href="../assets/course.css" />
+</head>
+<body>
+
+<header class="masthead">
+  <span class="lesson-no">Lesson 05 / WebGPU for generative art</span>
+  <p class="kicker">The destination</p>
+  <h1>The Clifford Torus</h1>
+</header>
+
+<main class="wrap">
+
+<p class="lede">Everything you've built was groundwork for this. The engine is
+unchanged — ray, march, normal, shade. Only <code>map</code> gets stranger. The
+core idea: this torus lives on a sphere in <strong>4D</strong>, and we project it
+into 3D. Rotating it <em>in 4D</em> is what makes it turn inside-out.</p>
+
+<p>Three new functions to assemble. I'll port two for you (they show off WGSL
+patterns worth seeing); the third — <code>pMod2</code> — is your final port.</p>
+
+<h2>1 · Inverse stereographic projection</h2>
+<p>This lifts a 3D point <code>p</code> up onto the unit 3-sphere in 4D, returning
+a <code>vec4</code> <em>and</em> a scale factor <code>k</code> (needed later). In
+GLSL that second output is an <code>out</code> parameter — WGSL has none, so we
+<strong>return a struct</strong>:</p>
+
+<span class="code-label glsl">GLSL</span>
+<pre><code>vec4 inverseStereographic(vec3 p, out float k) {
+    k = 2.0/(1.0+dot(p,p));
+    return vec4(k*p, k-1.0);
+}</code></pre>
+
+<span class="code-label wgsl">WGSL</span>
+<pre><code>struct Stereo { p4: vec4f, k: f32 };
+
+fn inverseStereographic(p: vec3f) -> Stereo {
+  let k = 2.0 / (1.0 + dot(p, p));
+  return Stereo(vec4f(k * p, k - 1.0), k);
+}</code></pre>
+
+<div class="callout">
+  <span class="label">Pattern: <code>out</code> → struct</span>
+  Any GLSL function with extra <code>out</code> values becomes a WGSL function that
+  returns a small <code>struct</code>. Cleaner than pointers when you're producing
+  data rather than mutating the caller's.
+</div>
+
+<h2>2 · The 4D torus <span class="fine">(meet <code>select</code> and <code>atan2</code> for real)</span></h2>
+<p>The distance to the torus, plus surface UVs — another <code>out</code>. Two
+porting traps fire here at once:</p>
+
+<span class="code-label glsl">GLSL</span>
+<pre><code>float fTorus(vec4 p4, out vec2 uv) {
+    float d1 = length(p4.xy) / length(p4.zw) - 1.;
+    float d2 = length(p4.zw) / length(p4.xy) - 1.;
+    float d = d1 < 0. ? -d1 : d2;
+    d /= PI;
+    uv = (vec2(atan(p4.y, p4.x), atan(p4.z, p4.w)) / PI) * .5 + .5;
+    return d;
+}</code></pre>
+
+<span class="code-label wgsl">WGSL</span>
+<pre><code>struct TorusHit { d: f32, uv: vec2f };
+
+fn fTorus(p4: vec4f) -> TorusHit {
+  let d1 = length(p4.xy) / length(p4.zw) - 1.0;
+  let d2 = length(p4.zw) / length(p4.xy) - 1.0;
+  var d  = select(d2, -d1, d1 &lt; 0.0);   // d1 &lt; 0. ? -d1 : d2   (false, true, cond!)
+  d = d / PI;
+  let uv = (vec2f(atan2(p4.y, p4.x), atan2(p4.z, p4.w)) / PI) * 0.5 + 0.5;
+  return TorusHit(d, uv);
+}</code></pre>
+
+<div class="callout gotcha">
+  <span class="label">The two traps</span>
+  <code>d1 &lt; 0. ? -d1 : d2</code> → <code>select(d2, -d1, d1 &lt; 0.0)</code>
+  — false value first! · <code>atan(y,x)</code> → <code>atan2(y, x)</code>.
+  (<code>PI</code> is a module <code>const PI = 3.14159265359;</code>.)
+</div>
+
+<h2>Rotating in 4D — you can't point at a swizzle</h2>
+<p><code>map</code> rotates planes of <code>p4</code> with your <code>pR</code>:
+<code>pR(p4.zy, …)</code>. But WGSL won't let you take a pointer to a swizzle like
+<code>&amp;p4.zy</code> — so you <strong>extract, rotate, rebuild</strong>:</p>
+
+<span class="code-label wgsl">WGSL</span>
+<pre><code>var zy = vec2f(p4.z, p4.y);
+pR(&amp;zy, u.time * -PI / 2.0);
+p4 = vec4f(p4.x, zy.y, zy.x, p4.w);   // put z,y back (mind the order!)</code></pre>
+
+<p class="fine">This is the concrete reason the "return a value" route is often nicer
+than pointers — but here <code>pR</code> works fine, you just can't hand it a
+swizzle directly.</p>
+
+<h2>3 · fixDistance</h2>
+<p>The stereographic projection warps distances so the raymarcher would overshoot.
+This hand-tuned curve squashes them back to safe (Lipschitz) values. A plain port,
+no traps — good to just read:</p>
+
+<span class="code-label wgsl">WGSL</span>
+<pre><code>fn fixDistance(d0: f32, k: f32) -> f32 {
+  let sn = sign(d0);
+  var d  = abs(d0);
+  d = d / k * 1.82;
+  d = d + 1.0;
+  d = pow(d, 0.5);
+  d = d - 1.0;
+  d = d * (5.0 / 3.0);
+  return d * sn;
+}</code></pre>
+
+<h2>Your port — <code>pMod2</code> <span class="fine">(the capstone)</span></h2>
+<p>This tiles the surface into repeating cells — it's what scatters the little
+circles across the torus. It is your <code>inout</code> <strong>and</strong>
+<code>mod</code> test in one function:</p>
+
+<span class="code-label glsl">GLSL</span>
+<pre><code>vec2 pMod2(inout vec2 p, vec2 size) {
+    vec2 c = floor((p + size*0.5)/size);
+    p = mod(p + size*0.5, size) - size*0.5;
+    return c;
+}</code></pre>
+
+<p>Three things to get right:</p>
+<ul>
+  <li><code>inout vec2 p</code> → a <code>ptr&lt;function, vec2f&gt;</code> (write through <code>*p</code>);</li>
+  <li>it <em>also</em> returns <code>c</code> — so it both mutates <strong>and</strong> returns;</li>
+  <li><code>mod(...)</code> doesn't exist, and <code>%</code> differs from GLSL for
+      negatives — use the <code>glslMod2</code> helper from the
+      <a href="../reference/glsl-to-wgsl.html">cheat-sheet</a> (or write it:
+      <code>p - s * floor(p / s)</code>).</li>
+</ul>
+<p class="fine">Post your <code>pMod2</code> (and <code>glslMod2</code> if you write
+it). When it checks out I'll assemble the whole <code>map</code> + renderer and you
+run the real thing.</p>
+
+<h2>Check yourself</h2>
+
+<div class="quiz" data-quiz data-explain="WGSL has no out params; a function producing extra values returns a struct holding them.">
+  <div class="q">A GLSL <code>out</code> parameter becomes…</div>
+  <button class="opt" data-correct>a returned struct field</button>
+  <button class="opt">a second function call</button>
+  <button class="opt">a global private value</button>
+  <div class="feedback"></div>
+</div>
+
+<div class="quiz" data-quiz data-explain="select(falseValue, trueValue, cond) — the false case comes first, the reverse of how a ternary reads.">
+  <div class="q"><code>cond ? a : b</code> ports to…</div>
+  <button class="opt" data-correct>select(b, a, cond)</button>
+  <button class="opt">select(a, b, cond)</button>
+  <button class="opt">select(cond, a, b)</button>
+  <div class="feedback"></div>
+</div>
+
+<div class="callout">
+  <span class="label">The payoff</span>
+  A torus of tiled circles, projected from 4D, turning itself inside-out and
+  fog-faded through your spectrum palette — the original Shadertoy, now a native
+  WebGPU sketch in your sketchbook, every line of it ported by you.
+</div>
+
+<div class="source">
+  <div class="label">Primary sources</div>
+  <div class="title">
+    <a href="https://www.shadertoy.com/view/wsfGDS">The original — "Clifford Torus Rotation"</a>
+    &nbsp;·&nbsp;
+    <a href="https://en.wikipedia.org/wiki/Clifford_torus">Wikipedia — Clifford torus</a>
+  </div>
+  <div class="note">The Shadertoy is the source we're porting; the Wikipedia page
+  explains the 4D object and why the inside-out rotation works.</div>
+</div>
+
+<div class="ask">
+  <b>Last port — make it count.</b> Post your <code>pMod2</code>. And if any of the
+  4D intuition is murky (why a sphere in 4D? what's <code>k</code> for?), ask — the
+  maths is the real lesson now that the language is second nature to you.
+</div>
+
+</main>
+
+<nav class="nav">
+  <span><a href="0004-raymarching-an-sdf.html">← Lesson 04</a></span>
+  <span class="spacer"></span>
+  <span>Final assembly after your port →</span>
+</nav>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

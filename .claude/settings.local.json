@@ -73,7 +73,12 @@
       "Bash(kill %1)",
       "Bash(wait)",
       "Bash(bash -n .claude/skills/render-sketch/render.sh)",
-      "Bash(bash *)"
+      "Bash(bash *)",
+      "Bash(open \"/Users/varun/Documents/projects/sketchbook-ssam/learn-webgpu/lessons/0001-hello-wgsl.html\")",
+      "Bash(open \"/Users/varun/Documents/projects/sketchbook-ssam/learn-webgpu/lessons/0002-speaking-wgsl.html\")",
+      "Bash(open \"/Users/varun/Documents/projects/sketchbook-ssam/learn-webgpu/lessons/0003-uniforms-and-time.html\")",
+      "Bash(open \"/Users/varun/Documents/projects/sketchbook-ssam/learn-webgpu/lessons/0004-raymarching-an-sdf.html\")",
+      "Bash(grep -n '`' src/shader-sketches/wgpu-clifford-glass.ts)"
     ]
   }
 }

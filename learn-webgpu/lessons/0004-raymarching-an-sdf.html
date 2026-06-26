@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lesson 04 — Raymarching an SDF</title>
+<link rel="stylesheet" href="../assets/course.css" />
+</head>
+<body>
+
+<header class="masthead">
+  <span class="lesson-no">Lesson 04 / WebGPU for generative art</span>
+  <p class="kicker">Into 3D</p>
+  <h1>Raymarching an SDF</h1>
+</header>
+
+<main class="wrap">
+
+<p class="lede">Every lesson so far painted a flat plane. Now we go 3D: each pixel
+fires a <strong>ray</strong> into a scene and walks it forward until it hits a
+surface, then shades that hit. You already know all the WGSL here — the new thing
+is a <em>technique</em> made of four ideas.</p>
+
+<h2>1 · The SDF</h2>
+<p>A <strong>signed distance function</strong> is the whole scene, expressed as one
+function: <code>map(p)</code> returns the distance from point <code>p</code> to the
+nearest surface — positive outside, negative inside, zero <em>on</em> it. A sphere
+is almost absurdly simple:</p>
+
+<span class="code-label wgsl">WGSL</span>
+<pre><code>fn map(p: vec3f) -> f32 {
+  return length(p) - 1.0;   // distance to a sphere of radius 1 at the origin
+}</code></pre>
+
+<p>"How far is <code>p</code> from the surface? Its distance from the center, minus
+the radius." That single number is everything the renderer needs.</p>
+
+<h2>2 · The ray</h2>
+<p>For each pixel we build a ray: an origin <code>ro</code> (the eye) and a unit
+direction <code>rd</code> pointing through that pixel into the scene.</p>
+
+<span class="code-label wgsl">WGSL</span>
+<pre><code>let pix    = in.uv * 2.0 - 1.0;            // 0..1 uv -> -1..1, centered
+let aspect = u.resolution.x / u.resolution.y;
+let sp     = vec2f(pix.x * aspect, pix.y); // don't let a wide canvas squash it
+
+let ro = vec3f(0.0, 0.0, 3.0);             // eye, 3 units down +z
+let rd = normalize(vec3f(sp, -1.6));       // aim toward -z, through this pixel</code></pre>
+
+<h2>3 · The march <span class="fine">(sphere tracing — the clever bit)</span></h2>
+<p>Here's the insight that makes SDFs magic. If the nearest surface is distance
+<code>d</code> away, you can safely jump <em>forward by exactly <code>d</code></em> —
+you can't possibly overshoot, because nothing is closer than <code>d</code> in
+<em>any</em> direction. Evaluate, step, repeat:</p>
+
+<pre><code>eye ●─────────▶ . . . . surface
+    └─ d₀ ─┘└─ d₁ ─┘└d₂┘▏      each step = the SDF's value at the current point;
+                          steps shrink as you near the surface, then you stop.</code></pre>
+
+<span class="code-label wgsl">WGSL</span>
+<pre><code>var t   = 0.0;
+var hit = false;
+for (var i = 0; i &lt; 96; i = i + 1) {
+  let pos = ro + rd * t;
+  let d   = map(pos);
+  if (d &lt; 0.001) { hit = true; break; }   // close enough = a hit
+  t = t + d;                               // jump forward by the safe distance
+  if (t &gt; 20.0) { break; }                 // sailed off into empty space
+}</code></pre>
+
+<h2>4 · Normal &amp; shading</h2>
+<p>To light the surface you need its <strong>normal</strong> (which way it faces).
+The SDF gives it for free: the direction the distance increases fastest is the
+gradient, found by sampling <code>map</code> a hair in each axis (central
+differences). Then a dot product with a light direction is basic shading:</p>
+
+<span class="code-label wgsl">WGSL</span>
+<pre><code>let n    = calcNormal(pos);
+let light = normalize(vec3f(0.7, 0.8, 0.2));
+let diff = dot(n, light) * 0.5 + 0.5;      // Lambert, remapped to 0..1
+col = spectrum(diff);                       // ...then tint with YOUR palette</code></pre>
+
+<h2>I do — run the engine</h2>
+<p>All four ideas are assembled, runnable, and heavily commented in
+<code>src/shader-sketches/wgpu-raymarch.ts</code>:</p>
+
+<span class="code-label">terminal</span>
+<pre><code>VITE_SKETCH="shader-sketches/wgpu-raymarch" npm run dev</code></pre>
+
+<p>You'll see a shaded sphere, ramped through your spectrum palette. Read the file
+top to bottom — it's the Lesson&nbsp;03 sketch plus <code>map</code>,
+<code>calcNormal</code>, and the march in <code>fs</code>.</p>
+
+<div class="callout">
+  <span class="label">Notice the rotation does nothing</span>
+  <code>map</code> already tumbles the whole space with your <code>pR</code> +
+  <code>u.time</code> — but a sphere is perfectly symmetric, so you see no motion.
+  That's the setup for your task.
+</div>
+
+<h2>You do — make it a torus</h2>
+<p>Port this 3D torus SDF from the original Clifford shader and swap it into
+<code>map</code> (replace the <code>length(p) - 1.0</code> line). The instant you
+do, the pre-wired rotation tilts it and it <strong>tumbles</strong>.</p>
+
+<span class="code-label glsl">GLSL</span>
+<pre><code>float fTorus(vec3 p, float smallRadius, float largeRadius) {
+    return length(vec2(length(p.xz) - largeRadius, p.y)) - smallRadius;
+}</code></pre>
+
+<p class="fine">Then call it as <code>fTorus(p, 0.4, 1.0)</code>. Nothing exotic in
+this port — it's a consolidation rep (signatures, <code>vec2f</code>, the
+<code>.xz</code> swizzle-read). Post your WGSL and I'll grade + wire it.</p>
+
+<h2>Check yourself</h2>
+
+<div class="quiz" data-quiz data-explain="An SDF returns a signed distance: how far the point is from the nearest surface (negative inside).">
+  <div class="q">What does an SDF return for a point?</div>
+  <button class="opt" data-correct>Distance to the surface</button>
+  <button class="opt">Colour of the surface</button>
+  <button class="opt">Normal at the surface</button>
+  <div class="feedback"></div>
+</div>
+
+<div class="quiz" data-quiz data-explain="The SDF is the distance to the NEAREST surface in any direction, so stepping that far can never overshoot.">
+  <div class="q">Why may the march step forward by <code>d</code>?</div>
+  <button class="opt" data-correct>No surface is closer</button>
+  <button class="opt">The ray moves faster</button>
+  <button class="opt">It always steps once</button>
+  <div class="feedback"></div>
+</div>
+
+<div class="callout">
+  <span class="label">The payoff</span>
+  A rainbow-shaded torus, tumbling in 3D — rendered by stepping a ray through a
+  distance field, lit by a normal you got for free from that same field. This is
+  the <em>exact engine</em> behind the Clifford Torus. Lesson 05 only swaps in a
+  stranger <code>map</code>.
+</div>
+
+<div class="source">
+  <div class="label">Primary sources</div>
+  <div class="title">
+    <a href="https://iquilezles.org/articles/distfunctions/">IQ — "Distance functions"</a>
+    &nbsp;·&nbsp;
+    <a href="https://blog.maximeheckel.com/posts/painting-with-math-a-gentle-study-of-raymarching/">Maxime Heckel — "Painting with Math: Raymarching"</a>
+  </div>
+  <div class="note">IQ's article is the canonical catalogue of SDF primitives
+  (incl. the torus you're porting). Heckel's is the gentlest visual walkthrough of
+  the march loop itself.</div>
+</div>
+
+<div class="ask">
+  <b>I'm grading.</b> Post your <code>fTorus</code> port. And this is the lesson
+  where "why?" questions pay off most — ask about the camera, the epsilon, why
+  96 steps, anything. The technique rewards poking.
+</div>
+
+</main>
+
+<nav class="nav">
+  <span><a href="0003-uniforms-and-time.html">← Lesson 03</a></span>
+  <span class="spacer"></span>
+  <span>Next · Lesson 05 — The Clifford Torus →</span>
+</nav>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

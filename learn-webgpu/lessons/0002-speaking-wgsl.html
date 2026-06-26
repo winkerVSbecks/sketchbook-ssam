@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lesson 02 — Speaking WGSL</title>
+<link rel="stylesheet" href="../assets/course.css" />
+</head>
+<body>
+
+<header class="masthead">
+  <span class="lesson-no">Lesson 02 / WebGPU for generative art</span>
+  <p class="kicker">Translating, for real</p>
+  <h1>Speaking WGSL</h1>
+</header>
+
+<main class="wrap">
+
+<p class="lede">Enough rules. We're going to port three actual functions out of the
+Clifford&nbsp;Torus shader. I'll translate one with you watching, then you do two
+and I'll grade them. By the end the dull gradient becomes a rainbow.</p>
+
+<h2>The three rules in play</h2>
+
+<p>The <a href="../reference/glsl-to-wgsl.html">cheat-sheet</a> has the full table;
+only three rules matter for today's functions:</p>
+
+<ol>
+  <li><strong>Spell out the signature &amp; types.</strong> <code>float f(vec3 p)</code>
+      becomes <code>fn f(p: vec3&lt;f32&gt;) -&gt; f32</code>. Drop GLSL's <code>in</code>;
+      a plain parameter is already an input.</li>
+  <li><strong>Floats are floats.</strong> <code>0</code> is an <code>i32</code>;
+      write <code>0.0</code>. <code>vec2(0)</code> becomes <code>vec2&lt;f32&gt;(0.0)</code>.</li>
+  <li><strong>No <code>inout</code>.</strong> A parameter the function writes back
+      to becomes either a <em>pointer</em> (<code>ptr&lt;function, T&gt;</code>) or —
+      cleaner — a <em>returned value</em>.</li>
+</ol>
+
+<h2>I do — porting <code>smax</code></h2>
+
+<p>Smooth-max, a pure helper. Watch all three rules fire at once:</p>
+
+<span class="code-label glsl">GLSL</span>
+<pre><code>float smax(float a, float b, float r) {
+    vec2 u = max(vec2(r + a, r + b), vec2(0));
+    return min(-r, max(a, b)) + length(u);
+}</code></pre>
+
+<span class="code-label wgsl">WGSL</span>
+<pre><code>fn smax(a: f32, b: f32, r: f32) -&gt; f32 {
+  let u = max(vec2&lt;f32&gt;(r + a, r + b), vec2&lt;f32&gt;(0.0));
+  return min(-r, max(a, b)) + length(u);
+}</code></pre>
+
+<p>Three changes, nothing more:</p>
+<ul>
+  <li><code>float … float …</code> → typed params and a <code>-&gt; f32</code> return.</li>
+  <li><code>vec2</code> → <code>vec2&lt;f32&gt;</code>; and <code>vec2(0)</code> →
+      <code>vec2&lt;f32&gt;(0.0)</code> (one scalar splats to both lanes — and it's
+      <code>0.0</code>, not <code>0</code>).</li>
+  <li><code>vec2 u</code> never gets reassigned, so it's a <code>let</code>, not a
+      <code>var</code>. The body maths is identical — <code>min</code>,
+      <code>max</code>, <code>length</code> all exist unchanged.</li>
+</ul>
+
+<div class="callout">
+  <span class="label">The point</span>
+  Most of a port is mechanical and boring. The skill is spotting the <em>few</em>
+  spots where a rule bites. That's what the next two functions train.
+</div>
+
+<h2>You do — port these two</h2>
+
+<p><strong>Write your WGSL in the chat</strong> and I'll grade it line by line.
+Don't peek at an answer — the effort of producing it is the whole exercise.</p>
+
+<h3>① The spectrum palette <span class="fine">(this one we'll <em>see</em>)</span></h3>
+<p>Inigo Quílez's cosine palette. Pure functions — but watch rule 2 hard.</p>
+
+<span class="code-label glsl">GLSL</span>
+<pre><code>vec3 pal( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d ) {
+    return a + b*cos( 6.28318*(c*t+d) );
+}
+
+vec3 spectrum(float n) {
+    return pal( n, vec3(0.5,0.5,0.5), vec3(0.5,0.5,0.5),
+                   vec3(1.0,1.0,1.0), vec3(0.0,0.33,0.67) );
+}</code></pre>
+
+<p class="fine">Hints: <code>in</code> just disappears. <code>cos</code> of a
+<code>vec3&lt;f32&gt;</code> is fine (per-lane). A scalar times a vector
+(<code>c*t</code>, <code>b*cos(…)</code>) is fine. Every literal is a float.</p>
+
+<h3>② The 2D rotation <span class="fine">(the <code>inout</code> one)</span></h3>
+<p>This is <code>pR</code> from the torus — it rotates a 2D point in place.</p>
+
+<span class="code-label glsl">GLSL</span>
+<pre><code>void pR(inout vec2 p, float a) {
+    p = cos(a)*p + sin(a)*vec2(p.y, -p.x);
+}</code></pre>
+
+<p class="fine">You have <strong>two valid routes</strong> — pick one:
+<br>· <em>return-a-value</em>: <code>fn rot2(p: …, a: …) -&gt; … { return …; }</code> (recommended)
+<br>· <em>pointer</em>: <code>fn pR(p: ptr&lt;function, …&gt;, a: …) { *p = …; }</code>
+<br>Tell me which route and why.</p>
+
+<h2>Check yourself</h2>
+
+<div class="quiz" data-quiz data-explain="WGSL never promotes an i32 to f32 for you, so a literal meant as a float must be written 0.0.">
+  <div class="q">Why write <code>0.0</code> instead of <code>0</code>?</div>
+  <button class="opt" data-correct>WGSL won't promote ints</button>
+  <button class="opt">Zero needs the decimal</button>
+  <button class="opt">Floats compile much faster</button>
+  <div class="feedback"></div>
+</div>
+
+<div class="quiz" data-quiz data-explain="WGSL has no inout: pass a ptr<function,T> (write through *p), or just return the new value — the cleaner route here.">
+  <div class="q">How do you port an <code>inout</code> parameter?</div>
+  <button class="opt" data-correct>Pass a pointer in</button>
+  <button class="opt">Mark it inout too</button>
+  <button class="opt">Make it a global</button>
+  <div class="feedback"></div>
+</div>
+
+<div class="callout">
+  <span class="label">The payoff</span>
+  Once your <code>spectrum</code> passes, we swap the fragment shader's boring
+  <code>vec4&lt;f32&gt;(in.uv, 0.5, 1.0)</code> for
+  <code>vec4&lt;f32&gt;(spectrum(in.uv.x), 1.0)</code> — and the canvas fills with a
+  smooth rainbow. Add <code>rot2</code> and we tilt it. You'll run it yourself.
+</div>
+
+<div class="source">
+  <div class="label">Primary sources</div>
+  <div class="title">
+    <a href="https://webgpufundamentals.org/webgpu/lessons/webgpu-wgsl.html">WebGPU Fundamentals — WGSL</a>
+    &nbsp;·&nbsp;
+    <a href="https://iquilezles.org/articles/palettes/">IQ — "Palettes"</a>
+  </div>
+  <div class="note">The first is the language reference behind every rule here;
+  the second explains the cosine-palette maths you're porting.</div>
+</div>
+
+<div class="ask">
+  <b>I'm grading.</b> Post your two functions in the chat — partial, unsure, or
+  confident, all fine. Wrong attempts are more useful than blank ones: they show me
+  exactly which rule to sharpen.
+</div>
+
+</main>
+
+<nav class="nav">
+  <span><a href="0001-hello-wgsl.html">← Lesson 01</a></span>
+  <span class="spacer"></span>
+  <span>Next · Lesson 03 — Uniforms &amp; time →</span>
+</nav>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

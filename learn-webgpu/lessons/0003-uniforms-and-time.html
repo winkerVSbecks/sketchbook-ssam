@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lesson 03 — Uniforms &amp; time</title>
+<link rel="stylesheet" href="../assets/course.css" />
+</head>
+<body>
+
+<header class="masthead">
+  <span class="lesson-no">Lesson 03 / WebGPU for generative art</span>
+  <p class="kicker">Data into the shader</p>
+  <h1>Uniforms &amp; time</h1>
+</header>
+
+<main class="wrap">
+
+<p class="lede">A shader is a sealed box: same inputs, same pixels, forever. To make
+it move you have to pass something in that changes — the clock. A
+<strong>uniform</strong> is the wire from your JavaScript into every shader
+invocation. We'll run <code>time</code> and <code>resolution</code> down it and
+spin your rainbow.</p>
+
+<h2>The data path — five pieces</h2>
+<ol>
+  <li>A WGSL <strong>struct</strong> + a binding: <code>@group(0) @binding(0) var&lt;uniform&gt; u: Uniforms;</code></li>
+  <li>A <strong>GPUBuffer</strong> on the device to hold the bytes.</li>
+  <li>A <strong>bind group</strong> that ties the buffer to that binding slot.</li>
+  <li><code>pass.setBindGroup(0, …)</code> in the render pass.</li>
+  <li><code>device.queue.writeBuffer(…)</code> <strong>every frame</strong> with fresh numbers.</li>
+</ol>
+<p>Pieces 2–4 are write-once boilerplate. Piece 5 is the heartbeat.</p>
+
+<h2>I do — the host plumbing</h2>
+<p>This is the reusable TS half. Read the comments; you'll paste shapes like this for the rest of your WebGPU life:</p>
+
+<span class="code-label wgsl">TS</span>
+<pre><code>// --- once, right after creating the pipeline ---
+const uniformBuffer = device.createBuffer({
+  size: 16,                       // see "the 16-byte rule" below
+  usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+});
+
+const bindGroup = device.createBindGroup({
+  layout: pipeline.getBindGroupLayout(0),         // matches @group(0)
+  entries: [{ binding: 0, resource: { buffer: uniformBuffer } }],
+});
+
+const uniforms = new Float32Array(4);             // 4 floats = 16 bytes
+
+// --- every frame ---
+wrap.render = ({ playhead }) =&gt; {
+  uniforms[0] = canvas.width;     // resolution.x
+  uniforms[1] = canvas.height;    // resolution.y
+  uniforms[2] = playhead;         // 0..1 loop — this is our iTime
+  device.queue.writeBuffer(uniformBuffer, 0, uniforms);
+  // …then in the pass, BEFORE draw(3):
+  //   pass.setBindGroup(0, bindGroup);
+};</code></pre>
+
+<div class="callout">
+  <span class="label">ssam gift</span>
+  <code>wrap.render({ playhead })</code> hands you a number that loops
+  <code>0 → 1</code> over the sketch's <code>duration</code>. That's exactly the
+  torus's <code>time = mod(iTime/2., 1.)</code> — your animation clock, for free.
+</div>
+
+<h2>The 16-byte rule <span class="fine">(where ports silently corrupt)</span></h2>
+<p>GPUs read uniform memory in aligned lanes. The sizes that matter:</p>
+<div class="tablescroll"><table>
+<thead><tr><th>type</th><th>align</th><th>size</th></tr></thead>
+<tbody>
+<tr><td><code>f32</code></td><td>4</td><td>4</td></tr>
+<tr><td><code>vec2f</code></td><td>8</td><td>8</td></tr>
+<tr><td><code>vec3f</code></td><td>16</td><td><strong>12</strong> — aligns to 16, fills 12!</td></tr>
+<tr><td><code>vec4f</code></td><td>16</td><td>16</td></tr>
+</tbody>
+</table></div>
+<p>Our struct is <code>{ resolution: vec2f, time: f32 }</code> — that's
+<code>8 + 4 = 12</code> bytes of data, but the struct rounds <strong>up</strong>,
+so we allocate a clean 16 and leave the last 4 bytes as padding. Get this wrong
+and the shader reads your numbers out of the wrong slots — silent garbage, no
+error. <strong>Port rule:</strong> lay uniforms out in 16-byte chunks; treat every
+<code>vec3</code> as a <code>vec4</code> for spacing.</p>
+
+<h2>You do</h2>
+<p><strong>1 — Write the WGSL side</strong> and post it. You need:</p>
+<ul>
+  <li>a <code>struct Uniforms</code> with <code>resolution: vec2f</code> and <code>time: f32</code>;</li>
+  <li>the binding line that exposes it as <code>u</code> at group 0, binding 0;</li>
+  <li>a one-line change to <code>fs</code> so the rotation angle is driven by time —
+      replace the constant <code>0.6</code> with <code>u.time</code> scaled to a full
+      turn (a full turn is <code>6.28318</code> radians).</li>
+</ul>
+
+<p><strong>2 — Answer this</strong> (no peeking): our buffer is a
+<code>Float32Array</code> of length 4. Index <code>[0]</code> and <code>[1]</code>
+hold resolution, <code>[2]</code> holds time. <em>What is index <code>[3]</code>,
+and why is it there?</em></p>
+
+<h2>Check yourself</h2>
+
+<div class="quiz" data-quiz data-explain="A uniform buffer must be usable AS a uniform, and must be a copy destination so writeBuffer can fill it.">
+  <div class="q">A uniform buffer's usage flags are…</div>
+  <button class="opt" data-correct>UNIFORM and COPY_DST</button>
+  <button class="opt">STORAGE and MAP_READ</button>
+  <button class="opt">VERTEX and COPY_SRC</button>
+  <div class="feedback"></div>
+</div>
+
+<div class="quiz" data-quiz data-explain="time changes constantly, so you re-upload it each frame before recording the draw. The buffer/bind-group themselves are made once.">
+  <div class="q">When do you call <code>writeBuffer</code> for time?</div>
+  <button class="opt" data-correct>Every frame before drawing</button>
+  <button class="opt">Once during initial setup</button>
+  <button class="opt">Never — the GPU updates</button>
+  <div class="feedback"></div>
+</div>
+
+<div class="callout">
+  <span class="label">The payoff</span>
+  With time flowing in, <code>pR(&amp;p, u.time * 6.28318)</code> turns the rainbow
+  a little more each frame — a full revolution per loop. The image finally
+  <em>moves</em>, driven by a number that started life in JavaScript.
+</div>
+
+<div class="source">
+  <div class="label">Primary sources</div>
+  <div class="title">
+    <a href="https://webgpufundamentals.org/webgpu/lessons/webgpu-uniforms.html">WebGPU Fundamentals — Uniforms</a>
+    &nbsp;·&nbsp;
+    <a href="https://webgpufundamentals.org/webgpu/lessons/webgpu-memory-layout.html">Data Memory Layout</a>
+  </div>
+  <div class="note">First walks the buffer → bind-group → writeBuffer flow; second
+  is the authority on the alignment rule that bites every porter once.</div>
+</div>
+
+<div class="ask">
+  <b>I'm grading again.</b> Post your <code>Uniforms</code> struct, the binding
+  line, the one-line <code>fs</code> change, and your answer to the index-<code>[3]</code>
+  question. Unsure on the binding syntax? Guess — I'll correct the exact token.
+</div>
+
+</main>
+
+<nav class="nav">
+  <span><a href="0002-speaking-wgsl.html">← Lesson 02</a></span>
+  <span class="spacer"></span>
+  <span>Next · Lesson 04 — Raymarching an SDF →</span>
+</nav>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>
