@@ -24,15 +24,13 @@ import { join, relative } from 'node:path';
 import 'dotenv/config';
 import { v2 as cloudinary } from 'cloudinary';
 import type { Archive, SketchEntry, CloudinaryRef } from './archive-types.ts';
-import { renderHtml, renderCss } from './archive-render-html.ts';
 
 const PROJECT_ROOT = process.cwd();
 const SKETCHES_DIR = join(PROJECT_ROOT, 'src', 'sketches');
 const OUTPUT_DIR = join(PROJECT_ROOT, 'output');
-const ARCHIVE_DIR = join(PROJECT_ROOT, 'archive');
-const ARCHIVE_JSON = join(ARCHIVE_DIR, 'archive.json');
-const ARCHIVE_HTML = join(ARCHIVE_DIR, 'index.html');
-const ARCHIVE_CSS = join(ARCHIVE_DIR, 'style.css');
+const APP_DIR = join(PROJECT_ROOT, 'archive-app');
+const ARCHIVE_JSON = join(APP_DIR, 'archive.json');
+const ARCHIVE_HTML = join(APP_DIR, 'dist', 'index.html');
 const EXCLUDE_DIRS = new Set(['_test']);
 
 type Flags = {
@@ -127,7 +125,7 @@ function loadArchive(): Archive {
 function saveArchive(archive: Archive): void {
   archive.generatedAt = new Date().toISOString();
   archive.sketches.sort((a, b) => a.id.localeCompare(b.id));
-  mkdirSync(ARCHIVE_DIR, { recursive: true });
+  mkdirSync(APP_DIR, { recursive: true });
   writeFileSync(ARCHIVE_JSON, JSON.stringify(archive, null, 2) + '\n');
 }
 
@@ -222,10 +220,17 @@ function stopVite(): void {
   });
 }
 
-function writeSite(archive: Archive): void {
-  mkdirSync(ARCHIVE_DIR, { recursive: true });
-  writeFileSync(ARCHIVE_HTML, renderHtml(archive, PROJECT_ROOT));
-  writeFileSync(ARCHIVE_CSS, renderCss());
+// Site generation lives in the archive-app workspace (React SSG): it
+// prerenders archive-app/dist/{index.html,series/index.html} from
+// archive-app/archive.json and emits style.css + the filter.js island.
+function writeSite(): void {
+  const result = spawnSync('npm', ['run', 'build', '--workspace', 'archive-app'], {
+    cwd: PROJECT_ROOT,
+    stdio: 'inherit',
+  });
+  if (result.status !== 0) {
+    throw new Error('archive-app build failed');
+  }
 }
 
 function assertCloudinaryConfigured(): void {
@@ -244,7 +249,7 @@ async function main(): Promise<void> {
   const byId = new Map(archive.sketches.map((s) => [s.id, s]));
 
   if (flags.siteOnly) {
-    writeSite(archive);
+    writeSite();
     saveArchive(archive);
     log(`site-only: wrote ${ARCHIVE_HTML} from ${archive.sketches.length} entries`);
     return;
@@ -311,7 +316,6 @@ async function main(): Promise<void> {
       else archive.sketches.push(updated);
 
       saveArchive(archive);
-      writeSite(archive);
       log(`  ✓ uploaded ${cloud.url}`);
     } catch (err) {
       log(`  ✗ ${err instanceof Error ? err.message : String(err)}`);
@@ -323,7 +327,7 @@ async function main(): Promise<void> {
   }
 
   saveArchive(archive);
-  writeSite(archive);
+  writeSite();
   log(`done: ${archive.sketches.length} archived total; site → ${ARCHIVE_HTML}`);
 }
 

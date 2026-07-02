@@ -4,7 +4,7 @@ description: Gallery-quiet chrome for a generative-art archive — the sketches 
 colors:
   gallery-white: "#ffffff"
   ink: "#111111"
-  pencil: "#888888"
+  pencil: "#767676"
   hairline: "#00000014"
   unprimed: "#f4f4f3"
 typography:
@@ -66,7 +66,7 @@ components:
 
 The artist's flat-file drawer: prints stored systematically, labeled in pencil, retrieved by date. This is a working archive, not an exhibition — chronology over curation, completeness over spectacle. The chrome exists to hold the work flat and findable, then get out of the way. Every visible decision (white ground, hairline dividers, pencil-gray labels, square prints on a uniform grid) comes from that drawer, not from web-portfolio convention.
 
-The system is deliberately voiceless where the work is loud. The interface owns no hue, no shadow, no display typeface — the ~105 sketches supply all the color and all the personality on any page. Density is generous but systematic: one grid rule (`repeat(auto-fill, minmax(280px, 1fr))`, 4rem gutters) applied uniformly, the same anti-compositional stance the sketches themselves take. It explicitly rejects the generative-art genre look (dark neon, glitch, terminal chrome), the template portfolio (heroes, badges, eyebrow labels), social-feed dynamics (masonry, infinite scroll), and art-world solemnity (splash screens, ubiquitous fade-ins).
+The system is deliberately voiceless where the work is loud. The interface owns no hue, no shadow, no display typeface — the sketches (370+ and growing) supply all the color and all the personality on any page. Density is generous but systematic: one grid rule (`repeat(auto-fill, minmax(280px, 1fr))`, 4rem gutters) applied uniformly, the same anti-compositional stance the sketches themselves take. It explicitly rejects the generative-art genre look (dark neon, glitch, terminal chrome), the template portfolio (heroes, badges, eyebrow labels), social-feed dynamics (masonry, infinite scroll), and art-world solemnity (splash screens, ubiquitous fade-ins).
 
 **Key Characteristics:**
 - Achromatic chrome; all color is borrowed from the artwork
@@ -85,14 +85,14 @@ Five achromatic values, named for studio materials; the palette's entire job is 
 
 ### Neutral
 - **Gallery White** (#ffffff): The ground. Body background, sticky year-header backing. Pure white, never tinted — any warmth would argue with the sketches.
-- **Pencil** (#888888): Metadata only — dates, sketch counts, year markers, resting icon states. The label written lightly in the drawer's corner. Never used for body prose.
+- **Pencil** (#767676): Metadata only — dates, sketch counts, year markers, resting icon states. The label written lightly in the drawer's corner. Never used for body prose.
 - **Hairline** (rgba(0,0,0,0.08) / #00000014): The 1px structural line — year-header underline, resting link underlines. The only divider the system owns.
 - **Unprimed** (#f4f4f3): Image placeholder ground while thumbnails load, and inline-code background. The unpainted canvas beneath a print.
 
 ### Named Rules
 **The Borrowed Color Rule.** The interface owns no hue. Every drop of color on any page arrives inside a sketch thumbnail. Introducing a chromatic accent into the chrome — even one — is prohibited.
 
-**The Pencil Rule.** Pencil (#888888) is a metadata voice, not a text color. Dates, counts, year markers, resting icons: yes. Sentences someone must read: never — those are Ink.
+**The Pencil Rule.** Pencil (#767676) is a metadata voice, not a text color. Dates, counts, year markers, resting icons: yes. Sentences someone must read: never — those are Ink.
 
 ## 3. Typography
 
@@ -113,7 +113,7 @@ Five achromatic values, named for studio materials; the palette's entire job is 
 
 ## 4. Elevation
 
-Flat, absolutely. There is not a single `box-shadow` in the system and none may be added. Depth is conveyed two ways only: the 1px Hairline where structure needs a line, and the sticky year header, whose solid Gallery White backing (with a backdrop blur as it passes over thumbnails) is the system's one act of layering. Prints in a flat file don't cast shadows.
+Flat, absolutely. There is not a single `box-shadow` in the system and none may be added. Depth is conveyed two ways only: the 1px Hairline where structure needs a line, and the sticky section header, whose translucent white backing (rgba(255,255,255,0.88) with `backdrop-filter: saturate(180%) blur(8px)`, solid-white fallback where unsupported) is the system's one act of layering — prints pass visibly beneath the drawer label. Prints in a flat file don't cast shadows.
 
 ### Named Rules
 **The Hairline Rule.** If a boundary needs marking, it gets a 1px hairline (rgba(0,0,0,0.08)). Not a shadow, not a background shift, not a thicker border.
@@ -128,9 +128,20 @@ Refined and restrained: visible but polite, readable at rest, subtle emphasis on
 - **Hover:** Whole image eases to 65% opacity (0.2s ease) — lifting the print slightly off the stack.
 - **Caption:** 0.75rem above; name (Title style, ellipsized) with icon actions right-aligned on the same row, date (0.75rem Pencil, tabular) beneath.
 
-### Year Header
-- **Style:** Sticky at top (z-index 10), Label typography in Pencil, Gallery White backing, Hairline underline, `backdrop-filter: saturate(180%) blur(8px)`.
+### Section Header (year / series)
+- **Style:** Sticky at top (z-index via `--z-sticky`), Label typography in Pencil, translucent white backing (rgba(255,255,255,0.88) + backdrop blur, solid fallback), Hairline underline.
+- **Contents:** The section label left (`2026`, or `nalee · 23`); quiet cross-navigation right — year-jump links on the year view, an `index` link on the series view. Links are Pencil with hairline underlines, Ink on hover.
 - **Role:** The drawer divider — it indexes, it never announces.
+
+### View Toggle
+- **Style:** `By year · By series` in the masthead; current view is plain Ink (weight 500, `aria-current`), the other an Ink hairline-underline link. A drawer label, not a tab bar.
+
+### Series Index
+- **Style:** A wrapping inline list at the top of the series view — alphabetical series names (Ink hairline-underline links) each followed by a Pencil tabular count. Reads like a book's index page; `one-offs` closes the list.
+
+### Filter Input (the only client JavaScript)
+- **Style:** Bare text input — Ink text on transparent, single Hairline bottom border that turns Ink on focus, placeholder in Pencil (#767676, ≥4.5:1). Result count (`64 of 372`) in Pencil tabular beside it. The native search-cancel ✕ is suppressed (it is the one hue the platform injects); Escape clears, `/` focuses.
+- **Contract:** Mounted by `filter.js` into a hidden placeholder — without JavaScript it never appears and every navigation path still works. The same file quietly marks cards whose thumbnail fails to load (`image unavailable` in Pencil on the Unprimed ground).
 
 ### Links (meta / prose)
 - **Style:** Ink text, underlined; the underline sits at Hairline strength, offset 3px.
@@ -149,7 +160,7 @@ Refined and restrained: visible but polite, readable at rest, subtle emphasis on
 ## 6. Do's and Don'ts
 
 ### Do:
-- **Do** edit `renderCss()` / `renderHtml()` in `scripts/archive-render-html.ts`, then run `npm run archive:site`. `archive/style.css` and `archive/index.html` are generated output — direct edits will be overwritten.
+- **Do** edit `archive-app/src/` (the React SSG workspace: `style.css`, `components.tsx`, `pages.tsx`, `islands/filter.ts`), then run `npm run archive:site`. Everything under `archive-app/dist/` is generated output (gitignored) — direct edits will be overwritten. The data is `archive-app/archive.json`.
 - **Do** keep every numeral tabular (The Tabular Rule) and every metadata voice in Pencil (The Pencil Rule).
 - **Do** keep thumbnails square (1:1, `object-fit: cover`, 400×400 Cloudinary transform) and corners at 0px everywhere except inline code (3px).
 - **Do** hold hover states to the two sanctioned moves: image opacity → 0.65, icon/underline Pencil → Ink.
@@ -162,5 +173,5 @@ Refined and restrained: visible but polite, readable at rest, subtle emphasis on
 - **Don't** add **social-feed dynamics** — masonry layouts, infinite scroll, view counts, engagement chrome. Year sections with a uniform grid, nothing else.
 - **Don't** indulge **art-world pretension** — splash screens, slow fade-ins on everything, scroll-jacking. Content is visible immediately; motion stays at the two hover transitions.
 - **Don't** add box-shadows, gradients, or glassmorphism. If a boundary needs marking, it's a 1px hairline (The Hairline Rule).
-- **Don't** set body prose in Pencil (#888888) — it fails readable contrast and violates the Pencil Rule; prose is Ink.
+- **Don't** set body prose in Pencil (#767676) — prose is Ink. (Pencil itself sits at ≈4.5:1, but it is a label voice, not a reading voice.)
 - **Don't** add a second typeface or a webfont. The system stack's silence is the choice.

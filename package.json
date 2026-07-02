@@ -4,6 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "main": "./dist/index.js",
+  "workspaces": [
+    "archive-app"
+  ],
   "scripts": {
     "dev": "vite",
     "gallery": "vite --open=/gallery.html",
@@ -15,7 +18,8 @@
     "cloud:smoke": "tsx scripts/cloud-render-smoke.ts",
     "archive": "tsx scripts/archive.ts",
     "archive:site": "tsx scripts/archive.ts --site-only",
-    "archive:force": "tsx scripts/archive.ts --force"
+    "archive:force": "tsx scripts/archive.ts --force",
+    "archive:dev": "npm run build -w archive-app && npm run preview -w archive-app"
   },
   "devDependencies": {
     "@tweakpane/core": "^2.0.5",

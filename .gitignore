@@ -32,3 +32,5 @@ timelapse
 .env.local
 .omc/state
 .omc/sessions
+# archive-app build output
+archive-app/dist
