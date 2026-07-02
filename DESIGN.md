@@ -10,7 +10,7 @@ colors:
 typography:
   display:
     fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif"
-    fontSize: "2.25rem"
+    fontSize: "clamp(2rem, 1.55rem + 1.6vw, 3rem)"
     fontWeight: 600
     lineHeight: 1.2
     letterSpacing: "-0.02em"
@@ -103,7 +103,7 @@ Five achromatic values, named for studio materials; the palette's entire job is 
 **Character:** One family, native to the machine, chosen precisely because it has no voice of its own. Hierarchy is carried entirely by size, weight (400/500/600), and the Ink/Pencil color split — never by a second typeface.
 
 ### Hierarchy
-- **Display** (600, 2.25rem, -0.02em): The masthead "Sketchbook" only. One per page.
+- **Display** (600, fluid clamp(2rem, 1.55rem + 1.6vw, 3rem), -0.02em): The masthead "Sketchbook" only. One per page.
 - **Title** (500, 0.9375rem, -0.005em): Sketch names in captions. Single line, ellipsized — the drawer label, not a headline.
 - **Body** (400, 15px, 1.5): Prose and the empty state. Always Ink.
 - **Label** (500, 0.8125rem, +0.04em, tabular-nums): Sticky year markers. Related metadata voices: `.meta` byline at 0.875rem, `.date` at 0.75rem — all Pencil, all tabular.
@@ -130,17 +130,22 @@ Refined and restrained: visible but polite, readable at rest, subtle emphasis on
 
 ### Section Header (year / series)
 - **Style:** Sticky at top (z-index via `--z-sticky`), Label typography in Pencil, translucent white backing (rgba(255,255,255,0.88) + backdrop blur, solid fallback), Hairline underline.
-- **Contents:** The section label left (`2026`, or `nalee · 23`); quiet cross-navigation right — year-jump links on the year view, an `index` link on the series view. Links are Pencil with hairline underlines, Ink on hover.
+- **Contents:** The section label left (`2026`, or `nalee · 23`); quiet cross-navigation right — year-jump links plus a `top` link on the year view, an `index` link on the series view. Links are Pencil with hairline underlines, Ink on hover.
 - **Role:** The drawer divider — it indexes, it never announces.
 
+### Masthead
+- **Structure:** The Section Header grammar at full scale — Display title left, Pencil metadata right (`By Varun Vachhar · 372 sketches · Updated Jul 2, 2026`), sharing one baseline, closed by a full-width Hairline. Beneath it a toolbar row: View Toggle left, Filter Input pinned right.
+- **Responsive:** Below 640px the metadata drops its separators and stacks as a three-line colophon; the filter input stretches full width.
+- **Role:** The drawer front — it names the archive once, in the same rule the drawer dividers follow, then hands the page to the prints.
+
 ### View Toggle
-- **Style:** `By year · By series` in the masthead; current view is plain Ink (weight 500, `aria-current`), the other an Ink hairline-underline link. A drawer label, not a tab bar.
+- **Style:** `By year · By series` in the masthead toolbar; current view is plain Ink (weight 500, `aria-current`), the other an Ink hairline-underline link. A drawer label, not a tab bar.
 
 ### Series Index
 - **Style:** A wrapping inline list at the top of the series view — alphabetical series names (Ink hairline-underline links) each followed by a Pencil tabular count. Reads like a book's index page; `one-offs` closes the list.
 
 ### Filter Input (the only client JavaScript)
-- **Style:** Bare text input — Ink text on transparent, single Hairline bottom border that turns Ink on focus, placeholder in Pencil (#767676, ≥4.5:1). Result count (`64 of 372`) in Pencil tabular beside it. The native search-cancel ✕ is suppressed (it is the one hue the platform injects); Escape clears, `/` focuses.
+- **Style:** Bare text input — Ink text on transparent, single Hairline bottom border that turns Ink on focus, placeholder in Pencil (#767676, ≥4.5:1). Result count (`64 of 372`) in Pencil tabular beside it — hidden while empty, and placed on the input's open side on desktop so the field never shifts under the caret. The native search-cancel ✕ is suppressed (it is the one hue the platform injects); Escape clears, `/` focuses.
 - **Contract:** Mounted by `filter.js` into a hidden placeholder — without JavaScript it never appears and every navigation path still works. The same file quietly marks cards whose thumbnail fails to load (`image unavailable` in Pencil on the Unprimed ground).
 
 ### Links (meta / prose)

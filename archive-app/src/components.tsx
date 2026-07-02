@@ -69,28 +69,43 @@ export function Masthead({
 }) {
   return (
     <header>
-      <h1>Sketchbook</h1>
-      <p className="meta">
-        By <a href="https://varun.ca">Varun Vachhar</a> · {total} sketches · Generated{' '}
-        {generatedLabel}
-      </p>
-      <nav className="views" aria-label="Archive views">
-        {view === 'year' ? (
-          <span aria-current="page">By year</span>
-        ) : (
-          <a href="../">By year</a>
-        )}
-        <span className="views-sep" aria-hidden="true">
-          ·
-        </span>
-        {view === 'series' ? (
-          <span aria-current="page">By series</span>
-        ) : (
-          <a href="series/">By series</a>
-        )}
-      </nav>
-      {/* The filter island mounts here; without JS this stays hidden. */}
-      <div className="filter" data-filter-root hidden />
+      {/* The masthead is the section-head grammar at full scale: label left,
+          metadata right, one baseline, closed by a hairline. */}
+      <div className="masthead">
+        <h1>Sketchbook</h1>
+        <p className="meta">
+          <span>
+            By <a href="https://varun.ca">Varun Vachhar</a>
+          </span>
+          <span className="meta-sep" aria-hidden="true">
+            ·
+          </span>
+          <span>{total} sketches</span>
+          <span className="meta-sep" aria-hidden="true">
+            ·
+          </span>
+          <span>Updated {generatedLabel}</span>
+        </p>
+      </div>
+      <div className="toolbar">
+        <nav className="views" aria-label="Archive views">
+          {view === 'year' ? (
+            <span aria-current="page">By year</span>
+          ) : (
+            <a href="../">By year</a>
+          )}
+          <span className="views-sep" aria-hidden="true">
+            ·
+          </span>
+          {view === 'series' ? (
+            <span aria-current="page">By series</span>
+          ) : (
+            <a href="series/">By series</a>
+          )}
+        </nav>
+        {/* The filter island mounts here; without JS this stays hidden. */}
+        <div className="filter" data-filter-root hidden />
+      </div>
     </header>
   );
 }

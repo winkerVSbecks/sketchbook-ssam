@@ -107,7 +107,11 @@
       "Bash(echo \"detector exit: $?\")",
       "Bash(python3 -c \"import sys,re; print\\(re.sub\\('><','>\\\\n<', sys.stdin.read\\(\\)\\)\\)\")",
       "Bash(git mv *)",
-      "Bash(git rm *)"
+      "Bash(git rm *)",
+      "Bash(python3 -m http.server 4173)",
+      "mcp__plugin_playwright_playwright__browser_resize",
+      "Bash(export NODE_PATH=/Users/varun/Documents/projects/sketchbook-ssam/node_modules)",
+      "Bash(echo \"tsc exit: $?\")"
     ]
   },
   "hooks": {

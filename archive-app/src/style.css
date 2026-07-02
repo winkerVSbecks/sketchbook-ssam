@@ -29,17 +29,45 @@ header {
   max-width: 1400px;
   margin: 0 auto;
 }
+/* Section-head grammar at full scale: title and metadata share a baseline,
+   a hairline closes the row — the drawer front above the drawer labels. */
+.masthead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.375rem 2rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--hairline);
+}
 header h1 {
-  margin: 0 0 0.375rem;
-  font-size: 2.25rem;
+  margin: 0;
+  /* Fluid display: 2rem on phones up to 3rem at the grid's 1400px max. */
+  font-size: clamp(2rem, 1.55rem + 1.6vw, 3rem);
   font-weight: 600;
   letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 .meta {
   margin: 0;
   color: var(--muted);
   font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
+}
+/* Wraps land on the separators, never inside a segment. */
+.meta span {
+  white-space: nowrap;
+}
+.meta-sep {
+  margin: 0 0.5rem;
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem 2rem;
+  margin-top: 1.125rem;
 }
 .meta a,
 .views a,
@@ -57,7 +85,6 @@ header h1 {
   text-decoration-color: var(--fg);
 }
 .views {
-  margin-top: 1rem;
   font-size: 0.875rem;
 }
 .views [aria-current] {
@@ -70,10 +97,14 @@ header h1 {
 
 /* ---------- filter (mounted by filter.js; hidden without JS) ---------- */
 .filter {
-  margin-top: 1.5rem;
   display: flex;
   align-items: baseline;
   gap: 0.75rem;
+}
+/* display:flex would defeat the [hidden] UA rule; keep the no-JS placeholder
+   from occupying a toolbar slot. */
+.filter[hidden] {
+  display: none;
 }
 .filter input {
   font: inherit;
@@ -104,6 +135,38 @@ header h1 {
   font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+/* No count, no slot — keeps the input underline flush with the grid edge. */
+.filter .result-count:empty {
+  display: none;
+}
+/* The filter is right-pinned on desktop; the count appears on the open side
+   so the input never shifts under the caret. */
+@media (min-width: 641px) {
+  .filter .result-count {
+    order: -1;
+  }
+}
+@media (max-width: 640px) {
+  header {
+    padding-top: 3.5rem;
+  }
+  /* Stacked colophon instead of a wrapped line with a dangling separator. */
+  .meta {
+    display: grid;
+    gap: 0.125rem;
+    justify-items: start;
+  }
+  .meta-sep {
+    display: none;
+  }
+  .filter {
+    width: 100%;
+  }
+  .filter input {
+    flex: 1 1 auto;
+    width: auto;
+  }
 }
 .filter-empty {
   margin: 0;
@@ -172,6 +235,9 @@ a.jump {
   text-decoration-color: var(--hairline);
   text-underline-offset: 3px;
   transition: color 0.15s ease;
+  /* Invisible tap-target expansion; inline padding doesn't shift layout. */
+  padding: 0.875rem 0.25rem;
+  margin: -0.875rem -0.25rem;
 }
 .jump a:hover,
 a.jump:hover {

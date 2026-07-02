@@ -39,6 +39,10 @@ export function YearPage({ model, projectRoot, stamp }: PageProps) {
                       {y.year}
                     </a>
                   ))}
+                {/* "#top" needs no target element — the spec scrolls to the document top. */}
+                <a href="#top" aria-label="Back to top">
+                  top
+                </a>
               </nav>
             </SectionHead>
             <div className="grid">
