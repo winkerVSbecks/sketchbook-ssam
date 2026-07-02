@@ -25,3 +25,8 @@
 - **Animation**: When animating, use requestAnimationFrame-compatible approaches
 
 SSAM is a generative art framework - reference existing sketches when creating new ones.
+
+## Design Context
+- `PRODUCT.md` (repo root) holds the design strategy: register, users, brand personality ("quiet, precise, systematic"), anti-references, and principles. `DESIGN.md` holds the visual system ("The Flat File": achromatic chrome, hairlines, tabular numerals).
+- Register split: the archive site is **brand** (design is the presentation of the art); dev tooling (`gallery.html`, sketch runner) is **product**.
+- `archive/style.css` and `archive/index.html` are generated — edit `renderCss()`/`renderHtml()` in `scripts/archive-render-html.ts`, then run `npm run archive:site`.

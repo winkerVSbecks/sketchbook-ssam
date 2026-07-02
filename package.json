@@ -40,6 +40,7 @@
     "vite-plugin-ssam-timelapse": "^0.1.6"
   },
   "dependencies": {
+    "@antfu/ni": "^30.2.0",
     "@daeinc/draw": "^0.4.0",
     "@daeinc/geom": "^0.10.3",
     "@daeinc/math": "^0.6.0",

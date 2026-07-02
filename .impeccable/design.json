@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-01T00:00:00Z",
+  "title": "Design System: Sketchbook (ssam)",
+  "extensions": {
+    "colorMeta": {
+      "gallery-white": {
+        "role": "neutral",
+        "displayName": "Gallery White",
+        "canonical": "#ffffff",
+        "tonalRamp": ["#262626", "#3d3d3d", "#555555", "#6e6e6e", "#888888", "#a3a3a3", "#c4c4c4", "#f2f2f2"]
+      },
+      "ink": {
+        "role": "primary",
+        "displayName": "Ink",
+        "canonical": "#111111",
+        "tonalRamp": ["#111111", "#2b2b2b", "#454545", "#606060", "#7a7a7a", "#959595", "#b8b8b8", "#e8e8e8"]
+      },
+      "pencil": {
+        "role": "neutral",
+        "displayName": "Pencil",
+        "canonical": "#888888",
+        "tonalRamp": ["#2a2a2a", "#404040", "#575757", "#6f6f6f", "#888888", "#a1a1a1", "#c2c2c2", "#ececec"]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "rgba(0, 0, 0, 0.08)",
+        "tonalRamp": ["rgba(0,0,0,0.32)", "rgba(0,0,0,0.24)", "rgba(0,0,0,0.16)", "rgba(0,0,0,0.12)", "rgba(0,0,0,0.08)", "rgba(0,0,0,0.06)", "rgba(0,0,0,0.04)", "rgba(0,0,0,0.02)"]
+      },
+      "unprimed": {
+        "role": "neutral",
+        "displayName": "Unprimed",
+        "canonical": "#f4f4f3",
+        "tonalRamp": ["#272726", "#3e3e3d", "#565655", "#6f6f6e", "#898988", "#a4a4a3", "#c5c5c4", "#f4f4f3"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "The masthead only. One per page." },
+      "title": { "displayName": "Title", "purpose": "Sketch names in captions; single line, ellipsized." },
+      "body": { "displayName": "Body", "purpose": "Prose and empty states. Always Ink." },
+      "label": { "displayName": "Label", "purpose": "Sticky year markers and metadata; always tabular-nums, always Pencil." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "thumb-hover", "value": "opacity 0.2s ease", "purpose": "Thumbnail eases to 65% opacity on hover — the only image transition." },
+      { "name": "icon-hover", "value": "color 0.15s ease", "purpose": "Icons and underlines ease Pencil → Ink on hover." }
+    ],
+    "breakpoints": [
+      { "name": "grid-min", "value": "280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Thumb Card",
+      "kind": "card",
+      "refersTo": "thumb-image",
+      "description": "Square print above a caption row — no box, no border; the print is the card.",
+      "html": "<div class=\"ds-card\"><a class=\"ds-thumb\" href=\"#\" aria-label=\"View sketch\"><div class=\"ds-thumb-img\" role=\"img\" aria-label=\"sketch thumbnail\"></div></a><div class=\"ds-caption\"><div class=\"ds-name-row\"><div class=\"ds-name\">anni-weaving</div><a class=\"ds-icon\" href=\"#\" aria-label=\"Open in VS Code\"><svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6\"/><polyline points=\"15 3 21 3 21 9\"/><line x1=\"10\" y1=\"14\" x2=\"21\" y2=\"3\"/></svg></a></div><div class=\"ds-date\">Mar 4, 2026</div></div></div>",
+      "css": ".ds-card { width: 280px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; } .ds-thumb { display: block; transition: opacity 0.2s ease; } .ds-thumb:hover { opacity: 0.65; } .ds-thumb:focus-visible { outline: 2px solid #111111; outline-offset: 2px; } .ds-thumb-img { width: 100%; aspect-ratio: 1 / 1; background: linear-gradient(135deg, #f4f4f3 0%, #f4f4f3 55%, #e9e9e7 55%, #e9e9e7 100%); } .ds-caption { display: flex; flex-direction: column; gap: 0.2rem; padding: 0.75rem 0.125rem 0; } .ds-name-row { display: flex; align-items: center; gap: 0.5rem; } .ds-name { font-size: 0.9375rem; font-weight: 500; letter-spacing: -0.005em; color: #111111; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; } .ds-icon { display: inline-flex; flex-shrink: 0; color: #888888; transition: color 0.15s ease; margin-left: auto; } .ds-icon:hover, .ds-icon:focus-visible { color: #111111; } .ds-date { font-size: 0.75rem; color: #888888; font-variant-numeric: tabular-nums; line-height: 1; }"
+    },
+    {
+      "name": "Year Header",
+      "kind": "nav",
+      "refersTo": "year-header",
+      "description": "Sticky drawer divider — Pencil label, hairline underline, white backing.",
+      "html": "<h2 class=\"ds-year\">2026</h2>",
+      "css": ".ds-year { margin: 0; padding: 1rem 0 0.75rem; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-size: 0.8125rem; font-weight: 500; letter-spacing: 0.04em; color: #888888; background: #ffffff; border-bottom: 1px solid rgba(0, 0, 0, 0.08); font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Meta Link",
+      "kind": "custom",
+      "refersTo": "meta-link",
+      "description": "Ink text with a hairline underline that darkens to Ink on hover; the text never changes color.",
+      "html": "<p class=\"ds-meta\">By <a class=\"ds-meta-link\" href=\"#\">Varun Vachhar</a> · 105 sketches</p>",
+      "css": ".ds-meta { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; color: #888888; font-size: 0.875rem; font-variant-numeric: tabular-nums; } .ds-meta-link { color: #111111; text-decoration: underline; text-decoration-color: rgba(0, 0, 0, 0.08); text-underline-offset: 3px; } .ds-meta-link:hover, .ds-meta-link:focus-visible { text-decoration-color: #111111; }"
+    },
+    {
+      "name": "Icon Button",
+      "kind": "button",
+      "refersTo": "icon-button",
+      "description": "14px stroke icon, Pencil at rest, eases to Ink on hover. No background, no circle.",
+      "html": "<a class=\"ds-icon-btn\" href=\"#\" aria-label=\"View source on GitHub\"><svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22\"/></svg></a>",
+      "css": ".ds-icon-btn { display: inline-flex; color: #888888; transition: color 0.15s ease; } .ds-icon-btn:hover, .ds-icon-btn:focus-visible { color: #111111; }"
+    },
+    {
+      "name": "Empty State",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "One Pencil sentence with the fix inline as code — the system's only rounded corner (3px).",
+      "html": "<p class=\"ds-empty\">No sketches archived yet. Run <code class=\"ds-code\">npm run archive</code>.</p>",
+      "css": ".ds-empty { margin: 0; padding: 2rem 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-size: 15px; color: #888888; } .ds-code { background: #f4f4f3; padding: 0.15em 0.4em; border-radius: 3px; font-size: 0.875em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Flat File",
+    "overview": "The artist's flat-file drawer: prints stored systematically, labeled in pencil, retrieved by date. This is a working archive, not an exhibition — chronology over curation, completeness over spectacle. The chrome exists to hold the work flat and findable, then get out of the way. The system is deliberately voiceless where the work is loud: the interface owns no hue, no shadow, no display typeface — the sketches supply all the color and all the personality on any page.",
+    "keyCharacteristics": [
+      "Achromatic chrome; all color is borrowed from the artwork",
+      "One systematic grid, square 1:1 prints, uniform 4rem gutters",
+      "System font stack — no typographic voice competing with the work",
+      "Hairlines (1px, 8% black) as the only structural line",
+      "Metadata set in pencil-gray with tabular numerals",
+      "Refined and restrained interaction: quiet at rest, legible on touch"
+    ],
+    "rules": [
+      { "name": "The Borrowed Color Rule", "body": "The interface owns no hue. Every drop of color on any page arrives inside a sketch thumbnail. Introducing a chromatic accent into the chrome — even one — is prohibited.", "section": "colors" },
+      { "name": "The Pencil Rule", "body": "Pencil (#888888) is a metadata voice, not a text color. Dates, counts, year markers, resting icons: yes. Sentences someone must read: never — those are Ink.", "section": "colors" },
+      { "name": "The Tabular Rule", "body": "Every numeral in the interface — dates, years, counts — is set tabular-nums. Numbers in an archive are data; they align in columns.", "section": "typography" },
+      { "name": "The Hairline Rule", "body": "If a boundary needs marking, it gets a 1px hairline (rgba(0,0,0,0.08)). Not a shadow, not a background shift, not a thicker border.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do edit renderCss() / renderHtml() in scripts/archive-render-html.ts, then run npm run archive:site — archive/style.css and archive/index.html are generated output.",
+      "Do keep every numeral tabular (The Tabular Rule) and every metadata voice in Pencil (The Pencil Rule).",
+      "Do keep thumbnails square (1:1, object-fit: cover, 400×400 Cloudinary transform) and corners at 0px everywhere except inline code (3px).",
+      "Do hold hover states to the two sanctioned moves: image opacity → 0.65, icon/underline Pencil → Ink.",
+      "Do keep the grid rule uniform: repeat(auto-fill, minmax(280px, 1fr)) with 4rem gutters, applied identically to every year section."
+    ],
+    "donts": [
+      "Don't introduce any hue into the chrome — no accent color, ever (The Borrowed Color Rule).",
+      "Don't reach for creative-coder maximalism — dark neon backgrounds, glitch/CRT/terminal aesthetics, cursor trails.",
+      "Don't build template-portfolio grammar — hero sections, card surfaces with borders and shadows, badges, eyebrow labels.",
+      "Don't add social-feed dynamics — masonry layouts, infinite scroll, view counts, engagement chrome.",
+      "Don't indulge art-world pretension — splash screens, slow fade-ins on everything, scroll-jacking.",
+      "Don't add box-shadows, gradients, or glassmorphism — boundaries are 1px hairlines (The Hairline Rule).",
+      "Don't set body prose in Pencil (#888888) — prose is Ink.",
+      "Don't add a second typeface or a webfont — the system stack's silence is the choice."
+    ]
+  }
+}

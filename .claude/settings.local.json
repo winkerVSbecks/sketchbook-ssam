@@ -78,7 +78,24 @@
       "Bash(open \"/Users/varun/Documents/projects/sketchbook-ssam/learn-webgpu/lessons/0002-speaking-wgsl.html\")",
       "Bash(open \"/Users/varun/Documents/projects/sketchbook-ssam/learn-webgpu/lessons/0003-uniforms-and-time.html\")",
       "Bash(open \"/Users/varun/Documents/projects/sketchbook-ssam/learn-webgpu/lessons/0004-raymarching-an-sdf.html\")",
-      "Bash(grep -n '`' src/shader-sketches/wgpu-clifford-glass.ts)"
+      "Bash(grep -n '`' src/shader-sketches/wgpu-clifford-glass.ts)",
+      "Bash(node *)"
     ]
-  }
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"/Users/varun/.claude/skills/impeccable/scripts/hook.mjs\"",
+            "timeout": 5,
+            "statusMessage": "Checking UI changes"
+          }
+        ]
+      }
+    ]
+  },
+  "description": "Impeccable design detector: runs after Edit/Write/MultiEdit on UI files and surfaces findings as system reminders."
 }

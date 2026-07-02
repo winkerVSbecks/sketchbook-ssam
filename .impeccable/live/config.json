@@ -1,0 +1,6 @@
+{
+  "files": ["index.html", "gallery.html", "archive/index.html"],
+  "insertBefore": "</body>",
+  "commentSyntax": "html",
+  "cspChecked": true
+}
