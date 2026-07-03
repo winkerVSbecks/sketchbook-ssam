@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1781186088338,
-  "projectRoot": "/Users/varunvachhar/Documents/projects/sketchbook-ssam",
+  "lastScanned": 1783091225126,
+  "projectRoot": "/Users/varun/Documents/projects/sketchbook-ssam",
   "techStack": {
     "languages": [
       {
@@ -24,7 +24,7 @@
     "frameworks": [
       {
         "name": "vite",
-        "version": "5.1.4",
+        "version": "8.0.16",
         "category": "build"
       }
     ],
@@ -32,7 +32,7 @@
     "runtime": null
   },
   "build": {
-    "buildCommand": "rtk tsc --noEmit 2>&1 | grep -E \"tensors\"; echo \"tsc done\"",
+    "buildCommand": "npm run build",
     "testCommand": null,
     "lintCommand": null,
     "devCommand": "npm run dev",
@@ -47,7 +47,9 @@
       "cloud:smoke": "tsx scripts/cloud-render-smoke.ts",
       "archive": "tsx scripts/archive.ts",
       "archive:site": "tsx scripts/archive.ts --site-only",
-      "archive:force": "tsx scripts/archive.ts --force"
+      "archive:force": "tsx scripts/archive.ts --force",
+      "archive:dev": "npm run build -w archive-app && npm run preview -w archive-app",
+      "review": "npm run review -w archive-app"
     }
   },
   "conventions": {
@@ -57,8 +59,10 @@
     "fileOrganization": null
   },
   "structure": {
-    "isMonorepo": false,
-    "workspaces": [],
+    "isMonorepo": true,
+    "workspaces": [
+      "archive-app"
+    ],
     "mainDirectories": [
       "assets",
       "docs",
@@ -72,22 +76,24 @@
   },
   "customNotes": [],
   "directoryMap": {
-    "archive": {
-      "path": "archive",
+    "archive-app": {
+      "path": "archive-app",
       "purpose": null,
-      "fileCount": 3,
-      "lastAccessed": 1781186088247,
+      "fileCount": 6,
+      "lastAccessed": 1783091225088,
       "keyFiles": [
         "archive.json",
-        "index.html",
-        "style.css"
+        "package.json",
+        "tsconfig.json",
+        "vite.config.ts",
+        "vite.review.config.ts"
       ]
     },
     "assets": {
       "path": "assets",
       "purpose": "Static assets",
       "fileCount": 3,
-      "lastAccessed": 1781186088247,
+      "lastAccessed": 1783091225089,
       "keyFiles": [
         "skeletor.svg",
         "varun.svg"
@@ -97,17 +103,28 @@
       "path": "docs",
       "purpose": "Documentation",
       "fileCount": 2,
-      "lastAccessed": 1781186088302,
+      "lastAccessed": 1783091225095,
       "keyFiles": [
         "cloud-rendering.md",
         "ideas.md"
       ]
     },
+    "learn-webgpu": {
+      "path": "learn-webgpu",
+      "purpose": null,
+      "fileCount": 3,
+      "lastAccessed": 1783091225097,
+      "keyFiles": [
+        "MISSION.md",
+        "NOTES.md",
+        "RESOURCES.md"
+      ]
+    },
     "output": {
       "path": "output",
       "purpose": null,
-      "fileCount": 5646,
-      "lastAccessed": 1781186088323,
+      "fileCount": 5650,
+      "lastAccessed": 1783091225113,
       "keyFiles": [
         "2023.12.13-15.21.58.mp4",
         "2023.12.13-15.33.09.mp4",
@@ -120,7 +137,7 @@
       "path": "previews",
       "purpose": null,
       "fileCount": 1,
-      "lastAccessed": 1781186088324,
+      "lastAccessed": 1783091225115,
       "keyFiles": [
         "albers-meander.png"
       ]
@@ -128,21 +145,21 @@
     "scripts": {
       "path": "scripts",
       "purpose": "Build/utility scripts",
-      "fileCount": 6,
-      "lastAccessed": 1781186088326,
+      "fileCount": 5,
+      "lastAccessed": 1783091225116,
       "keyFiles": [
-        "archive-render-html.ts",
         "archive-types.ts",
         "archive.ts",
         "cloud-bootstrap.sh",
-        "cloud-render-smoke.ts"
+        "cloud-render-smoke.ts",
+        "cloud-render.ts"
       ]
     },
     "src": {
       "path": "src",
       "purpose": "Source code",
       "fileCount": 14,
-      "lastAccessed": 1781186088328,
+      "lastAccessed": 1783091225118,
       "keyFiles": [
         "dither.ts",
         "gallery.ts",
@@ -155,13 +172,52 @@
       "path": "timelapse",
       "purpose": null,
       "fileCount": 77,
-      "lastAccessed": 1781186088329,
+      "lastAccessed": 1783091225119,
       "keyFiles": [
         "00000.png",
         "00001.png",
         "00002.png",
         "00003.png",
         "00004.png"
+      ]
+    },
+    "archive-app/dist": {
+      "path": "archive-app/dist",
+      "purpose": "Distribution/build output",
+      "fileCount": 3,
+      "lastAccessed": 1783091225120,
+      "keyFiles": [
+        "filter.js",
+        "index.html",
+        "style.css"
+      ]
+    },
+    "archive-app/node_modules": {
+      "path": "archive-app/node_modules",
+      "purpose": "Dependencies",
+      "fileCount": 0,
+      "lastAccessed": 1783091225120,
+      "keyFiles": []
+    },
+    "archive-app/src": {
+      "path": "archive-app/src",
+      "purpose": "Source code",
+      "fileCount": 6,
+      "lastAccessed": 1783091225120,
+      "keyFiles": [
+        "components.tsx",
+        "model.ts",
+        "pages.tsx"
+      ]
+    },
+    "learn-webgpu/assets": {
+      "path": "learn-webgpu/assets",
+      "purpose": "Static assets",
+      "fileCount": 2,
+      "lastAccessed": 1783091225121,
+      "keyFiles": [
+        "course.css",
+        "quiz.js"
       ]
     }
   },

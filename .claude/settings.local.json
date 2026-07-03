@@ -111,7 +111,18 @@
       "Bash(python3 -m http.server 4173)",
       "mcp__plugin_playwright_playwright__browser_resize",
       "Bash(export NODE_PATH=/Users/varun/Documents/projects/sketchbook-ssam/node_modules)",
-      "Bash(echo \"tsc exit: $?\")"
+      "Bash(echo \"tsc exit: $?\")",
+      "Bash(grep -c '.mp4$')",
+      "Bash(grep -c '.png$')",
+      "Bash(grep -c '.svg$')",
+      "Bash(rtk du *)",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(Object.keys\\(p.devDependencies||{}\\).join\\('\\\\n'\\)\\); console.log\\('---deps'\\); console.log\\(Object.keys\\(p.dependencies||{}\\).join\\('\\\\n'\\)\\)\")",
+      "Bash(timeout 12 npx vite --config vite.review.config.ts --port 5199)",
+      "Bash(lsof -nP -iTCP:5173 -sTCP:LISTEN)",
+      "Bash(lsof -nP -iTCP:5199 -sTCP:LISTEN)",
+      "Bash(kill 57114 67989)",
+      "Bash(node -e \"console.log\\(require\\('playwright-core'\\).chromium.executablePath\\(\\)\\)\")",
+      "Bash(node /private/tmp/claude-501/-Users-varun-Documents-projects-sketchbook-ssam/e310c988-0ccf-42ff-8166-097ea8baa1f2/scratchpad/verify.mjs)"
     ]
   },
   "hooks": {
