@@ -14,6 +14,11 @@
 - `npm run archive -- --dry-run` — print the plan without rendering.
 - Requires `.env` at repo root with `CLOUDINARY_URL=cloudinary://<api_key>:<api_secret>@<cloud_name>`.
 
+## Light Table (output review)
+- `npm run review` — local-only, keyboard-first review of everything in `output/`, grouped by day (port 5180; `?` shows shortcuts). Loupe + `g` contact sheet; `s` stars keepers, `S` filters to them.
+- Source: `archive-app/src/review/` (client app + Vite dev-server plugin). Never part of the deployed archive build.
+- Cache/state: `output/.review/` (thumbnails + `keepers.json`, gitignored with `output/`). Thumbnails prewarm on server start (sharp for images, repo ffmpeg for video first-frames).
+
 ## Code Style Guidelines
 - **TypeScript**: Use strict typing with interfaces/types for complex objects
 - **Imports**: Group by external libraries first, then project modules
