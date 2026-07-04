@@ -247,6 +247,234 @@
       "type": "file"
     },
     {
+      "path": "src/sketches/42-loc.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171101255,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/bipolar/spiral.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171101581,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/bipolar/spiral-animated.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171101925,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/a-problem-with-rectangles/breaking-down.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171102402,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/a-problem-with-rectangles/breaking-down-complimentary.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171102755,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/clearloop/robert-swain-lights-on-off.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171105648,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/clearloop/rybitten.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171106139,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/color-fractions.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171108357,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/color-quanta.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171108844,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/domain-polygon/basic.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171109695,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/fractal-grid/b&w-moving-2.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171112681,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/anni-weaving/weaves.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171112959,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/chaotic-pendulums.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171113443,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/automata/automata-dither.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171113578,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/fractal-grid/b&w-moving-origin.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171113675,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/chladni/ascii.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171113948,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/fractal-grid/b&w-moving-scroll.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171114175,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/chladni/basic.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171114328,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/chladni/layered.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171117146,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/automata/basic.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171117626,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/automata/xor-game-of-life.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171118109,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/grid-stairs/visual-strucutre.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171118189,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/grid/b&w-grid.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171119091,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/kelly-nalee/paris-review-grow.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171120122,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/kelly-nalee/rectangle.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171121030,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/clixo/stack-columns.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171123795,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/clixo/stack-columns-animated.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171123815,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/cluster-growth/basic.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171126709,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/gravura/pro-color.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171131841,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/gravura/rainbow.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171132183,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/isometric/brutalism-stacks.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171132377,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/curve-particles/backdrop.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171132734,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/isometric/brutalism-wall.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171132869,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/isometric/landscape.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171133381,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/curve-particles/chunky.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171133421,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/domain-polygon/window/sketch-gridlines.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171133709,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/curve-particles/crumble.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171133750,
+      "type": "file"
+    },
+    {
+      "path": "src/sketches/gravura/rybitten.ts",
+      "accessCount": 3,
+      "lastAccessed": 1783171135314,
+      "type": "file"
+    },
+    {
       "path": "src/sketches/tensors/tensors-blob.ts",
       "accessCount": 2,
       "lastAccessed": 1781200978714,

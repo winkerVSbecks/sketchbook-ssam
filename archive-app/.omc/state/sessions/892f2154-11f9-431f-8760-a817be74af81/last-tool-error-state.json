@@ -1,0 +1,7 @@
+{
+  "tool_name": "mcp__plugin_playwright_playwright__browser_navigate",
+  "tool_input_preview": "{\"url\":\"http://localhost:5181\"}",
+  "error": "### Error\nError: async initializeServer: Chromium distribution 'chrome' is not found at /Applications/Google Chrome.app/Contents/MacOS/Google Chrome\nRun \"npx playwright install chrome\"",
+  "timestamp": "2026-07-04T15:00:17.138Z",
+  "retry_count": 1
+}

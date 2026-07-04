@@ -122,7 +122,10 @@
       "Bash(lsof -nP -iTCP:5199 -sTCP:LISTEN)",
       "Bash(kill 57114 67989)",
       "Bash(node -e \"console.log\\(require\\('playwright-core'\\).chromium.executablePath\\(\\)\\)\")",
-      "Bash(node /private/tmp/claude-501/-Users-varun-Documents-projects-sketchbook-ssam/e310c988-0ccf-42ff-8166-097ea8baa1f2/scratchpad/verify.mjs)"
+      "Bash(node /private/tmp/claude-501/-Users-varun-Documents-projects-sketchbook-ssam/e310c988-0ccf-42ff-8166-097ea8baa1f2/scratchpad/verify.mjs)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(echo \"blinds errors exit: $?\")",
+      "Bash(bash .claude/skills/render-sketch/render.sh)"
     ]
   },
   "hooks": {
