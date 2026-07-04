@@ -13,5 +13,5 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["src", "vite.config.ts", "vite.review.config.ts"]
+  "include": ["src", "vite.config.ts", "vite.review.config.ts", "vite.atlas.config.ts"]
 }

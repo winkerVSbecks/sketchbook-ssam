@@ -1,0 +1,36 @@
+{
+  "merges": {
+    "concepts": [],
+    "techniques": [
+      {"canonical": "flow-field", "aliases": ["vector-field"]},
+      {"canonical": "cellular-automata", "aliases": ["game-of-life"]},
+      {"canonical": "clustering", "aliases": ["k-means-clustering"]},
+      {"canonical": "polar-geometry", "aliases": ["polar-coordinates"]},
+      {"canonical": "grid-layout", "aliases": ["grid-snapping", "grid"]},
+      {"canonical": "domain-warping", "aliases": ["grid-distortion"]},
+      {"canonical": "collision", "aliases": ["sat", "rectangle-intersection"]},
+      {"canonical": "maze-generation", "aliases": ["backtracking"]},
+      {"canonical": "circle-packing", "aliases": ["apollonian-circles"]},
+      {"canonical": "fermat-spiral", "aliases": ["phyllotaxis"]},
+      {"canonical": "recursive-subdivision", "aliases": ["binary-space-partition", "quadtree"]},
+      {"canonical": "space-filling", "aliases": ["rectangle-packing"]},
+      {"canonical": "easing", "aliases": ["tweening"]},
+      {"canonical": "color-mixing", "aliases": ["subtractive-color"]},
+      {"canonical": "dithering", "aliases": ["halftone"]},
+      {"canonical": "voronoi", "aliases": ["lloyd-relaxation"]},
+      {"canonical": "fractal", "aliases": ["l-system"]},
+      {"canonical": "reaction-diffusion", "aliases": ["diffusion"]}
+    ],
+    "forms": [
+      {"canonical": "rectangles", "aliases": ["squares"]},
+      {"canonical": "glyphs", "aliases": ["letterforms"]},
+      {"canonical": "polygons", "aliases": ["hexagons"]}
+    ],
+    "palettes": [
+      {"canonical": "found-colors", "aliases": ["image-derived"]}
+    ],
+    "influences": [],
+    "systems": []
+  },
+  "drop": ["procedural-generation", "layering", "weighted-random"]
+}

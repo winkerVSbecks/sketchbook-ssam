@@ -6,7 +6,8 @@
   "scripts": {
     "build": "vite build && tsx src/prerender.tsx",
     "preview": "vite preview --open",
-    "review": "vite --config vite.review.config.ts"
+    "review": "vite --config vite.review.config.ts",
+    "atlas": "vite --config vite.atlas.config.ts"
   },
   "dependencies": {
     "react": "^19.0.0",

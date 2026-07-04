@@ -1,0 +1,5767 @@
+{
+ "sketches/42-loc": {
+  "bg": "#97666d",
+  "bgL": 0.564,
+  "meanL": 0.782,
+  "meanC": 0.0931,
+  "ink": 0.939,
+  "hue": 45,
+  "hueShare": 0.484,
+  "colors": [
+   "#f0e0b0",
+   "#f06040",
+   "#f0f0c0",
+   "#a08090",
+   "#f06050"
+  ]
+ },
+ "sketches/a-problem-with-rectangles/breaking-down": {
+  "bg": "#bf9fac",
+  "bgL": 0.735,
+  "meanL": 0.809,
+  "meanC": 0.0307,
+  "ink": 0.332,
+  "hue": 345,
+  "hueShare": 1,
+  "colors": [
+   "#f0f0f0"
+  ]
+ },
+ "sketches/a-problem-with-rectangles/breaking-down-complimentary": {
+  "bg": "#b66576",
+  "bgL": 0.604,
+  "meanL": 0.724,
+  "meanC": 0.0884,
+  "ink": 0.332,
+  "hue": 15,
+  "hueShare": 0.794,
+  "colors": [
+   "#f0f0c0",
+   "#f0e0c0",
+   "#f0f0d0"
+  ]
+ },
+ "sketches/anni-albers": {
+  "bg": "#ffffff",
+  "bgL": 1,
+  "meanL": 0.912,
+  "meanC": 0.0154,
+  "ink": 0.279,
+  "hue": 345,
+  "hueShare": 0.369,
+  "colors": [
+   "#d0d0d0",
+   "#f0e0c0",
+   "#803060",
+   "#40a0d0",
+   "#b08090"
+  ]
+ },
+ "sketches/anni-weaving/anni-weaving": {
+  "bg": "#0093a7",
+  "bgL": 0.608,
+  "meanL": 0.468,
+  "meanC": 0.081,
+  "ink": 0.694,
+  "hue": 225,
+  "hueShare": 0.809,
+  "colors": [
+   "#005060",
+   "#004050",
+   "#005050",
+   "#004040",
+   "#006070"
+  ]
+ },
+ "sketches/anni-weaving/chunky": {
+  "bg": "#000000",
+  "bgL": 0,
+  "meanL": 0.445,
+  "meanC": 0.0845,
+  "ink": 0.684,
+  "hue": 315,
+  "hueShare": 0.481,
+  "colors": [
+   "#f0a0f0",
+   "#a08070",
+   "#907060",
+   "#e060f0",
+   "#b08070"
+  ]
+ },
+ "sketches/anni-weaving/heerich": {
+  "bg": "#dbccc5",
+  "bgL": 0.856,
+  "meanL": 0.74,
+  "meanC": 0.0804,
+  "ink": 0.668,
+  "hue": 45,
+  "hueShare": 1,
+  "colors": [
+   "#a0a0a0",
+   "#f05010",
+   "#b09080",
+   "#d07050",
+   "#f04000"
+  ]
+ },
+ "sketches/anni-weaving/heerich-depth": {
+  "bg": "#7451a1",
+  "bgL": 0.509,
+  "meanL": 0.629,
+  "meanC": 0.1015,
+  "ink": 0.444,
+  "hue": 315,
+  "hueShare": 1,
+  "colors": [
+   "#d0a0d0",
+   "#c0a0c0",
+   "#d0a0c0",
+   "#c090c0",
+   "#c0a0d0"
+  ]
+ },
+ "sketches/anni-weaving/heerich-plotter": {
+  "bg": "#ffffff",
+  "bgL": 1,
+  "meanL": 0.968,
+  "meanC": 0,
+  "ink": 0.197,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#d0d0d0",
+   "#e0e0e0",
+   "#c0c0c0"
+  ]
+ },
+ "sketches/anni-weaving/moori": {
+  "bg": "#6b4423",
+  "bgL": 0.424,
+  "meanL": 0.549,
+  "meanC": 0.0759,
+  "ink": 0.555,
+  "hue": 45,
+  "hueShare": 0.526,
+  "colors": [
+   "#a06050",
+   "#c0a040",
+   "#a07060",
+   "#a07050",
+   "#907040"
+  ]
+ },
+ "sketches/anni-weaving/signal": {
+  "bg": "#f8f0ed",
+  "bgL": 0.961,
+  "meanL": 0.514,
+  "meanC": 0.0708,
+  "ink": 0.84,
+  "hue": 105,
+  "hueShare": 0.582,
+  "colors": [
+   "#000000",
+   "#404000",
+   "#d06000",
+   "#90a040",
+   "#a0a040"
+  ]
+ },
+ "sketches/anni-weaving/signal-2": {
+  "bg": "#f6f0f4",
+  "bgL": 0.961,
+  "meanL": 0.651,
+  "meanC": 0.1115,
+  "ink": 0.693,
+  "hue": 345,
+  "hueShare": 0.898,
+  "colors": [
+   "#802070",
+   "#902070",
+   "#a07000",
+   "#801080",
+   "#d0a0d0"
+  ]
+ },
+ "sketches/anni-weaving/weaves": {
+  "bg": "#003a6c",
+  "bgL": 0.346,
+  "meanL": 0.628,
+  "meanC": 0.0384,
+  "ink": 0.832,
+  "hue": 255,
+  "hueShare": 0.983,
+  "colors": [
+   "#a090a0",
+   "#9090a0",
+   "#a09090",
+   "#b09090",
+   "#90a0b0"
+  ]
+ },
+ "sketches/automata/automata-dither": {
+  "bg": "#e1623c",
+  "bgL": 0.648,
+  "meanL": 0.626,
+  "meanC": 0.137,
+  "ink": 0.791,
+  "hue": 45,
+  "hueShare": 1,
+  "colors": [
+   "#f09080",
+   "#a02000",
+   "#f09070",
+   "#201000",
+   "#a03000"
+  ]
+ },
+ "sketches/automata/basic": {
+  "bg": "#d0a565",
+  "bgL": 0.747,
+  "meanL": 0.686,
+  "meanC": 0.0967,
+  "ink": 0.846,
+  "hue": 105,
+  "hueShare": 0.33,
+  "colors": [
+   "#e0d040",
+   "#c0a0a0",
+   "#d0a0a0",
+   "#208060",
+   "#405080"
+  ]
+ },
+ "sketches/automata/xor-game-of-life": {
+  "bg": "#1a1a1a",
+  "bgL": 0.218,
+  "meanL": 0.222,
+  "meanC": 0,
+  "ink": 0.123,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#303030",
+   "#404040"
+  ]
+ },
+ "sketches/automata/xor-game-of-life-trail": {
+  "bg": "#caa58a",
+  "bgL": 0.748,
+  "meanL": 0.737,
+  "meanC": 0.056,
+  "ink": 0.008,
+  "hue": 45,
+  "hueShare": 0.979,
+  "colors": [
+   "#a08070",
+   "#a07060"
+  ]
+ },
+ "sketches/automata/xortomata": {
+  "bg": "#ffffff",
+  "bgL": 1,
+  "meanL": 0.99,
+  "meanC": 0,
+  "ink": 0.036,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#d0d0d0",
+   "#b0b0b0",
+   "#a0a0a0",
+   "#c0c0c0",
+   "#909090"
+  ]
+ },
+ "sketches/bauhaus/grid-construction": {
+  "bg": "#fdfdfd",
+  "bgL": 0.994,
+  "meanL": 0.94,
+  "meanC": 0.0206,
+  "ink": 0.178,
+  "hue": 105,
+  "hueShare": 0.53,
+  "colors": [
+   "#e0d030",
+   "#f0d030",
+   "#606060",
+   "#0060c0",
+   "#f03000"
+  ]
+ },
+ "sketches/bauhaus/nalee-composition": {
+  "bg": "#9be69d",
+  "bgL": 0.857,
+  "meanL": 0.645,
+  "meanC": 0.13,
+  "ink": 0.82,
+  "hue": 345,
+  "hueShare": 0.471,
+  "colors": [
+   "#e050c0",
+   "#504070",
+   "#304060",
+   "#00a0d0",
+   "#d050c0"
+  ]
+ },
+ "sketches/bauhaus/nalee-composition-2": {
+  "bg": "#9be69d",
+  "bgL": 0.857,
+  "meanL": 0.645,
+  "meanC": 0.13,
+  "ink": 0.82,
+  "hue": 345,
+  "hueShare": 0.471,
+  "colors": [
+   "#e050c0",
+   "#504070",
+   "#304060",
+   "#00a0d0",
+   "#d050c0"
+  ]
+ },
+ "sketches/bauhaus/truchet": {
+  "bg": "#ddeede",
+  "bgL": 0.932,
+  "meanL": 0.64,
+  "meanC": 0.0565,
+  "ink": 0.732,
+  "hue": 315,
+  "hueShare": 0.412,
+  "colors": [
+   "#80b0c0",
+   "#502030",
+   "#704090",
+   "#202010",
+   "#202000"
+  ]
+ },
+ "sketches/bipolar/basic": {
+  "bg": "#f5f4f5",
+  "bgL": 0.968,
+  "meanL": 0.962,
+  "meanC": 0.0142,
+  "ink": 0.057,
+  "hue": 345,
+  "hueShare": 0.67,
+  "colors": [
+   "#e0c0d0",
+   "#e0b0d0",
+   "#d0b0d0",
+   "#d0a0c0",
+   "#d080a0"
+  ]
+ },
+ "sketches/bipolar/colors": {
+  "bg": "#005c81",
+  "bgL": 0.448,
+  "meanL": 0.589,
+  "meanC": 0.1102,
+  "ink": 0.724,
+  "hue": 255,
+  "hueShare": 0.683,
+  "colors": [
+   "#2080c0",
+   "#60b0f0",
+   "#60c0f0",
+   "#2080b0",
+   "#3090d0"
+  ]
+ },
+ "sketches/bipolar/spiral": {
+  "bg": "#0a030a",
+  "bgL": 0.118,
+  "meanL": 0.146,
+  "meanC": 0.0319,
+  "ink": 0.087,
+  "hue": 285,
+  "hueShare": 0.441,
+  "colors": [
+   "#301020",
+   "#201020",
+   "#201030",
+   "#101030",
+   "#402020"
+  ]
+ },
+ "sketches/bipolar/spiral-animated": {
+  "bg": "#ff2c00",
+  "bgL": 0.642,
+  "meanL": 0.614,
+  "meanC": 0.2324,
+  "ink": 0.21,
+  "hue": 45,
+  "hueShare": 0.726,
+  "colors": [
+   "#d02020",
+   "#d02030",
+   "#d02010",
+   "#c02010",
+   "#e02020"
+  ]
+ },
+ "sketches/bipolar/spiral-jiggly": {
+  "bg": "#002e45",
+  "bgL": 0.285,
+  "meanL": 0.319,
+  "meanC": 0.0669,
+  "ink": 0.117,
+  "hue": 225,
+  "hueShare": 0.882,
+  "colors": [
+   "#104060",
+   "#105070",
+   "#104070",
+   "#205070",
+   "#105060"
+  ]
+ },
+ "sketches/bipolar/spiral-pattern": {
+  "bg": "#181a26",
+  "bgL": 0.222,
+  "meanL": 0.23,
+  "meanC": 0.0225,
+  "ink": 0,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#403020"
+  ]
+ },
+ "sketches/black-on-black": {
+  "bg": "#0e0e0e",
+  "bgL": 0.164,
+  "meanL": 0.205,
+  "meanC": 0,
+  "ink": 0.194,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#303030",
+   "#202020"
+  ]
+ },
+ "sketches/boids/cohesion-color": {
+  "bg": "#bcbab9",
+  "bgL": 0.79,
+  "meanL": 0.765,
+  "meanC": 0.049,
+  "ink": 0.158,
+  "hue": 315,
+  "hueShare": 0.744,
+  "colors": [
+   "#c080c0",
+   "#d070c0",
+   "#d070d0",
+   "#d060d0",
+   "#d080c0"
+  ]
+ },
+ "sketches/boids/gradient": {
+  "bg": "#5fab9f",
+  "bgL": 0.689,
+  "meanL": 0.673,
+  "meanC": 0.0704,
+  "ink": 0.029,
+  "hue": 165,
+  "hueShare": 0.784,
+  "colors": [
+   "#508070",
+   "#608070",
+   "#507070",
+   "#607070",
+   "#508080"
+  ]
+ },
+ "sketches/boids/gradient-quadtree": {
+  "bg": "#46013d",
+  "bgL": 0.271,
+  "meanL": 0.302,
+  "meanC": 0.1306,
+  "ink": 0.097,
+  "hue": 345,
+  "hueShare": 0.652,
+  "colors": [
+   "#601060",
+   "#600060",
+   "#500070",
+   "#500060",
+   "#601070"
+  ]
+ },
+ "sketches/boids/noise-field-color": {
+  "bg": "#fde20b",
+  "bgL": 0.907,
+  "meanL": 0.889,
+  "meanC": 0.1807,
+  "ink": 0.147,
+  "hue": 105,
+  "hueShare": 0.98,
+  "colors": [
+   "#f0e040",
+   "#c0c010",
+   "#d0c020",
+   "#f0e050",
+   "#c0c020"
+  ]
+ },
+ "sketches/boids/pipe": {
+  "bg": "#eee9cb",
+  "bgL": 0.93,
+  "meanL": 0.906,
+  "meanC": 0.0332,
+  "ink": 0.095,
+  "hue": 105,
+  "hueShare": 0.995,
+  "colors": [
+   "#c0c0b0",
+   "#c0c0c0",
+   "#b0b0b0",
+   "#c0b0b0",
+   "#b0b0c0"
+  ]
+ },
+ "sketches/boolean/robert-swain": {
+  "bg": "#66a886",
+  "bgL": 0.678,
+  "meanL": 0.625,
+  "meanC": 0.0813,
+  "ink": 0.953,
+  "hue": 45,
+  "hueShare": 0.361,
+  "colors": [
+   "#60b0c0",
+   "#304080",
+   "#103040",
+   "#f0f0f0",
+   "#e06050"
+  ]
+ },
+ "sketches/chaikin-paths": {
+  "bg": "#124934",
+  "bgL": 0.364,
+  "meanL": 0.598,
+  "meanC": 0.0833,
+  "ink": 0.508,
+  "hue": 165,
+  "hueShare": 0.42,
+  "colors": [
+   "#f0e0d0",
+   "#f0d010",
+   "#f0b060",
+   "#f0d020",
+   "#f0d0c0"
+  ]
+ },
+ "sketches/chaotic-pendulums": {
+  "bg": "#293d32",
+  "bgL": 0.339,
+  "meanL": 0.35,
+  "meanC": 0.0309,
+  "ink": 0.043,
+  "hue": 285,
+  "hueShare": 0.377,
+  "colors": [
+   "#404050",
+   "#304060",
+   "#404060",
+   "#406060",
+   "#504050"
+  ]
+ },
+ "sketches/chladni/ascii": {
+  "bg": "#1f1f1f",
+  "bgL": 0.239,
+  "meanL": 0.25,
+  "meanC": 0,
+  "ink": 0,
+  "hue": null,
+  "hueShare": 0,
+  "colors": []
+ },
+ "sketches/chladni/basic": {
+  "bg": "#212121",
+  "bgL": 0.248,
+  "meanL": 0.242,
+  "meanC": 0,
+  "ink": 0.009,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#404040",
+   "#303030"
+  ]
+ },
+ "sketches/chladni/layered": {
+  "bg": "#d4b3a0",
+  "bgL": 0.791,
+  "meanL": 0.803,
+  "meanC": 0.046,
+  "ink": 0,
+  "hue": 45,
+  "hueShare": 1,
+  "colors": []
+ },
+ "sketches/chladni/strokes": {
+  "bg": "#e16696",
+  "bgL": 0.673,
+  "meanL": 0.671,
+  "meanC": 0.1553,
+  "ink": 0,
+  "hue": 345,
+  "hueShare": 0.668,
+  "colors": []
+ },
+ "sketches/chladni/trail": {
+  "bg": "#817070",
+  "bgL": 0.561,
+  "meanL": 0.597,
+  "meanC": 0.0457,
+  "ink": 0.645,
+  "hue": 75,
+  "hueShare": 0.443,
+  "colors": [
+   "#404040",
+   "#a09090",
+   "#404050",
+   "#b0a0a0",
+   "#504050"
+  ]
+ },
+ "sketches/circle-pack": {
+  "bg": "#00011d",
+  "bgL": 0.11,
+  "meanL": 0.119,
+  "meanC": 0.0692,
+  "ink": 0,
+  "hue": 255,
+  "hueShare": 0.997,
+  "colors": []
+ },
+ "sketches/clearloop/animated-stretch": {
+  "bg": "#ebe3c7",
+  "bgL": 0.915,
+  "meanL": 0.811,
+  "meanC": 0.061,
+  "ink": 0.435,
+  "hue": 45,
+  "hueShare": 0.564,
+  "colors": [
+   "#e0a080",
+   "#307060",
+   "#e06030",
+   "#304090",
+   "#a0a0b0"
+  ]
+ },
+ "sketches/clearloop/basic": {
+  "bg": "#eab29f",
+  "bgL": 0.81,
+  "meanL": 0.769,
+  "meanC": 0.0679,
+  "ink": 0.763,
+  "hue": 45,
+  "hueShare": 0.515,
+  "colors": [
+   "#e0e0c0",
+   "#f0e0c0",
+   "#307060",
+   "#e06030",
+   "#405090"
+  ]
+ },
+ "sketches/clearloop/carousel": {
+  "bg": "#ffffff",
+  "bgL": 1,
+  "meanL": 0.965,
+  "meanC": 0.0147,
+  "ink": 0.229,
+  "hue": 45,
+  "hueShare": 0.83,
+  "colors": [
+   "#e0a080",
+   "#e0e0c0",
+   "#e0c0a0",
+   "#e0b090",
+   "#e0d0b0"
+  ]
+ },
+ "sketches/clearloop/pro-color-harmonies": {
+  "bg": "#cbe0b7",
+  "bgL": 0.88,
+  "meanL": 0.852,
+  "meanC": 0.0956,
+  "ink": 0.842,
+  "hue": 135,
+  "hueShare": 0.341,
+  "colors": [
+   "#c0f0f0",
+   "#d0f0f0",
+   "#b00000",
+   "#f0b0a0",
+   "#00e060"
+  ]
+ },
+ "sketches/clearloop/robert-swain": {
+  "bg": "#e56f60",
+  "bgL": 0.678,
+  "meanL": 0.545,
+  "meanC": 0.1114,
+  "ink": 0.911,
+  "hue": 255,
+  "hueShare": 0.297,
+  "colors": [
+   "#304080",
+   "#c02010",
+   "#803070",
+   "#103040",
+   "#f0a060"
+  ]
+ },
+ "sketches/clearloop/robert-swain-lights-on-off": {
+  "bg": "#e56f60",
+  "bgL": 0.678,
+  "meanL": 0.544,
+  "meanC": 0.1113,
+  "ink": 0.911,
+  "hue": 255,
+  "hueShare": 0.299,
+  "colors": [
+   "#304080",
+   "#c02010",
+   "#803070",
+   "#103040",
+   "#f0a060"
+  ]
+ },
+ "sketches/clearloop/rybitten": {
+  "bg": "#b5a2a6",
+  "bgL": 0.73,
+  "meanL": 0.736,
+  "meanC": 0.0551,
+  "ink": 0.754,
+  "hue": 75,
+  "hueShare": 0.493,
+  "colors": [
+   "#e0d0b0",
+   "#805030",
+   "#f0d0b0",
+   "#b0a040",
+   "#305080"
+  ]
+ },
+ "sketches/clearloop/stretch": {
+  "bg": "#eacac0",
+  "bgL": 0.863,
+  "meanL": 0.808,
+  "meanC": 0.062,
+  "ink": 0.404,
+  "hue": 45,
+  "hueShare": 0.566,
+  "colors": [
+   "#e0a080",
+   "#307060",
+   "#e06030",
+   "#304090",
+   "#b0c0a0"
+  ]
+ },
+ "sketches/clixo/animated-shape": {
+  "bg": "#abb5b7",
+  "bgL": 0.766,
+  "meanL": 0.729,
+  "meanC": 0.0689,
+  "ink": 0.248,
+  "hue": 15,
+  "hueShare": 0.739,
+  "colors": [
+   "#f00060",
+   "#f00050",
+   "#d05080",
+   "#c07090",
+   "#5020f0"
+  ]
+ },
+ "sketches/clixo/criss-cross": {
+  "bg": "#3a3a73",
+  "bgL": 0.379,
+  "meanL": 0.491,
+  "meanC": 0.0807,
+  "ink": 0.357,
+  "hue": 285,
+  "hueShare": 1,
+  "colors": [
+   "#b0b0d0",
+   "#a0a0c0",
+   "#7070a0",
+   "#9090b0",
+   "#606090"
+  ]
+ },
+ "sketches/clixo/layers": {
+  "bg": "#ffffff",
+  "bgL": 1,
+  "meanL": 0.958,
+  "meanC": 0,
+  "ink": 0.085,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#808080",
+   "#d0d0d0",
+   "#202020",
+   "#404040",
+   "#101010"
+  ]
+ },
+ "sketches/clixo/noise": {
+  "bg": "#6ee973",
+  "bgL": 0.837,
+  "meanL": 0.83,
+  "meanC": 0.1743,
+  "ink": 0.387,
+  "hue": 135,
+  "hueShare": 0.959,
+  "colors": [
+   "#a0d0b0",
+   "#b0c0c0",
+   "#40f040",
+   "#30f040",
+   "#a0c0c0"
+  ]
+ },
+ "sketches/clixo/overlap": {
+  "bg": "#a999b7",
+  "bgL": 0.707,
+  "meanL": 0.655,
+  "meanC": 0.1257,
+  "ink": 0.692,
+  "hue": 255,
+  "hueShare": 0.469,
+  "colors": [
+   "#0060e0",
+   "#f05010",
+   "#2070d0",
+   "#1070d0",
+   "#0060d0"
+  ]
+ },
+ "sketches/clixo/shape": {
+  "bg": "#abb5b7",
+  "bgL": 0.766,
+  "meanL": 0.623,
+  "meanC": 0.1556,
+  "ink": 0.552,
+  "hue": 285,
+  "hueShare": 0.845,
+  "colors": [
+   "#6020f0",
+   "#6010f0",
+   "#0020d0",
+   "#8050e0",
+   "#5020f0"
+  ]
+ },
+ "sketches/clixo/shifty": {
+  "bg": "#f26b56",
+  "bgL": 0.689,
+  "meanL": 0.482,
+  "meanC": 0.1222,
+  "ink": 0.905,
+  "hue": 45,
+  "hueShare": 0.553,
+  "colors": [
+   "#004090",
+   "#f05010",
+   "#f09080",
+   "#201000",
+   "#003070"
+  ]
+ },
+ "sketches/clixo/shifty-2": {
+  "bg": "#c6778a",
+  "bgL": 0.66,
+  "meanL": 0.456,
+  "meanC": 0.0949,
+  "ink": 0.969,
+  "hue": 45,
+  "hueShare": 0.649,
+  "colors": [
+   "#f05010",
+   "#201000",
+   "#200000",
+   "#f09080",
+   "#0040a0"
+  ]
+ },
+ "sketches/clixo/shifty-3": {
+  "bg": "#424377",
+  "bgL": 0.408,
+  "meanL": 0.413,
+  "meanC": 0.0813,
+  "ink": 0.164,
+  "hue": 285,
+  "hueShare": 1,
+  "colors": [
+   "#606090",
+   "#202050",
+   "#7070a0",
+   "#102050",
+   "#707090"
+  ]
+ },
+ "sketches/clixo/stack-columns": {
+  "bg": "#c95577",
+  "bgL": 0.607,
+  "meanL": 0.585,
+  "meanC": 0.1175,
+  "ink": 0.992,
+  "hue": 45,
+  "hueShare": 0.492,
+  "colors": [
+   "#f09080",
+   "#f05010",
+   "#004090",
+   "#f09090",
+   "#003070"
+  ]
+ },
+ "sketches/clixo/stack-columns-animated": {
+  "bg": "#cc8397",
+  "bgL": 0.691,
+  "meanL": 0.587,
+  "meanC": 0.0941,
+  "ink": 0.964,
+  "hue": 45,
+  "hueShare": 0.678,
+  "colors": [
+   "#f05010",
+   "#000010",
+   "#000020",
+   "#d0c0c0",
+   "#e0d0c0"
+  ]
+ },
+ "sketches/cluster-growth/basic": {
+  "bg": "#710100",
+  "bgL": 0.345,
+  "meanL": 0.358,
+  "meanC": 0.1438,
+  "ink": 0.004,
+  "hue": 15,
+  "hueShare": 0.763,
+  "colors": [
+   "#902020",
+   "#901010",
+   "#902010",
+   "#902030"
+  ]
+ },
+ "sketches/cluster-growth/circle-pack": {
+  "bg": "#484f85",
+  "bgL": 0.447,
+  "meanL": 0.447,
+  "meanC": 0.0886,
+  "ink": 0,
+  "hue": 285,
+  "hueShare": 1,
+  "colors": []
+ },
+ "sketches/cluster-growth/multi-horizontal": {
+  "bg": "#112b46",
+  "bgL": 0.284,
+  "meanL": 0.308,
+  "meanC": 0.0595,
+  "ink": 0.086,
+  "hue": 255,
+  "hueShare": 0.926,
+  "colors": [
+   "#205060",
+   "#305060",
+   "#204060",
+   "#304060",
+   "#305070"
+  ]
+ },
+ "sketches/cluster-growth/multi-random": {
+  "bg": "#7c5e2a",
+  "bgL": 0.502,
+  "meanL": 0.509,
+  "meanC": 0.0767,
+  "ink": 0.002,
+  "hue": 75,
+  "hueShare": 0.884,
+  "colors": [
+   "#908030",
+   "#a08030"
+  ]
+ },
+ "sketches/cluster-growth/multi-random-static": {
+  "bg": "#3b4c29",
+  "bgL": 0.392,
+  "meanL": 0.391,
+  "meanC": 0.0379,
+  "ink": 0.642,
+  "hue": 135,
+  "hueShare": 0.636,
+  "colors": [
+   "#102020",
+   "#606040",
+   "#606050",
+   "#706050",
+   "#707050"
+  ]
+ },
+ "sketches/cluster-growth/system-test": {
+  "bg": "#e5d5c4",
+  "bgL": 0.881,
+  "meanL": 0.835,
+  "meanC": 0.0272,
+  "ink": 0.441,
+  "hue": 75,
+  "hueShare": 0.998,
+  "colors": [
+   "#f0f0f0",
+   "#c0b090",
+   "#c0b0a0",
+   "#b0b0a0",
+   "#b0a090"
+  ]
+ },
+ "sketches/collision/basic": {
+  "bg": "#2d3073",
+  "bgL": 0.348,
+  "meanL": 0.393,
+  "meanC": 0.1013,
+  "ink": 0.134,
+  "hue": 285,
+  "hueShare": 1,
+  "colors": [
+   "#9090b0",
+   "#b0b0d0",
+   "#a090c0",
+   "#9090c0",
+   "#8080b0"
+  ]
+ },
+ "sketches/collision/basic-b&w": {
+  "bg": "#000000",
+  "bgL": 0,
+  "meanL": 0.318,
+  "meanC": 0,
+  "ink": 0.368,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#f0f0f0",
+   "#e0e0e0",
+   "#202020",
+   "#404040",
+   "#505050"
+  ]
+ },
+ "sketches/collision/explode": {
+  "bg": "#6822ff",
+  "bgL": 0.519,
+  "meanL": 0.521,
+  "meanC": 0.2799,
+  "ink": 0.058,
+  "hue": 285,
+  "hueShare": 0.954,
+  "colors": [
+   "#f00030",
+   "#f00020",
+   "#2040e0",
+   "#1050e0",
+   "#3040f0"
+  ]
+ },
+ "sketches/collision/spaw-debug": {
+  "bg": "#000000",
+  "bgL": 0,
+  "meanL": 0.034,
+  "meanC": 0.0017,
+  "ink": 0.005,
+  "hue": 15,
+  "hueShare": 0.703,
+  "colors": [
+   "#101010",
+   "#202020",
+   "#301010"
+  ]
+ },
+ "sketches/color-fractions": {
+  "bg": "#000000",
+  "bgL": 0,
+  "meanL": 0,
+  "meanC": 0,
+  "ink": 0,
+  "hue": null,
+  "hueShare": 0,
+  "colors": []
+ },
+ "sketches/color-quanta": {
+  "bg": "#000000",
+  "bgL": 0,
+  "meanL": 0,
+  "meanC": 0,
+  "ink": 0,
+  "hue": null,
+  "hueShare": 0,
+  "colors": []
+ },
+ "sketches/color-traveller/color-traveller-canvas": {
+  "bg": "#f5ecd2",
+  "bgL": 0.943,
+  "meanL": 0.913,
+  "meanC": 0.0497,
+  "ink": 0.283,
+  "hue": 75,
+  "hueShare": 0.865,
+  "colors": [
+   "#f0c090",
+   "#f0d0a0",
+   "#e0c080",
+   "#f0c0a0",
+   "#e0c090"
+  ]
+ },
+ "sketches/color-traveller/color-traveller-images": {
+  "bg": "#1d2421",
+  "bgL": 0.252,
+  "meanL": 0.297,
+  "meanC": 0.0239,
+  "ink": 0.197,
+  "hue": 105,
+  "hueShare": 0.752,
+  "colors": [
+   "#404020",
+   "#504020",
+   "#505020",
+   "#605020",
+   "#404030"
+  ]
+ },
+ "sketches/conformal-mapping/grid": {
+  "bg": "#f7f6f2",
+  "bgL": 0.973,
+  "meanL": 0.966,
+  "meanC": 0.0053,
+  "ink": 0.002,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#d0d0d0"
+  ]
+ },
+ "sketches/conformal-mapping/nalee": {
+  "bg": "#fed000",
+  "bgL": 0.872,
+  "meanL": 0.827,
+  "meanC": 0.1678,
+  "ink": 0.293,
+  "hue": 105,
+  "hueShare": 0.617,
+  "colors": [
+   "#f0a020",
+   "#f09030",
+   "#f09020",
+   "#f09010",
+   "#f0a010"
+  ]
+ },
+ "sketches/conformal-mapping/transforms": {
+  "bg": "#f7f6f2",
+  "bgL": 0.973,
+  "meanL": 0.959,
+  "meanC": 0.0057,
+  "ink": 0.006,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#d0d0d0",
+   "#c0c0d0",
+   "#c0d0d0"
+  ]
+ },
+ "sketches/construction-w/1": {
+  "bg": "#f0efef",
+  "bgL": 0.953,
+  "meanL": 0.826,
+  "meanC": 0.0758,
+  "ink": 0.54,
+  "hue": 45,
+  "hueShare": 0.496,
+  "colors": [
+   "#f07020",
+   "#b0b040",
+   "#309090",
+   "#f0b020",
+   "#f06010"
+  ]
+ },
+ "sketches/construction-w/2": {
+  "bg": "#e7e2d8",
+  "bgL": 0.914,
+  "meanL": 0.846,
+  "meanC": 0.047,
+  "ink": 0.238,
+  "hue": 15,
+  "hueShare": 0.558,
+  "colors": [
+   "#d03030",
+   "#f0c060",
+   "#f0c020",
+   "#d03040",
+   "#e07070"
+  ]
+ },
+ "sketches/construction-w/3": {
+  "bg": "#eee8ce",
+  "bgL": 0.929,
+  "meanL": 0.867,
+  "meanC": 0.0503,
+  "ink": 0.174,
+  "hue": 255,
+  "hueShare": 0.218,
+  "colors": [
+   "#f0f0f0",
+   "#000080",
+   "#d04020",
+   "#101080",
+   "#f0d000"
+  ]
+ },
+ "sketches/convex-hull-101": {
+  "bg": "#000b00",
+  "bgL": 0.13,
+  "meanL": 0.178,
+  "meanC": 0.0553,
+  "ink": 0.13,
+  "hue": 135,
+  "hueShare": 0.707,
+  "colors": [
+   "#402000",
+   "#502000",
+   "#702000",
+   "#602000",
+   "#202000"
+  ]
+ },
+ "sketches/css-color-ramp": {
+  "bg": "#003eab",
+  "bgL": 0.41,
+  "meanL": 0.523,
+  "meanC": 0.1902,
+  "ink": 0.99,
+  "hue": 15,
+  "hueShare": 0.211,
+  "colors": [
+   "#f00000",
+   "#00f0f0",
+   "#002000",
+   "#001000",
+   "#f000f0"
+  ]
+ },
+ "sketches/curve-particles/backdrop": {
+  "bg": "#eb4899",
+  "bgL": 0.654,
+  "meanL": 0.666,
+  "meanC": 0.1906,
+  "ink": 0.206,
+  "hue": 345,
+  "hueShare": 0.871,
+  "colors": [
+   "#c09040",
+   "#d0a030",
+   "#c08050",
+   "#d0a050",
+   "#b08030"
+  ]
+ },
+ "sketches/curve-particles/chunky": {
+  "bg": "#79a5a6",
+  "bgL": 0.691,
+  "meanL": 0.687,
+  "meanC": 0.0572,
+  "ink": 0.369,
+  "hue": 195,
+  "hueShare": 0.473,
+  "colors": [
+   "#d0c0a0",
+   "#b0b090",
+   "#c0b0a0",
+   "#d09030",
+   "#508070"
+  ]
+ },
+ "sketches/curve-particles/crumble": {
+  "bg": "#ffacfe",
+  "bgL": 0.851,
+  "meanL": 0.751,
+  "meanC": 0.1312,
+  "ink": 0.422,
+  "hue": 315,
+  "hueShare": 0.694,
+  "colors": [
+   "#e080b0",
+   "#c080b0",
+   "#d080b0",
+   "#c080c0",
+   "#b070b0"
+  ]
+ },
+ "sketches/curve-particles/crumble-chunky": {
+  "bg": "#732654",
+  "bgL": 0.4,
+  "meanL": 0.485,
+  "meanC": 0.0817,
+  "ink": 0.378,
+  "hue": 345,
+  "hueShare": 0.973,
+  "colors": [
+   "#c0b0b0",
+   "#404050",
+   "#d0c0b0",
+   "#a09090",
+   "#c0c0b0"
+  ]
+ },
+ "sketches/curve-particles/crumble-chunky-gradient": {
+  "bg": "#f3fbfd",
+  "bgL": 0.983,
+  "meanL": 0.832,
+  "meanC": 0.0416,
+  "ink": 0.45,
+  "hue": 225,
+  "hueShare": 0.667,
+  "colors": [
+   "#2080a0",
+   "#20b0c0",
+   "#207090",
+   "#2090b0",
+   "#206080"
+  ]
+ },
+ "sketches/curve-particles/crumble-chunky-gradient-mesh": {
+  "bg": "#f0f6f6",
+  "bgL": 0.969,
+  "meanL": 0.847,
+  "meanC": 0.0271,
+  "ink": 0.373,
+  "hue": 15,
+  "hueShare": 0.529,
+  "colors": [
+   "#b0b0b0",
+   "#a0a0a0",
+   "#304040",
+   "#c0c0c0",
+   "#d0d0d0"
+  ]
+ },
+ "sketches/curve-particles/crumble-chunky-mesh": {
+  "bg": "#ffffff",
+  "bgL": 1,
+  "meanL": 0.801,
+  "meanC": 0.0256,
+  "ink": 0.477,
+  "hue": 225,
+  "hueShare": 0.401,
+  "colors": [
+   "#000000",
+   "#007080",
+   "#006070",
+   "#002030",
+   "#001030"
+  ]
+ },
+ "sketches/development-of-concrete-art/fibonacci": {
+  "bg": "#fdfdfd",
+  "bgL": 0.994,
+  "meanL": 0.725,
+  "meanC": 0.0176,
+  "ink": 0.48,
+  "hue": 195,
+  "hueShare": 0.765,
+  "colors": [
+   "#001010",
+   "#209090",
+   "#504050",
+   "#a0b0d0",
+   "#c0d0e0"
+  ]
+ },
+ "sketches/development-of-concrete-art/fibonacci-blinds": {
+  "bg": "#fcfcfc",
+  "bgL": 0.991,
+  "meanL": 0.765,
+  "meanC": 0.0041,
+  "ink": 0.48,
+  "hue": 315,
+  "hueShare": 1,
+  "colors": [
+   "#808080",
+   "#303030",
+   "#000000",
+   "#707070",
+   "#909090"
+  ]
+ },
+ "sketches/disco-color-fractions/console": {
+  "bg": "#ffffff",
+  "bgL": 1,
+  "meanL": 1,
+  "meanC": 0,
+  "ink": 0,
+  "hue": null,
+  "hueShare": 0,
+  "colors": []
+ },
+ "sketches/disco-color-fractions/disco-color-fractions": {
+  "bg": "#018ef3",
+  "bgL": 0.637,
+  "meanL": 0.625,
+  "meanC": 0.1693,
+  "ink": 0.608,
+  "hue": 255,
+  "hueShare": 0.443,
+  "colors": [
+   "#00a080",
+   "#00a0b0",
+   "#7050f0",
+   "#00a050",
+   "#00a060"
+  ]
+ },
+ "sketches/domain-polygon/16x16": {
+  "bg": "#6b6b6b",
+  "bgL": 0.528,
+  "meanL": 0.527,
+  "meanC": 0,
+  "ink": 0.87,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#000000",
+   "#f0f0f0",
+   "#303030",
+   "#b0b0b0",
+   "#c0c0c0"
+  ]
+ },
+ "sketches/domain-polygon/basic": {
+  "bg": "#ffffff",
+  "bgL": 1,
+  "meanL": 0.987,
+  "meanC": 0,
+  "ink": 0.025,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#d0d0d0",
+   "#808080",
+   "#707070",
+   "#202020",
+   "#909090"
+  ]
+ },
+ "sketches/domain-polygon/construction-distorted": {
+  "bg": "#5a0000",
+  "bgL": 0.294,
+  "meanL": 0.297,
+  "meanC": 0.122,
+  "ink": 0,
+  "hue": 15,
+  "hueShare": 1,
+  "colors": []
+ },
+ "sketches/domain-polygon/construction-distorted-gap": {
+  "bg": "#c69993",
+  "bgL": 0.723,
+  "meanL": 0.546,
+  "meanC": 0.1463,
+  "ink": 0.896,
+  "hue": 285,
+  "hueShare": 0.665,
+  "colors": [
+   "#4040d0",
+   "#a06000",
+   "#4040c0",
+   "#905000",
+   "#906000"
+  ]
+ },
+ "sketches/domain-polygon/construction-in-white-and-black": {
+  "bg": "#f14821",
+  "bgL": 0.641,
+  "meanL": 0.665,
+  "meanC": 0.1381,
+  "ink": 0.563,
+  "hue": 45,
+  "hueShare": 0.687,
+  "colors": [
+   "#a07080",
+   "#60a0e0",
+   "#7090c0",
+   "#b07070",
+   "#c06050"
+  ]
+ },
+ "sketches/domain-polygon/construction-in-white-and-black-distorted": {
+  "bg": "#f0f0f0",
+  "bgL": 0.955,
+  "meanL": 0.987,
+  "meanC": 0,
+  "ink": 0,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#d0d0d0"
+  ]
+ },
+ "sketches/domain-polygon/construction-in-white-and-black-uchu": {
+  "bg": "#8fb0bd",
+  "bgL": 0.737,
+  "meanL": 0.755,
+  "meanC": 0.0881,
+  "ink": 0.751,
+  "hue": 255,
+  "hueShare": 0.338,
+  "colors": [
+   "#f0d080",
+   "#9060c0",
+   "#c0c0c0",
+   "#4080e0",
+   "#5090e0"
+  ]
+ },
+ "sketches/domain-polygon/construction-kelly-distorted": {
+  "bg": "#e5cab5",
+  "bgL": 0.856,
+  "meanL": 0.799,
+  "meanC": 0.0707,
+  "ink": 0.24,
+  "hue": 15,
+  "hueShare": 0.541,
+  "colors": [
+   "#d04040",
+   "#d09090",
+   "#d05050",
+   "#d07070",
+   "#d08070"
+  ]
+ },
+ "sketches/domain-polygon/disorder": {
+  "bg": "#ff2c00",
+  "bgL": 0.642,
+  "meanL": 0.525,
+  "meanC": 0.2002,
+  "ink": 0.656,
+  "hue": 45,
+  "hueShare": 0.395,
+  "colors": [
+   "#a01040",
+   "#b01030",
+   "#d02020",
+   "#800050",
+   "#600070"
+  ]
+ },
+ "sketches/domain-polygon/gradient-distorted": {
+  "bg": "#9d9dd4",
+  "bgL": 0.716,
+  "meanL": 0.806,
+  "meanC": 0.0697,
+  "ink": 0.854,
+  "hue": 345,
+  "hueShare": 0.492,
+  "colors": [
+   "#f0b0d0",
+   "#d0c0c0",
+   "#e0c0d0",
+   "#e0a0d0",
+   "#d090d0"
+  ]
+ },
+ "sketches/domain-polygon/just-grid": {
+  "bg": "#ffffff",
+  "bgL": 1,
+  "meanL": 0.988,
+  "meanC": 0,
+  "ink": 0.003,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#e0e0e0"
+  ]
+ },
+ "sketches/domain-polygon/just-grid-rough-process": {
+  "bg": "#ffffff",
+  "bgL": 1,
+  "meanL": 0.991,
+  "meanC": 0,
+  "ink": 0.056,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#e0e0e0",
+   "#d0d0d0"
+  ]
+ },
+ "sketches/domain-polygon/window/sketch": {
+  "bg": "#ffffff",
+  "bgL": 1,
+  "meanL": 0.995,
+  "meanC": 0.0007,
+  "ink": 0.007,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#d0e0e0",
+   "#d0e0d0",
+   "#d0f0e0",
+   "#f0e0d0",
+   "#c0e0d0"
+  ]
+ },
+ "sketches/domain-polygon/window/sketch-distort": {
+  "bg": "#ffffff",
+  "bgL": 1,
+  "meanL": 0.995,
+  "meanC": 0.0013,
+  "ink": 0.022,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#d0e0d0",
+   "#d0f0e0",
+   "#c0e0d0",
+   "#d0e0e0",
+   "#f0e0d0"
+  ]
+ },
+ "sketches/domain-polygon/window/sketch-gridlines": {
+  "bg": "#ffffff",
+  "bgL": 1,
+  "meanL": 0.989,
+  "meanC": 0.0057,
+  "ink": 0.049,
+  "hue": 105,
+  "hueShare": 0.545,
+  "colors": [
+   "#d0f0d0",
+   "#d0e0d0",
+   "#f0d0e0",
+   "#f0d0d0",
+   "#f0f0a0"
+  ]
+ },
+ "sketches/domain-polygon/window/sketch-tessellated": {
+  "bg": "#ffffff",
+  "bgL": 1,
+  "meanL": 0.986,
+  "meanC": 0.0057,
+  "ink": 0.073,
+  "hue": 195,
+  "hueShare": 1,
+  "colors": [
+   "#c0f0f0",
+   "#d0f0f0",
+   "#c0e0f0",
+   "#d0e0f0",
+   "#c0e0e0"
+  ]
+ },
+ "sketches/domain-polygon/with-colors": {
+  "bg": "#ffffff",
+  "bgL": 1,
+  "meanL": 0.954,
+  "meanC": 0.0179,
+  "ink": 0.22,
+  "hue": 285,
+  "hueShare": 0.995,
+  "colors": [
+   "#d0c0c0",
+   "#b090f0",
+   "#a080f0",
+   "#d0d0f0",
+   "#b080f0"
+  ]
+ },
+ "sketches/domain-warping": {
+  "bg": "#1c1c1c",
+  "bgL": 0.226,
+  "meanL": 0.298,
+  "meanC": 0.0287,
+  "ink": 0.242,
+  "hue": 105,
+  "hueShare": 0.569,
+  "colors": [
+   "#404010",
+   "#403010",
+   "#504010",
+   "#503020",
+   "#505010"
+  ]
+ },
+ "sketches/electric-field/basic": {
+  "bg": "#010101",
+  "bgL": 0.067,
+  "meanL": 0.081,
+  "meanC": 0.0069,
+  "ink": 0.003,
+  "hue": 15,
+  "hueShare": 0.6,
+  "colors": [
+   "#c07070",
+   "#c08070",
+   "#5080a0",
+   "#508090",
+   "#6080a0"
+  ]
+ },
+ "sketches/electric-field/gradient": {
+  "bg": "#542d22",
+  "bgL": 0.345,
+  "meanL": 0.32,
+  "meanC": 0.0614,
+  "ink": 0.457,
+  "hue": 45,
+  "hueShare": 0.994,
+  "colors": [
+   "#301000",
+   "#200000",
+   "#300000",
+   "#201000",
+   "#705040"
+  ]
+ },
+ "sketches/electric-field/gradient-paint": {
+  "bg": "#14324d",
+  "bgL": 0.309,
+  "meanL": 0.313,
+  "meanC": 0.0597,
+  "ink": 0.04,
+  "hue": 255,
+  "hueShare": 0.934,
+  "colors": [
+   "#305060",
+   "#205060",
+   "#205070",
+   "#105070",
+   "#506070"
+  ]
+ },
+ "sketches/embroidered-spirals": {
+  "bg": "#0e000d",
+  "bgL": 0.114,
+  "meanL": 0.173,
+  "meanC": 0.034,
+  "ink": 0.092,
+  "hue": 345,
+  "hueShare": 0.903,
+  "colors": [
+   "#202020",
+   "#202030",
+   "#203030",
+   "#302030",
+   "#102030"
+  ]
+ },
+ "sketches/fermat-spiral": {
+  "bg": "#140000",
+  "bgL": 0.12,
+  "meanL": 0.128,
+  "meanC": 0.0453,
+  "ink": 0.003,
+  "hue": 15,
+  "hueShare": 0.966,
+  "colors": [
+   "#102020"
+  ]
+ },
+ "sketches/fractal-grid/b&w": {
+  "bg": "#eff0ea",
+  "bgL": 0.953,
+  "meanL": 0.814,
+  "meanC": 0.0128,
+  "ink": 0.352,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#606050",
+   "#c0c0c0",
+   "#909080",
+   "#809080",
+   "#202010"
+  ]
+ },
+ "sketches/fractal-grid/b&w-moving": {
+  "bg": "#f7f7f5",
+  "bgL": 0.976,
+  "meanL": 0.912,
+  "meanC": 0.0066,
+  "ink": 0.154,
+  "hue": 15,
+  "hueShare": 1,
+  "colors": [
+   "#402020",
+   "#807070",
+   "#908080",
+   "#b0a0a0",
+   "#503030"
+  ]
+ },
+ "sketches/fractal-grid/b&w-moving-2": {
+  "bg": "#ecf5ed",
+  "bgL": 0.961,
+  "meanL": 0.818,
+  "meanC": 0.0218,
+  "ink": 0.362,
+  "hue": 45,
+  "hueShare": 1,
+  "colors": [
+   "#807060",
+   "#604030",
+   "#908070",
+   "#503020",
+   "#705040"
+  ]
+ },
+ "sketches/fractal-grid/b&w-moving-origin": {
+  "bg": "#f0eff0",
+  "bgL": 0.953,
+  "meanL": 0.807,
+  "meanC": 0.0131,
+  "ink": 0.372,
+  "hue": 105,
+  "hueShare": 1,
+  "colors": [
+   "#909080",
+   "#303010",
+   "#202000",
+   "#808070",
+   "#a0a090"
+  ]
+ },
+ "sketches/fractal-grid/b&w-moving-scroll": {
+  "bg": "#f5edea",
+  "bgL": 0.952,
+  "meanL": 0.871,
+  "meanC": 0.0142,
+  "ink": 0.205,
+  "hue": 135,
+  "hueShare": 1,
+  "colors": [
+   "#607060",
+   "#708070",
+   "#103010",
+   "#405040",
+   "#506050"
+  ]
+ },
+ "sketches/fractal-grid/basic": {
+  "bg": "#ffacfe",
+  "bgL": 0.851,
+  "meanL": 0.68,
+  "meanC": 0.1256,
+  "ink": 0.408,
+  "hue": 315,
+  "hueShare": 0.898,
+  "colors": [
+   "#000020",
+   "#b070c0",
+   "#000030",
+   "#9060a0",
+   "#704080"
+  ]
+ },
+ "sketches/fractal-grid/mouse": {
+  "bg": "#b8c3d9",
+  "bgL": 0.816,
+  "meanL": 0.695,
+  "meanC": 0.0872,
+  "ink": 0.47,
+  "hue": 255,
+  "hueShare": 0.999,
+  "colors": [
+   "#5070c0",
+   "#7090d0",
+   "#0030b0",
+   "#6080c0",
+   "#2050c0"
+  ]
+ },
+ "sketches/gears/1": {
+  "bg": "#111111",
+  "bgL": 0.178,
+  "meanL": 0.2,
+  "meanC": 0,
+  "ink": 0.079,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#303030",
+   "#404040",
+   "#202020",
+   "#505050"
+  ]
+ },
+ "sketches/gears/2": {
+  "bg": "#111111",
+  "bgL": 0.178,
+  "meanL": 0.189,
+  "meanC": 0,
+  "ink": 0.002,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#202020",
+   "#303030"
+  ]
+ },
+ "sketches/gears/3": {
+  "bg": "#111111",
+  "bgL": 0.178,
+  "meanL": 0.193,
+  "meanC": 0,
+  "ink": 0.04,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#303030",
+   "#202020",
+   "#404040"
+  ]
+ },
+ "sketches/gears/4": {
+  "bg": "#111111",
+  "bgL": 0.178,
+  "meanL": 0.189,
+  "meanC": 0,
+  "ink": 0.02,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#303030",
+   "#404040",
+   "#202020",
+   "#505050"
+  ]
+ },
+ "sketches/gears/5": {
+  "bg": "#111111",
+  "bgL": 0.178,
+  "meanL": 0.186,
+  "meanC": 0,
+  "ink": 0.016,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#303030",
+   "#404040",
+   "#202020"
+  ]
+ },
+ "sketches/gravura/basic": {
+  "bg": "#e1b9af",
+  "bgL": 0.818,
+  "meanL": 0.68,
+  "meanC": 0.1117,
+  "ink": 0.872,
+  "hue": 15,
+  "hueShare": 0.977,
+  "colors": [
+   "#b03020",
+   "#b02020",
+   "#f0f0e0",
+   "#b03030",
+   "#f0e0d0"
+  ]
+ },
+ "sketches/gravura/multi-color": {
+  "bg": "#f8e6de",
+  "bgL": 0.937,
+  "meanL": 0.759,
+  "meanC": 0.0734,
+  "ink": 0.631,
+  "hue": 15,
+  "hueShare": 0.281,
+  "colors": [
+   "#f0c080",
+   "#a02050",
+   "#00b0b0",
+   "#00a0b0",
+   "#00b0c0"
+  ]
+ },
+ "sketches/gravura/pro-color": {
+  "bg": "#1c2080",
+  "bgL": 0.319,
+  "meanL": 0.508,
+  "meanC": 0.1636,
+  "ink": 0.645,
+  "hue": 285,
+  "hueShare": 0.373,
+  "colors": [
+   "#f020e0",
+   "#9090a0",
+   "#00d090",
+   "#706090",
+   "#9080a0"
+  ]
+ },
+ "sketches/gravura/rainbow": {
+  "bg": "#011559",
+  "bgL": 0.242,
+  "meanL": 0.324,
+  "meanC": 0.1659,
+  "ink": 0.748,
+  "hue": 255,
+  "hueShare": 0.561,
+  "colors": [
+   "#001000",
+   "#0020e0",
+   "#0000c0",
+   "#001010",
+   "#0020f0"
+  ]
+ },
+ "sketches/gravura/rybitten": {
+  "bg": "#6e8592",
+  "bgL": 0.603,
+  "meanL": 0.67,
+  "meanC": 0.0449,
+  "ink": 0.958,
+  "hue": 45,
+  "hueShare": 0.177,
+  "colors": [
+   "#e0e0e0",
+   "#d0d0d0",
+   "#d0d0c0",
+   "#e0d0d0",
+   "#e0e0d0"
+  ]
+ },
+ "sketches/gravura/rybitten-blinds": {
+  "bg": "#c7a583",
+  "bgL": 0.744,
+  "meanL": 0.718,
+  "meanC": 0.0633,
+  "ink": 0.404,
+  "hue": 75,
+  "hueShare": 0.582,
+  "colors": [
+   "#b06040",
+   "#a06030",
+   "#707090",
+   "#808090",
+   "#c09020"
+  ]
+ },
+ "sketches/grey-goo/animated": {
+  "bg": "#111111",
+  "bgL": 0.178,
+  "meanL": 0.512,
+  "meanC": 0,
+  "ink": 0.655,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#f0f0f0",
+   "#909090",
+   "#808080",
+   "#505050",
+   "#404040"
+  ]
+ },
+ "sketches/grey-goo/genuary": {
+  "bg": "#111111",
+  "bgL": 0.178,
+  "meanL": 0.511,
+  "meanC": 0,
+  "ink": 0.658,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#f0f0f0",
+   "#808080",
+   "#909090",
+   "#a0a0a0",
+   "#707070"
+  ]
+ },
+ "sketches/grey-goo/self-portrait": {
+  "bg": "#111111",
+  "bgL": 0.178,
+  "meanL": 0.232,
+  "meanC": 0,
+  "ink": 0.155,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#303030",
+   "#404040",
+   "#606060",
+   "#505050",
+   "#808080"
+  ]
+ },
+ "sketches/grey-goo/skeletor": {
+  "bg": "#111111",
+  "bgL": 0.178,
+  "meanL": 0.243,
+  "meanC": 0,
+  "ink": 0.149,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#909090",
+   "#303030",
+   "#808080",
+   "#404040",
+   "#707070"
+  ]
+ },
+ "sketches/grid-based-cellular-automaton": {
+  "bg": "#8c0000",
+  "bgL": 0.402,
+  "meanL": 0.407,
+  "meanC": 0.1671,
+  "ink": 0,
+  "hue": 15,
+  "hueShare": 1,
+  "colors": []
+ },
+ "sketches/grid-domain-nalee/domain-skipper": {
+  "bg": "#ff87ab",
+  "bgL": 0.765,
+  "meanL": 0.734,
+  "meanC": 0.1437,
+  "ink": 0.099,
+  "hue": 15,
+  "hueShare": 0.884,
+  "colors": [
+   "#603070",
+   "#c06090",
+   "#804080",
+   "#602070",
+   "#502070"
+  ]
+ },
+ "sketches/grid-stairs/ascii-layer": {
+  "bg": "#628fd8",
+  "bgL": 0.649,
+  "meanL": 0.65,
+  "meanC": 0.0934,
+  "ink": 0.924,
+  "hue": 255,
+  "hueShare": 0.911,
+  "colors": [
+   "#f0f0f0",
+   "#e0e0e0",
+   "#003090",
+   "#0060f0",
+   "#002090"
+  ]
+ },
+ "sketches/grid-stairs/basic": {
+  "bg": "#4267d4",
+  "bgL": 0.547,
+  "meanL": 0.642,
+  "meanC": 0.1088,
+  "ink": 0.956,
+  "hue": 255,
+  "hueShare": 0.918,
+  "colors": [
+   "#f0f0f0",
+   "#e0e0e0",
+   "#0060f0",
+   "#000060",
+   "#003090"
+  ]
+ },
+ "sketches/grid-stairs/visual-strucutre": {
+  "bg": "#ebecf0",
+  "bgL": 0.943,
+  "meanL": 0.77,
+  "meanC": 0.0642,
+  "ink": 0.49,
+  "hue": 255,
+  "hueShare": 0.88,
+  "colors": [
+   "#0060f0",
+   "#90b0f0",
+   "#000060",
+   "#0050f0",
+   "#000050"
+  ]
+ },
+ "sketches/grid/b&w-grid": {
+  "bg": "#000000",
+  "bgL": 0,
+  "meanL": 0.051,
+  "meanC": 0,
+  "ink": 0.002,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#202020",
+   "#101010"
+  ]
+ },
+ "sketches/grid/gradients": {
+  "bg": "#443155",
+  "bgL": 0.351,
+  "meanL": 0.472,
+  "meanC": 0.0743,
+  "ink": 0.574,
+  "hue": 315,
+  "hueShare": 1,
+  "colors": [
+   "#604070",
+   "#9070b0",
+   "#705080",
+   "#806090",
+   "#605080"
+  ]
+ },
+ "sketches/grid/graphic-design": {
+  "bg": "#fc8a9d",
+  "bgL": 0.762,
+  "meanL": 0.702,
+  "meanC": 0.1328,
+  "ink": 0.526,
+  "hue": 15,
+  "hueShare": 0.53,
+  "colors": [
+   "#f0c000",
+   "#f0d000",
+   "#000000",
+   "#100000",
+   "#f0b030"
+  ]
+ },
+ "sketches/grid/graphic-design-animated": {
+  "bg": "#4a2648",
+  "bgL": 0.33,
+  "meanL": 0.277,
+  "meanC": 0.0465,
+  "ink": 0.601,
+  "hue": 345,
+  "hueShare": 0.514,
+  "colors": [
+   "#102030",
+   "#101020",
+   "#001020",
+   "#102020",
+   "#002020"
+  ]
+ },
+ "sketches/grid/grid-maker": {
+  "bg": "#84837f",
+  "bgL": 0.61,
+  "meanL": 0.862,
+  "meanC": 0.027,
+  "ink": 0.93,
+  "hue": 105,
+  "hueShare": 0.811,
+  "colors": [
+   "#f0f0f0",
+   "#d0e0e0",
+   "#e0c040",
+   "#e0e0e0",
+   "#f0c040"
+  ]
+ },
+ "sketches/grid/layered-triangles": {
+  "bg": "#86c5a4",
+  "bgL": 0.771,
+  "meanL": 0.792,
+  "meanC": 0.138,
+  "ink": 0.312,
+  "hue": 135,
+  "hueShare": 0.824,
+  "colors": [
+   "#60d070",
+   "#50d060",
+   "#50d070",
+   "#a0b0c0",
+   "#60d080"
+  ]
+ },
+ "sketches/grid/poisson-disc": {
+  "bg": "#dcdbd7",
+  "bgL": 0.891,
+  "meanL": 0.843,
+  "meanC": 0.0056,
+  "ink": 0.013,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#c0b0b0",
+   "#b0b0b0"
+  ]
+ },
+ "sketches/growth": {
+  "bg": "#f3ecdc",
+  "bgL": 0.944,
+  "meanL": 0.933,
+  "meanC": 0.0253,
+  "ink": 0.027,
+  "hue": 105,
+  "hueShare": 0.474,
+  "colors": [
+   "#80b020",
+   "#c0a010",
+   "#d0a010",
+   "#a0a010",
+   "#a0c060"
+  ]
+ },
+ "sketches/growth-paths": {
+  "bg": "#f7e5c1",
+  "bgL": 0.927,
+  "meanL": 0.924,
+  "meanC": 0.0507,
+  "ink": 0.019,
+  "hue": 75,
+  "hueShare": 0.997,
+  "colors": [
+   "#c0c0a0",
+   "#a0a090",
+   "#c0b090",
+   "#b0b090",
+   "#d0c0a0"
+  ]
+ },
+ "sketches/growth-simple": {
+  "bg": "#f8ecdc",
+  "bgL": 0.948,
+  "meanL": 0.946,
+  "meanC": 0.0251,
+  "ink": 0.013,
+  "hue": 105,
+  "hueShare": 0.468,
+  "colors": [
+   "#b0b0a0",
+   "#d0b0b0",
+   "#d0c0b0",
+   "#d0d0b0",
+   "#e0c0a0"
+  ]
+ },
+ "sketches/hatch-color-fractions": {
+  "bg": "#013227",
+  "bgL": 0.283,
+  "meanL": 0.298,
+  "meanC": 0.0678,
+  "ink": 0.211,
+  "hue": 135,
+  "hueShare": 0.371,
+  "colors": [
+   "#203000",
+   "#302000",
+   "#202000",
+   "#103000",
+   "#303000"
+  ]
+ },
+ "sketches/isometric/brutalism-stacks": {
+  "bg": "#000000",
+  "bgL": 0,
+  "meanL": 0.197,
+  "meanC": 0,
+  "ink": 0.38,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#606060",
+   "#404040",
+   "#101010",
+   "#808080",
+   "#303030"
+  ]
+ },
+ "sketches/isometric/brutalism-wall": {
+  "bg": "#2b2b2b",
+  "bgL": 0.289,
+  "meanL": 0.267,
+  "meanC": 0,
+  "ink": 0.509,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#000000",
+   "#505050",
+   "#606060",
+   "#404040",
+   "#707070"
+  ]
+ },
+ "sketches/isometric/landscape": {
+  "bg": "#515338",
+  "bgL": 0.433,
+  "meanL": 0.459,
+  "meanC": 0.0693,
+  "ink": 0.923,
+  "hue": 195,
+  "hueShare": 0.506,
+  "colors": [
+   "#408080",
+   "#501010",
+   "#004050",
+   "#803000",
+   "#80c0c0"
+  ]
+ },
+ "sketches/isometric/stacks": {
+  "bg": "#2a1f1d",
+  "bgL": 0.252,
+  "meanL": 0.251,
+  "meanC": 0.0223,
+  "ink": 0.043,
+  "hue": 255,
+  "hueShare": 0.852,
+  "colors": [
+   "#001040",
+   "#104070",
+   "#000040",
+   "#104080",
+   "#002050"
+  ]
+ },
+ "sketches/jali/mexico": {
+  "bg": "#336fe3",
+  "bgL": 0.568,
+  "meanL": 0.359,
+  "meanC": 0.1185,
+  "ink": 0.908,
+  "hue": 255,
+  "hueShare": 0.634,
+  "colors": [
+   "#000020",
+   "#000030",
+   "#60c0f0",
+   "#000010",
+   "#000040"
+  ]
+ },
+ "sketches/jali/truchet": {
+  "bg": "#f1d96d",
+  "bgL": 0.884,
+  "meanL": 0.732,
+  "meanC": 0.1199,
+  "ink": 0.387,
+  "hue": 105,
+  "hueShare": 0.652,
+  "colors": [
+   "#803020",
+   "#803030",
+   "#903030",
+   "#703020",
+   "#702020"
+  ]
+ },
+ "sketches/kelly-nalee/animated-awnings": {
+  "bg": "#f14821",
+  "bgL": 0.641,
+  "meanL": 0.619,
+  "meanC": 0.1994,
+  "ink": 0.132,
+  "hue": 45,
+  "hueShare": 0.914,
+  "colors": [
+   "#404090",
+   "#b04040",
+   "#804060",
+   "#c04040",
+   "#504080"
+  ]
+ },
+ "sketches/kelly-nalee/awnings": {
+  "bg": "#f14821",
+  "bgL": 0.641,
+  "meanL": 0.627,
+  "meanC": 0.1992,
+  "ink": 0.098,
+  "hue": 45,
+  "hueShare": 0.943,
+  "colors": [
+   "#605090",
+   "#905060",
+   "#705080",
+   "#505090",
+   "#705070"
+  ]
+ },
+ "sketches/kelly-nalee/b&w": {
+  "bg": "#7d7d7d",
+  "bgL": 0.59,
+  "meanL": 0.605,
+  "meanC": 0,
+  "ink": 0.158,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#909090",
+   "#a0a0a0",
+   "#505050",
+   "#b0b0b0",
+   "#606060"
+  ]
+ },
+ "sketches/kelly-nalee/basic": {
+  "bg": "#a8ad94",
+  "bgL": 0.737,
+  "meanL": 0.692,
+  "meanC": 0.031,
+  "ink": 0.661,
+  "hue": 285,
+  "hueShare": 0.689,
+  "colors": [
+   "#708070",
+   "#d0d0c0",
+   "#a0a0e0",
+   "#404040",
+   "#a0a0d0"
+  ]
+ },
+ "sketches/kelly-nalee/black-and-yellow": {
+  "bg": "#ff9b8d",
+  "bgL": 0.789,
+  "meanL": 0.772,
+  "meanC": 0.07,
+  "ink": 0.316,
+  "hue": 45,
+  "hueShare": 0.558,
+  "colors": [
+   "#e0b0a0",
+   "#706090",
+   "#807090",
+   "#e0b0b0",
+   "#606090"
+  ]
+ },
+ "sketches/kelly-nalee/paris-review": {
+  "bg": "#ffc6b2",
+  "bgL": 0.872,
+  "meanL": 0.824,
+  "meanC": 0.0622,
+  "ink": 0.57,
+  "hue": 345,
+  "hueShare": 0.548,
+  "colors": [
+   "#e0b0d0",
+   "#d0a0d0",
+   "#e0b0e0",
+   "#8090b0",
+   "#7090b0"
+  ]
+ },
+ "sketches/kelly-nalee/paris-review-grow": {
+  "bg": "#edebde",
+  "bgL": 0.938,
+  "meanL": 0.842,
+  "meanC": 0.0139,
+  "ink": 0.432,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#808080",
+   "#c0c0b0",
+   "#707070",
+   "#a0a0a0",
+   "#708070"
+  ]
+ },
+ "sketches/kelly-nalee/rectangle": {
+  "bg": "#aff2ab",
+  "bgL": 0.899,
+  "meanL": 0.873,
+  "meanC": 0.1351,
+  "ink": 0.291,
+  "hue": 135,
+  "hueShare": 0.97,
+  "colors": [
+   "#70e070",
+   "#50f050",
+   "#80f080",
+   "#80e080",
+   "#60e070"
+  ]
+ },
+ "sketches/kelly-nalee/rectangle-found-colors": {
+  "bg": "#8e0201",
+  "bgL": 0.407,
+  "meanL": 0.453,
+  "meanC": 0.1375,
+  "ink": 0.484,
+  "hue": 15,
+  "hueShare": 0.866,
+  "colors": [
+   "#400000",
+   "#c07070",
+   "#b06060",
+   "#500000",
+   "#b05050"
+  ]
+ },
+ "sketches/kelly-nalee/vertical-band": {
+  "bg": "#2d3073",
+  "bgL": 0.348,
+  "meanL": 0.463,
+  "meanC": 0.0913,
+  "ink": 0.676,
+  "hue": 285,
+  "hueShare": 1,
+  "colors": [
+   "#606090",
+   "#505080",
+   "#605090",
+   "#7060a0",
+   "#6060a0"
+  ]
+ },
+ "sketches/kelly-nalee/vertical-band-grow": {
+  "bg": "#201c1d",
+  "bgL": 0.231,
+  "meanL": 0.562,
+  "meanC": 0.0472,
+  "ink": 0.918,
+  "hue": 45,
+  "hueShare": 0.957,
+  "colors": [
+   "#906040",
+   "#908070",
+   "#a09080",
+   "#a07050",
+   "#806040"
+  ]
+ },
+ "sketches/khidki": {
+  "bg": "#feeddb",
+  "bgL": 0.955,
+  "meanL": 0.849,
+  "meanC": 0.0394,
+  "ink": 0.278,
+  "hue": 105,
+  "hueShare": 0.449,
+  "colors": [
+   "#202030",
+   "#202040",
+   "#f0e080",
+   "#a0a020",
+   "#d0c0b0"
+  ]
+ },
+ "sketches/layered-slashes": {
+  "bg": "#e09a3d",
+  "bgL": 0.739,
+  "meanL": 0.695,
+  "meanC": 0.1229,
+  "ink": 0.684,
+  "hue": 105,
+  "hueShare": 0.492,
+  "colors": [
+   "#a0b040",
+   "#207080",
+   "#307080",
+   "#a0c040",
+   "#708060"
+  ]
+ },
+ "sketches/layered-slashes-2": {
+  "bg": "#dfcaa5",
+  "bgL": 0.847,
+  "meanL": 0.773,
+  "meanC": 0.061,
+  "ink": 0.839,
+  "hue": 105,
+  "hueShare": 0.23,
+  "colors": [
+   "#f0e0d0",
+   "#f0e0c0",
+   "#2060a0",
+   "#70b070",
+   "#e0e0d0"
+  ]
+ },
+ "sketches/magnetic-field/electric-field-ssam": {
+  "bg": "#040303",
+  "bgL": 0.1,
+  "meanL": 0.104,
+  "meanC": 0.0082,
+  "ink": 0.014,
+  "hue": 15,
+  "hueShare": 0.556,
+  "colors": [
+   "#102020",
+   "#b07060",
+   "#406080",
+   "#407080",
+   "#a06060"
+  ]
+ },
+ "sketches/map/basic": {
+  "bg": "#e4e4e4",
+  "bgL": 0.919,
+  "meanL": 0.914,
+  "meanC": 0,
+  "ink": 0.15,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#c0c0c0",
+   "#b0b0b0",
+   "#a0a0a0",
+   "#909090"
+  ]
+ },
+ "sketches/map/clipped": {
+  "bg": "#260073",
+  "bgL": 0.276,
+  "meanL": 0.284,
+  "meanC": 0.1553,
+  "ink": 0.099,
+  "hue": 285,
+  "hueShare": 0.735,
+  "colors": [
+   "#500050",
+   "#301040",
+   "#600040",
+   "#600050",
+   "#400050"
+  ]
+ },
+ "sketches/map/clipped-hull": {
+  "bg": "#0b173d",
+  "bgL": 0.221,
+  "meanL": 0.334,
+  "meanC": 0.0684,
+  "ink": 0.428,
+  "hue": 255,
+  "hueShare": 0.657,
+  "colors": [
+   "#203050",
+   "#304060",
+   "#303060",
+   "#405070",
+   "#303050"
+  ]
+ },
+ "sketches/maze-distance/ascii": {
+  "bg": "#2b293e",
+  "bgL": 0.293,
+  "meanL": 0.308,
+  "meanC": 0.0373,
+  "ink": 0.002,
+  "hue": 285,
+  "hueShare": 0.961,
+  "colors": [
+   "#404050",
+   "#403050"
+  ]
+ },
+ "sketches/maze-distance/ascii-groups": {
+  "bg": "#17142f",
+  "bgL": 0.211,
+  "meanL": 0.231,
+  "meanC": 0.0505,
+  "ink": 0.077,
+  "hue": 285,
+  "hueShare": 1,
+  "colors": [
+   "#404050",
+   "#303040",
+   "#303050",
+   "#403050",
+   "#404060"
+  ]
+ },
+ "sketches/maze-distance/ascii-more-colors": {
+  "bg": "#1e1c1d",
+  "bgL": 0.229,
+  "meanL": 0.248,
+  "meanC": 0.0064,
+  "ink": 0.074,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#403030",
+   "#303030",
+   "#404030"
+  ]
+ },
+ "sketches/maze-distance/basic": {
+  "bg": "#2a323d",
+  "bgL": 0.314,
+  "meanL": 0.34,
+  "meanC": 0.0298,
+  "ink": 0.081,
+  "hue": 315,
+  "hueShare": 0.704,
+  "colors": [
+   "#9060c0",
+   "#90b0e0",
+   "#90b0d0",
+   "#a060d0",
+   "#80b0d0"
+  ]
+ },
+ "sketches/maze-distance/color-correction": {
+  "bg": "#f0be7d",
+  "bgL": 0.832,
+  "meanL": 0.767,
+  "meanC": 0.1145,
+  "ink": 0.444,
+  "hue": 75,
+  "hueShare": 0.39,
+  "colors": [
+   "#e08050",
+   "#408080",
+   "#d08050",
+   "#509080",
+   "#e09050"
+  ]
+ },
+ "sketches/maze-distance/color-correction-dither": {
+  "bg": "#cb3a06",
+  "bgL": 0.561,
+  "meanL": 0.465,
+  "meanC": 0.1822,
+  "ink": 0.333,
+  "hue": 45,
+  "hueShare": 0.724,
+  "colors": [
+   "#000060",
+   "#200050",
+   "#100050",
+   "#000050"
+  ]
+ },
+ "sketches/maze-distance/dither": {
+  "bg": "#213d29",
+  "bgL": 0.331,
+  "meanL": 0.365,
+  "meanC": 0.0522,
+  "ink": 0.081,
+  "hue": 165,
+  "hueShare": 0.709,
+  "colors": [
+   "#e0e090",
+   "#d0e090",
+   "#d0d090",
+   "#60c080",
+   "#f0f0a0"
+  ]
+ },
+ "sketches/maze-distance/path-finder": {
+  "bg": "#523084",
+  "bgL": 0.397,
+  "meanL": 0.414,
+  "meanC": 0.1209,
+  "ink": 0.022,
+  "hue": 315,
+  "hueShare": 0.883,
+  "colors": [
+   "#704060",
+   "#805060",
+   "#905050",
+   "#906050",
+   "#805050"
+  ]
+ },
+ "sketches/maze-distance/space-filler": {
+  "bg": "#eeebda",
+  "bgL": 0.938,
+  "meanL": 0.92,
+  "meanC": 0.0243,
+  "ink": 0.11,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#c0d0c0",
+   "#b0c0b0",
+   "#b0d0b0",
+   "#a0c0b0",
+   "#c0d0b0"
+  ]
+ },
+ "sketches/memory-leak/memory-leak": {
+  "bg": "#242424",
+  "bgL": 0.26,
+  "meanL": 0.506,
+  "meanC": 0.0146,
+  "ink": 0.818,
+  "hue": 45,
+  "hueShare": 0.758,
+  "colors": [
+   "#808080",
+   "#707070",
+   "#000000",
+   "#808070",
+   "#d0d0c0"
+  ]
+ },
+ "sketches/mobius": {
+  "bg": "#f0ead0",
+  "bgL": 0.935,
+  "meanL": 0.899,
+  "meanC": 0.0348,
+  "ink": 0.149,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#809080",
+   "#90a090",
+   "#80a080",
+   "#b0c0a0",
+   "#b0b0a0"
+  ]
+ },
+ "sketches/modulo-pixels": {
+  "bg": "#3a3d2a",
+  "bgL": 0.351,
+  "meanL": 0.354,
+  "meanC": 0.0322,
+  "ink": 0.011,
+  "hue": 345,
+  "hueShare": 0.459,
+  "colors": [
+   "#806070",
+   "#f0a0f0",
+   "#a04050",
+   "#704040",
+   "#605050"
+  ]
+ },
+ "sketches/nalee-hulls/a": {
+  "bg": "#fcfcf2",
+  "bgL": 0.988,
+  "meanL": 0.927,
+  "meanC": 0.0319,
+  "ink": 0.24,
+  "hue": 135,
+  "hueShare": 0.39,
+  "colors": [
+   "#e09080",
+   "#e0a090",
+   "#709080",
+   "#80a070",
+   "#e09090"
+  ]
+ },
+ "sketches/nalee-hulls/b": {
+  "bg": "#def8f9",
+  "bgL": 0.961,
+  "meanL": 0.825,
+  "meanC": 0.0609,
+  "ink": 0.618,
+  "hue": 225,
+  "hueShare": 0.957,
+  "colors": [
+   "#50a0c0",
+   "#60b0c0",
+   "#40a0c0",
+   "#80c0d0",
+   "#50b0c0"
+  ]
+ },
+ "sketches/nalee-hulls/c": {
+  "bg": "#e9f7e8",
+  "bgL": 0.962,
+  "meanL": 0.832,
+  "meanC": 0.0599,
+  "ink": 0.556,
+  "hue": 135,
+  "hueShare": 0.791,
+  "colors": [
+   "#70b080",
+   "#80b080",
+   "#70a070",
+   "#70a080",
+   "#90c090"
+  ]
+ },
+ "sketches/nalee-hulls/d": {
+  "bg": "#fce1f2",
+  "bgL": 0.937,
+  "meanL": 0.872,
+  "meanC": 0.0594,
+  "ink": 0.263,
+  "hue": 345,
+  "hueShare": 1,
+  "colors": [
+   "#e0b0d0"
+  ]
+ },
+ "sketches/nalee-hulls/e": {
+  "bg": "#fdf0d6",
+  "bgL": 0.959,
+  "meanL": 0.851,
+  "meanC": 0.0737,
+  "ink": 0.746,
+  "hue": 165,
+  "hueShare": 0.445,
+  "colors": [
+   "#90c0a0",
+   "#a0d0a0",
+   "#a0d0b0",
+   "#90c090",
+   "#90d0a0"
+  ]
+ },
+ "sketches/nalee-hulls/f": {
+  "bg": "#c3e2c9",
+  "bgL": 0.883,
+  "meanL": 0.754,
+  "meanC": 0.0715,
+  "ink": 0.802,
+  "hue": 165,
+  "hueShare": 0.998,
+  "colors": [
+   "#70b090",
+   "#60b090",
+   "#60a080",
+   "#80b0a0",
+   "#80b090"
+  ]
+ },
+ "sketches/nalee-hulls/g": {
+  "bg": "#fe9afd",
+  "bgL": 0.821,
+  "meanL": 0.69,
+  "meanC": 0.066,
+  "ink": 0.825,
+  "hue": 315,
+  "hueShare": 0.497,
+  "colors": [
+   "#a08070",
+   "#a08080",
+   "#908060",
+   "#908070",
+   "#b09090"
+  ]
+ },
+ "sketches/nalee-hulls/h": {
+  "bg": "#f5f6f8",
+  "bgL": 0.973,
+  "meanL": 0.789,
+  "meanC": 0.1218,
+  "ink": 0.764,
+  "hue": 15,
+  "hueShare": 1,
+  "colors": [
+   "#f07070",
+   "#f06060",
+   "#f08080",
+   "#f0c0c0",
+   "#f07060"
+  ]
+ },
+ "sketches/nalee-hulls/i": {
+  "bg": "#c4bea6",
+  "bgL": 0.8,
+  "meanL": 0.581,
+  "meanC": 0.1495,
+  "ink": 0.955,
+  "hue": 45,
+  "hueShare": 0.69,
+  "colors": [
+   "#c04010",
+   "#c03010",
+   "#609000",
+   "#508000",
+   "#804090"
+  ]
+ },
+ "sketches/nalee-hulls/j": {
+  "bg": "#c7c1b8",
+  "bgL": 0.813,
+  "meanL": 0.448,
+  "meanC": 0.0971,
+  "ink": 0.949,
+  "hue": 45,
+  "hueShare": 0.899,
+  "colors": [
+   "#601000",
+   "#f0f0f0",
+   "#701000",
+   "#502000",
+   "#401000"
+  ]
+ },
+ "sketches/nalee-hulls/k_best": {
+  "bg": "#ece5c7",
+  "bgL": 0.92,
+  "meanL": 0.538,
+  "meanC": 0.1149,
+  "ink": 0.944,
+  "hue": 45,
+  "hueShare": 0.642,
+  "colors": [
+   "#802010",
+   "#f0f0f0",
+   "#c0b010",
+   "#202070",
+   "#d0a010"
+  ]
+ },
+ "sketches/nalee-hulls/l": {
+  "bg": "#cae7a2",
+  "bgL": 0.89,
+  "meanL": 0.811,
+  "meanC": 0.1747,
+  "ink": 0.958,
+  "hue": 135,
+  "hueShare": 0.725,
+  "colors": [
+   "#c0f000",
+   "#c0b010",
+   "#c0a020",
+   "#c0a010",
+   "#d0f000"
+  ]
+ },
+ "sketches/nalee-jali/a": {
+  "bg": "#fcfcf2",
+  "bgL": 0.988,
+  "meanL": 0.747,
+  "meanC": 0.0868,
+  "ink": 0.829,
+  "hue": 135,
+  "hueShare": 0.785,
+  "colors": [
+   "#609000",
+   "#608000",
+   "#e0a090",
+   "#e09080",
+   "#709010"
+  ]
+ },
+ "sketches/nalee-jali/b": {
+  "bg": "#fcfcf2",
+  "bgL": 0.988,
+  "meanL": 0.849,
+  "meanC": 0.0498,
+  "ink": 0.441,
+  "hue": 105,
+  "hueShare": 0.977,
+  "colors": [
+   "#909040",
+   "#d0d0a0",
+   "#808020",
+   "#909030",
+   "#504000"
+  ]
+ },
+ "sketches/nalee-jali/c": {
+  "bg": "#fcfcf2",
+  "bgL": 0.988,
+  "meanL": 0.863,
+  "meanC": 0.0534,
+  "ink": 0.385,
+  "hue": 135,
+  "hueShare": 0.867,
+  "colors": [
+   "#609000",
+   "#508000",
+   "#608000",
+   "#507000",
+   "#709000"
+  ]
+ },
+ "sketches/nalee-one-line/albers-meander": {
+  "bg": "#f5f0ec",
+  "bgL": 0.958,
+  "meanL": 0.82,
+  "meanC": 0.0394,
+  "ink": 0.579,
+  "hue": 15,
+  "hueShare": 0.39,
+  "colors": [
+   "#f0c0d0",
+   "#a07060",
+   "#e0c0c0",
+   "#c09090",
+   "#906050"
+  ]
+ },
+ "sketches/nalee-one-line/basic": {
+  "bg": "#d7bcff",
+  "bgL": 0.841,
+  "meanL": 0.77,
+  "meanC": 0.0806,
+  "ink": 0.224,
+  "hue": 315,
+  "hueShare": 0.95,
+  "colors": [
+   "#a090c0",
+   "#405050",
+   "#707080",
+   "#606070",
+   "#607070"
+  ]
+ },
+ "sketches/nalee-one-line/basic-gradient": {
+  "bg": "#e67300",
+  "bgL": 0.677,
+  "meanL": 0.678,
+  "meanC": 0.1599,
+  "ink": 0.119,
+  "hue": 45,
+  "hueShare": 0.892,
+  "colors": [
+   "#906010",
+   "#b09060",
+   "#e0a060",
+   "#d0a040",
+   "#c0a070"
+  ]
+ },
+ "sketches/nalee-one-line/circle": {
+  "bg": "#2f2f2f",
+  "bgL": 0.305,
+  "meanL": 0.344,
+  "meanC": 0.0019,
+  "ink": 0.138,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#505050",
+   "#404040",
+   "#505040",
+   "#605050",
+   "#606060"
+  ]
+ },
+ "sketches/nalee-one-line/circle-chromotome": {
+  "bg": "#fcefdf",
+  "bgL": 0.958,
+  "meanL": 0.952,
+  "meanC": 0.0279,
+  "ink": 0.033,
+  "hue": 45,
+  "hueShare": 0.406,
+  "colors": [
+   "#f0d090",
+   "#d0d0d0",
+   "#b0d0d0",
+   "#d0d0c0",
+   "#c0d0a0"
+  ]
+ },
+ "sketches/nalee-one-line/neon": {
+  "bg": "#5f0000",
+  "bgL": 0.305,
+  "meanL": 0.457,
+  "meanC": 0.1865,
+  "ink": 0.689,
+  "hue": 15,
+  "hueShare": 1,
+  "colors": [
+   "#c00000",
+   "#b00000",
+   "#d00000",
+   "#a00000",
+   "#900000"
+  ]
+ },
+ "sketches/nalee-one-line/stacked": {
+  "bg": "#000000",
+  "bgL": 0,
+  "meanL": 0.246,
+  "meanC": 0.0487,
+  "ink": 0.691,
+  "hue": 105,
+  "hueShare": 0.254,
+  "colors": [
+   "#404010",
+   "#401010",
+   "#403010",
+   "#402010",
+   "#305010"
+  ]
+ },
+ "sketches/nalee-one-line/transparent": {
+  "bg": "#e5cab5",
+  "bgL": 0.856,
+  "meanL": 0.741,
+  "meanC": 0.0727,
+  "ink": 0.675,
+  "hue": 15,
+  "hueShare": 0.554,
+  "colors": [
+   "#c06060",
+   "#c07070",
+   "#c09080",
+   "#c0a090",
+   "#c08070"
+  ]
+ },
+ "sketches/nalee/sketches/asymmetric": {
+  "bg": "#101018",
+  "bgL": 0.177,
+  "meanL": 0.221,
+  "meanC": 0.0213,
+  "ink": 0.128,
+  "hue": 75,
+  "hueShare": 0.33,
+  "colors": [
+   "#807040",
+   "#104040",
+   "#405040",
+   "#908040",
+   "#b0a060"
+  ]
+ },
+ "sketches/nalee/sketches/basic": {
+  "bg": "#14161a",
+  "bgL": 0.2,
+  "meanL": 0.528,
+  "meanC": 0.0638,
+  "ink": 0.918,
+  "hue": 75,
+  "hueShare": 0.281,
+  "colors": [
+   "#205050",
+   "#303050",
+   "#b0a050",
+   "#b0b0a0",
+   "#b08030"
+  ]
+ },
+ "sketches/nalee/sketches/basic-found-colors": {
+  "bg": "#ccf701",
+  "bgL": 0.913,
+  "meanL": 0.684,
+  "meanC": 0.1197,
+  "ink": 0.918,
+  "hue": 75,
+  "hueShare": 0.339,
+  "colors": [
+   "#c08020",
+   "#b06000",
+   "#e08020",
+   "#306000",
+   "#504000"
+  ]
+ },
+ "sketches/nalee/sketches/clipped-domain": {
+  "bg": "#101018",
+  "bgL": 0.177,
+  "meanL": 0.223,
+  "meanC": 0.0216,
+  "ink": 0.128,
+  "hue": 75,
+  "hueShare": 0.319,
+  "colors": [
+   "#807040",
+   "#805030",
+   "#104040",
+   "#205050",
+   "#706030"
+  ]
+ },
+ "sketches/nalee/sketches/clipped-domain-world-coords": {
+  "bg": "#101018",
+  "bgL": 0.177,
+  "meanL": 0.369,
+  "meanC": 0.0398,
+  "ink": 0.471,
+  "hue": 75,
+  "hueShare": 0.319,
+  "colors": [
+   "#b0a050",
+   "#b0b0a0",
+   "#a05030",
+   "#205050",
+   "#303050"
+  ]
+ },
+ "sketches/nalee/sketches/clipped-domain-world-coords-animated": {
+  "bg": "#101018",
+  "bgL": 0.177,
+  "meanL": 0.196,
+  "meanC": 0.0184,
+  "ink": 0.058,
+  "hue": 75,
+  "hueShare": 0.312,
+  "colors": [
+   "#907040",
+   "#806030",
+   "#706050",
+   "#605040",
+   "#202040"
+  ]
+ },
+ "sketches/nalee/sketches/grow-complex": {
+  "bg": "#201c1d",
+  "bgL": 0.231,
+  "meanL": 0.275,
+  "meanC": 0.0141,
+  "ink": 0.113,
+  "hue": 135,
+  "hueShare": 0.259,
+  "colors": [
+   "#80b070",
+   "#707060",
+   "#c08040",
+   "#90b0b0",
+   "#b080a0"
+  ]
+ },
+ "sketches/nalee/sketches/grow-domain": {
+  "bg": "#201c1d",
+  "bgL": 0.231,
+  "meanL": 0.35,
+  "meanC": 0.0241,
+  "ink": 0.28,
+  "hue": 45,
+  "hueShare": 0.547,
+  "colors": [
+   "#b08050",
+   "#c08050",
+   "#b09070",
+   "#b09060",
+   "#b08090"
+  ]
+ },
+ "sketches/nalee/sketches/polar": {
+  "bg": "#201c1d",
+  "bgL": 0.231,
+  "meanL": 0.27,
+  "meanC": 0.0136,
+  "ink": 0.161,
+  "hue": 315,
+  "hueShare": 0.291,
+  "colors": [
+   "#506040",
+   "#303050",
+   "#404040",
+   "#604030",
+   "#504060"
+  ]
+ },
+ "sketches/nalee/sketches/polar-clipped": {
+  "bg": "#201c1d",
+  "bgL": 0.231,
+  "meanL": 0.306,
+  "meanC": 0.0196,
+  "ink": 0.284,
+  "hue": 315,
+  "hueShare": 0.262,
+  "colors": [
+   "#705030",
+   "#604030",
+   "#906040",
+   "#403050",
+   "#504060"
+  ]
+ },
+ "sketches/nalee/sketches/polar-color-wheel": {
+  "bg": "#201c1d",
+  "bgL": 0.231,
+  "meanL": 0.34,
+  "meanC": 0.019,
+  "ink": 0.435,
+  "hue": 315,
+  "hueShare": 0.185,
+  "colors": [
+   "#505050",
+   "#605050",
+   "#606060",
+   "#506050",
+   "#505060"
+  ]
+ },
+ "sketches/nalee/sketches/polar-found-compositions": {
+  "bg": "#201c1d",
+  "bgL": 0.231,
+  "meanL": 0.426,
+  "meanC": 0.0477,
+  "ink": 0.527,
+  "hue": 285,
+  "hueShare": 0.362,
+  "colors": [
+   "#906040",
+   "#303060",
+   "#709060",
+   "#a0c0c0",
+   "#404090"
+  ]
+ },
+ "sketches/nalee/sketches/polar-grow": {
+  "bg": "#201c1d",
+  "bgL": 0.231,
+  "meanL": 0.257,
+  "meanC": 0.0119,
+  "ink": 0.089,
+  "hue": 285,
+  "hueShare": 0.655,
+  "colors": [
+   "#404080",
+   "#708080",
+   "#304070",
+   "#4050a0",
+   "#404090"
+  ]
+ },
+ "sketches/nalee/sketches/polar-objects": {
+  "bg": "#f6f6f4",
+  "bgL": 0.973,
+  "meanL": 0.906,
+  "meanC": 0.0434,
+  "ink": 0.411,
+  "hue": 45,
+  "hueShare": 0.995,
+  "colors": [
+   "#f09080",
+   "#f0a090",
+   "#f0b0a0",
+   "#f0c0b0",
+   "#f0a080"
+  ]
+ },
+ "sketches/nalee/sketches/polar-ruins": {
+  "bg": "#f6f7f4",
+  "bgL": 0.975,
+  "meanL": 0.772,
+  "meanC": 0.1218,
+  "ink": 0.888,
+  "hue": 45,
+  "hueShare": 0.569,
+  "colors": [
+   "#f08060",
+   "#f08070",
+   "#7090f0",
+   "#80a0f0",
+   "#8090f0"
+  ]
+ },
+ "sketches/nalee/sketches/polar-ruins-inverse": {
+  "bg": "#f7f7f5",
+  "bgL": 0.976,
+  "meanL": 0.739,
+  "meanC": 0.1363,
+  "ink": 0.918,
+  "hue": 285,
+  "hueShare": 0.579,
+  "colors": [
+   "#7090f0",
+   "#f08060",
+   "#f08070",
+   "#a0b0f0",
+   "#6080f0"
+  ]
+ },
+ "sketches/nalee/sketches/polar-stacked-ruins": {
+  "bg": "#f7f7f4",
+  "bgL": 0.975,
+  "meanL": 0.812,
+  "meanC": 0.1042,
+  "ink": 0.875,
+  "hue": 45,
+  "hueShare": 0.993,
+  "colors": [
+   "#f08060",
+   "#f08070",
+   "#f0a090",
+   "#f0b0a0",
+   "#f07060"
+  ]
+ },
+ "sketches/nalee/sketches/polar-triangle": {
+  "bg": "#201c1d",
+  "bgL": 0.231,
+  "meanL": 0.29,
+  "meanC": 0.0197,
+  "ink": 0.266,
+  "hue": 45,
+  "hueShare": 0.636,
+  "colors": [
+   "#604030",
+   "#705030",
+   "#403020",
+   "#504030",
+   "#806040"
+  ]
+ },
+ "sketches/nalee/sketches/rectangle": {
+  "bg": "#101018",
+  "bgL": 0.177,
+  "meanL": 0.549,
+  "meanC": 0.0561,
+  "ink": 0.886,
+  "hue": 75,
+  "hueShare": 0.34,
+  "colors": [
+   "#b0b0a0",
+   "#205050",
+   "#206060",
+   "#303050",
+   "#c0b0a0"
+  ]
+ },
+ "sketches/nalee/sketches/scroll": {
+  "bg": "#ff2c00",
+  "bgL": 0.642,
+  "meanL": 0.638,
+  "meanC": 0.2355,
+  "ink": 0.191,
+  "hue": 45,
+  "hueShare": 0.839,
+  "colors": [
+   "#f06080",
+   "#f06090",
+   "#901080",
+   "#5000e0",
+   "#b01050"
+  ]
+ },
+ "sketches/nalee/sketches/shrink-domain": {
+  "bg": "#201c1d",
+  "bgL": 0.231,
+  "meanL": 0.349,
+  "meanC": 0.025,
+  "ink": 0.281,
+  "hue": 315,
+  "hueShare": 0.244,
+  "colors": [
+   "#b08050",
+   "#a0c0c0",
+   "#90b0b0",
+   "#709090",
+   "#9060b0"
+  ]
+ },
+ "sketches/nalee/sketches/sunrise": {
+  "bg": "#f7f7f4",
+  "bgL": 0.975,
+  "meanL": 0.717,
+  "meanC": 0.1433,
+  "ink": 0.918,
+  "hue": 285,
+  "hueShare": 0.972,
+  "colors": [
+   "#7090f0",
+   "#a0b0f0",
+   "#6080f0",
+   "#7080f0",
+   "#8090f0"
+  ]
+ },
+ "sketches/nalee/sketches/wfc": {
+  "bg": "#101018",
+  "bgL": 0.177,
+  "meanL": 0.532,
+  "meanC": 0.0725,
+  "ink": 0.839,
+  "hue": 45,
+  "hueShare": 0.741,
+  "colors": [
+   "#a05030",
+   "#c06030",
+   "#e0d0c0",
+   "#d06040",
+   "#904030"
+  ]
+ },
+ "sketches/next-move/base": {
+  "bg": "#867f71",
+  "bgL": 0.599,
+  "meanL": 0.59,
+  "meanC": 0.0263,
+  "ink": 0.702,
+  "hue": 105,
+  "hueShare": 0.758,
+  "colors": [
+   "#101010",
+   "#f0f0d0",
+   "#f0e0c0",
+   "#202020",
+   "#f0f0c0"
+  ]
+ },
+ "sketches/next-move/color-variations": {
+  "bg": "#4c7d74",
+  "bgL": 0.552,
+  "meanL": 0.517,
+  "meanC": 0.0697,
+  "ink": 0.158,
+  "hue": 225,
+  "hueShare": 0.392,
+  "colors": [
+   "#008070",
+   "#809060",
+   "#107070",
+   "#709060",
+   "#90a050"
+  ]
+ },
+ "sketches/next-move/glitch": {
+  "bg": "#37383f",
+  "bgL": 0.342,
+  "meanL": 0.341,
+  "meanC": 0.0132,
+  "ink": 0.006,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#505050",
+   "#a09090",
+   "#f0e0c0",
+   "#606060",
+   "#a09080"
+  ]
+ },
+ "sketches/next-move/multi-colors": {
+  "bg": "#7f6663",
+  "bgL": 0.534,
+  "meanL": 0.531,
+  "meanC": 0.0342,
+  "ink": 0.677,
+  "hue": 15,
+  "hueShare": 0.999,
+  "colors": [
+   "#b0a0a0",
+   "#402020",
+   "#503030",
+   "#403030",
+   "#a09090"
+  ]
+ },
+ "sketches/next-move/multi-layer": {
+  "bg": "#837875",
+  "bgL": 0.582,
+  "meanL": 0.58,
+  "meanC": 0.0204,
+  "ink": 0.731,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#e0d0c0",
+   "#201020",
+   "#101010",
+   "#100010",
+   "#d0c0b0"
+  ]
+ },
+ "sketches/next-move/pattern-variations": {
+  "bg": "#45362a",
+  "bgL": 0.346,
+  "meanL": 0.445,
+  "meanC": 0.0445,
+  "ink": 0.719,
+  "hue": 75,
+  "hueShare": 0.984,
+  "colors": [
+   "#000000",
+   "#d0a070",
+   "#e0b080",
+   "#101010",
+   "#907050"
+  ]
+ },
+ "sketches/not-every-body-lives-the-same-way": {
+  "bg": "#a4bf85",
+  "bgL": 0.77,
+  "meanL": 0.721,
+  "meanC": 0.0818,
+  "ink": 0.241,
+  "hue": 135,
+  "hueShare": 1,
+  "colors": [
+   "#708050",
+   "#809060",
+   "#506030",
+   "#607040",
+   "#709060"
+  ]
+ },
+ "sketches/op-art/grid": {
+  "bg": "#7e7e7e",
+  "bgL": 0.593,
+  "meanL": 0.59,
+  "meanC": 0,
+  "ink": 0.542,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#a0a0a0",
+   "#505050",
+   "#909090"
+  ]
+ },
+ "sketches/paint-without-thinking/arcs": {
+  "bg": "#cd532f",
+  "bgL": 0.596,
+  "meanL": 0.62,
+  "meanC": 0.204,
+  "ink": 0.502,
+  "hue": 45,
+  "hueShare": 0.592,
+  "colors": [
+   "#a02000",
+   "#2040f0",
+   "#c0f000",
+   "#b02010",
+   "#2030f0"
+  ]
+ },
+ "sketches/paint-without-thinking/arcs-reduction": {
+  "bg": "#91090b",
+  "bgL": 0.417,
+  "meanL": 0.445,
+  "meanC": 0.1572,
+  "ink": 0.082,
+  "hue": 15,
+  "hueShare": 0.975,
+  "colors": [
+   "#e0d0f0",
+   "#e0c0f0",
+   "#e0e0f0",
+   "#a04050",
+   "#d0a0c0"
+  ]
+ },
+ "sketches/paint-without-thinking/arcs-reduction-gen-color": {
+  "bg": "#8e2311",
+  "bgL": 0.429,
+  "meanL": 0.255,
+  "meanC": 0.0432,
+  "ink": 0.804,
+  "hue": 15,
+  "hueShare": 0.776,
+  "colors": [
+   "#000000",
+   "#002010",
+   "#f0f0f0",
+   "#001000",
+   "#101010"
+  ]
+ },
+ "sketches/paint-without-thinking/arcs-reduction-rounded": {
+  "bg": "#fce4dc",
+  "bgL": 0.936,
+  "meanL": 0.683,
+  "meanC": 0.1913,
+  "ink": 0.851,
+  "hue": 45,
+  "hueShare": 1,
+  "colors": [
+   "#f03000",
+   "#f02000",
+   "#f05020",
+   "#f09080",
+   "#f08060"
+  ]
+ },
+ "sketches/paint-without-thinking/arcs-reduction-rounded-animated": {
+  "bg": "#eab6b7",
+  "bgL": 0.823,
+  "meanL": 0.504,
+  "meanC": 0.1416,
+  "ink": 0.927,
+  "hue": 15,
+  "hueShare": 1,
+  "colors": [
+   "#800000",
+   "#f0d0d0",
+   "#900000",
+   "#f0e0e0",
+   "#c06060"
+  ]
+ },
+ "sketches/paint-without-thinking/everything": {
+  "bg": "#7f6411",
+  "bgL": 0.516,
+  "meanL": 0.562,
+  "meanC": 0.0575,
+  "ink": 0.993,
+  "hue": 75,
+  "hueShare": 0.504,
+  "colors": [
+   "#002010",
+   "#e0d0f0",
+   "#f0a000",
+   "#f0f0f0",
+   "#000000"
+  ]
+ },
+ "sketches/paint-without-thinking/grid-areas": {
+  "bg": "#a8f0e5",
+  "bgL": 0.905,
+  "meanL": 0.794,
+  "meanC": 0.0743,
+  "ink": 0.615,
+  "hue": 15,
+  "hueShare": 0.62,
+  "colors": [
+   "#f0f0f0",
+   "#800000",
+   "#901010",
+   "#e0d0d0",
+   "#c08080"
+  ]
+ },
+ "sketches/paint-without-thinking/grid-areas-process": {
+  "bg": "#060106",
+  "bgL": 0.094,
+  "meanL": 0.462,
+  "meanC": 0.0067,
+  "ink": 0.463,
+  "hue": 315,
+  "hueShare": 0.675,
+  "colors": [
+   "#f0f0f0",
+   "#e0d0e0",
+   "#201020",
+   "#808080",
+   "#f0e0f0"
+  ]
+ },
+ "sketches/paint-without-thinking/grid-areas-process-2": {
+  "bg": "#910205",
+  "bgL": 0.413,
+  "meanL": 0.535,
+  "meanC": 0.1673,
+  "ink": 0.34,
+  "hue": 15,
+  "hueShare": 0.642,
+  "colors": [
+   "#f0a000",
+   "#f09000",
+   "#f08000",
+   "#c05000",
+   "#e0a000"
+  ]
+ },
+ "sketches/paint-without-thinking/just-arcs": {
+  "bg": "#a8f0e5",
+  "bgL": 0.905,
+  "meanL": 0.64,
+  "meanC": 0.0606,
+  "ink": 0.632,
+  "hue": 195,
+  "hueShare": 0.46,
+  "colors": [
+   "#002010",
+   "#f0f0f0",
+   "#800000",
+   "#001000",
+   "#103020"
+  ]
+ },
+ "sketches/patchwork/patchwork": {
+  "bg": "#eee8da",
+  "bgL": 0.932,
+  "meanL": 0.858,
+  "meanC": 0.0726,
+  "ink": 0.225,
+  "hue": 15,
+  "hueShare": 0.426,
+  "colors": [
+   "#f00000",
+   "#b000f0",
+   "#6000f0",
+   "#a000f0",
+   "#f09080"
+  ]
+ },
+ "sketches/patchwork/patchwork-full": {
+  "bg": "#cd9b90",
+  "bgL": 0.734,
+  "meanL": 0.654,
+  "meanC": 0.0728,
+  "ink": 0.938,
+  "hue": 45,
+  "hueShare": 0.543,
+  "colors": [
+   "#f0f0f0",
+   "#000000",
+   "#f0e0e0",
+   "#f0e0d0",
+   "#f0d0d0"
+  ]
+ },
+ "sketches/pd-timeline-example": {
+  "bg": "#121121",
+  "bgL": 0.188,
+  "meanL": 0.196,
+  "meanC": 0.0317,
+  "ink": 0.016,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#909090",
+   "#808080",
+   "#707080",
+   "#909080",
+   "#a0a090"
+  ]
+ },
+ "sketches/penplot-example": {
+  "bg": "#ffffff",
+  "bgL": 1,
+  "meanL": 0.963,
+  "meanC": 0,
+  "ink": 0.264,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#d0d0d0",
+   "#e0e0e0",
+   "#c0c0c0",
+   "#909090",
+   "#b0b0b0"
+  ]
+ },
+ "sketches/perspectives": {
+  "bg": "#2a2d3e",
+  "bgL": 0.302,
+  "meanL": 0.339,
+  "meanC": 0.0467,
+  "ink": 0.156,
+  "hue": 285,
+  "hueShare": 0.997,
+  "colors": [
+   "#4060b0",
+   "#5060c0",
+   "#7080d0",
+   "#5060b0",
+   "#304070"
+  ]
+ },
+ "sketches/physarum/basic": {
+  "bg": "#474747",
+  "bgL": 0.398,
+  "meanL": 0.413,
+  "meanC": 0,
+  "ink": 0.546,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#101010",
+   "#202020",
+   "#606060",
+   "#707070",
+   "#808080"
+  ]
+ },
+ "sketches/physarum/circles": {
+  "bg": "#363636",
+  "bgL": 0.333,
+  "meanL": 0.359,
+  "meanC": 0,
+  "ink": 0.786,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#101010",
+   "#606060",
+   "#505050",
+   "#000000",
+   "#707070"
+  ]
+ },
+ "sketches/physarum/offscreen": {
+  "bg": "#2c201e",
+  "bgL": 0.257,
+  "meanL": 0.252,
+  "meanC": 0.0251,
+  "ink": 0.036,
+  "hue": 165,
+  "hueShare": 0.716,
+  "colors": [
+   "#304030",
+   "#305040",
+   "#304040",
+   "#305030",
+   "#204040"
+  ]
+ },
+ "sketches/physarum/packed-circles": {
+  "bg": "#787878",
+  "bgL": 0.573,
+  "meanL": 0.431,
+  "meanC": 0,
+  "ink": 0.868,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#101010",
+   "#202020",
+   "#000000",
+   "#303030",
+   "#404040"
+  ]
+ },
+ "sketches/physarum/trail": {
+  "bg": "#28262c",
+  "bgL": 0.273,
+  "meanL": 0.253,
+  "meanC": 0.0178,
+  "ink": 0,
+  "hue": null,
+  "hueShare": 0,
+  "colors": []
+ },
+ "sketches/pixel-flow": {
+  "bg": "#382832",
+  "bgL": 0.299,
+  "meanL": 0.321,
+  "meanC": 0.0278,
+  "ink": 0.089,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#505050",
+   "#605050",
+   "#707060",
+   "#706060",
+   "#504040"
+  ]
+ },
+ "sketches/pixel-noise": {
+  "bg": "#e7cba1",
+  "bgL": 0.855,
+  "meanL": 0.828,
+  "meanC": 0.0734,
+  "ink": 0.684,
+  "hue": 105,
+  "hueShare": 0.396,
+  "colors": [
+   "#c090a0",
+   "#f0e0d0",
+   "#e0c020",
+   "#c09090",
+   "#e0e0d0"
+  ]
+ },
+ "sketches/quantum-equivalence/pro-color": {
+  "bg": "#520153",
+  "bgL": 0.309,
+  "meanL": 0.417,
+  "meanC": 0.1566,
+  "ink": 0.565,
+  "hue": 315,
+  "hueShare": 0.382,
+  "colors": [
+   "#004090",
+   "#f03090",
+   "#300020",
+   "#f030a0",
+   "#f07000"
+  ]
+ },
+ "sketches/quantum-equivalence/pro-color-shift": {
+  "bg": "#3301b2",
+  "bgL": 0.369,
+  "meanL": 0.497,
+  "meanC": 0.1892,
+  "ink": 0.753,
+  "hue": 285,
+  "hueShare": 0.335,
+  "colors": [
+   "#0070a0",
+   "#d05000",
+   "#e000f0",
+   "#300060",
+   "#700090"
+  ]
+ },
+ "sketches/quantum-equivalence/rybitten": {
+  "bg": "#3b8e75",
+  "bgL": 0.588,
+  "meanL": 0.676,
+  "meanC": 0.1255,
+  "ink": 0.57,
+  "hue": 45,
+  "hueShare": 0.332,
+  "colors": [
+   "#f04030",
+   "#f0e060",
+   "#5070a0",
+   "#f09030",
+   "#6070a0"
+  ]
+ },
+ "sketches/quantum-equivalence/rybitten-monochrome-rainbow": {
+  "bg": "#1010ed",
+  "bgL": 0.436,
+  "meanL": 0.407,
+  "meanC": 0.2374,
+  "ink": 0.454,
+  "hue": 255,
+  "hueShare": 0.672,
+  "colors": [
+   "#302090",
+   "#202090",
+   "#2020a0",
+   "#2010c0",
+   "#2010b0"
+  ]
+ },
+ "sketches/quantum-equivalence/rybitten-rainbow": {
+  "bg": "#ef9f14",
+  "bgL": 0.763,
+  "meanL": 0.63,
+  "meanC": 0.1316,
+  "ink": 0.593,
+  "hue": 75,
+  "hueShare": 0.499,
+  "colors": [
+   "#b03030",
+   "#506070",
+   "#707020",
+   "#506080",
+   "#b04030"
+  ]
+ },
+ "sketches/quantum-equivalence/rybitten-rgb-rainbow": {
+  "bg": "#a3493e",
+  "bgL": 0.519,
+  "meanL": 0.554,
+  "meanC": 0.118,
+  "ink": 0.397,
+  "hue": 15,
+  "hueShare": 0.593,
+  "colors": [
+   "#706060",
+   "#00e040",
+   "#706050",
+   "#20b040",
+   "#10b040"
+  ]
+ },
+ "sketches/quine": {
+  "bg": "#0a0a0a",
+  "bgL": 0.145,
+  "meanL": 0.187,
+  "meanC": 0,
+  "ink": 0.174,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#303030",
+   "#202020",
+   "#404040"
+  ]
+ },
+ "sketches/raycasting/basic": {
+  "bg": "#050505",
+  "bgL": 0.115,
+  "meanL": 0.101,
+  "meanC": 0,
+  "ink": 0.112,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#202020",
+   "#303030",
+   "#404040",
+   "#505050",
+   "#707070"
+  ]
+ },
+ "sketches/raycasting/circles": {
+  "bg": "#333333",
+  "bgL": 0.321,
+  "meanL": 0.331,
+  "meanC": 0,
+  "ink": 0.048,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#707070",
+   "#505050",
+   "#606060",
+   "#404040"
+  ]
+ },
+ "sketches/raycasting/grid": {
+  "bg": "#536b47",
+  "bgL": 0.498,
+  "meanL": 0.607,
+  "meanC": 0.087,
+  "ink": 0.276,
+  "hue": 135,
+  "hueShare": 0.513,
+  "colors": [
+   "#00f0f0",
+   "#10d0d0",
+   "#00e0e0",
+   "#20b0a0",
+   "#10d0c0"
+  ]
+ },
+ "sketches/raycasting/solid": {
+  "bg": "#383838",
+  "bgL": 0.341,
+  "meanL": 0.374,
+  "meanC": 0,
+  "ink": 0.22,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#707070",
+   "#606060",
+   "#505050"
+  ]
+ },
+ "sketches/red-and-black/base": {
+  "bg": "#00ea67",
+  "bgL": 0.818,
+  "meanL": 0.494,
+  "meanC": 0.1401,
+  "ink": 0.527,
+  "hue": 135,
+  "hueShare": 0.998,
+  "colors": [
+   "#001000",
+   "#000000",
+   "#006020",
+   "#008030",
+   "#007030"
+  ]
+ },
+ "sketches/red-and-black/spring": {
+  "bg": "#0057ff",
+  "bgL": 0.537,
+  "meanL": 0.345,
+  "meanC": 0.1726,
+  "ink": 0.536,
+  "hue": 255,
+  "hueShare": 1,
+  "colors": [
+   "#000030",
+   "#000020",
+   "#002080",
+   "#002090",
+   "#001070"
+  ]
+ },
+ "sketches/red-and-black/spring-anticipation": {
+  "bg": "#00de00",
+  "bgL": 0.78,
+  "meanL": 0.501,
+  "meanC": 0.1698,
+  "ink": 0.478,
+  "hue": 135,
+  "hueShare": 1,
+  "colors": [
+   "#001000",
+   "#000000",
+   "#005000",
+   "#008000",
+   "#004000"
+  ]
+ },
+ "sketches/rubber-band-stipple/haberdashery": {
+  "bg": "#000000",
+  "bgL": 0,
+  "meanL": 0.228,
+  "meanC": 0.0488,
+  "ink": 0.431,
+  "hue": 15,
+  "hueShare": 0.644,
+  "colors": [
+   "#b05060",
+   "#a04060",
+   "#c06070",
+   "#b05070",
+   "#502030"
+  ]
+ },
+ "sketches/rubber-band-stipple/rubber-band-stipple": {
+  "bg": "#1c1c1c",
+  "bgL": 0.226,
+  "meanL": 0.292,
+  "meanC": 0.0138,
+  "ink": 0.278,
+  "hue": 315,
+  "hueShare": 0.719,
+  "colors": [
+   "#403040",
+   "#404040",
+   "#404050",
+   "#303030",
+   "#505060"
+  ]
+ },
+ "sketches/rubber-band-stipple/shape": {
+  "bg": "#31271d",
+  "bgL": 0.281,
+  "meanL": 0.433,
+  "meanC": 0.1133,
+  "ink": 0.567,
+  "hue": 15,
+  "hueShare": 0.972,
+  "colors": [
+   "#c03030",
+   "#b02050",
+   "#d03030",
+   "#903020",
+   "#b02040"
+  ]
+ },
+ "sketches/rubber-band-stipple/shapes": {
+  "bg": "#53206f",
+  "bgL": 0.359,
+  "meanL": 0.607,
+  "meanC": 0.0919,
+  "ink": 0.47,
+  "hue": 315,
+  "hueShare": 0.881,
+  "colors": [
+   "#f0e0c0",
+   "#f0d0b0",
+   "#e0d0c0",
+   "#e0d0b0",
+   "#e0e0c0"
+  ]
+ },
+ "sketches/rubber-band-stipple/skeleton-albers": {
+  "bg": "#252027",
+  "bgL": 0.252,
+  "meanL": 0.402,
+  "meanC": 0.0472,
+  "ink": 0.309,
+  "hue": 135,
+  "hueShare": 0.812,
+  "colors": [
+   "#a0c070",
+   "#80b050",
+   "#a0c060",
+   "#70b040",
+   "#90c050"
+  ]
+ },
+ "sketches/rubber-band-stipple/skeleton-clusters": {
+  "bg": "#845d4e",
+  "bgL": 0.515,
+  "meanL": 0.629,
+  "meanC": 0.0539,
+  "ink": 0.52,
+  "hue": 45,
+  "hueShare": 0.649,
+  "colors": [
+   "#c09090",
+   "#808090",
+   "#c090a0",
+   "#b08090",
+   "#f0c0a0"
+  ]
+ },
+ "sketches/rubber-band-stipple/skeleton-field": {
+  "bg": "#494522",
+  "bgL": 0.385,
+  "meanL": 0.463,
+  "meanC": 0.0585,
+  "ink": 0.533,
+  "hue": 105,
+  "hueShare": 0.47,
+  "colors": [
+   "#605060",
+   "#a06030",
+   "#705050",
+   "#905040",
+   "#505060"
+  ]
+ },
+ "sketches/rubber-band-stipple/skeleton-grid": {
+  "bg": "#361e40",
+  "bgL": 0.283,
+  "meanL": 0.567,
+  "meanC": 0.0633,
+  "ink": 0.592,
+  "hue": 315,
+  "hueShare": 0.434,
+  "colors": [
+   "#d0b090",
+   "#d0a080",
+   "#e0b090",
+   "#d0b080",
+   "#e0c0a0"
+  ]
+ },
+ "sketches/rubber-band-stipple/skeleton-inverted": {
+  "bg": "#29977c",
+  "bgL": 0.609,
+  "meanL": 0.683,
+  "meanC": 0.0614,
+  "ink": 0.567,
+  "hue": 165,
+  "hueShare": 0.947,
+  "colors": [
+   "#f0e0d0",
+   "#f0e0c0",
+   "#302020",
+   "#e0d0c0",
+   "#e0c0c0"
+  ]
+ },
+ "sketches/rubber-band-stipple/skeleton-line": {
+  "bg": "#f6d6b0",
+  "bgL": 0.894,
+  "meanL": 0.876,
+  "meanC": 0.0577,
+  "ink": 0,
+  "hue": 75,
+  "hueShare": 0.905,
+  "colors": []
+ },
+ "sketches/rubber-band-stipple/skeleton-shape": {
+  "bg": "#1f393a",
+  "bgL": 0.324,
+  "meanL": 0.559,
+  "meanC": 0.0326,
+  "ink": 0.536,
+  "hue": 135,
+  "hueShare": 0.643,
+  "colors": [
+   "#b0b0a0",
+   "#b0c0a0",
+   "#c0c0b0",
+   "#a0b090",
+   "#a0a090"
+  ]
+ },
+ "sketches/rubber-band-stipple/skeleton-singular": {
+  "bg": "#9a7d21",
+  "bgL": 0.601,
+  "meanL": 0.73,
+  "meanC": 0.059,
+  "ink": 0.578,
+  "hue": 105,
+  "hueShare": 0.819,
+  "colors": [
+   "#c0c0c0",
+   "#d0c0c0",
+   "#d0d0d0",
+   "#b0a0b0",
+   "#a0a0b0"
+  ]
+ },
+ "sketches/rubber-band-stipple/tendon-albers": {
+  "bg": "#48321d",
+  "bgL": 0.337,
+  "meanL": 0.46,
+  "meanC": 0.0684,
+  "ink": 0.326,
+  "hue": 75,
+  "hueShare": 0.436,
+  "colors": [
+   "#609040",
+   "#a0c060",
+   "#80b050",
+   "#a0b060",
+   "#70a040"
+  ]
+ },
+ "sketches/rubber-band-stipple/weaving-techniques": {
+  "bg": "#f1ebdd",
+  "bgL": 0.941,
+  "meanL": 0.901,
+  "meanC": 0.019,
+  "ink": 0.195,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#b0b0a0",
+   "#c0c0b0",
+   "#c0b0b0",
+   "#d0c0c0",
+   "#d0c0b0"
+  ]
+ },
+ "sketches/rubber-band-stipple/wrap": {
+  "bg": "#000000",
+  "bgL": 0,
+  "meanL": 0.236,
+  "meanC": 0.0327,
+  "ink": 0.412,
+  "hue": 225,
+  "hueShare": 0.995,
+  "colors": [
+   "#2080a0",
+   "#2090b0",
+   "#107090",
+   "#102020",
+   "#70b0c0"
+  ]
+ },
+ "sketches/rubber-banding/basic": {
+  "bg": "#0a0a0a",
+  "bgL": 0.145,
+  "meanL": 0.227,
+  "meanC": 0,
+  "ink": 0.132,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#f0f0f0",
+   "#303030",
+   "#202020",
+   "#404040",
+   "#c0c0c0"
+  ]
+ },
+ "sketches/rubber-banding/micro-graphics": {
+  "bg": "#fefcfd",
+  "bgL": 0.993,
+  "meanL": 0.94,
+  "meanC": 0.0009,
+  "ink": 0.164,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#d0d0d0",
+   "#c0c0c0",
+   "#000000",
+   "#b0b0b0",
+   "#808080"
+  ]
+ },
+ "sketches/shatter": {
+  "bg": "#0a030a",
+  "bgL": 0.118,
+  "meanL": 0.195,
+  "meanC": 0.044,
+  "ink": 0.122,
+  "hue": 285,
+  "hueShare": 0.948,
+  "colors": [
+   "#202040",
+   "#201030",
+   "#101030",
+   "#201040"
+  ]
+ },
+ "sketches/siep-van-den-berg/no-250": {
+  "bg": "#f0ebec",
+  "bgL": 0.944,
+  "meanL": 0.923,
+  "meanC": 0.0269,
+  "ink": 0.112,
+  "hue": 15,
+  "hueShare": 0.85,
+  "colors": [
+   "#d00060",
+   "#e00060",
+   "#e090b0",
+   "#e02070",
+   "#f090c0"
+  ]
+ },
+ "sketches/siep-van-den-berg/no-251": {
+  "bg": "#008bac",
+  "bgL": 0.59,
+  "meanL": 0.623,
+  "meanC": 0.1008,
+  "ink": 0.105,
+  "hue": 225,
+  "hueShare": 1,
+  "colors": [
+   "#f0f0f0",
+   "#50b0c0",
+   "#2090b0",
+   "#70c0d0",
+   "#30a0b0"
+  ]
+ },
+ "sketches/slashes": {
+  "bg": "#eee8da",
+  "bgL": 0.932,
+  "meanL": 0.854,
+  "meanC": 0.0498,
+  "ink": 0.233,
+  "hue": 345,
+  "hueShare": 0.495,
+  "colors": [
+   "#a02080",
+   "#a01080",
+   "#60a020",
+   "#a02040",
+   "#b09040"
+  ]
+ },
+ "sketches/snowflake/16x16": {
+  "bg": "#111702",
+  "bgL": 0.192,
+  "meanL": 0.184,
+  "meanC": 0.0411,
+  "ink": 0,
+  "hue": 135,
+  "hueShare": 0.574,
+  "colors": []
+ },
+ "sketches/snowflake/snowflake": {
+  "bg": "#000000",
+  "bgL": 0,
+  "meanL": 0.375,
+  "meanC": 0.0375,
+  "ink": 0.799,
+  "hue": 105,
+  "hueShare": 0.337,
+  "colors": [
+   "#807060",
+   "#505040",
+   "#003030",
+   "#605040",
+   "#404030"
+  ]
+ },
+ "sketches/soft-body/rug": {
+  "bg": "#bb9df2",
+  "bgL": 0.754,
+  "meanL": 0.712,
+  "meanC": 0.1254,
+  "ink": 0.317,
+  "hue": 285,
+  "hueShare": 0.686,
+  "colors": [
+   "#f0c0b0",
+   "#0060b0",
+   "#0060a0",
+   "#f0c0a0",
+   "#200010"
+  ]
+ },
+ "sketches/soft-body/verlet-101": {
+  "bg": "#ffffff",
+  "bgL": 1,
+  "meanL": 0.937,
+  "meanC": 0,
+  "ink": 0.28,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#a0a0a0",
+   "#b0b0b0",
+   "#d0d0d0",
+   "#c0c0c0",
+   "#909090"
+  ]
+ },
+ "sketches/soft-body/verlet-collision": {
+  "bg": "#b8b8b8",
+  "bgL": 0.783,
+  "meanL": 0.421,
+  "meanC": 0,
+  "ink": 0.903,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#000000",
+   "#f0f0f0",
+   "#101010",
+   "#303030",
+   "#e0e0e0"
+  ]
+ },
+ "sketches/soft-body/verlet-collision-quadtree": {
+  "bg": "#cccccc",
+  "bgL": 0.845,
+  "meanL": 0.529,
+  "meanC": 0,
+  "ink": 0.768,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#000000",
+   "#f0f0f0",
+   "#e0e0e0",
+   "#202020",
+   "#909090"
+  ]
+ },
+ "sketches/spectrum-colors-arranged-by-chance/rybitten-blinds": {
+  "bg": "#86745d",
+  "bgL": 0.57,
+  "meanL": 0.538,
+  "meanC": 0.0518,
+  "ink": 0.51,
+  "hue": 45,
+  "hueShare": 0.383,
+  "colors": [
+   "#202020",
+   "#302020",
+   "#303030",
+   "#b0a060",
+   "#604040"
+  ]
+ },
+ "sketches/stipling-noise/stipling-noise": {
+  "bg": "#313329",
+  "bgL": 0.316,
+  "meanL": 0.334,
+  "meanC": 0.0152,
+  "ink": 0.083,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#505050",
+   "#405040",
+   "#606060",
+   "#506050",
+   "#505040"
+  ]
+ },
+ "sketches/stipling-noise/voronoi-stipling-basic": {
+  "bg": "#d07b29",
+  "bgL": 0.662,
+  "meanL": 0.67,
+  "meanC": 0.1364,
+  "ink": 0.036,
+  "hue": 45,
+  "hueShare": 0.531,
+  "colors": [
+   "#d09050",
+   "#e0a070",
+   "#d0a060",
+   "#d09060",
+   "#e0b080"
+  ]
+ },
+ "sketches/subtractive-diffusion": {
+  "bg": "#d67d83",
+  "bgL": 0.687,
+  "meanL": 0.564,
+  "meanC": 0.1148,
+  "ink": 0.869,
+  "hue": 75,
+  "hueShare": 0.515,
+  "colors": [
+   "#805010",
+   "#805020",
+   "#e05050",
+   "#e04020",
+   "#e05020"
+  ]
+ },
+ "sketches/sujni/sujni-basic": {
+  "bg": "#d8c4fe",
+  "bgL": 0.856,
+  "meanL": 0.768,
+  "meanC": 0.116,
+  "ink": 0.765,
+  "hue": 255,
+  "hueShare": 0.784,
+  "colors": [
+   "#90b0f0",
+   "#50a0f0",
+   "#80b0f0",
+   "#40a0f0",
+   "#70b0f0"
+  ]
+ },
+ "sketches/sujni/sujni-basic-colors": {
+  "bg": "#f1f2ed",
+  "bgL": 0.959,
+  "meanL": 0.774,
+  "meanC": 0.0514,
+  "ink": 0.565,
+  "hue": 15,
+  "hueShare": 0.581,
+  "colors": [
+   "#a04040",
+   "#b05050",
+   "#b0f0e0",
+   "#506060",
+   "#406050"
+  ]
+ },
+ "sketches/sujni/sujni-dither": {
+  "bg": "#eec9fe",
+  "bgL": 0.884,
+  "meanL": 0.77,
+  "meanC": 0.1078,
+  "ink": 0.771,
+  "hue": 255,
+  "hueShare": 0.696,
+  "colors": [
+   "#80b0f0",
+   "#70b0f0",
+   "#90b0f0",
+   "#40a0f0",
+   "#30a0f0"
+  ]
+ },
+ "sketches/sujni/sujni-dot-grid": {
+  "bg": "#d55146",
+  "bgL": 0.609,
+  "meanL": 0.566,
+  "meanC": 0.1119,
+  "ink": 0.825,
+  "hue": 15,
+  "hueShare": 0.996,
+  "colors": [
+   "#a03040",
+   "#602020",
+   "#903040",
+   "#c09090",
+   "#c08080"
+  ]
+ },
+ "sketches/sujni/sujni-gradient": {
+  "bg": "#012e34",
+  "bgL": 0.276,
+  "meanL": 0.536,
+  "meanC": 0.0759,
+  "ink": 0.881,
+  "hue": 225,
+  "hueShare": 0.581,
+  "colors": [
+   "#008090",
+   "#007080",
+   "#3090a0",
+   "#006070",
+   "#90b0b0"
+  ]
+ },
+ "sketches/sujni/sujni-multiple": {
+  "bg": "#181818",
+  "bgL": 0.209,
+  "meanL": 0.345,
+  "meanC": 0,
+  "ink": 0.44,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#404040",
+   "#303030",
+   "#505050",
+   "#707070",
+   "#606060"
+  ]
+ },
+ "sketches/sujni/sujni-normals": {
+  "bg": "#013037",
+  "bgL": 0.284,
+  "meanL": 0.436,
+  "meanC": 0.0582,
+  "ink": 0.711,
+  "hue": 195,
+  "hueShare": 0.64,
+  "colors": [
+   "#206070",
+   "#005060",
+   "#507070",
+   "#106060",
+   "#406070"
+  ]
+ },
+ "sketches/sujni/sujni-stitches": {
+  "bg": "#1e1428",
+  "bgL": 0.214,
+  "meanL": 0.268,
+  "meanC": 0.0431,
+  "ink": 0.075,
+  "hue": 315,
+  "hueShare": 1,
+  "colors": [
+   "#303040",
+   "#403040",
+   "#302040"
+  ]
+ },
+ "sketches/tau-wave/not-as-much-tau": {
+  "bg": "#300bba",
+  "bgL": 0.382,
+  "meanL": 0.438,
+  "meanC": 0.2235,
+  "ink": 0.299,
+  "hue": 285,
+  "hueShare": 0.849,
+  "colors": [
+   "#a060e0",
+   "#6030c0",
+   "#6030d0",
+   "#7040d0",
+   "#b070f0"
+  ]
+ },
+ "sketches/tau-wave/tau-4": {
+  "bg": "#fbd3cb",
+  "bgL": 0.899,
+  "meanL": 0.796,
+  "meanC": 0.0515,
+  "ink": 0.422,
+  "hue": 45,
+  "hueShare": 0.997,
+  "colors": [
+   "#f0f0f0",
+   "#f08060",
+   "#b04020",
+   "#b09080",
+   "#402010"
+  ]
+ },
+ "sketches/tau-wave/tau-wave": {
+  "bg": "#488888",
+  "bgL": 0.584,
+  "meanL": 0.629,
+  "meanC": 0.0845,
+  "ink": 0.951,
+  "hue": 165,
+  "hueShare": 0.827,
+  "colors": [
+   "#90e0b0",
+   "#008040",
+   "#007040",
+   "#006040",
+   "#005030"
+  ]
+ },
+ "sketches/tentacle/alt": {
+  "bg": "#1d1f1e",
+  "bgL": 0.237,
+  "meanL": 0.372,
+  "meanC": 0.0294,
+  "ink": 0.354,
+  "hue": 165,
+  "hueShare": 0.775,
+  "colors": [
+   "#206030",
+   "#205030",
+   "#d0b080",
+   "#f0e0d0",
+   "#f0f0e0"
+  ]
+ },
+ "sketches/tentacle/grass": {
+  "bg": "#6bac36",
+  "bgL": 0.677,
+  "meanL": 0.715,
+  "meanC": 0.148,
+  "ink": 0.218,
+  "hue": 135,
+  "hueShare": 0.887,
+  "colors": [
+   "#f0e0d0",
+   "#f0e0c0",
+   "#e0d0a0",
+   "#d0d070",
+   "#d0d080"
+  ]
+ },
+ "sketches/tentacle/standard": {
+  "bg": "#1c1c1c",
+  "bgL": 0.226,
+  "meanL": 0.443,
+  "meanC": 0.057,
+  "ink": 0.471,
+  "hue": 45,
+  "hueShare": 0.674,
+  "colors": [
+   "#e06020",
+   "#a0c070",
+   "#d0c0c0",
+   "#f06020",
+   "#a0d070"
+  ]
+ },
+ "sketches/tentacle/standard-dither": {
+  "bg": "#33353c",
+  "bgL": 0.33,
+  "meanL": 0.448,
+  "meanC": 0.0685,
+  "ink": 0.484,
+  "hue": 75,
+  "hueShare": 0.338,
+  "colors": [
+   "#f0a010",
+   "#007060",
+   "#806020",
+   "#802080",
+   "#902080"
+  ]
+ },
+ "sketches/terminal-charts/compositions": {
+  "bg": "#ff5518",
+  "bgL": 0.677,
+  "meanL": 0.631,
+  "meanC": 0.19,
+  "ink": 0.243,
+  "hue": 45,
+  "hueShare": 0.987,
+  "colors": [
+   "#c04010",
+   "#a03010",
+   "#903000",
+   "#702000",
+   "#b04010"
+  ]
+ },
+ "sketches/terminal-charts/layered-compositions": {
+  "bg": "#6822ff",
+  "bgL": 0.519,
+  "meanL": 0.524,
+  "meanC": 0.263,
+  "ink": 0.161,
+  "hue": 285,
+  "hueShare": 0.912,
+  "colors": [
+   "#8030c0",
+   "#a05090",
+   "#a010b0",
+   "#b06070",
+   "#9050a0"
+  ]
+ },
+ "sketches/terminal-charts/terminal-charts": {
+  "bg": "#1b1e31",
+  "bgL": 0.242,
+  "meanL": 0.249,
+  "meanC": 0.036,
+  "ink": 0,
+  "hue": 285,
+  "hueShare": 1,
+  "colors": []
+ },
+ "sketches/terminal-charts/terminal-charts-patterns": {
+  "bg": "#eb4899",
+  "bgL": 0.654,
+  "meanL": 0.68,
+  "meanC": 0.182,
+  "ink": 0.319,
+  "hue": 345,
+  "hueShare": 0.587,
+  "colors": [
+   "#e07060",
+   "#e09040",
+   "#e08050",
+   "#e06070",
+   "#e09030"
+  ]
+ },
+ "sketches/test": {
+  "bg": "#1a1a1a",
+  "bgL": 0.218,
+  "meanL": 0.219,
+  "meanC": 0.0008,
+  "ink": 0.004,
+  "hue": 15,
+  "hueShare": 1,
+  "colors": [
+   "#601010",
+   "#501010",
+   "#501020"
+  ]
+ },
+ "sketches/texel-colors": {
+  "bg": "#d8c4b2",
+  "bgL": 0.832,
+  "meanL": 0.686,
+  "meanC": 0.0775,
+  "ink": 0.639,
+  "hue": 165,
+  "hueShare": 0.319,
+  "colors": [
+   "#d08080",
+   "#804080",
+   "#f08070",
+   "#b08070",
+   "#a05050"
+  ]
+ },
+ "sketches/texel-colors-basic": {
+  "bg": "#ddbbca",
+  "bgL": 0.826,
+  "meanL": 0.739,
+  "meanC": 0.0954,
+  "ink": 0.753,
+  "hue": 255,
+  "hueShare": 0.155,
+  "colors": [
+   "#f0f0f0",
+   "#000000",
+   "#f070d0",
+   "#e0e0d0",
+   "#909090"
+  ]
+ },
+ "sketches/timeline-example": {
+  "bg": "#121121",
+  "bgL": 0.188,
+  "meanL": 0.188,
+  "meanC": 0.0322,
+  "ink": 0,
+  "hue": null,
+  "hueShare": 0,
+  "colors": []
+ },
+ "sketches/triangle-splits": {
+  "bg": "#ead8d6",
+  "bgL": 0.896,
+  "meanL": 0.802,
+  "meanC": 0.0464,
+  "ink": 0.43,
+  "hue": 45,
+  "hueShare": 0.594,
+  "colors": [
+   "#a0c0c0",
+   "#703030",
+   "#f06030",
+   "#301010",
+   "#f05030"
+  ]
+ },
+ "sketches/trochoidal-wave/basic": {
+  "bg": "#ba2001",
+  "bgL": 0.508,
+  "meanL": 0.538,
+  "meanC": 0.1664,
+  "ink": 0.573,
+  "hue": 15,
+  "hueShare": 0.586,
+  "colors": [
+   "#800000",
+   "#700000",
+   "#d06000",
+   "#900000",
+   "#600000"
+  ]
+ },
+ "sketches/trochoidal-wave/dither": {
+  "bg": "#696d6c",
+  "bgL": 0.531,
+  "meanL": 0.498,
+  "meanC": 0.0185,
+  "ink": 0.801,
+  "hue": 195,
+  "hueShare": 0.505,
+  "colors": [
+   "#001010",
+   "#203030",
+   "#000000",
+   "#a0a0a0",
+   "#808080"
+  ]
+ },
+ "sketches/voxels/alphabet": {
+  "bg": "#efeee9",
+  "bgL": 0.948,
+  "meanL": 0.859,
+  "meanC": 0.0294,
+  "ink": 0.277,
+  "hue": 105,
+  "hueShare": 0.775,
+  "colors": [
+   "#d0e030",
+   "#b0c040",
+   "#c0d030",
+   "#607060",
+   "#708050"
+  ]
+ },
+ "sketches/voxels/alphabet-pixel": {
+  "bg": "#42d94c",
+  "bgL": 0.779,
+  "meanL": 0.782,
+  "meanC": 0.1959,
+  "ink": 0.222,
+  "hue": 135,
+  "hueShare": 0.944,
+  "colors": [
+   "#80d090",
+   "#80c0a0",
+   "#70d080",
+   "#60d070",
+   "#70c080"
+  ]
+ },
+ "sketches/voxels/diamond-top": {
+  "bg": "#d7d5ed",
+  "bgL": 0.882,
+  "meanL": 0.852,
+  "meanC": 0.0358,
+  "ink": 0.06,
+  "hue": 285,
+  "hueShare": 0.981,
+  "colors": [
+   "#202050",
+   "#101040",
+   "#101030",
+   "#303060",
+   "#302060"
+  ]
+ },
+ "sketches/voxels/nalee": {
+  "bg": "#00651f",
+  "bgL": 0.441,
+  "meanL": 0.475,
+  "meanC": 0.1216,
+  "ink": 0.273,
+  "hue": 135,
+  "hueShare": 0.774,
+  "colors": [
+   "#009080",
+   "#005050",
+   "#004040",
+   "#003000",
+   "#60a0f0"
+  ]
+ },
+ "sketches/voxels/nalee-3": {
+  "bg": "#dce2f0",
+  "bgL": 0.912,
+  "meanL": 0.845,
+  "meanC": 0.0312,
+  "ink": 0.253,
+  "hue": 255,
+  "hueShare": 0.783,
+  "colors": [
+   "#b0b0c0",
+   "#204090",
+   "#b0c0d0",
+   "#304090",
+   "#b0c0c0"
+  ]
+ },
+ "sketches/voxels/nalee-p": {
+  "bg": "#ffffff",
+  "bgL": 1,
+  "meanL": 0.978,
+  "meanC": 0,
+  "ink": 0.157,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#d0d0d0",
+   "#c0c0c0",
+   "#e0e0e0"
+  ]
+ },
+ "sketches/voxels/panna-meena": {
+  "bg": "#1f282f",
+  "bgL": 0.271,
+  "meanL": 0.464,
+  "meanC": 0.0141,
+  "ink": 0.37,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#d0d0d0",
+   "#c0c0c0",
+   "#d0d0c0",
+   "#b0b0b0",
+   "#a0a0a0"
+  ]
+ },
+ "sketches/voxels/panna-meena-p": {
+  "bg": "#ffffff",
+  "bgL": 1,
+  "meanL": 0.966,
+  "meanC": 0,
+  "ink": 0.214,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#d0d0d0",
+   "#c0c0c0",
+   "#b0b0b0",
+   "#e0e0e0",
+   "#a0a0a0"
+  ]
+ },
+ "sketches/voxels/samantha-bittman": {
+  "bg": "#222222",
+  "bgL": 0.252,
+  "meanL": 0.393,
+  "meanC": 0.0021,
+  "ink": 0.439,
+  "hue": 75,
+  "hueShare": 0.335,
+  "colors": [
+   "#707070",
+   "#606060",
+   "#808080",
+   "#706060",
+   "#705050"
+  ]
+ },
+ "sketches/voxels/textbox": {
+  "bg": "#2b0f04",
+  "bgL": 0.21,
+  "meanL": 0.243,
+  "meanC": 0.0545,
+  "ink": 0.082,
+  "hue": 45,
+  "hueShare": 0.942,
+  "colors": [
+   "#f09080",
+   "#f0a090",
+   "#b06050",
+   "#905040",
+   "#a06050"
+  ]
+ },
+ "sketches/voxels/todd-kelly": {
+  "bg": "#333333",
+  "bgL": 0.321,
+  "meanL": 0.42,
+  "meanC": 0.0246,
+  "ink": 0.337,
+  "hue": 75,
+  "hueShare": 0.366,
+  "colors": [
+   "#105080",
+   "#d0a090",
+   "#d0a080",
+   "#d09050",
+   "#205080"
+  ]
+ },
+ "sketches/voxels/todd-kelly-2": {
+  "bg": "#333333",
+  "bgL": 0.321,
+  "meanL": 0.354,
+  "meanC": 0.0059,
+  "ink": 0.111,
+  "hue": 75,
+  "hueShare": 0.507,
+  "colors": [
+   "#908070",
+   "#808060",
+   "#d0a070",
+   "#808070",
+   "#406070"
+  ]
+ },
+ "sketches/voxels/wave": {
+  "bg": "#c83c00",
+  "bgL": 0.558,
+  "meanL": 0.527,
+  "meanC": 0.1792,
+  "ink": 0.25,
+  "hue": 45,
+  "hueShare": 0.774,
+  "colors": [
+   "#800000",
+   "#900000",
+   "#901010",
+   "#e07080",
+   "#d06060"
+  ]
+ },
+ "sketches/wallace-sewell": {
+  "bg": "#bf8fc2",
+  "bgL": 0.713,
+  "meanL": 0.652,
+  "meanC": 0.104,
+  "ink": 0.909,
+  "hue": 315,
+  "hueShare": 0.3,
+  "colors": [
+   "#f0c0b0",
+   "#f0c0c0",
+   "#0060a0",
+   "#d0b0f0",
+   "#b080f0"
+  ]
+ },
+ "sketches/wave-function-collapse/1": {
+  "bg": "#ccdbf2",
+  "bgL": 0.887,
+  "meanL": 0.885,
+  "meanC": 0.0492,
+  "ink": 0.582,
+  "hue": 255,
+  "hueShare": 1,
+  "colors": [
+   "#f0f0e0",
+   "#80b0f0",
+   "#f0f0f0",
+   "#70a0f0",
+   "#3080f0"
+  ]
+ },
+ "sketches/wave-function-collapse/2": {
+  "bg": "#f0e7f0",
+  "bgL": 0.938,
+  "meanL": 0.882,
+  "meanC": 0.07,
+  "ink": 0.52,
+  "hue": 255,
+  "hueShare": 0.439,
+  "colors": [
+   "#b0c0f0",
+   "#b0d0f0",
+   "#80b0f0",
+   "#70a0f0",
+   "#a0c0f0"
+  ]
+ },
+ "sketches/wave-function-collapse/3": {
+  "bg": "#471809",
+  "bgL": 0.28,
+  "meanL": 0.294,
+  "meanC": 0.0647,
+  "ink": 0.163,
+  "hue": 45,
+  "hueShare": 0.996,
+  "colors": [
+   "#503030",
+   "#604030",
+   "#604040",
+   "#603020",
+   "#503020"
+  ]
+ },
+ "sketches/wave-function-collapse/4": {
+  "bg": "#f7edef",
+  "bgL": 0.954,
+  "meanL": 0.941,
+  "meanC": 0.0363,
+  "ink": 0.158,
+  "hue": 105,
+  "hueShare": 0.361,
+  "colors": [
+   "#c0d0f0",
+   "#f0c0c0",
+   "#b0c0f0",
+   "#f0e0b0",
+   "#f0e0a0"
+  ]
+ },
+ "sketches/wave-function-collapse/5": {
+  "bg": "#2e203b",
+  "bgL": 0.274,
+  "meanL": 0.282,
+  "meanC": 0.0463,
+  "ink": 0.095,
+  "hue": 315,
+  "hueShare": 1,
+  "colors": [
+   "#504050",
+   "#404050",
+   "#505060",
+   "#605060",
+   "#403050"
+  ]
+ },
+ "sketches/wave-function-collapse/6": {
+  "bg": "#292f29",
+  "bgL": 0.297,
+  "meanL": 0.285,
+  "meanC": 0.0232,
+  "ink": 0.301,
+  "hue": 105,
+  "hueShare": 0.477,
+  "colors": [
+   "#000000",
+   "#000010",
+   "#001010",
+   "#404040",
+   "#505050"
+  ]
+ },
+ "sketches/wave-function-collapse/7": {
+  "bg": "#cebca6",
+  "bgL": 0.804,
+  "meanL": 0.803,
+  "meanC": 0.0313,
+  "ink": 0,
+  "hue": 75,
+  "hueShare": 0.566,
+  "colors": []
+ },
+ "sketches/wave-function-collapse/8": {
+  "bg": "#f5f0f5",
+  "bgL": 0.96,
+  "meanL": 0.932,
+  "meanC": 0.014,
+  "ink": 0.165,
+  "hue": 15,
+  "hueShare": 0.551,
+  "colors": [
+   "#9090a0",
+   "#90a0c0",
+   "#f0b0a0",
+   "#f0a0a0",
+   "#a0a0d0"
+  ]
+ },
+ "sketches/wobbly-grid": {
+  "bg": "#e8e8e8",
+  "bgL": 0.931,
+  "meanL": 0.858,
+  "meanC": 0.0078,
+  "ink": 0.468,
+  "hue": 15,
+  "hueShare": 0.598,
+  "colors": [
+   "#c0c0c0",
+   "#b0b0b0",
+   "#b0c0c0",
+   "#d0c0c0",
+   "#c0b0b0"
+  ]
+ },
+ "sketches/wobbly-grid-2": {
+  "bg": "#e8e8e8",
+  "bgL": 0.931,
+  "meanL": 0.853,
+  "meanC": 0.0119,
+  "ink": 0.469,
+  "hue": 15,
+  "hueShare": 0.441,
+  "colors": [
+   "#c0c0c0",
+   "#b0c0c0",
+   "#b0b0b0",
+   "#a0b0b0",
+   "#d0c0c0"
+  ]
+ },
+ "sketches/wobbly-wave": {
+  "bg": "#f2e7d4",
+  "bgL": 0.932,
+  "meanL": 0.602,
+  "meanC": 0.0729,
+  "ink": 0.812,
+  "hue": 45,
+  "hueShare": 0.223,
+  "colors": [
+   "#103020",
+   "#303050",
+   "#d09050",
+   "#203040",
+   "#d0c070"
+  ]
+ },
+ "sketches/xor/hexagon": {
+  "bg": "#ffffff",
+  "bgL": 1,
+  "meanL": 0.877,
+  "meanC": 0,
+  "ink": 0.382,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#c0c0c0",
+   "#b0b0b0",
+   "#a0a0a0",
+   "#808080",
+   "#909090"
+  ]
+ },
+ "sketches/xor/lines": {
+  "bg": "#f9f9f9",
+  "bgL": 0.982,
+  "meanL": 0.762,
+  "meanC": 0,
+  "ink": 0.469,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#202020",
+   "#303030",
+   "#101010",
+   "#404040",
+   "#606060"
+  ]
+ },
+ "sketches/xor/lissajous": {
+  "bg": "#000000",
+  "bgL": 0,
+  "meanL": 0.084,
+  "meanC": 0,
+  "ink": 0.187,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#202020",
+   "#101010",
+   "#303030",
+   "#404040",
+   "#505050"
+  ]
+ },
+ "sketches/xor/lissajous-pack": {
+  "bg": "#000000",
+  "bgL": 0,
+  "meanL": 0.139,
+  "meanC": 0,
+  "ink": 0.313,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#202020",
+   "#303030",
+   "#404040",
+   "#505050",
+   "#101010"
+  ]
+ },
+ "sketches/xor/lissajous-rgb": {
+  "bg": "#000000",
+  "bgL": 0,
+  "meanL": 0.055,
+  "meanC": 0.0186,
+  "ink": 0.087,
+  "hue": 135,
+  "hueShare": 0.276,
+  "colors": [
+   "#003000",
+   "#300000",
+   "#002020",
+   "#202000",
+   "#400000"
+  ]
+ },
+ "sketches/xor/polar-shape": {
+  "bg": "#ffffff",
+  "bgL": 1,
+  "meanL": 0.836,
+  "meanC": 0,
+  "ink": 0.444,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#808080",
+   "#c0c0c0",
+   "#b0b0b0",
+   "#707070",
+   "#909090"
+  ]
+ },
+ "sketches/xor/polar-shape-shift": {
+  "bg": "#ffffff",
+  "bgL": 1,
+  "meanL": 0.836,
+  "meanC": 0,
+  "ink": 0.442,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#808080",
+   "#606060",
+   "#a0a0a0",
+   "#b0b0b0",
+   "#707070"
+  ]
+ },
+ "sketches/xor/triangle": {
+  "bg": "#ffffff",
+  "bgL": 1,
+  "meanL": 0.962,
+  "meanC": 0,
+  "ink": 0.094,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#808080",
+   "#909090",
+   "#707070",
+   "#606060",
+   "#d0d0d0"
+  ]
+ }
+}

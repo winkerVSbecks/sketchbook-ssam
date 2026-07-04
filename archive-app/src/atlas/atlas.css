@@ -1,0 +1,662 @@
+/* The Atlas — the Flat File system on an infinite canvas.
+   Same tokens as the archive and the Light Table: Gallery White, Ink, Pencil,
+   Hairline, Unprimed. Chrome owns no hue; the sketches supply all the color. */
+:root {
+  color-scheme: light;
+  --bg: #fff;
+  --fg: #111;
+  --muted: #767676;
+  --hairline: rgba(0, 0, 0, 0.08);
+  --img-bg: #f4f4f3;
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+}
+* { box-sizing: border-box; }
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  line-height: 1.5;
+  font-size: 15px;
+  overflow: hidden;
+}
+
+.app {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- header bar ---------- */
+.bar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: baseline;
+  gap: 0.25rem 2rem;
+  padding: 0.875rem 1.25rem 0.625rem;
+  border-bottom: 1px solid var(--hairline);
+  font-variant-numeric: tabular-nums;
+}
+.bar-left {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+}
+.quiet {
+  color: var(--muted);
+  font-weight: 400;
+}
+.bar-lenses {
+  display: flex;
+  gap: 1.5rem;
+}
+.lens-btn {
+  padding: 0 0 2px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.lens-btn:hover { color: var(--fg); }
+.lens-btn.is-active {
+  color: var(--fg);
+  border-bottom-color: var(--fg);
+}
+.lens-kbd {
+  margin-left: 0.45em;
+  font-size: 0.6875rem;
+  font-weight: 400;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.bar-meta {
+  display: flex;
+  justify-content: flex-end;
+  align-items: baseline;
+  gap: 1rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  white-space: nowrap;
+  min-width: 0;
+}
+.search {
+  width: 170px;
+  padding: 0 0 2px;
+  border: none;
+  border-bottom: 1px solid var(--hairline);
+  background: none;
+  font: inherit;
+  font-size: 0.8125rem;
+  color: var(--fg);
+}
+.search:focus {
+  outline: none;
+  border-bottom-color: var(--fg);
+}
+.search::placeholder { color: var(--muted); }
+.filter-pill {
+  border: none;
+  background: var(--img-bg);
+  border-radius: 3px;
+  padding: 0.1em 0.5em;
+  font: inherit;
+  font-size: 0.75rem;
+  color: var(--fg);
+  cursor: pointer;
+}
+.help-button {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.8125rem;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s ease;
+  position: relative;
+}
+.help-button::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
+}
+.help-button:hover { color: var(--fg); }
+
+/* ---------- main split ---------- */
+.main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+/* ---------- rail ---------- */
+.rail {
+  width: 264px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--hairline);
+  min-height: 0;
+}
+.rail-tabs {
+  display: flex;
+  gap: 1.25rem;
+  padding: 0.75rem 1rem 0.5rem;
+}
+.rail-tab {
+  padding: 0 0 2px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  cursor: pointer;
+}
+.rail-tab:hover { color: var(--fg); }
+.rail-tab.is-active {
+  color: var(--fg);
+  border-bottom-color: var(--fg);
+}
+.rail-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.25rem 0 2rem;
+}
+.row {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.3rem 1rem;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.8125rem;
+  text-align: left;
+  color: var(--fg);
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.row:hover { background: var(--img-bg); }
+.row.is-active { background: var(--img-bg); }
+.row-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.row-count {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.row-insight {
+  display: block;
+}
+.row-kind {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.row-insight .row-text {
+  display: block;
+  white-space: normal;
+  line-height: 1.35;
+}
+.row-note {
+  margin: 0.15rem 0 0.6rem;
+  padding: 0 1rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* ---------- stage & world ---------- */
+.stage {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  cursor: grab;
+  touch-action: none;
+  /* A faint unprimed wash so the canvas reads as a surface, not a void. */
+  background: var(--bg);
+}
+.stage.is-panning { cursor: grabbing; }
+.stage.is-zoom { cursor: crosshair; }
+.stage.is-zoom .node { pointer-events: none; }
+
+/* ⌥-drag rubber band: an Ink hairline over a faint wash. */
+.marquee {
+  position: absolute;
+  border: 1px solid var(--fg);
+  background: rgba(17, 17, 17, 0.04);
+  pointer-events: none;
+  z-index: 5;
+}
+.world {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+.world.animate .node {
+  transition: transform 550ms var(--ease-out-quart), opacity 250ms ease;
+}
+.node {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 0;
+  border: none;
+  background: var(--img-bg);
+  cursor: pointer;
+}
+.node img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+/* Nodes are mouse targets (tabIndex -1); the selection ring is the state. */
+.node:focus { outline: none; }
+.node:hover {
+  /* Outlines counter-scale so they stay hairline-crisp at any zoom. */
+  outline: min(calc(1.5px / var(--k, 1)), 10px) solid var(--fg);
+  outline-offset: 1px;
+  z-index: 2;
+}
+.node.is-selected {
+  outline: min(calc(2px / var(--k, 1)), 12px) solid var(--fg);
+  outline-offset: 2px;
+  z-index: 3;
+}
+.node.is-dim {
+  opacity: 0.12;
+}
+.group-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  font-variant-numeric: tabular-nums;
+  /* Counter-scale toward constant screen size, fading out only when the view
+     is very far away (scale capped so labels never invade the shelf above).
+     The scale must live INSIDE the transform, after the translate — the
+     standalone `scale` property would compose before it and displace the
+     label by the scale factor. */
+  transform-origin: 0 100%;
+  transform: translate(var(--lx, 0px), var(--ly, 0px))
+    scale(min(max(1, calc(1 / var(--k, 1))), 2.6));
+}
+.group-label .sub {
+  margin-left: 0.6em;
+  font-weight: 400;
+}
+
+/* ---------- edges ---------- */
+.edges {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  overflow: visible;
+  pointer-events: none;
+}
+.edges path {
+  fill: none;
+  stroke: var(--fg);
+  stroke-width: 1.25;
+}
+/* The connection web is far-view texture only: it fades in as the view pulls
+   back past ~30% zoom and is gone entirely when reading individual work. */
+.edges-underlay {
+  opacity: clamp(0, calc((0.3 - var(--k, 1)) * 0.35), 0.05);
+}
+.edges-focus path { stroke-opacity: 0.4; }
+.edge-thread {
+  stroke-opacity: 0.55;
+  stroke-width: 1.5;
+}
+
+/* ---------- insight banner ---------- */
+.insight-banner {
+  position: absolute;
+  left: 50%;
+  bottom: 1.25rem;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  max-width: min(640px, calc(100% - 2.5rem));
+  padding: 0.5rem 0.875rem;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--hairline);
+  font-size: 0.8125rem;
+}
+.insight-banner strong {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.insight-banner button {
+  border: none;
+  background: none;
+  font: inherit;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+}
+.insight-banner button:hover { color: var(--fg); }
+
+/* ---------- detail panel ---------- */
+.panel {
+  width: 300px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--hairline);
+  overflow-y: auto;
+  /* Top padding clears the close button's row so it never sits on the image. */
+  padding: 2rem 1.25rem 2rem;
+  position: relative;
+}
+.panel-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.75rem;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 1rem;
+  color: var(--muted);
+  cursor: pointer;
+  z-index: 1;
+}
+.panel-close:hover { color: var(--fg); }
+.panel .hero {
+  width: 100%;
+  display: block;
+  background: var(--img-bg);
+}
+.panel-title {
+  margin: 0.75rem 0 0;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  overflow-wrap: anywhere;
+}
+.panel-sub {
+  margin: 0.1rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.panel-desc {
+  margin: 0.75rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 0.6rem;
+}
+.chip {
+  border: none;
+  background: var(--img-bg);
+  border-radius: 3px;
+  padding: 0.1em 0.5em;
+  font: inherit;
+  font-size: 0.75rem;
+  color: var(--fg);
+  cursor: pointer;
+}
+.chip:hover { outline: 1px solid var(--fg); }
+.facts {
+  margin: 0.9rem 0 0;
+  font-size: 0.8125rem;
+}
+.facts > div {
+  display: grid;
+  grid-template-columns: 78px 1fr;
+  gap: 0.75rem;
+  padding: 0.15rem 0;
+}
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; overflow-wrap: anywhere; }
+.panel-notable {
+  margin: 0.75rem 0 0;
+  padding: 0.5rem 0.65rem;
+  background: var(--img-bg);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+.panel-h3 {
+  margin: 1.25rem 0 0.35rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.panel-note {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.similar {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.similar button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.25rem 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.8125rem;
+  text-align: left;
+  color: var(--fg);
+  cursor: pointer;
+}
+.similar img {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  background: var(--img-bg);
+  flex-shrink: 0;
+}
+.similar-text {
+  min-width: 0;
+  display: block;
+  line-height: 1.3;
+}
+.similar-name,
+.similar-shared {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.similar-shared {
+  font-size: 0.6875rem;
+  color: var(--muted);
+}
+.similar button:hover .similar-name { text-decoration: underline; }
+.panel-action {
+  margin-top: 1.25rem;
+  padding: 0.35rem 0.75em;
+  border: 1px solid var(--hairline);
+  background: none;
+  font: inherit;
+  font-size: 0.8125rem;
+  color: var(--fg);
+  cursor: pointer;
+}
+.panel-action:hover { border-color: var(--fg); }
+
+/* ---------- details modal (⌘-click) ---------- */
+.details {
+  border: 1px solid var(--hairline);
+  padding: 0;
+  max-width: min(880px, 92vw);
+}
+.details:focus,
+.details:focus-visible { outline: none; }
+.details::backdrop {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(8px) saturate(180%);
+  -webkit-backdrop-filter: blur(8px) saturate(180%);
+}
+.details img {
+  display: block;
+  max-width: 100%;
+  max-height: 68vh;
+  margin: 0 auto;
+  background: var(--img-bg);
+}
+.details-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 2.5rem;
+  padding: 0.9rem 1.25rem 1.1rem;
+  border-top: 1px solid var(--hairline);
+}
+.details-meta h2 {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+}
+.details-meta dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 2rem;
+  margin: 0;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+.details-meta dl > div {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+.details-meta dt { color: var(--muted); }
+.details-meta dd { margin: 0; }
+.details-copy {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--fg);
+  cursor: pointer;
+}
+.details-copy code {
+  background: var(--img-bg);
+  padding: 0.15em 0.4em;
+  border-radius: 3px;
+  font-size: 0.875em;
+}
+.details-copy:hover code { outline: 1px solid var(--fg); }
+
+/* ---------- shortcuts overlay ---------- */
+.help {
+  border: 1px solid var(--hairline);
+  padding: 1.5rem 1.75rem;
+  color: var(--fg);
+  font-size: 0.875rem;
+}
+.help:focus,
+.help:focus-visible {
+  outline: none;
+}
+.help::backdrop {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(8px) saturate(180%);
+  -webkit-backdrop-filter: blur(8px) saturate(180%);
+}
+.help table { border-collapse: collapse; }
+.help th {
+  text-align: left;
+  font-weight: 400;
+  padding: 0.25rem 2rem 0.25rem 0;
+  white-space: nowrap;
+}
+.help td { padding: 0.25rem 0; }
+kbd {
+  font: inherit;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  background: var(--img-bg);
+  padding: 0.1em 0.5em;
+  border-radius: 3px;
+}
+.kbd-alt { margin-left: 0.375rem; }
+
+/* ---------- empty state ---------- */
+.empty {
+  margin: 0;
+  padding: 2rem;
+  color: var(--muted);
+  max-width: 65ch;
+}
+.empty code {
+  background: var(--img-bg);
+  padding: 0.15em 0.4em;
+  border-radius: 3px;
+  font-size: 0.875em;
+  color: var(--fg);
+}
+
+/* ---------- focus & motion ---------- */
+:is(a, button, input):focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .world.animate .node { transition: none; }
+  .lens-btn,
+  .rail-tab,
+  .help-button { transition: none; }
+}

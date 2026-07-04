@@ -1,0 +1,134 @@
+[
+  {
+    "id": "sketches/wave-function-collapse/8",
+    "bg": "light",
+    "palette": "limited",
+    "hues": ["blue", "red", "pink"],
+    "density": "medium",
+    "composition": ["full-bleed-field", "scattered"],
+    "texture": ["hard-edge", "outlined", "flat-shapes"],
+    "energy": "moderate",
+    "keywords": ["circuit-board", "pipes", "maze-like", "elbow-segments"]
+  },
+  {
+    "id": "sketches/wobbly-grid",
+    "bg": "light",
+    "palette": "multicolor",
+    "hues": ["blue", "teal", "pink", "orange"],
+    "density": "dense",
+    "composition": ["grid-array", "full-bleed-field"],
+    "texture": ["flat-shapes", "outlined"],
+    "energy": "busy",
+    "keywords": ["dot-grid", "beadwork", "polka-dot", "connected-nodes"]
+  },
+  {
+    "id": "sketches/wobbly-grid-2",
+    "bg": "light",
+    "palette": "multicolor",
+    "hues": ["blue", "teal", "pink", "orange"],
+    "density": "dense",
+    "composition": ["grid-array", "full-bleed-field"],
+    "texture": ["flat-shapes", "hard-edge"],
+    "energy": "busy",
+    "keywords": ["tile-mosaic", "pixel-grid", "confetti", "quilt-like"]
+  },
+  {
+    "id": "sketches/wobbly-wave",
+    "bg": "cream",
+    "palette": "multicolor",
+    "hues": ["yellow", "orange", "violet", "green"],
+    "density": "medium",
+    "composition": ["bands-vertical", "full-bleed-field"],
+    "texture": ["soft-gradient", "layered-transparency"],
+    "energy": "calm",
+    "keywords": ["overlapping-ovals", "gradient-blobs", "translucent", "sunset-tones"]
+  },
+  {
+    "id": "sketches/xor/hexagon",
+    "bg": "light",
+    "palette": "monochrome",
+    "hues": ["black", "white"],
+    "density": "medium",
+    "composition": ["centered-figure", "single-object"],
+    "texture": ["hatched", "hand-drawn-feel", "glitchy"],
+    "energy": "moderate",
+    "keywords": ["moire", "faceted", "wireframe", "line-art"]
+  },
+  {
+    "id": "sketches/xor/lines",
+    "bg": "dark",
+    "palette": "monochrome",
+    "hues": ["black", "white"],
+    "density": "dense",
+    "composition": ["diagonal", "asymmetric-blocks"],
+    "texture": ["stippled", "pixelated", "granular"],
+    "energy": "busy",
+    "keywords": ["moire", "halftone", "contour-lines", "dithered"]
+  },
+  {
+    "id": "sketches/xor/lissajous",
+    "bg": "dark",
+    "palette": "monochrome",
+    "hues": ["black", "white"],
+    "density": "sparse",
+    "composition": ["diagonal"],
+    "texture": ["hard-edge", "woven", "outlined"],
+    "energy": "moderate",
+    "keywords": ["crosshatch", "weave", "line-intersection", "thin-lines"]
+  },
+  {
+    "id": "sketches/xor/lissajous-pack",
+    "bg": "dark",
+    "palette": "monochrome",
+    "hues": ["black", "white"],
+    "density": "medium",
+    "composition": ["diagonal", "scattered"],
+    "texture": ["glitchy", "hard-edge", "stippled"],
+    "energy": "busy",
+    "keywords": ["streaks", "scratches", "motion-blur", "shards"]
+  },
+  {
+    "id": "sketches/xor/lissajous-rgb",
+    "bg": "dark",
+    "palette": "limited",
+    "hues": ["red", "green", "blue"],
+    "density": "sparse",
+    "composition": ["diagonal"],
+    "texture": ["hard-edge", "glitchy", "outlined"],
+    "energy": "moderate",
+    "keywords": ["rgb", "chromatic", "laser-lines", "neon-on-black"]
+  },
+  {
+    "id": "sketches/xor/polar-shape",
+    "bg": "light",
+    "palette": "monochrome",
+    "hues": ["black", "white"],
+    "density": "dense",
+    "composition": ["centered-figure", "radial", "single-object"],
+    "texture": ["hatched", "glitchy", "hand-drawn-feel"],
+    "energy": "busy",
+    "keywords": ["shell", "faceted-sphere", "moire", "engraving"]
+  },
+  {
+    "id": "sketches/xor/polar-shape-shift",
+    "bg": "light",
+    "palette": "monochrome",
+    "hues": ["black", "white"],
+    "density": "medium",
+    "composition": ["scattered", "centered-figure"],
+    "texture": ["hatched", "glitchy", "hand-drawn-feel"],
+    "energy": "busy",
+    "keywords": ["paired-forms", "faceted", "moire", "engraving"]
+  },
+  {
+    "id": "sketches/xor/triangle",
+    "bg": "light",
+    "palette": "monochrome",
+    "hues": ["black", "white"],
+    "density": "medium",
+    "composition": ["single-object", "centered-figure", "diagonal"],
+    "texture": ["hatched", "stippled", "glitchy"],
+    "energy": "moderate",
+    "keywords": ["triangle", "moire", "contour", "wedge"]
+  }
+]

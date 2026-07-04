@@ -1,0 +1,364 @@
+{
+  "insights": [
+    {
+      "kind": "technique-transfer",
+      "title": "Drive nalee walkers with a distance field",
+      "body": "nalee's 73 sketches route and color by grid occupancy, flow fields and polar grids, but never by a distance field — yet maze-distance builds gorgeous shells by shading cells by their geodesic distance, and the voxels/heerich work already uses distance-field height. Compute a distance transform over a nalee domain (from a seed, an edge, or a clipping polygon) and key ribbon color, width, or spawn priority to it, importing the maze-distance falloff into the space-filling engine.",
+      "relatedIds": [
+        "sketches/nalee/sketches/basic",
+        "sketches/nalee/sketches/clipped-domain",
+        "sketches/maze-distance/basic",
+        "sketches/maze-distance/color-correction",
+        "sketches/maze-distance/space-filler",
+        "sketches/voxels/todd-kelly",
+        "sketches/voxels/wave"
+      ],
+      "tags": ["nalee", "distance-field", "space-filling", "maze-generation", "flow-field"],
+      "clusterKeys": ["the-nalee-system", "ascii-and-terminal", "isometric-and-architectural-space"]
+    },
+    {
+      "kind": "technique-transfer",
+      "title": "Give the XOR interference field a palette",
+      "body": "The eight-sketch xor series is locked to black-and-white; only lissajous-rgb hints at more, writing three phase-shifted fields into R, G and B channels. Meanwhile snowflake already has a clean recipe for turning a scalar field into color bands: floor(dist^scale) mod palette. Transfer it — index a palette LUT by the XOR accumulation count instead of thresholding to one bit — and the moiré interference becomes tonal color banding while keeping the hard optical vibration intact.",
+      "relatedIds": [
+        "sketches/xor/lines",
+        "sketches/xor/triangle",
+        "sketches/xor/hexagon",
+        "sketches/xor/lissajous-rgb",
+        "sketches/snowflake/16x16",
+        "sketches/snowflake/snowflake"
+      ],
+      "tags": ["xor-pattern", "op-art", "optical-vibration", "modulo-pattern", "black-and-white"],
+      "clusterKeys": ["moire-and-op-art", "tiling-and-truchet"]
+    },
+    {
+      "kind": "scale-shift",
+      "title": "Plot the nalee walker as a printed suite",
+      "body": "Nalee is the studio's signature object (73 sketches) but meets the pen plotter in only a handful of 2026 experiments (voxels/nalee-p, the two heerich plots) — four penplot sketches total. The single-line Hamiltonian meander (nalee-one-line/basic, albers-meander) is the ideal candidate: a Warnsdorff path draws as one continuous pen stroke with zero pen-ups, so it can go straight into src/penplot/render-penplot.ts as a true single-stroke drawing. Commit a coherent A4 plotter suite — the one-line meander, the k_best overlapping-hull composition, and a clipped Kelly region — sized and occluded for physical output, and extend the same treatment to nalee-hulls and conformal-mapping/nalee.",
+      "relatedIds": [
+        "sketches/nalee-one-line/basic",
+        "sketches/nalee-one-line/albers-meander",
+        "sketches/nalee-hulls/k_best",
+        "sketches/voxels/nalee-p",
+        "sketches/anni-weaving/heerich-plotter",
+        "sketches/penplot-example",
+        "sketches/nalee-one-line/circle",
+        "sketches/nalee-one-line/stacked",
+        "sketches/conformal-mapping/nalee"
+      ],
+      "tags": ["space-filling", "hamiltonian-path", "convex-hull", "penplot", "nalee"],
+      "clusterKeys": ["the-nalee-system", "hulls-and-aggregates", "isometric-and-architectural-space", "weaving-and-thread", "tiling-and-truchet", "fields-flows-and-waves"]
+    },
+    {
+      "kind": "scale-shift",
+      "title": "Sample the sparse end of nalee",
+      "body": "Across 73 nalee sketches only 10 read as sparse; the engine is almost always run dense or medium, so its behavior at low walker counts and large cells is under-explored. Deliberately run nalee with a handful of walkers on a coarse grid so individual ribbons become discrete specific objects with negative space around them, the opposite of the usual all-over fill.",
+      "relatedIds": [
+        "sketches/nalee/sketches/asymmetric",
+        "sketches/nalee/sketches/clipped-domain",
+        "sketches/nalee/sketches/scroll",
+        "sketches/nalee/sketches/basic",
+        "sketches/kelly-nalee/awnings"
+      ],
+      "tags": ["nalee", "space-filling", "random-walk"],
+      "clusterKeys": ["the-nalee-system"]
+    },
+    {
+      "kind": "unexplored-combination",
+      "title": "Weave a real loom draft through nalee ribbons",
+      "body": "anni-weaving encodes genuine weave drafts — twill, herringbone, satin, monk's belt — as over/under warp/weft masks, while nalee's ribbons only evoke weaving (the weaving-structure concept spans 47 sketches without ever actually interlacing). Combine them: use a weave draft as the parity mask that decides which nalee walker ribbon passes over and which passes under at each crossing. The two textile threads that have run in parallel since 2024 finally become one genuinely woven object.",
+      "relatedIds": [
+        "sketches/anni-weaving/anni-weaving",
+        "sketches/anni-weaving/weaves",
+        "sketches/nalee/sketches/clipped-domain",
+        "sketches/sujni/sujni-basic",
+        "sketches/kelly-nalee/vertical-band"
+      ],
+      "tags": ["weaving-structure", "textile", "space-filling", "tiling", "nalee"],
+      "clusterKeys": ["weaving-and-thread", "the-nalee-system"]
+    },
+    {
+      "kind": "outlier-worth-revisiting",
+      "title": "Feed the SAT packing engine to the tilers",
+      "body": "The collision series runs a proper SAT/convex-hull physics packer, but its settled arrangements of convex shapes are never used as input to any tiling or fill system — they just demonstrate collision. Take a packed collision layout and hand its cells to nalee (as domains), heerich (as isometric footprints), or map-maker, so physics discovers the partition that a systematic fill then inhabits.",
+      "relatedIds": [
+        "sketches/collision/basic",
+        "sketches/collision/basic-b&w",
+        "sketches/collision/explode",
+        "sketches/map/clipped-hull",
+        "sketches/nalee-hulls/a",
+        "sketches/clixo/layers"
+      ],
+      "tags": ["collision", "convex-hull", "clustering", "space-filling"],
+      "clusterKeys": ["simulation-and-physics", "isometric-and-architectural-space", "hulls-and-aggregates", "tiling-and-truchet"]
+    },
+    {
+      "kind": "deepen-series",
+      "title": "Push the overlapping-hull nalee system past its keeper",
+      "body": "nalee-hulls/k_best is the artist's own selected keeper — overlapping Poisson convex hulls filled with nalee, foreground and background color sets split by WCAG contrast — and i, j, l push the overlap counts higher. All twelve were made in a single day (Sept 2025) and the series stopped exactly at its strongest piece. Take k_best further: many more overlapping hulls at a larger scale, or the same composition rendered for large-format print where the contrast-split reads as flat Kelly planes.",
+      "relatedIds": [
+        "sketches/nalee-hulls/k_best",
+        "sketches/nalee-hulls/i",
+        "sketches/nalee-hulls/j",
+        "sketches/nalee-hulls/l",
+        "sketches/nalee-hulls/h"
+      ],
+      "tags": ["convex-hull", "space-filling", "poisson-disk", "color-study", "nalee"],
+      "clusterKeys": ["hulls-and-aggregates"]
+    },
+    {
+      "kind": "abandoned-thread",
+      "title": "Forms that exist only as their overlaps",
+      "body": "siep-van-den-berg/no-251 makes black rectangles on black that are visible solely where they intersect (white) or triple-overlap (grey), and boolean/robert-swain repaints overlaps in inverted color — a pure ‘figure = intersection’ idea that got two or three pieces and stopped. The clipped sliding-blind work (development-of-concrete-art/fibonacci-blinds, op-art/grid) is the same negative-space logic in motion. Deepen it into a series where the source rectangles are never drawn at all, only their boolean regions, animated as the shapes slide across a Swain palette so the visible field is entirely emergent.",
+      "relatedIds": [
+        "sketches/siep-van-den-berg/no-251",
+        "sketches/siep-van-den-berg/no-250",
+        "sketches/boolean/robert-swain",
+        "sketches/development-of-concrete-art/fibonacci-blinds",
+        "sketches/op-art/grid"
+      ],
+      "tags": ["negative-space", "collision", "clipping-mask", "concrete-art", "minimalism"],
+      "clusterKeys": ["concrete-art-and-color-planes", "moire-and-op-art"]
+    },
+    {
+      "kind": "unexplored-combination",
+      "title": "Extrude Kelly color fields into voxel relief",
+      "body": "The voxels series (13 sketches, all 2026, via the heerich isometric engine) is mostly monochrome and architectural — stepwells, alphabets — and only voxels/nalee extrudes a walker path. Separately, anni-weaving/heerich-depth already proves the engine can raise one cell class and keep another flat as a relief. Combine them: extrude the kelly-nalee color-field compositions so each nalee-filled Kelly region becomes raised or flat voxel terrain, giving the hard-edge color blocks physical depth without leaving the flat-file palette.",
+      "relatedIds": [
+        "sketches/voxels/nalee",
+        "sketches/voxels/nalee-3",
+        "sketches/anni-weaving/heerich-depth",
+        "sketches/kelly-nalee/paris-review",
+        "sketches/kelly-nalee/rectangle"
+      ],
+      "tags": ["isometric-projection", "voxels", "space-filling", "concrete-art", "heerich"],
+      "clusterKeys": ["isometric-and-architectural-space", "weaving-and-thread", "the-nalee-system"]
+    },
+    {
+      "kind": "bridge",
+      "title": "Clip every system to a jali screen, not just nalee",
+      "body": "clipping-mask is nalee's most-used technique (40 sketches) and the jali perforated-screen domain exists in nalee-jali and jali/truchet, but the jali clip has only ever masked nalee walks and one truchet tiling. Reuse clipDomainWithWorldCoords from nalee/domain.ts to clip domain-polygon subdivisions, heerich voxel stacks, and clixo tilings to a jali lattice, letting a second system show through the screen's holes.",
+      "relatedIds": [
+        "sketches/nalee-jali/a",
+        "sketches/nalee-jali/b",
+        "sketches/jali/truchet",
+        "sketches/jali/mexico",
+        "sketches/domain-polygon/basic",
+        "sketches/voxels/panna-meena",
+        "sketches/clixo/layers"
+      ],
+      "tags": ["clipping-mask", "tiling", "space-filling", "isometric-projection"],
+      "clusterKeys": ["the-nalee-system", "tiling-and-truchet", "subdivided-grids", "isometric-and-architectural-space"]
+    },
+    {
+      "kind": "deepen-series",
+      "title": "Make snowflake's distance-power-modulo a series",
+      "body": "Only two sketches, a year apart, explore the floor(dist^scale) mod palette rule (snowflake, then snowflake/16x16 which retiles it at escalating exponents) — a genuinely clean specific-object system that concentric-square-bands a dot grid. It never became a series. Vary the one thing that matters: swap the Euclidean metric for Manhattan and Chebyshev (as voxels/todd-kelly already does for heights), change the modulo base, and animate the exponent alone so the banding breathes without any other motion.",
+      "relatedIds": [
+        "sketches/snowflake/snowflake",
+        "sketches/snowflake/16x16",
+        "sketches/voxels/todd-kelly",
+        "sketches/voxels/wave"
+      ],
+      "tags": ["modulo-pattern", "distance-field", "tiling", "grid-study", "systematic-variation"],
+      "clusterKeys": ["tiling-and-truchet", "isometric-and-architectural-space"]
+    },
+    {
+      "kind": "technique-transfer",
+      "title": "Push systems other than nalee through the conformal and bipolar maps",
+      "body": "conformal-mapping/nalee already warps nalee walker paths through sin(z) and proves the warp composes cleanly onto a real system — but only nalee ever gets warped, even though the transforms catalogue has z², 1/z, exp and ln ready and bipolar adds spiral/lens space. Push a different rigid orthogonal system through the same maps: the anni-weaving weave grid, the xor interference field, the Wang-tile quilt, heerich's isometric voxel lattice, or clixo's tile grid, applying the conformal/bipolar domainToWorld to their cell positions. Systematic distortion of an already-gridded object reads very differently on a woven, moiré, or isometric source.",
+      "relatedIds": [
+        "sketches/conformal-mapping/nalee",
+        "sketches/conformal-mapping/transforms",
+        "sketches/anni-weaving/weaves",
+        "sketches/xor/lines",
+        "sketches/paint-without-thinking/arcs-reduction-rounded",
+        "sketches/conformal-mapping/grid",
+        "sketches/bipolar/spiral",
+        "sketches/bipolar/basic",
+        "sketches/voxels/panna-meena",
+        "sketches/clixo/shape"
+      ],
+      "tags": ["domain-warping", "space-filling", "weaving-structure", "xor-pattern", "grid-study", "conformal-mapping", "bipolar-coordinates", "isometric-projection"],
+      "clusterKeys": ["fields-flows-and-waves", "weaving-and-thread", "moire-and-op-art", "tiling-and-truchet", "isometric-and-architectural-space"]
+    },
+    {
+      "kind": "outlier-worth-revisiting",
+      "title": "Stippling returned without its voronoi engine",
+      "body": "stipling-noise (2024) built stippling on a voronoi + Lloyd-relaxation core, but the 15-sketch rubber-band-stipple revival (2026) rebuilt point distribution from poisson-disk and convex hulls and dropped voronoi/Lloyd entirely — a capable relaxation engine left on the shelf. Reintroduce Lloyd relaxation into rubber-band-stipple so the stipple points settle into even, organic spacing, or use the voronoi cells themselves as the woven regions.",
+      "relatedIds": [
+        "sketches/stipling-noise/stipling-noise",
+        "sketches/stipling-noise/voronoi-stipling-basic",
+        "sketches/rubber-band-stipple/rubber-band-stipple",
+        "sketches/rubber-band-stipple/skeleton-field",
+        "sketches/rubber-band-stipple/shapes",
+        "sketches/chladni/basic"
+      ],
+      "tags": ["voronoi", "stippling", "poisson-disk", "clustering"],
+      "clusterKeys": ["hulls-and-aggregates", "fields-flows-and-waves"]
+    },
+    {
+      "kind": "technique-transfer",
+      "title": "Dither the flat domain-polygon and nalee fields",
+      "body": "Dithering is a first-class utility here (src/dither.ts) and carries cluster-growth, curve-particles and gravura, but domain-polygon uses it zero times and nalee only twice across 73 sketches — both systems output large flat color areas that are exactly what an ordered/error-diffusion dither transforms. Run domain-polygon's subdivided regions and nalee's ribbons through the existing dither pass to add tonal grain and gradient banding without changing the geometry.",
+      "relatedIds": [
+        "sketches/domain-polygon/basic",
+        "sketches/domain-polygon/16x16",
+        "sketches/nalee/sketches/basic",
+        "sketches/gravura/basic",
+        "sketches/curve-particles/chunky",
+        "sketches/cluster-growth/basic"
+      ],
+      "tags": ["dithering", "domain-polygon", "nalee", "recursive-subdivision", "gradients"],
+      "clusterKeys": ["subdivided-grids", "the-nalee-system", "concrete-art-and-color-planes", "fields-flows-and-waves", "emergent-grids-and-automata"]
+    },
+    {
+      "kind": "unexplored-combination",
+      "title": "Build tonal-monochrome twins of the loud series",
+      "body": "curve-particles lives entirely in chromotome color with Atkinson dithering, and quantum-equivalence and gravura only ever appear saturated — yet the record's quietest, strongest pieces are tonal monochrome (black-on-black's near-black P3 greys, gears, grey-goo). Make the missing twin: run curve-particles' dithered particle-and-mesh system in near-black tonal greys like black-on-black, so the same anti-compositional flow field yields a hushed grisaille object instead of a bright one.",
+      "relatedIds": [
+        "sketches/curve-particles/crumble-chunky",
+        "sketches/curve-particles/backdrop",
+        "sketches/black-on-black",
+        "sketches/quantum-equivalence/rybitten-rainbow",
+        "sketches/gravura/rainbow"
+      ],
+      "tags": ["particle-system", "dithering", "domain-warping", "monochrome", "color-study"],
+      "clusterKeys": ["fields-flows-and-waves", "subdivided-grids", "concrete-art-and-color-planes"]
+    },
+    {
+      "kind": "outlier-worth-revisiting",
+      "title": "Compose the raycasting silhouettes without a mouse",
+      "body": "raycasting/circles and raycasting/solid cut the lit visibility polygon out of a black shadow layer with destination-out — light reveals the ground as a calm, minimal negative shape, exactly the quiet register PRODUCT.md wants. But all four raycasting pieces are interactive, tied to a following mouse, so they never resolve into a fixed image. Move the emitter by rule instead of cursor and render static, composed silhouettes; the strongest image here is one nobody can currently see standing still.",
+      "relatedIds": [
+        "sketches/raycasting/circles",
+        "sketches/raycasting/solid",
+        "sketches/raycasting/basic",
+        "sketches/raycasting/grid"
+      ],
+      "tags": ["raycasting", "negative-space", "circle-packing", "clipping-mask", "minimalism"],
+      "clusterKeys": ["isometric-and-architectural-space"]
+    },
+    {
+      "kind": "series-opportunity",
+      "title": "A dedicated Robert Swain color-field series",
+      "body": "Robert Swain shows up four times — boolean/robert-swain, clearloop/robert-swain, clearloop/robert-swain-lights-on-off, and echoed in spectrum-colors-arranged-by-chance — but always as a borrowed palette, never as its own object. Swain's actual practice is the systematic color-gradient grid across a full hue wheel. Build the series he implies: the 40x40 chance-placed RYB grid of rybitten-blinds resolved into an ordered 30-step hue-by-value lattice, one specific color object per canvas.",
+      "relatedIds": [
+        "sketches/boolean/robert-swain",
+        "sketches/clearloop/robert-swain",
+        "sketches/clearloop/robert-swain-lights-on-off",
+        "sketches/spectrum-colors-arranged-by-chance/rybitten-blinds",
+        "sketches/development-of-concrete-art/fibonacci"
+      ],
+      "tags": ["color-study", "grid-study", "concrete-art", "chance-operations", "custom-hex"],
+      "clusterKeys": ["concrete-art-and-color-planes", "weaving-and-thread"]
+    },
+    {
+      "kind": "series-opportunity",
+      "title": "Formalize the diagrammatic-instrument register",
+      "body": "A mock-technical-drawing voice keeps surfacing unplanned: rubber-banding/micro-graphics frames the band as a HUD, rubber-band-stipple/weaving-techniques as a pulley schematic, terminal-charts as box-drawing plots, memory-leak as a fake cartridge, quine as its own scrolling source. Each is a specific object that happens to look like an instrument. Make it deliberate — a series of ‘instruments’ where the generative geometry is rendered as its own annotated technical drawing (tick marks, tangent construction lines, counters) so the diagram is the object, not an explanation of one.",
+      "relatedIds": [
+        "sketches/rubber-banding/micro-graphics",
+        "sketches/rubber-band-stipple/weaving-techniques",
+        "sketches/terminal-charts/terminal-charts",
+        "sketches/memory-leak/memory-leak",
+        "sketches/quine"
+      ],
+      "tags": ["ascii-render", "self-reference", "process-as-image", "typography", "glyphs"],
+      "clusterKeys": ["hulls-and-aggregates", "ascii-and-terminal", "emergent-grids-and-automata"]
+    },
+    {
+      "kind": "outlier-worth-revisiting",
+      "title": "Turn the dry-brush field stroke into a study",
+      "body": "electric-field/gradient-paint renders flux lines as multi-bristle dry-brush strokes — a painterly, gestural texture that appears essentially nowhere else in a record dominated by hard-edge, flat shapes (198 hard-edge vs a handful of soft). It's a genuine outlier worth interrogating rather than leaving as a one-off. Apply the same multi-bristle stroke to the other vector and trail fields — physarum trails, curve-particles, chladni trails — as a deliberate 'brushed field' study to see whether the studio has a quiet painterly register at all.",
+      "relatedIds": [
+        "sketches/electric-field/gradient-paint",
+        "sketches/electric-field/gradient",
+        "sketches/physarum/trail",
+        "sketches/chladni/trail",
+        "sketches/curve-particles/backdrop"
+      ],
+      "tags": ["flow-field", "particle-system", "hatching", "gradients", "generated"],
+      "clusterKeys": ["fields-flows-and-waves", "simulation-and-physics"]
+    },
+    {
+      "kind": "unexplored-combination",
+      "title": "Cross xor/moire with a named grid system",
+      "body": "The xor series (eight sketches, Jan 2026) generates moire and XOR interference on its own bespoke grid and never touches any engine; nalee, heerich and clixo all maintain exactly the regular lattices XOR patterns need. Compute an xor-pattern field over a nalee grid domain or a heerich isometric lattice and use it to gate cell fill or ribbon color, marrying the interference look to a real spatial system.",
+      "relatedIds": [
+        "sketches/xor/lines",
+        "sketches/xor/hexagon",
+        "sketches/xor/triangle",
+        "sketches/automata/xortomata",
+        "sketches/nalee/sketches/basic",
+        "sketches/voxels/wave",
+        "sketches/clixo/overlap"
+      ],
+      "tags": ["xor-pattern", "moire", "tiling", "polar-grid", "isometric-projection"],
+      "clusterKeys": ["moire-and-op-art", "emergent-grids-and-automata", "the-nalee-system", "isometric-and-architectural-space", "tiling-and-truchet"]
+    },
+    {
+      "kind": "abandoned-thread",
+      "title": "Wire the abandoned adjacency solvers into clixo and nalee",
+      "body": "paint-without-thinking built a full Wang/truchet adjacency solver (all ten sketches dated 2025-09-26) and wave-function-collapse built an adjacency-constraint solver (eight variants, one day, 2024-11-27) — neither has driven a layout since, while clixo and quantum-equivalence still tile by hand. Repurpose one solver as the placement brain: let it drive clixo's tile selection, seed a nalee sub-domain layout, or place paint-without-thinking's own tile set, so collapse and adjacency constraints replace hand-tuned modulo and random placement.",
+      "relatedIds": [
+        "sketches/paint-without-thinking/arcs",
+        "sketches/paint-without-thinking/everything",
+        "sketches/paint-without-thinking/arcs-reduction",
+        "sketches/bauhaus/truchet",
+        "sketches/jali/truchet",
+        "sketches/clixo/criss-cross",
+        "sketches/wave-function-collapse/1",
+        "sketches/wave-function-collapse/4",
+        "sketches/wave-function-collapse/8",
+        "sketches/paint-without-thinking/grid-areas",
+        "sketches/clearloop/basic"
+      ],
+      "tags": ["truchet-tiles", "wang-tiles", "tiling", "modulo-pattern", "wave-function-collapse", "cellular-automata"],
+      "clusterKeys": ["tiling-and-truchet", "concrete-art-and-color-planes", "emergent-grids-and-automata", "weaving-and-thread"]
+    },
+    {
+      "kind": "deepen-series",
+      "title": "Return to the Wang-tile 'paint without thinking' at density",
+      "body": "The ten-sketch burst of paint-without-thinking (all one day, Sept 2025) grows edge-matched arc and triangle Wang tiles into flat color areas — the most rigorously anti-compositional system in the whole record, arrangements discovered entirely by tile-matching. arcs-reduction-rounded is the quilt-like keeper. It never came back. Revisit it as a printed suite and add the scale it lacks: a full-bleed field of hundreds of tiny arc tiles rather than a 3x3 grid, where the found composition emerges at density.",
+      "relatedIds": [
+        "sketches/paint-without-thinking/arcs-reduction-rounded",
+        "sketches/paint-without-thinking/just-arcs",
+        "sketches/paint-without-thinking/everything",
+        "sketches/paint-without-thinking/grid-areas",
+        "sketches/paint-without-thinking/arcs-reduction-rounded-animated"
+      ],
+      "tags": ["wang-tiles", "truchet-tiles", "found-composition", "space-filling", "found-colors"],
+      "clusterKeys": ["tiling-and-truchet"]
+    },
+    {
+      "kind": "abandoned-thread",
+      "title": "Feed the archive back into itself",
+      "body": "color-traveller/color-traveller-images literally feeds the sketchbook's own dated PNG exports back in as source frames and cross-fades them; quine scrolls its own source; disco-color-fractions/console draws into the devtools console. process-as-image is the fourth-largest concept (92 sketches), yet self-reference is a one-off every time. Pursue it as a series that renders the record itself — morph a day's outputs into each other, or pack a year of archive thumbnails into a single generated field — turning the archive into material.",
+      "relatedIds": [
+        "sketches/color-traveller/color-traveller-images",
+        "sketches/color-traveller/color-traveller-canvas",
+        "sketches/quine",
+        "sketches/disco-color-fractions/console",
+        "sketches/memory-leak/memory-leak"
+      ],
+      "tags": ["self-reference", "process-as-image", "image-sampling", "pixel-manipulation", "chance-operations"],
+      "clusterKeys": ["emergent-grids-and-automata", "ascii-and-terminal", "color-studies-and-gradients"]
+    },
+    {
+      "kind": "abandoned-thread",
+      "title": "Port the CPU field-sims onto the idle WebGPU harness",
+      "body": "367 of 372 catalogued sketches are canvas2d, yet a working WebGPU stack (Clifford attractors, raymarch, GPU particles, GPU reaction-diffusion) sits in src/shader-sketches and never enters the archive. The catalogued physarum trail-sim, chladni plate, boids flock, verlet soft-bodies and subtractive-diffusion are all O(n^2) or per-pixel iterative and CPU-bound — reimplement one on the existing wgpu compute harness to unlock resolutions and step counts the canvas versions can't reach.",
+      "relatedIds": [
+        "sketches/physarum/basic",
+        "sketches/chladni/basic",
+        "sketches/boids/gradient-quadtree",
+        "sketches/soft-body/verlet-collision-quadtree",
+        "sketches/subtractive-diffusion",
+        "sketches/electric-field/basic"
+      ],
+      "tags": ["reaction-diffusion", "particle-system", "physarum", "verlet-physics", "canvas2d"],
+      "clusterKeys": ["simulation-and-physics", "fields-flows-and-waves", "emergent-grids-and-automata"]
+    }
+  ]
+}
