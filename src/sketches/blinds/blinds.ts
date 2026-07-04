@@ -5,9 +5,7 @@ import { mapRange, clamp, wrap as wrapN } from 'canvas-sketch-util/math';
 import { Pane } from 'tweakpane';
 import { formatCss, oklch } from 'culori';
 import { ColorPaletteGenerator } from 'pro-color-harmonies';
-import { rybHsl2rgb } from 'rybitten';
-import { cubes, ColorCoords } from 'rybitten/cubes';
-import { threeHueHighContrastScheme } from '../../colors/hsluv';
+import type { PaletteType, PaletteStyle } from 'pro-color-harmonies';
 import { logColors } from '../../colors';
 
 /**
@@ -25,7 +23,6 @@ type PhaseMode = 'uniform' | 'stagger' | 'group' | 'randomQuantized';
 type PairingMode = 'gradient' | 'chained' | 'pairs';
 type AxisMode = 'narrow' | 'long' | 'vertical' | 'horizontal' | 'random';
 type DirMode = 'uniform' | 'alternate' | 'random';
-type PaletteMode = 'rybitten' | 'harmonies' | 'hsluv';
 
 interface CellRect {
   x: number;
@@ -62,7 +59,8 @@ interface DebugField {
 }
 
 const config = {
-  palette: 'rybitten' as PaletteMode,
+  harmony: 'random' as PaletteType | 'random',
+  style: 'random' as PaletteStyle | 'random',
   pairing: 'gradient' as PairingMode,
   phase: 'group' as PhaseMode,
   axis: 'narrow' as AxisMode,
@@ -81,16 +79,12 @@ const config = {
   offCenter: 0.25,
   voidWeight: 1.0,
   topK: 3,
-  maxSideFrac: 0.5,
+  minSide: 2,
+  maxSide: 10,
   debug: false,
 };
 
 /* ---------------------------------- color --------------------------------- */
-
-const rybCss = (rgb: ColorCoords): string =>
-  `rgb(${Math.round(rgb[0] * 255)} ${Math.round(rgb[1] * 255)} ${Math.round(
-    rgb[2] * 255
-  )})`;
 
 const shade = (color: string, dl: number): string => {
   const c = oklch(color);
@@ -98,43 +92,39 @@ const shade = (color: string, dl: number): string => {
   return formatCss({ ...c, mode: 'oklch', l: clamp(c.l + dl, 0.08, 0.93) });
 };
 
-const paletteFns: Record<PaletteMode, () => string[]> = {
-  rybitten: () => {
-    const gamut = cubes.get(Random.pick([...cubes.keys()]))!;
-    const h = Random.range(0, 360);
-    const s = Random.range(0.25, 0.75);
-    const l = Random.range(0.5, 0.75);
-    return [0, 1, 2, 3, 4].map((i) =>
-      rybCss(rybHsl2rgb([h + i * 72, s, l], { cube: gamut.cube }))
-    );
-  },
-  harmonies: () =>
-    ColorPaletteGenerator.generate(
-      {
-        l: Random.range(0.4, 0.8),
-        c: Random.range(0.1, 0.4),
-        h: Random.range(0, 360),
+const HARMONIES: PaletteType[] = [
+  'analogous',
+  'complementary',
+  'triadic',
+  'tetradic',
+  'splitComplementary',
+  'tintsShades',
+];
+const STYLES: PaletteStyle[] = ['default', 'square', 'triangle', 'circle', 'diamond'];
+
+// single color engine: pro-color-harmonies from a seeded oklch base color
+function generatePalette(): string[] {
+  const harmony =
+    config.harmony === 'random' ? Random.pick(HARMONIES) : config.harmony;
+  const style = config.style === 'random' ? Random.pick(STYLES) : config.style;
+  return ColorPaletteGenerator.generate(
+    {
+      l: Random.range(0.4, 0.8),
+      c: Random.range(0.1, 0.4),
+      h: Random.range(0, 360),
+    },
+    harmony,
+    {
+      style,
+      modifiers: {
+        sine: Random.range(-1, 1),
+        wave: Random.range(-1, 1),
+        zap: Random.range(-1, 1),
+        block: Random.range(-1, 1),
       },
-      Random.pick([
-        'analogous',
-        'complementary',
-        'triadic',
-        'tetradic',
-        'splitComplementary',
-        'tintsShades',
-      ]),
-      {
-        style: Random.pick(['default', 'square', 'triangle', 'circle', 'diamond']),
-        modifiers: {
-          sine: Random.range(-1, 1),
-          wave: Random.range(-1, 1),
-          zap: Random.range(-1, 1),
-          block: Random.range(-1, 1),
-        },
-      }
-    ).map((c) => formatCss(oklch({ mode: 'oklch', ...c }))),
-  hsluv: () => threeHueHighContrastScheme(),
-};
+    }
+  ).map((c) => formatCss(oklch({ mode: 'oklch', ...c })));
+}
 
 /* ------------------------- negative-space layout --------------------------- */
 
@@ -190,19 +180,24 @@ function voidScore(occ: Uint8Array, res: number): number {
   return midFrac - Math.min(dMax, depthCap) / depthCap;
 }
 
-function sampleCell(res: number, margin: number, maxSide: number): CellRect | null {
+function sampleCell(
+  res: number,
+  margin: number,
+  minSide: number,
+  maxSide: number
+): CellRect | null {
   const inner = res - margin * 2;
-  const thin = Math.max(2, Math.floor(maxSide / 3));
+  const thin = Math.max(minSide, Math.floor(maxSide / 3));
   const cls = Random.pick(['tall', 'wide', 'square']);
   let w: number, h: number;
   if (cls === 'tall') {
-    w = Random.rangeFloor(2, thin + 1);
+    w = Random.rangeFloor(minSide, thin + 1);
     h = Random.rangeFloor(Math.min(w * 2, maxSide), maxSide + 1);
   } else if (cls === 'wide') {
-    h = Random.rangeFloor(2, thin + 1);
+    h = Random.rangeFloor(minSide, thin + 1);
     w = Random.rangeFloor(Math.min(h * 2, maxSide), maxSide + 1);
   } else {
-    w = Random.rangeFloor(2, maxSide + 1);
+    w = Random.rangeFloor(minSide, maxSide + 1);
     h = w;
   }
   if (w > inner || h > inner) return null;
@@ -231,10 +226,9 @@ function layoutNegativeSpace(
   const res = config.res;
   const cw = width / res;
   const ch = height / res;
-  const maxSide = Math.max(
-    3,
-    Math.floor((res - config.margin * 2) * config.maxSideFrac)
-  );
+  const inner = res - config.margin * 2;
+  const maxSide = clamp(config.maxSide, 1, inner);
+  const minSide = clamp(config.minSide, 1, maxSide);
 
   const tx = res / 2 + Random.range(-1, 1) * config.offCenter * (res / 2);
   const ty = res / 2 + Random.range(-1, 1) * config.offCenter * (res / 2);
@@ -248,7 +242,7 @@ function layoutNegativeSpace(
   while (rects.length < config.maxRects && sumW / (res * res) < config.inkRatio) {
     const scored: Array<{ r: CellRect; score: number }> = [];
     for (let c = 0; c < config.candidates; c++) {
-      const r = sampleCell(res, config.margin, maxSide);
+      const r = sampleCell(res, config.margin, minSide, maxSide);
       if (!r || overlaps(occ, r, res)) continue;
 
       const w = r.w * r.h;
@@ -459,7 +453,8 @@ layoutFolder.addBinding(config, 'candidates', { min: 8, max: 96, step: 8 });
 layoutFolder.addBinding(config, 'offCenter', { min: 0, max: 0.6, step: 0.05 });
 layoutFolder.addBinding(config, 'voidWeight', { min: 0, max: 2, step: 0.1 });
 layoutFolder.addBinding(config, 'topK', { min: 1, max: 8, step: 1 });
-layoutFolder.addBinding(config, 'maxSideFrac', { min: 0.2, max: 0.8, step: 0.05 });
+layoutFolder.addBinding(config, 'minSide', { min: 1, max: 24, step: 1 });
+layoutFolder.addBinding(config, 'maxSide', { min: 1, max: 24, step: 1 });
 layoutFolder.addBinding(config, 'staticChance', { min: 0, max: 0.5, step: 0.05 });
 layoutFolder.addBinding(config, 'debug');
 
@@ -489,8 +484,26 @@ motionFolder.addBinding(config, 'dwell', { min: 0, max: 0.95, step: 0.05 });
 motionFolder.addBinding(config, 'phaseSteps', { min: 2, max: 8, step: 1 });
 
 const colorFolder = pane.addFolder({ title: 'Color' });
-colorFolder.addBinding(config, 'palette', {
-  options: { rybitten: 'rybitten', harmonies: 'harmonies', hsluv: 'hsluv' },
+colorFolder.addBinding(config, 'harmony', {
+  options: {
+    random: 'random',
+    analogous: 'analogous',
+    complementary: 'complementary',
+    triadic: 'triadic',
+    tetradic: 'tetradic',
+    splitComplementary: 'splitComplementary',
+    tintsShades: 'tintsShades',
+  },
+});
+colorFolder.addBinding(config, 'style', {
+  options: {
+    random: 'random',
+    default: 'default',
+    square: 'square',
+    triangle: 'triangle',
+    circle: 'circle',
+    diamond: 'diamond',
+  },
 });
 colorFolder.addBinding(config, 'pairing', {
   options: { gradient: 'gradient', chained: 'chained', pairs: 'pairs' },
@@ -535,9 +548,9 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
     if (built && built.sig === sig) return built;
 
     Random.setSeed(seed);
-    const palette = paletteFns[config.palette]();
+    const palette = generatePalette();
 
-    const logSig = `${seed}:${config.palette}`;
+    const logSig = `${seed}:${config.harmony}:${config.style}`;
     if (logged !== logSig) {
       console.log('Seed:', seed);
       logColors(palette);
