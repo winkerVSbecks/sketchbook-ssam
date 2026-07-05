@@ -68,7 +68,6 @@ const config = {
   panels: 2,
   dwell: 0.5,
   phaseSteps: 4,
-  bgTint: true,
   staticChance: 0.1,
   // layout
   res: 24,
@@ -81,6 +80,7 @@ const config = {
   topK: 3,
   minSide: 2,
   maxSide: 10,
+  alignTouch: true,
   debug: false,
 };
 
@@ -91,6 +91,9 @@ const shade = (color: string, dl: number): string => {
   if (!c) return color;
   return formatCss({ ...c, mode: 'oklch', l: clamp(c.l + dl, 0.08, 0.93) });
 };
+
+const lightest = (palette: string[]): string =>
+  palette.reduce((a, b) => ((oklch(a)?.l ?? 0) >= (oklch(b)?.l ?? 0) ? a : b));
 
 const HARMONIES: PaletteType[] = [
   'analogous',
@@ -217,6 +220,19 @@ function mark(occ: Uint8Array, r: CellRect, res: number) {
     for (let x = r.x; x < r.x + r.w; x++) occ[y * res + x] = 1;
 }
 
+// Rects abutting along an edge must share at least one flush perpendicular
+// edge (tops/bottoms for side-by-side, lefts/rights for stacked) — no
+// staggered seams. Corner-only contact and non-touching rects pass.
+function touchAligned(a: CellRect, b: CellRect): boolean {
+  const xOverlap = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+  const yOverlap = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+  const sideBySide = (a.x + a.w === b.x || b.x + b.w === a.x) && yOverlap > 0;
+  const stacked = (a.y + a.h === b.y || b.y + b.h === a.y) && xOverlap > 0;
+  if (sideBySide) return a.y === b.y || a.y + a.h === b.y + b.h;
+  if (stacked) return a.x === b.x || a.x + a.w === b.x + b.w;
+  return true;
+}
+
 // Greedy placement: each step samples candidates and keeps the one that
 // minimizes moment imbalance toward the anchor plus the void penalty.
 function layoutNegativeSpace(
@@ -244,6 +260,7 @@ function layoutNegativeSpace(
     for (let c = 0; c < config.candidates; c++) {
       const r = sampleCell(res, config.margin, minSide, maxSide);
       if (!r || overlaps(occ, r, res)) continue;
+      if (config.alignTouch && rects.some((p) => !touchAligned(r, p))) continue;
 
       const w = r.w * r.h;
       const cx = (sumWx + w * (r.x + r.w / 2)) / (sumW + w);
@@ -455,6 +472,7 @@ layoutFolder.addBinding(config, 'voidWeight', { min: 0, max: 2, step: 0.1 });
 layoutFolder.addBinding(config, 'topK', { min: 1, max: 8, step: 1 });
 layoutFolder.addBinding(config, 'minSide', { min: 1, max: 24, step: 1 });
 layoutFolder.addBinding(config, 'maxSide', { min: 1, max: 24, step: 1 });
+layoutFolder.addBinding(config, 'alignTouch');
 layoutFolder.addBinding(config, 'staticChance', { min: 0, max: 0.5, step: 0.05 });
 layoutFolder.addBinding(config, 'debug');
 
@@ -508,7 +526,6 @@ colorFolder.addBinding(config, 'style', {
 colorFolder.addBinding(config, 'pairing', {
   options: { gradient: 'gradient', chained: 'chained', pairs: 'pairs' },
 });
-colorFolder.addBinding(config, 'bgTint');
 
 const regenBtn = pane.addButton({ title: 'Regenerate' });
 
@@ -567,9 +584,7 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
       colors: pickColors(s, i, palette),
     }));
 
-    const bg = config.bgTint
-      ? `oklch(from ${palette[0]} 0.96 calc(c * 0.2) h)`
-      : '#fff';
+    const bg = lightest(palette);
 
     built = { sig, bg, blinds, field };
     return built;
