@@ -125,7 +125,10 @@
       "Bash(node /private/tmp/claude-501/-Users-varun-Documents-projects-sketchbook-ssam/e310c988-0ccf-42ff-8166-097ea8baa1f2/scratchpad/verify.mjs)",
       "Bash(echo \"exit: $?\")",
       "Bash(echo \"blinds errors exit: $?\")",
-      "Bash(bash .claude/skills/render-sketch/render.sh)"
+      "Bash(bash .claude/skills/render-sketch/render.sh)",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "Bash(echo \"grep exit: $?\")",
+      "Bash(lsof -iTCP:5173 -sTCP:LISTEN)"
     ]
   },
   "hooks": {
