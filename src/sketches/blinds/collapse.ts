@@ -11,11 +11,12 @@ import { logColors } from '../../colors';
 /**
  * collapse — fork of blinds. The negative-space layout is computed, then
  * gravity finishes it: every block slides cell-by-cell toward the centre
- * until it locks flush against its neighbours, so the final composition is
- * one gapless mass. A backdrop rectangle shrink-wraps the pack — its bounds
- * plus a cell margin — in the palette's background color, floating on a
- * white canvas. The rects never move at runtime — only the clipped color
- * panels slide.
+ * until it locks flush against its neighbours, and a seal pass — where
+ * overlap is allowed — pulls each block over its nearer neighbours until
+ * every lane of its span is in contact, so no gap survives anywhere in the
+ * mass. A backdrop rectangle shrink-wraps the pack — its bounds plus a cell
+ * margin — in the palette's background color, floating on a white canvas.
+ * The rects never move at runtime — only the clipped color panels slide.
  */
 
 type PhaseMode = 'uniform' | 'stagger' | 'group' | 'randomQuantized';
@@ -67,15 +68,16 @@ const config = {
   panels: 2,
   dwell: 0.5,
   phaseSteps: 4,
+  bgTint: true,
   staticChance: 0.1,
   // layout
-  res: 24,
+  res: Random.rangeFloor(16, 32),
   margin: 2,
   inkRatio: 0.32,
-  maxRects: 12,
+  maxRects: Random.pick([4, 6, 12, 18, 24]),
   candidates: 32,
-  offCenter: 0.25,
-  voidWeight: 1.0,
+  offCenter: Random.range(0, 0.6),
+  voidWeight: Random.range(0, 2.0),
   topK: 3,
   minSide: 2,
   maxSide: 10,
@@ -286,7 +288,79 @@ function collapseRects(rects: CellRect[], res: number): CellRect[] {
         moved = true;
     }
   }
+  sealGaps(out, res);
   return out;
+}
+
+// Slide rect i toward the centre along one axis by the LARGEST per-lane gap
+// to the first block ahead in that lane. Lanes already in contact (touching
+// or overlapping) contribute 0; lanes with nothing ahead are ignored. Moving
+// by the max seals every lane's gap, overlapping the nearer blocks — which
+// the collapse explicitly permits. Returns true if the rect moved.
+function slideToContact(
+  out: CellRect[],
+  i: number,
+  axis: 'x' | 'y',
+  res: number,
+): boolean {
+  const r = out[i];
+  const main = axis === 'x' ? r.x : r.y;
+  const size = axis === 'x' ? r.w : r.h;
+  const cross = axis === 'x' ? r.y : r.x;
+  const crossSize = axis === 'x' ? r.h : r.w;
+  const s = Math.sign(res / 2 - (main + size / 2));
+  if (s === 0) return false;
+
+  let d = 0;
+  for (let lane = cross; lane < cross + crossSize; lane++) {
+    let gap = Infinity;
+    for (let j = 0; j < out.length; j++) {
+      if (j === i) continue;
+      const o = out[j];
+      const oMain = axis === 'x' ? o.x : o.y;
+      const oSize = axis === 'x' ? o.w : o.h;
+      const oCross = axis === 'x' ? o.y : o.x;
+      const oCrossSize = axis === 'x' ? o.h : o.w;
+      if (lane < oCross || lane >= oCross + oCrossSize) continue;
+      let g: number;
+      if (oMain < main + size && main < oMain + oSize)
+        g = 0; // in contact
+      else if (s > 0 && oMain >= main + size) g = oMain - (main + size);
+      else if (s < 0 && oMain + oSize <= main) g = main - (oMain + oSize);
+      else continue; // behind the direction of travel
+      if (g < gap) gap = g;
+    }
+    if (gap !== Infinity && gap > d) d = gap;
+  }
+
+  // never slide the rect's centre past the canvas centre
+  d = Math.min(d, Math.floor(Math.abs(res / 2 - (main + size / 2))));
+  if (d <= 0) return false;
+  if (axis === 'x') r.x += s * d;
+  else r.y += s * d;
+  return true;
+}
+
+// Seal pass: the no-overlap gravity stops a rect at its FIRST contact, which
+// leaves notches where the rest of its span still faces a gap. Working from
+// the outside in, slide every rect to full-span contact until stable.
+function sealGaps(out: CellRect[], res: number): void {
+  const c = res / 2;
+  let moved = true;
+  let rounds = 0;
+  while (moved && rounds++ < res * 4) {
+    moved = false;
+    const order = out
+      .map((r, i) => ({
+        i,
+        d: Math.hypot(r.x + r.w / 2 - c, r.y + r.h / 2 - c),
+      }))
+      .sort((a, b) => b.d - a.d);
+    for (const { i } of order) {
+      if (slideToContact(out, i, 'x', res)) moved = true;
+      if (slideToContact(out, i, 'y', res)) moved = true;
+    }
+  }
 }
 
 // Greedy placement: each step samples candidates and keeps the one that
@@ -628,6 +702,7 @@ colorFolder.addBinding(config, 'style', {
 colorFolder.addBinding(config, 'pairing', {
   options: { gradient: 'gradient', chained: 'chained', pairs: 'pairs' },
 });
+colorFolder.addBinding(config, 'bgTint');
 
 const regenBtn = pane.addButton({ title: 'Regenerate' });
 
@@ -702,7 +777,9 @@ export const sketch = ({
   wrap.render = ({ playhead }: SketchProps) => {
     const frame = buildFrame();
 
-    context.fillStyle = '#fff';
+    context.fillStyle = config.bgTint
+      ? `oklch(from ${frame.bg} calc(l * 2) calc(c * .1) h)`
+      : '#fff';
     context.fillRect(0, 0, width, height);
 
     context.fillStyle = frame.bg;
