@@ -184,5 +184,7 @@ export function createNaleeSystem(
     runSimulation();
   };
 
+  render.walkers = state.walkers;
+
   return render;
 }
