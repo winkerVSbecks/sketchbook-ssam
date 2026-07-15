@@ -5,6 +5,9 @@
 - Build: `npm run build`
 - Preview: `npm run preview`
 
+## Verifying sketch changes
+- After any code change to a sketch, use the `verify-sketch` skill (LSP diagnostics + render a frame via `/export`) — not Playwright, not a manually invented curl/browser flow. It's proactive: invoke it after `implement-sketch`, `clrs`, `fork-sketch`, `create-sketch`, or any other edit that changes visual output, without waiting to be asked.
+
 ## Archive
 - `npm run archive` — incremental: renders only sketches whose last git commit changed (or new ones), uploads PNGs to Cloudinary, regenerates `archive-app/archive.json` + the site in `archive-app/dist/`.
 - `npm run archive:site` — regenerate the static site from existing `archive.json` only (no rendering or uploads). Useful for tweaking HTML/CSS.

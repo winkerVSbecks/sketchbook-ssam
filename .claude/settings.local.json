@@ -128,7 +128,15 @@
       "Bash(bash .claude/skills/render-sketch/render.sh)",
       "mcp__plugin_playwright_playwright__browser_navigate",
       "Bash(echo \"grep exit: $?\")",
-      "Bash(lsof -iTCP:5173 -sTCP:LISTEN)"
+      "Bash(lsof -iTCP:5173 -sTCP:LISTEN)",
+      "Bash(sips -c 400 900 -o /tmp/crop1.png output/2026.07.09-16.07.20.png)",
+      "mcp__plugin_playwright_playwright__browser_console_messages",
+      "mcp__plugin_playwright_playwright__browser_take_screenshot",
+      "mcp__plugin_playwright_playwright__browser_tabs",
+      "Bash(awk -F/ '{print $2, $3}')",
+      "mcp__plugin_playwright_playwright__browser_click",
+      "mcp__plugin_playwright_playwright__browser_close",
+      "mcp__plugin_playwright_playwright__browser_run_code_unsafe"
     ]
   },
   "hooks": {
