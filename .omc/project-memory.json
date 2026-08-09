@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1784090634210,
+  "lastScanned": 1786280172776,
   "projectRoot": "/Users/varun/Documents/projects/sketchbook-ssam",
   "techStack": {
     "languages": [
@@ -81,7 +81,7 @@
       "path": "archive-app",
       "purpose": null,
       "fileCount": 8,
-      "lastAccessed": 1784090634005,
+      "lastAccessed": 1786280172742,
       "keyFiles": [
         "archive.json",
         "atlas.json",
@@ -94,7 +94,7 @@
       "path": "assets",
       "purpose": "Static assets",
       "fileCount": 3,
-      "lastAccessed": 1784090634076,
+      "lastAccessed": 1786280172743,
       "keyFiles": [
         "skeletor.svg",
         "varun.svg"
@@ -104,7 +104,7 @@
       "path": "docs",
       "purpose": "Documentation",
       "fileCount": 2,
-      "lastAccessed": 1784090634093,
+      "lastAccessed": 1786280172744,
       "keyFiles": [
         "cloud-rendering.md",
         "ideas.md"
@@ -114,7 +114,7 @@
       "path": "learn-webgpu",
       "purpose": null,
       "fileCount": 3,
-      "lastAccessed": 1784090634105,
+      "lastAccessed": 1786280172745,
       "keyFiles": [
         "MISSION.md",
         "NOTES.md",
@@ -125,7 +125,7 @@
       "path": "output",
       "purpose": null,
       "fileCount": 5720,
-      "lastAccessed": 1784090634123,
+      "lastAccessed": 1786280172768,
       "keyFiles": [
         "2023.12.13-15.21.58.mp4",
         "2023.12.13-15.33.09.mp4",
@@ -138,7 +138,7 @@
       "path": "previews",
       "purpose": null,
       "fileCount": 1,
-      "lastAccessed": 1784090634140,
+      "lastAccessed": 1786280172768,
       "keyFiles": [
         "albers-meander.png"
       ]
@@ -147,7 +147,7 @@
       "path": "scripts",
       "purpose": "Build/utility scripts",
       "fileCount": 5,
-      "lastAccessed": 1784090634148,
+      "lastAccessed": 1786280172768,
       "keyFiles": [
         "archive-types.ts",
         "archive.ts",
@@ -160,7 +160,7 @@
       "path": "src",
       "purpose": "Source code",
       "fileCount": 14,
-      "lastAccessed": 1784090634164,
+      "lastAccessed": 1786280172769,
       "keyFiles": [
         "dither.ts",
         "gallery.ts",
@@ -173,7 +173,7 @@
       "path": "timelapse",
       "purpose": null,
       "fileCount": 77,
-      "lastAccessed": 1784090634179,
+      "lastAccessed": 1786280172769,
       "keyFiles": [
         "00000.png",
         "00001.png",
@@ -186,7 +186,7 @@
       "path": "archive-app/dist",
       "purpose": "Distribution/build output",
       "fileCount": 3,
-      "lastAccessed": 1784090634190,
+      "lastAccessed": 1786280172769,
       "keyFiles": [
         "filter.js",
         "index.html",
@@ -197,14 +197,14 @@
       "path": "archive-app/node_modules",
       "purpose": "Dependencies",
       "fileCount": 0,
-      "lastAccessed": 1784090634192,
+      "lastAccessed": 1786280172769,
       "keyFiles": []
     },
     "archive-app/src": {
       "path": "archive-app/src",
       "purpose": "Source code",
       "fileCount": 6,
-      "lastAccessed": 1784090634194,
+      "lastAccessed": 1786280172770,
       "keyFiles": [
         "components.tsx",
         "model.ts",
@@ -215,7 +215,7 @@
       "path": "learn-webgpu/assets",
       "purpose": "Static assets",
       "fileCount": 2,
-      "lastAccessed": 1784090634197,
+      "lastAccessed": 1786280172770,
       "keyFiles": [
         "course.css",
         "quiz.js"
