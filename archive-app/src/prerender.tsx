@@ -39,13 +39,16 @@ mkdirSync(distDir, { recursive: true });
 copyFileSync(resolve(here, 'style.css'), resolve(distDir, 'style.css'));
 
 // style.css / filter.js ship unhashed at stable URLs; a content stamp on the
-// query string keeps long-TTL static hosts from serving stale assets.
-const filterJsPath = resolve(distDir, 'filter.js');
+// query string keeps long-TTL static hosts from serving stale assets. runner.js
+// is pulled in by filter.js rather than by a stamped tag of its own, so it
+// feeds the same hash — otherwise a runner-only change would leave a cached
+// filter.js, and with it a cached import, in place.
+const chunkPaths = ['filter.js', 'runner.js'].map((f) => resolve(distDir, f));
 const stamp =
   '?v=' +
   createHash('sha1')
     .update(readFileSync(resolve(distDir, 'style.css')))
-    .update(existsSync(filterJsPath) ? readFileSync(filterJsPath) : '')
+    .update(chunkPaths.map((p) => (existsSync(p) ? readFileSync(p, 'utf8') : '')).join(''))
     .digest('hex')
     .slice(0, 8);
 

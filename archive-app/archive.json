@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-07T19:09:30.582Z",
+  "generatedAt": "2026-08-09T13:13:54.443Z",
   "sketches": [
     {
       "id": "sketches/42-loc",
@@ -354,6 +354,54 @@
       }
     },
     {
+      "id": "sketches/bio-sprue/bio-sprue",
+      "name": "bio-sprue",
+      "path": "src/sketches/bio-sprue/bio-sprue.ts",
+      "firstCommitDate": "2026-07-15T08:13:25-04:00",
+      "year": 2026,
+      "lastCommitSha": "12a1763cfc61fe3d9ef5ea650e0601232b6a3b9a",
+      "archivedAt": "2026-08-09T13:10:32.789Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/bio-sprue-bio-sprue",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1786281032/sketchbook/2026/bio-sprue-bio-sprue.png",
+        "version": 1786281032,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/bio-sprue/nalee",
+      "name": "nalee",
+      "path": "src/sketches/bio-sprue/nalee.ts",
+      "firstCommitDate": "2026-07-15T08:13:25-04:00",
+      "year": 2026,
+      "lastCommitSha": "12a1763cfc61fe3d9ef5ea650e0601232b6a3b9a",
+      "archivedAt": "2026-08-09T13:10:35.372Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/bio-sprue-nalee",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1786281034/sketchbook/2026/bio-sprue-nalee.png",
+        "version": 1786281034,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/bio-sprue/sprue",
+      "name": "sprue",
+      "path": "src/sketches/bio-sprue/sprue.ts",
+      "firstCommitDate": "2026-07-15T08:13:25-04:00",
+      "year": 2026,
+      "lastCommitSha": "12a1763cfc61fe3d9ef5ea650e0601232b6a3b9a",
+      "archivedAt": "2026-08-09T13:10:38.691Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/bio-sprue-sprue",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1786281038/sketchbook/2026/bio-sprue-sprue.png",
+        "version": 1786281038,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
       "id": "sketches/bipolar/basic",
       "name": "basic",
       "path": "src/sketches/bipolar/basic.ts",
@@ -461,6 +509,38 @@
         "publicId": "sketchbook/2025/black-on-black",
         "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779046710/sketchbook/2025/black-on-black.png",
         "version": 1779046710,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/blinds/blinds",
+      "name": "blinds",
+      "path": "src/sketches/blinds/blinds.ts",
+      "firstCommitDate": "2026-07-03T20:31:56-04:00",
+      "year": 2026,
+      "lastCommitSha": "e75ad794ac7f030367aeb8afbe385162fef2ea92",
+      "archivedAt": "2026-08-09T13:10:40.441Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/blinds-blinds",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1786281039/sketchbook/2026/blinds-blinds.png",
+        "version": 1786281039,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/blinds/collapse",
+      "name": "collapse",
+      "path": "src/sketches/blinds/collapse.ts",
+      "firstCommitDate": "2026-07-03T20:31:56-04:00",
+      "year": 2026,
+      "lastCommitSha": "0683c023c8f689ea52f057c45e6459baeff2f8d2",
+      "archivedAt": "2026-08-09T13:10:42.063Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/blinds-collapse",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1786281041/sketchbook/2026/blinds-collapse.png",
+        "version": 1786281041,
         "width": 1080,
         "height": 1080
       }
@@ -1853,6 +1933,22 @@
         "publicId": "sketchbook/2026/electric-field-gradient-paint",
         "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779061719/sketchbook/2026/electric-field-gradient-paint.png",
         "version": 1779061719,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/electric-field/hatch-field",
+      "name": "hatch-field",
+      "path": "src/sketches/electric-field/hatch-field.ts",
+      "firstCommitDate": "2026-07-15T08:14:46-04:00",
+      "year": 2026,
+      "lastCommitSha": "187297fd82b0e7b7b953c9e57fed9c8eff6784fe",
+      "archivedAt": "2026-08-09T13:10:43.724Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/electric-field-hatch-field",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1786281043/sketchbook/2026/electric-field-hatch-field.png",
+        "version": 1786281043,
         "width": 1080,
         "height": 1080
       }
@@ -4007,12 +4103,12 @@
       "path": "src/sketches/paint-without-thinking/arcs-reduction-rounded-animated.ts",
       "firstCommitDate": "2025-09-26T23:02:32-04:00",
       "year": 2025,
-      "lastCommitSha": "03ce02b02f0e675c1921e68d57577ad162147e7d",
-      "archivedAt": "2026-05-17T23:57:49.146Z",
+      "lastCommitSha": "feff545ba1b159505c6447188b18d69354499af7",
+      "archivedAt": "2026-08-09T13:10:47.571Z",
       "cloudinary": {
         "publicId": "sketchbook/2025/paint-without-thinking-arcs-reduction-rounded-animated",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779062268/sketchbook/2025/paint-without-thinking-arcs-reduction-rounded-animated.png",
-        "version": 1779062268,
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1786281047/sketchbook/2025/paint-without-thinking-arcs-reduction-rounded-animated.png",
+        "version": 1786281047,
         "width": 1080,
         "height": 1080
       }
@@ -5186,6 +5282,70 @@
       }
     },
     {
+      "id": "sketches/tensors/tensors",
+      "name": "tensors",
+      "path": "src/sketches/tensors/tensors.ts",
+      "firstCommitDate": "2026-06-11T10:07:29-04:00",
+      "year": 2026,
+      "lastCommitSha": "90ec40898b77768803ca6eac8f9c924e7e63e64d",
+      "archivedAt": "2026-08-09T13:10:49.479Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/tensors-tensors",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1786281049/sketchbook/2026/tensors-tensors.png",
+        "version": 1786281049,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/tensors/tensors-blob",
+      "name": "tensors-blob",
+      "path": "src/sketches/tensors/tensors-blob.ts",
+      "firstCommitDate": "2026-06-11T14:06:51-04:00",
+      "year": 2026,
+      "lastCommitSha": "90ec40898b77768803ca6eac8f9c924e7e63e64d",
+      "archivedAt": "2026-08-09T13:10:51.323Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/tensors-tensors-blob",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1786281050/sketchbook/2026/tensors-tensors-blob.png",
+        "version": 1786281050,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/tensors/tensors-options",
+      "name": "tensors-options",
+      "path": "src/sketches/tensors/tensors-options.ts",
+      "firstCommitDate": "2026-06-11T14:06:51-04:00",
+      "year": 2026,
+      "lastCommitSha": "90ec40898b77768803ca6eac8f9c924e7e63e64d",
+      "archivedAt": "2026-08-09T13:10:53.304Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/tensors-tensors-options",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1786281052/sketchbook/2026/tensors-tensors-options.png",
+        "version": 1786281052,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/tensors/tensors-sketch",
+      "name": "tensors-sketch",
+      "path": "src/sketches/tensors/tensors-sketch.ts",
+      "firstCommitDate": "2026-06-11T14:06:51-04:00",
+      "year": 2026,
+      "lastCommitSha": "90ec40898b77768803ca6eac8f9c924e7e63e64d",
+      "archivedAt": "2026-08-09T13:10:55.417Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/tensors-tensors-sketch",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1786281055/sketchbook/2026/tensors-tensors-sketch.png",
+        "version": 1786281055,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
       "id": "sketches/tentacle/alt",
       "name": "alt",
       "path": "src/sketches/tentacle/alt.ts",
@@ -5261,6 +5421,22 @@
         "publicId": "sketchbook/2026/terminal-charts-compositions",
         "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779062539/sketchbook/2026/terminal-charts-compositions.png",
         "version": 1779062539,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/terminal-charts/icons",
+      "name": "icons",
+      "path": "src/sketches/terminal-charts/icons.ts",
+      "firstCommitDate": "2026-04-16T18:53:52-04:00",
+      "year": 2026,
+      "lastCommitSha": "187297fd82b0e7b7b953c9e57fed9c8eff6784fe",
+      "archivedAt": "2026-08-09T13:10:57.311Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/terminal-charts-icons",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1786281056/sketchbook/2026/terminal-charts-icons.png",
+        "version": 1786281056,
         "width": 1080,
         "height": 1080
       }

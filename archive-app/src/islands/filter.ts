@@ -1,8 +1,11 @@
 /**
- * The archive's only client JavaScript: a quiet type-to-filter.
+ * The archive's client JavaScript: a quiet type-to-filter.
  * Progressive enhancement — the [data-filter-root] placeholder ships hidden;
  * this module builds the input, reveals it, and filters cards by substring
  * match on their full sketch id. Without JS the page is fully usable.
+ *
+ * It is also the entry point for the local-only play button, which is loaded
+ * on demand so the deployed site never fetches it (see the tail of this file).
  */
 /** A 404'd thumbnail would otherwise sit as a blank gray box forever; mark it
  * so the CSS can name the failure quietly. Capture phase catches error events
@@ -100,3 +103,17 @@ function mount(): void {
 }
 
 mount();
+
+/**
+ * The play button is dev tooling, not part of the archive: only pull in the
+ * chunk when the page is being served locally. A visitor on the deployed site
+ * makes no extra request and sees no control they couldn't use.
+ */
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]', '']);
+if (LOCAL_HOSTS.has(location.hostname)) {
+  void import('./runner.ts')
+    .then((runner) => runner.mountRunner())
+    .catch(() => {
+      /* built without the runner island — no play buttons, nothing else changes */
+    });
+}

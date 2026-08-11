@@ -173,8 +173,15 @@ export function SketchCard({
     ? s.displayName.slice(s.series.length + 1).replace(/^sketches\//, '')
     : s.displayName;
 
+  // data-id carries the full sketch id, sketches/ prefix and all — that is what
+  // the local play button hands back to the runner; displayName has it stripped.
   return (
-    <div className="card" id={s.displayName} data-name={s.displayName.toLowerCase()}>
+    <div
+      className="card"
+      id={s.displayName}
+      data-id={s.id}
+      data-name={s.displayName.toLowerCase()}
+    >
       <a className="thumb" href={s.fullUrl} target="_blank" rel="noopener">
         <img
           src={s.thumbUrl}

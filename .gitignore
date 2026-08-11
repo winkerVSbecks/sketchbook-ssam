@@ -34,3 +34,4 @@ timelapse
 .omc/sessions
 # archive-app build output
 archive-app/dist
+.playwright-mcp

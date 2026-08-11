@@ -10,213 +10,42 @@
  *   npm run cloud:stop                     # tear down the background Vite
  */
 
-import { spawn, spawnSync, execSync } from 'node:child_process';
+import { spawnSync, execSync } from 'node:child_process';
 import {
   mkdirSync,
-  writeFileSync,
-  readFileSync,
   readdirSync,
   existsSync,
   openSync,
   appendFileSync,
-  rmSync,
 } from 'node:fs';
 import { join } from 'node:path';
-import { setTimeout as delay } from 'node:timers/promises';
-import * as net from 'node:net';
 import * as lockfile from 'proper-lockfile';
 import { chromium } from 'playwright-core';
+// The Vite child-process lifecycle is shared with the archive site's play
+// button — see scripts/vite-runner.ts.
+import {
+  PROJECT_ROOT,
+  RUNNER_DIR as CLOUD_DIR,
+  VITE_PORT,
+  ensureVite,
+  stopVite as stopRunner,
+} from './vite-runner.ts';
 
-const PROJECT_ROOT = process.cwd();
-const CLOUD_DIR = join(PROJECT_ROOT, '.cloud-render');
-const VITE_PID_FILE = join(CLOUD_DIR, 'vite.pid');
-const VITE_LOG_FILE = join(CLOUD_DIR, 'vite.log');
 const INSTALL_LOG_FILE = join(CLOUD_DIR, 'install.log');
 const OUTPUT_DIR = join(PROJECT_ROOT, 'output');
 const BROWSERS_PATH = join(CLOUD_DIR, 'browsers');
 
-const VITE_PORT = 5173;
-const VITE_READY_TIMEOUT_MS = 30_000;
 const READY_FLAG_TIMEOUT_MS = 15_000;
 const EXPORT_TIMEOUT_MS = 12_000;
-const PORT_FREE_TIMEOUT_MS = 5_000;
 const LOCK_STALE_MS = 60_000;
 
 if (!process.env.PLAYWRIGHT_BROWSERS_PATH) {
   process.env.PLAYWRIGHT_BROWSERS_PATH = BROWSERS_PATH;
 }
 
-type VitePidRecord = {
-  pid: number;
-  sketch: string;
-  port: number;
-};
-
 function ensureDirs(): void {
   mkdirSync(CLOUD_DIR, { recursive: true });
   mkdirSync(OUTPUT_DIR, { recursive: true });
-}
-
-function readVitePid(): VitePidRecord | null {
-  if (!existsSync(VITE_PID_FILE)) return null;
-  try {
-    return JSON.parse(readFileSync(VITE_PID_FILE, 'utf8')) as VitePidRecord;
-  } catch {
-    return null;
-  }
-}
-
-function writeVitePid(record: VitePidRecord): void {
-  writeFileSync(VITE_PID_FILE, JSON.stringify(record, null, 2));
-}
-
-function removeVitePid(): void {
-  rmSync(VITE_PID_FILE, { force: true });
-}
-
-function getProcessCmdline(pid: number): string | null {
-  // Linux: /proc/<pid>/cmdline (null-separated argv)
-  const procPath = `/proc/${pid}/cmdline`;
-  if (existsSync(procPath)) {
-    try {
-      return readFileSync(procPath, 'utf8').replace(/\0/g, ' ').trim();
-    } catch {
-      return null;
-    }
-  }
-  // macOS / BSD: ps -o command= -p <pid>
-  try {
-    return execSync(`ps -o command= -p ${pid}`, {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    }).trim();
-  } catch {
-    return null;
-  }
-}
-
-function isViteProcess(pid: number): boolean {
-  // Step 1: signal-0 existence check
-  try {
-    process.kill(pid, 0);
-  } catch {
-    return false;
-  }
-  // Step 2: cmdline identity check — guards against PID reuse.
-  // We spawn `npm run dev`, so the recorded PID is the npm wrapper, not the
-  // vite child it execs. Accept either: direct vite, or `npm … dev` / `npm-cli.js … dev`.
-  const cmdline = getProcessCmdline(pid);
-  if (!cmdline) return false;
-  return /\bvite\b/.test(cmdline) || /\bnpm(-cli\.js)?\b.*\bdev\b/.test(cmdline);
-}
-
-function isPortInUse(port: number): Promise<boolean> {
-  return new Promise<boolean>((resolveProbe) => {
-    const sock = new net.Socket();
-    let settled = false;
-    const done = (inUse: boolean) => {
-      if (settled) return;
-      settled = true;
-      sock.destroy();
-      resolveProbe(inUse);
-    };
-    sock.setTimeout(500);
-    sock.once('connect', () => done(true));
-    sock.once('error', () => done(false));
-    sock.once('timeout', () => done(false));
-    sock.connect(port, '127.0.0.1');
-  });
-}
-
-// Spawned with `detached: true`, so npm wrapper + vite child share a process
-// group. Signal the whole group via -pid; signalling only the npm wrapper
-// leaves the vite child orphaned and still bound to the port, which would
-// cause the next `spawnVite` to silently fail and the old sketch to keep
-// being served.
-function killGroup(pid: number, signal: NodeJS.Signals): boolean {
-  try {
-    process.kill(-pid, signal);
-    return true;
-  } catch {
-    try {
-      process.kill(pid, signal);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-}
-
-async function killViteGracefully(pid: number): Promise<void> {
-  if (!killGroup(pid, 'SIGTERM')) return;
-  const deadline = Date.now() + PORT_FREE_TIMEOUT_MS;
-  while (Date.now() < deadline) {
-    const stillAlive = isViteProcess(pid);
-    const portBusy = await isPortInUse(VITE_PORT);
-    if (!stillAlive && !portBusy) return;
-    await delay(150);
-  }
-  killGroup(pid, 'SIGKILL');
-  const killDeadline = Date.now() + PORT_FREE_TIMEOUT_MS;
-  while (Date.now() < killDeadline) {
-    if (!(await isPortInUse(VITE_PORT))) return;
-    await delay(150);
-  }
-  throw new Error(
-    `Vite still holds port ${VITE_PORT} after SIGKILL of pgid ${pid} — manual cleanup required`,
-  );
-}
-
-async function pollViteReady(): Promise<void> {
-  const deadline = Date.now() + VITE_READY_TIMEOUT_MS;
-  while (Date.now() < deadline) {
-    try {
-      const res = await fetch(`http://localhost:${VITE_PORT}/`, {
-        signal: AbortSignal.timeout(2_000),
-      });
-      if (res.status === 200) return;
-    } catch {
-      /* not ready yet */
-    }
-    await delay(250);
-  }
-  throw new Error(
-    `Vite did not become ready on port ${VITE_PORT} within ${VITE_READY_TIMEOUT_MS}ms — see ${VITE_LOG_FILE}`,
-  );
-}
-
-function spawnVite(sketchPath: string): VitePidRecord {
-  const logFd = openSync(VITE_LOG_FILE, 'w');
-  const child = spawn('npm', ['run', 'dev'], {
-    cwd: PROJECT_ROOT,
-    env: { ...process.env, VITE_SKETCH: sketchPath },
-    stdio: ['ignore', logFd, logFd],
-    detached: true,
-  });
-  if (typeof child.pid !== 'number') {
-    throw new Error('Failed to spawn Vite — no PID returned by child_process.spawn');
-  }
-  child.unref();
-  const record: VitePidRecord = { pid: child.pid, sketch: sketchPath, port: VITE_PORT };
-  writeVitePid(record);
-  return record;
-}
-
-async function ensureVite(sketchPath: string): Promise<VitePidRecord> {
-  const existing = readVitePid();
-  if (existing && isViteProcess(existing.pid)) {
-    if (existing.sketch === sketchPath) return existing;
-    console.error(
-      `[cloud-render] rotating Vite (was: ${existing.sketch}, now: ${sketchPath})`,
-    );
-    await killViteGracefully(existing.pid);
-    removeVitePid();
-  } else if (existing) {
-    removeVitePid();
-  }
-  const record = spawnVite(sketchPath);
-  await pollViteReady();
-  return record;
 }
 
 // The sandbox pre-installs playwright browser binaries at /opt/pw-browsers, but the
@@ -304,7 +133,11 @@ async function fetchExport(): Promise<{
 
 async function renderOnce(sketchPath: string): Promise<string> {
   ensureDirs();
-  await ensureVite(sketchPath);
+  // Not `adoptForeign` — a render must be of the sketch that was asked for, so
+  // an unrecorded server on 5173 gets replaced rather than reused.
+  await ensureVite(sketchPath, {
+    log: (message) => process.stderr.write(`[cloud-render] ${message}\n`),
+  });
 
   if (chromiumExecutableMissing()) {
     runInstall();
@@ -365,15 +198,11 @@ async function renderOnce(sketchPath: string): Promise<string> {
 }
 
 async function stopVite(): Promise<void> {
-  const record = readVitePid();
+  const record = await stopRunner();
   if (!record) {
     process.stdout.write('[cloud-render] no Vite PID recorded — nothing to stop\n');
     return;
   }
-  if (isViteProcess(record.pid)) {
-    await killViteGracefully(record.pid);
-  }
-  removeVitePid();
   process.stdout.write(`[cloud-render] stopped Vite (was pid ${record.pid})\n`);
 }
 

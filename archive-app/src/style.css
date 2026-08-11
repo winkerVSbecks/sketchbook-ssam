@@ -334,6 +334,10 @@ a.jump {
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
+  /* Pushes the icon cluster to the right edge. Lives here rather than on the
+     first icon: the icons are a mix of <a> and <button>, and :first-of-type
+     would match one of each and split the cluster in two. */
+  margin-right: auto;
 }
 .date {
   font-size: 0.75rem;
@@ -347,15 +351,17 @@ a.jump {
   color: var(--muted);
   transition: color 0.15s ease;
   position: relative;
+  /* .icon is worn by both <a> links and the play <button> */
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
 }
 /* Expand the 14px icons to a usable touch target without moving them. */
 .icon::before {
   content: '';
   position: absolute;
   inset: -10px -4px;
-}
-.icon:first-of-type {
-  margin-left: auto;
 }
 .icon + .icon {
   margin-left: 0.5rem;
@@ -365,6 +371,27 @@ a.jump {
 }
 .icon svg {
   display: block;
+}
+
+/* ---------- play button ---------- */
+/* Local-only; built by the runner island and absent from the deployed site. */
+.icon-run {
+  cursor: pointer;
+}
+.icon-run.is-busy {
+  animation: icon-pulse 1s ease-in-out infinite;
+}
+/* Achromatic system, so a failure is a hairline, not a red — the button's
+   title carries the message. */
+.icon-run.is-error {
+  color: var(--fg);
+  outline: 1px solid var(--hairline);
+  outline-offset: 4px;
+}
+@keyframes icon-pulse {
+  50% {
+    opacity: 0.3;
+  }
 }
 
 /* ---------- empty state ---------- */
@@ -380,7 +407,7 @@ a.jump {
 }
 
 /* ---------- focus & motion ---------- */
-:is(a, input):focus-visible {
+:is(a, input, button):focus-visible {
   outline: 2px solid var(--fg);
   outline-offset: 2px;
 }
@@ -390,5 +417,10 @@ a.jump {
   .jump a,
   a.jump {
     transition: none;
+  }
+  /* Still needs to read as working — hold the dimmed frame instead of pulsing. */
+  .icon-run.is-busy {
+    animation: none;
+    opacity: 0.4;
   }
 }
