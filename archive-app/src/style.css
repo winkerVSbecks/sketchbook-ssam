@@ -394,6 +394,40 @@ a.jump {
   }
 }
 
+/* ---------- stop-server button ---------- */
+/* Also runner-island-built and local-only. One shared dev server → one stop
+   control, living at the toolbar's right edge with the filter. */
+.runner-stop {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.75rem;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s ease;
+}
+.runner-stop:hover {
+  color: var(--fg);
+}
+.runner-stop svg {
+  display: block;
+  width: 10px;
+  height: 10px;
+}
+.runner-stop.is-busy {
+  animation: icon-pulse 1s ease-in-out infinite;
+}
+.runner-stop.is-error {
+  color: var(--fg);
+  outline: 1px solid var(--hairline);
+  outline-offset: 4px;
+}
+
 /* ---------- empty state ---------- */
 .empty {
   color: var(--muted);
