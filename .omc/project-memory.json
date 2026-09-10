@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1786280172776,
+  "lastScanned": 1789070932624,
   "projectRoot": "/Users/varun/Documents/projects/sketchbook-ssam",
   "techStack": {
     "languages": [
@@ -81,7 +81,7 @@
       "path": "archive-app",
       "purpose": null,
       "fileCount": 8,
-      "lastAccessed": 1786280172742,
+      "lastAccessed": 1789070932604,
       "keyFiles": [
         "archive.json",
         "atlas.json",
@@ -94,7 +94,7 @@
       "path": "assets",
       "purpose": "Static assets",
       "fileCount": 3,
-      "lastAccessed": 1786280172743,
+      "lastAccessed": 1789070932605,
       "keyFiles": [
         "skeletor.svg",
         "varun.svg"
@@ -104,7 +104,7 @@
       "path": "docs",
       "purpose": "Documentation",
       "fileCount": 2,
-      "lastAccessed": 1786280172744,
+      "lastAccessed": 1789070932606,
       "keyFiles": [
         "cloud-rendering.md",
         "ideas.md"
@@ -114,7 +114,7 @@
       "path": "learn-webgpu",
       "purpose": null,
       "fileCount": 3,
-      "lastAccessed": 1786280172745,
+      "lastAccessed": 1789070932606,
       "keyFiles": [
         "MISSION.md",
         "NOTES.md",
@@ -124,8 +124,8 @@
     "output": {
       "path": "output",
       "purpose": null,
-      "fileCount": 5720,
-      "lastAccessed": 1786280172768,
+      "fileCount": 5731,
+      "lastAccessed": 1789070932619,
       "keyFiles": [
         "2023.12.13-15.21.58.mp4",
         "2023.12.13-15.33.09.mp4",
@@ -138,7 +138,7 @@
       "path": "previews",
       "purpose": null,
       "fileCount": 1,
-      "lastAccessed": 1786280172768,
+      "lastAccessed": 1789070932619,
       "keyFiles": [
         "albers-meander.png"
       ]
@@ -146,8 +146,8 @@
     "scripts": {
       "path": "scripts",
       "purpose": "Build/utility scripts",
-      "fileCount": 5,
-      "lastAccessed": 1786280172768,
+      "fileCount": 6,
+      "lastAccessed": 1789070932619,
       "keyFiles": [
         "archive-types.ts",
         "archive.ts",
@@ -160,7 +160,7 @@
       "path": "src",
       "purpose": "Source code",
       "fileCount": 14,
-      "lastAccessed": 1786280172769,
+      "lastAccessed": 1789070932619,
       "keyFiles": [
         "dither.ts",
         "gallery.ts",
@@ -173,7 +173,7 @@
       "path": "timelapse",
       "purpose": null,
       "fileCount": 77,
-      "lastAccessed": 1786280172769,
+      "lastAccessed": 1789070932620,
       "keyFiles": [
         "00000.png",
         "00001.png",
@@ -185,26 +185,26 @@
     "archive-app/dist": {
       "path": "archive-app/dist",
       "purpose": "Distribution/build output",
-      "fileCount": 3,
-      "lastAccessed": 1786280172769,
+      "fileCount": 4,
+      "lastAccessed": 1789070932620,
       "keyFiles": [
         "filter.js",
         "index.html",
-        "style.css"
+        "runner.js"
       ]
     },
     "archive-app/node_modules": {
       "path": "archive-app/node_modules",
       "purpose": "Dependencies",
       "fileCount": 0,
-      "lastAccessed": 1786280172769,
+      "lastAccessed": 1789070932620,
       "keyFiles": []
     },
     "archive-app/src": {
       "path": "archive-app/src",
       "purpose": "Source code",
       "fileCount": 6,
-      "lastAccessed": 1786280172770,
+      "lastAccessed": 1789070932620,
       "keyFiles": [
         "components.tsx",
         "model.ts",
@@ -215,7 +215,7 @@
       "path": "learn-webgpu/assets",
       "purpose": "Static assets",
       "fileCount": 2,
-      "lastAccessed": 1786280172770,
+      "lastAccessed": 1789070932620,
       "keyFiles": [
         "course.css",
         "quiz.js"
@@ -224,303 +224,15 @@
   },
   "hotPaths": [
     {
-      "path": "src/sketches/bio-sprue/sprue.ts",
-      "accessCount": 44,
-      "lastAccessed": 1784045871599,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/bio-sprue.ts",
-      "accessCount": 20,
-      "lastAccessed": 1783902502055,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/bio-sprue/nalee.ts",
-      "accessCount": 8,
-      "lastAccessed": 1783960826977,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/nalee/nalee-system.ts",
-      "accessCount": 7,
-      "lastAccessed": 1783979835516,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/bio-sprue/bio-sprue.ts",
-      "accessCount": 5,
-      "lastAccessed": 1783952077774,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/nalee/types.ts",
-      "accessCount": 4,
-      "lastAccessed": 1783960662894,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/nalee/walker.ts",
-      "accessCount": 4,
-      "lastAccessed": 1783960676616,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/nalee/domain.ts",
-      "accessCount": 4,
-      "lastAccessed": 1783960677711,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/nalee/utils.ts",
-      "accessCount": 4,
-      "lastAccessed": 1783960677787,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/nalee/paths.ts",
-      "accessCount": 4,
-      "lastAccessed": 1783960995488,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/nalee/state.ts",
-      "accessCount": 3,
-      "lastAccessed": 1783960676974,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/bio-sprue/glow-style.ts",
-      "accessCount": 3,
-      "lastAccessed": 1784039844288,
-      "type": "file"
-    },
-    {
-      "path": "CLAUDE.md",
-      "accessCount": 2,
-      "lastAccessed": 1783960506121,
-      "type": "file"
-    },
-    {
-      "path": ".claude/skills/render-sketch/render.sh",
-      "accessCount": 2,
-      "lastAccessed": 1784039977402,
-      "type": "file"
-    },
-    {
-      "path": "src/noise-texture.ts",
+      "path": "atlas-recent.png",
       "accessCount": 1,
-      "lastAccessed": 1783901906982,
+      "lastAccessed": 1789071277831,
       "type": "file"
     },
     {
-      "path": "src/sketches/nalee-one-line/neon.ts",
+      "path": ".playwright-mcp/atlas-recent-2.png",
       "accessCount": 1,
-      "lastAccessed": 1783901915176,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/blinds/collapse.ts",
-      "accessCount": 1,
-      "lastAccessed": 1783901996604,
-      "type": "file"
-    },
-    {
-      "path": "output/2026.07.12-20.24.13.png",
-      "accessCount": 1,
-      "lastAccessed": 1783902255938,
-      "type": "file"
-    },
-    {
-      "path": "output/2026.07.12-20.25.43.png",
-      "accessCount": 1,
-      "lastAccessed": 1783902347486,
-      "type": "file"
-    },
-    {
-      "path": "output/2026.07.12-20.28.31.png",
-      "accessCount": 1,
-      "lastAccessed": 1783902514903,
-      "type": "file"
-    },
-    {
-      "path": "src/index.ts",
-      "accessCount": 1,
-      "lastAccessed": 1783949927557,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/kelly-nalee/basic.ts",
-      "accessCount": 1,
-      "lastAccessed": 1783950426720,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/kelly-nalee/rectangle.ts",
-      "accessCount": 1,
-      "lastAccessed": 1783950427097,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/nalee-hulls/a.ts",
-      "accessCount": 1,
-      "lastAccessed": 1783950427572,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/nalee/index.ts",
-      "accessCount": 1,
-      "lastAccessed": 1783950435384,
-      "type": "file"
-    },
-    {
-      "path": "output/2026.07.13-09.52.58.png",
-      "accessCount": 1,
-      "lastAccessed": 1783950784433,
-      "type": "file"
-    },
-    {
-      "path": "src/global.d.ts",
-      "accessCount": 1,
-      "lastAccessed": 1783951094454,
-      "type": "file"
-    },
-    {
-      "path": "output/2026.07.13-09.59.58.png",
-      "accessCount": 1,
-      "lastAccessed": 1783951203517,
-      "type": "file"
-    },
-    {
-      "path": "output/2026.07.13-10.01.23.png",
-      "accessCount": 1,
-      "lastAccessed": 1783951288394,
-      "type": "file"
-    },
-    {
-      "path": "src/sketches/conformal-mapping/nalee.ts",
-      "accessCount": 1,
-      "lastAccessed": 1783951397685,
-      "type": "file"
-    },
-    {
-      "path": "output/2026.07.13-10.04.40.png",
-      "accessCount": 1,
-      "lastAccessed": 1783951485186,
-      "type": "file"
-    },
-    {
-      "path": "before-regen.png",
-      "accessCount": 1,
-      "lastAccessed": 1783951542704,
-      "type": "file"
-    },
-    {
-      "path": "after-regen.png",
-      "accessCount": 1,
-      "lastAccessed": 1783951576038,
-      "type": "file"
-    },
-    {
-      "path": "sprue-render.png",
-      "accessCount": 1,
-      "lastAccessed": 1783958825424,
-      "type": "file"
-    },
-    {
-      "path": "sprue-render2.png",
-      "accessCount": 1,
-      "lastAccessed": 1783958872058,
-      "type": "file"
-    },
-    {
-      "path": "sprue-render3.png",
-      "accessCount": 1,
-      "lastAccessed": 1783958896750,
-      "type": "file"
-    },
-    {
-      "path": "sprue-taper1.png",
-      "accessCount": 1,
-      "lastAccessed": 1783959689961,
-      "type": "file"
-    },
-    {
-      "path": "gate-zoom1.png",
-      "accessCount": 1,
-      "lastAccessed": 1783960213764,
-      "type": "file"
-    },
-    {
-      "path": "gate-full.png",
-      "accessCount": 1,
-      "lastAccessed": 1783960246656,
-      "type": "file"
-    },
-    {
-      "path": "gate-zoom2.png",
-      "accessCount": 1,
-      "lastAccessed": 1783960271024,
-      "type": "file"
-    },
-    {
-      "path": "gate-zoom3.png",
-      "accessCount": 1,
-      "lastAccessed": 1783960347291,
-      "type": "file"
-    },
-    {
-      "path": "sprue-final.png",
-      "accessCount": 1,
-      "lastAccessed": 1783960367962,
-      "type": "file"
-    },
-    {
-      "path": ".claude/skills/verify-sketch/SKILL.md",
-      "accessCount": 1,
-      "lastAccessed": 1783960441601,
-      "type": "file"
-    },
-    {
-      "path": "output/2026.07.13-12.51.32.png",
-      "accessCount": 1,
-      "lastAccessed": 1783961497445,
-      "type": "file"
-    },
-    {
-      "path": "output/2026.07.13-17.49.54.png",
-      "accessCount": 1,
-      "lastAccessed": 1783979398554,
-      "type": "file"
-    },
-    {
-      "path": "output/2026.07.13-17.49.55.png",
-      "accessCount": 1,
-      "lastAccessed": 1783979916712,
-      "type": "file"
-    },
-    {
-      "path": "output/2026.07.14-10.42.00.png",
-      "accessCount": 1,
-      "lastAccessed": 1784040131521,
-      "type": "file"
-    },
-    {
-      "path": "output/2026.07.14-10.58.13.png",
-      "accessCount": 1,
-      "lastAccessed": 1784041177083,
-      "type": "file"
-    },
-    {
-      "path": "output/2026.07.14-11.11.31.png",
-      "accessCount": 1,
-      "lastAccessed": 1784044657466,
-      "type": "file"
-    },
-    {
-      "path": "output/2026.07.14-12.19.00.png",
-      "accessCount": 1,
-      "lastAccessed": 1784045951439,
+      "lastAccessed": 1789071346520,
       "type": "file"
     }
   ],

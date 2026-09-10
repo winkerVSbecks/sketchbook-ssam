@@ -120,13 +120,15 @@ export const sketch = ({ wrap, context, canvas }: SketchProps) => {
 
   const layerCount = Random.rangeFloor(5, 20);
   const grayscale = Random.boolean();
-  const colors = grayscale
-    ? Array.from(
-        { length: layerCount + 1 },
-        (_, idx) => `hsl(0 0% ${((75 * idx) / layerCount).toFixed(2)}%)`,
-      )
-    : Random.pick([...mindfulPalettes, ...autoAlbersPalettes]);
-  const bg = colors.shift()!;
+  // const colors = grayscale
+  //   ? Array.from(
+  //       { length: layerCount + 1 },
+  //       (_, idx) => `hsl(0 0% ${((75 * idx) / layerCount).toFixed(2)}%)`,
+  //     )
+  //   : Random.pick([...mindfulPalettes, ...autoAlbersPalettes]);
+  // const bg = colors.shift()!;
+  const colors = ['#EC4899', '#273287', '#FC8AAA'];
+  const bg = '#fff';
 
   wrap.render = ({ width, height, playhead }: SketchProps) => {
     context.fillStyle = bg;
@@ -181,7 +183,7 @@ function createButtonPress(mapping) {
 
 export const settings: SketchSettings = {
   mode: '2d',
-  dimensions: [1080, 1080],
+  // dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
   animate: true,
   duration: 4_000,
