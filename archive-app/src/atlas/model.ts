@@ -134,3 +134,32 @@ export function matchesQuery(n: AtlasNode, query: string): boolean {
 export function hasTag(n: AtlasNode, field: TagField, tag: string): boolean {
   return n[field].includes(tag);
 }
+
+/** Directory the sketch file lives in, e.g. "sketches/nalee/sketches"; the
+ * "type" of a sketch in the sketchbook's own filing scheme. */
+export const dirOf = (n: Pick<AtlasNode, 'id'>) => n.id.split('/').slice(0, -1).join('/');
+
+export type RecentGroup = { dir: string; label: string; nodes: AtlasNode[] };
+
+/**
+ * The `limit` most recently created sketches, grouped by directory. Groups are
+ * ordered by their newest member; members newest-first. Ties on the same day
+ * fall back to id so the list is stable across loads.
+ */
+export function recentByDirectory(nodes: AtlasNode[], limit: number): RecentGroup[] {
+  const recent = nodes
+    .slice()
+    .sort((a, b) => b.created.localeCompare(a.created) || a.id.localeCompare(b.id))
+    .slice(0, limit);
+  const groups = new Map<string, RecentGroup>();
+  for (const n of recent) {
+    const dir = dirOf(n);
+    let g = groups.get(dir);
+    if (!g) {
+      g = { dir, label: dir.replace(/^sketches\/?/, '') || 'one-offs', nodes: [] };
+      groups.set(dir, g);
+    }
+    g.nodes.push(n);
+  }
+  return [...groups.values()];
+}

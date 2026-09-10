@@ -147,7 +147,7 @@ body {
 
 /* ---------- rail ---------- */
 .rail {
-  width: 264px;
+  width: 288px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -156,7 +156,7 @@ body {
 }
 .rail-tabs {
   display: flex;
-  gap: 1.25rem;
+  gap: 1rem;
   padding: 0.75rem 1rem 0.5rem;
 }
 .rail-tab {
@@ -233,6 +233,32 @@ body {
   color: var(--muted);
 }
 
+/* recent tab: directory headers with thumbed rows underneath */
+.recent-group { margin-bottom: 0.5rem; }
+.row-group {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding-top: 0.5rem;
+}
+.row-group:hover { color: var(--fg); }
+.row-recent {
+  align-items: center;
+  padding-top: 0.2rem;
+  padding-bottom: 0.2rem;
+}
+.row-recent img {
+  width: 28px;
+  height: 28px;
+  object-fit: cover;
+  background: var(--img-bg);
+  flex-shrink: 0;
+}
+.row-recent .row-text { flex: 1; }
+.row-recent .row-count { font-size: 0.75rem; }
+
 /* ---------- stage & world ---------- */
 .stage {
   flex: 1;
@@ -246,7 +272,8 @@ body {
 }
 .stage.is-panning { cursor: grabbing; }
 .stage.is-zoom { cursor: crosshair; }
-.stage.is-zoom .node { pointer-events: none; }
+.stage.is-zoom .node,
+.stage.is-panning .node { pointer-events: none; }
 
 /* ⌥-drag rubber band: an Ink hairline over a faint wash. */
 .marquee {
@@ -274,6 +301,8 @@ body {
   border: none;
   background: var(--img-bg);
   cursor: pointer;
+  /* Set to none by the stage while the map is in motion. */
+  pointer-events: var(--node-events, auto);
 }
 .node img {
   width: 100%;
@@ -344,6 +373,10 @@ body {
 .edges-underlay {
   opacity: clamp(0, calc((0.3 - var(--k, 1)) * 0.35), 0.05);
 }
+/* Underlay strokes are in world units, not screen hairlines: a non-scaling
+   stroke forces all 1000+ paths to re-rasterize on every zoom frame, and at
+   5% opacity the width drift across the 0.03–0.3 zoom band is invisible. */
+.edges-underlay path { stroke-width: 6; }
 .edges-focus path { stroke-opacity: 0.4; }
 .edge-thread {
   stroke-opacity: 0.55;

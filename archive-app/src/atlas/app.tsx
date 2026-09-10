@@ -8,12 +8,13 @@
  * threads (lineages), and opportunity insights. Keyboard-first, like the
  * Light Table: `?` shows shortcuts.
  */
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import rawData from '../../atlas.json';
 import {
   NODE_W,
   matchesQuery,
   nodeH,
+  recentByDirectory,
   runCommand,
   thumbUrl,
   type AtlasData,
@@ -54,6 +55,11 @@ const LENSES: [LensKey, string][] = [
   ['spectrum', 'Spectrum'],
 ];
 
+/** How many of the newest sketches the rail's recent tab lists. */
+const RECENT_LIMIT = 20;
+
+const recentGroups = recentByDirectory(data.nodes, RECENT_LIMIT);
+
 const KIND_LABEL: Record<string, string> = {
   'unexplored-combination': 'combine',
   'technique-transfer': 'transfer',
@@ -70,18 +76,32 @@ const SHORTCUTS: [string[], string][] = [
   [['drag'], 'pan'],
   [['⌥ drag'], 'zoom to an area'],
   [['⌃ scroll'], 'zoom (pinch on a trackpad)'],
+  [['dbl-click'], 'zoom in on that point (⇧ zooms out)'],
   [['+', '−'], 'zoom in / out'],
   [['f'], 'fit everything'],
   [['click'], 'select — show its connections, grey the rest'],
   [['⌘ click'], 'open details'],
   [['/'], 'search'],
-  [['c', 't', 'i'], 'rail: clusters · threads · insights'],
+  [['c', 't', 'i', 'r'], 'rail: clusters · threads · insights · recent'],
   [['esc'], 'clear selection & filters, one step at a time'],
   [['?'], 'shortcuts'],
 ];
 
 type View = { x: number; y: number; k: number };
+/** Where a smooth zoom is heading, and the screen point it pivots on. */
+type ZoomTarget = { k: number; px: number; py: number; raf: number };
+
+const MIN_K = 0.03;
+const MAX_K = 5;
+/** The connection web only reads as far-view texture; past this zoom it is
+ * fully transparent, so the 1000+ paths are dropped from the paint entirely. */
+const UNDERLAY_MAX_K = 0.3;
+/** Time constant (ms) of the zoom's exponential approach to its target. */
+const ZOOM_TAU = 80;
+const clampK = (k: number) => Math.min(MAX_K, Math.max(MIN_K, k));
 type TagFilter = { field: TagField; tag: string };
+type RailTab = 'clusters' | 'threads' | 'insights' | 'recent';
+const RAIL_TABS: RailTab[] = ['clusters', 'threads', 'insights', 'recent'];
 
 // ---------- pure helpers ----------
 
@@ -439,11 +459,10 @@ export function App() {
   const [tagFilter, setTagFilter] = useState<TagFilter | null>(null);
   const [threadKey, setThreadKey] = useState<string | null>(null);
   const [insightIdx, setInsightIdx] = useState<number | null>(null);
-  const [railTab, setRailTab] = useState<'clusters' | 'threads' | 'insights'>('clusters');
+  const [railTab, setRailTab] = useState<RailTab>('clusters');
   const [activeCluster, setActiveCluster] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [modalId, setModalId] = useState<string | null>(null);
-  const [view, setView] = useState<View>({ x: 0, y: 0, k: 0.2 });
   const [nodesAnimate, setNodesAnimate] = useState(false);
   const [panning, setPanning] = useState(false);
   const [altDown, setAltDown] = useState(false);
@@ -453,9 +472,11 @@ export function App() {
 
   const stageRef = useRef<HTMLDivElement | null>(null);
   const searchRef = useRef<HTMLInputElement | null>(null);
-  const viewRef = useRef(view);
-  viewRef.current = view;
+  const viewRef = useRef<View>({ x: 0, y: 0, k: 0.2 });
+  const worldRef = useRef<HTMLDivElement | null>(null);
+  const underlayRef = useRef<SVGGElement | null>(null);
   const animRef = useRef(0);
+  const zoomRef = useRef<ZoomTarget | null>(null);
   const dragRef = useRef<{ sx: number; sy: number; lx: number; ly: number; moved: boolean } | null>(
     null,
   );
@@ -470,32 +491,65 @@ export function App() {
   );
 
   // ---------- view control ----------
+  //
+  // The view lives in a ref and is written straight to the DOM. Pan and zoom
+  // are the hot path — a wheel tick or an animation frame must never re-render
+  // the app (372 nodes, the rail, the header) to move the map a few pixels.
 
-  const cancelAnim = useCallback(() => cancelAnimationFrame(animRef.current), []);
+  const applyView = useCallback((v: View) => {
+    viewRef.current = v;
+    const world = worldRef.current;
+    if (!world) return;
+    world.style.transform = `translate(${v.x}px, ${v.y}px) scale(${v.k})`;
+    world.style.setProperty('--k', String(v.k));
+    if (underlayRef.current) {
+      underlayRef.current.style.display = v.k >= UNDERLAY_MAX_K ? 'none' : '';
+    }
+  }, []);
+
+  /** While the map is in motion, nodes ignore the pointer so hover state does
+   * not churn under a moving cursor. */
+  const setMoving = (on: boolean) =>
+    stageRef.current?.style.setProperty('--node-events', on ? 'none' : 'auto');
+
+  const cancelFly = useCallback(() => cancelAnimationFrame(animRef.current), []);
+  const cancelZoom = useCallback(() => {
+    if (zoomRef.current) cancelAnimationFrame(zoomRef.current.raf);
+    zoomRef.current = null;
+  }, []);
+  const cancelAnim = useCallback(() => {
+    cancelFly();
+    cancelZoom();
+    setMoving(false);
+  }, [cancelFly, cancelZoom]);
+
+  useLayoutEffect(() => applyView(viewRef.current), [applyView]);
 
   const animateTo = useCallback(
     (target: View) => {
       cancelAnim();
       if (reducedMotion) {
-        setView(target);
+        applyView(target);
         return;
       }
       const from = viewRef.current;
       const t0 = performance.now();
       const D = 420;
+      setMoving(true);
       const step = (now: number) => {
-        const t = Math.min(1, (now - t0) / D);
+        const t = Math.max(0, Math.min(1, (now - t0) / D));
         const e = 1 - Math.pow(1 - t, 4);
-        setView({
+        applyView({
           x: from.x + (target.x - from.x) * e,
           y: from.y + (target.y - from.y) * e,
           k: from.k + (target.k - from.k) * e,
         });
         if (t < 1) animRef.current = requestAnimationFrame(step);
+        else setMoving(false);
       };
       animRef.current = requestAnimationFrame(step);
     },
-    [cancelAnim, reducedMotion],
+    [applyView, cancelAnim, reducedMotion],
   );
 
   const stageSize = () => {
@@ -534,19 +588,59 @@ export function App() {
     [animateTo, layout],
   );
 
+  /**
+   * Zoom by a factor about a screen point, easing there instead of jumping.
+   * Every call moves the target; one frame loop chases it with an exponential
+   * approach in log-scale space, so a burst of wheel ticks reads as one
+   * continuous glide and a single tick still settles gently.
+   */
   const zoomBy = useCallback(
     (f: number, cx?: number, cy?: number) => {
-      cancelAnim();
+      cancelFly();
       const { w, h } = stageSize();
       const px = cx ?? w / 2;
       const py = cy ?? h / 2;
-      setView((v) => {
-        const k = Math.min(5, Math.max(0.03, v.k * f));
-        const scale = k / v.k;
-        return { k, x: px - (px - v.x) * scale, y: py - (py - v.y) * scale };
-      });
+      const running = zoomRef.current;
+      const k = clampK((running?.k ?? viewRef.current.k) * f);
+      if (reducedMotion) {
+        const v = viewRef.current;
+        const s = k / v.k;
+        applyView({ k, x: px - (px - v.x) * s, y: py - (py - v.y) * s });
+        return;
+      }
+      if (running) {
+        running.k = k;
+        running.px = px;
+        running.py = py;
+        return;
+      }
+      const z: ZoomTarget = { k, px, py, raf: 0 };
+      zoomRef.current = z;
+      setMoving(true);
+      let last = performance.now();
+      const step = (now: number) => {
+        // rAF timestamps mark the frame start and can precede the
+        // performance.now() taken when the loop was armed: clamp at zero or
+        // the first step eases away from the target.
+        const dt = Math.max(0, Math.min(64, now - last));
+        last = now;
+        const v = viewRef.current;
+        const a = 1 - Math.exp(-dt / ZOOM_TAU);
+        let k = Math.exp(Math.log(v.k) + (Math.log(z.k) - Math.log(v.k)) * a);
+        const done = Math.abs(Math.log(z.k / k)) < 0.002;
+        if (done) k = z.k;
+        const s = k / v.k;
+        applyView({ k, x: z.px - (z.px - v.x) * s, y: z.py - (z.py - v.y) * s });
+        if (done) {
+          zoomRef.current = null;
+          setMoving(false);
+          return;
+        }
+        z.raf = requestAnimationFrame(step);
+      };
+      z.raf = requestAnimationFrame(step);
     },
-    [cancelAnim],
+    [applyView, cancelFly, reducedMotion],
   );
 
   // Fit on mount and on every lens change; let nodes animate only after the
@@ -579,18 +673,19 @@ export function App() {
     if (!stage) return;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      cancelAnim();
       const rect = stage.getBoundingClientRect();
       if (e.ctrlKey || e.metaKey) {
         const f = Math.exp(-e.deltaY * 0.0022);
         zoomBy(f, e.clientX - rect.left, e.clientY - rect.top);
       } else {
-        setView((v) => ({ ...v, x: v.x - e.deltaX, y: v.y - e.deltaY }));
+        cancelAnim();
+        const v = viewRef.current;
+        applyView({ ...v, x: v.x - e.deltaX, y: v.y - e.deltaY });
       }
     };
     stage.addEventListener('wheel', onWheel, { passive: false });
     return () => stage.removeEventListener('wheel', onWheel);
-  }, [cancelAnim, zoomBy]);
+  }, [applyView, cancelAnim, zoomBy]);
 
   // ---------- filters & focus sets ----------
 
@@ -656,7 +751,7 @@ export function App() {
 
   // ---------- pointer pan ----------
 
-  const stagePoint = (e: React.PointerEvent<HTMLDivElement>) => {
+  const stagePoint = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   };
@@ -695,7 +790,8 @@ export function App() {
     if (d.moved) {
       const dx = e.clientX - d.lx;
       const dy = e.clientY - d.ly;
-      setView((v) => ({ ...v, x: v.x + dx, y: v.y + dy }));
+      const v = viewRef.current;
+      applyView({ ...v, x: v.x + dx, y: v.y + dy });
     }
     d.lx = e.clientX;
     d.ly = e.clientY;
@@ -795,6 +891,10 @@ export function App() {
       case 'i':
         handled();
         setRailTab('insights');
+        break;
+      case 'r':
+        handled();
+        setRailTab('recent');
         break;
       case 'Escape':
         handled();
@@ -931,7 +1031,7 @@ export function App() {
       <div className="main">
         <aside className="rail">
           <div className="rail-tabs" role="tablist">
-            {(['clusters', 'threads', 'insights'] as const).map((tab) => (
+            {RAIL_TABS.map((tab) => (
               <button
                 key={tab}
                 type="button"
@@ -1016,6 +1116,32 @@ export function App() {
                   </div>
                 ))
               ))}
+            {railTab === 'recent' &&
+              recentGroups.map((g) => (
+                <div key={g.dir} className="recent-group">
+                  <button
+                    type="button"
+                    className="row row-group"
+                    title={g.dir}
+                    onClick={() => fitIds(g.nodes.map((n) => n.id))}
+                  >
+                    <span className="row-text">{g.label}</span>
+                    <span className="row-count">{g.nodes.length}</span>
+                  </button>
+                  {g.nodes.map((n) => (
+                    <button
+                      key={n.id}
+                      type="button"
+                      className={`row row-recent${sel === n.id ? ' is-active' : ''}`}
+                      onClick={() => jumpTo(n.id)}
+                    >
+                      <img src={thumbUrl(n.url, 96)} alt="" loading="lazy" />
+                      <span className="row-text">{n.name}</span>
+                      <span className="row-count">{n.created.slice(2).replaceAll('-', '.')}</span>
+                    </button>
+                  ))}
+                </div>
+              ))}
           </div>
         </aside>
 
@@ -1029,25 +1155,27 @@ export function App() {
           onClick={() => {
             if (!lastDragMoved.current) setSel(null);
           }}
+          onDoubleClick={(e) => {
+            // Double-click dives in on that spot (⇧ backs out). The two clicks
+            // toggle a node's selection back off, so re-select it: zooming in
+            // on a sketch is a reason to be looking at it.
+            if (e.altKey || lastDragMoved.current) return;
+            const p = stagePoint(e);
+            const id = (e.target as HTMLElement).closest('.node')?.getAttribute('aria-label');
+            if (id) setSel(id);
+            zoomBy(e.shiftKey ? 0.5 : 2, p.x, p.y);
+          }}
           onScroll={(e) => {
             // The stage must never scroll natively (focus/scrollIntoView can
             // scroll overflow:hidden containers and desync the transform).
             e.currentTarget.scrollTo(0, 0);
           }}
         >
-          <div
-            className={`world${nodesAnimate ? ' animate' : ''}`}
-            style={
-              {
-                transform: `translate(${view.x}px, ${view.y}px) scale(${view.k})`,
-                '--k': view.k,
-              } as React.CSSProperties
-            }
-          >
+          <div ref={worldRef} className={`world${nodesAnimate ? ' animate' : ''}`}>
             <svg className="edges" aria-hidden="true">
-              <g className="edges-underlay">
+              <g ref={underlayRef} className="edges-underlay">
                 {underlayPaths.map((p, i) => (
-                  <path key={i} d={p} vectorEffect="non-scaling-stroke" />
+                  <path key={i} d={p} />
                 ))}
               </g>
               <g className="edges-focus">
