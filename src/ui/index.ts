@@ -9,3 +9,4 @@ export * from './range';
 export * from './camera';
 export * from './gestures';
 export * from './loupe';
+export * from './shell';

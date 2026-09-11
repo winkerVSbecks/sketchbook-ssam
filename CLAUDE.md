@@ -27,6 +27,11 @@
 - Source: `archive-app/src/atlas/` (pure client app, no server plugin). Never part of the deployed archive build. Data: `archive-app/atlas.json` (tracked).
 - Data pipeline: `scripts/atlas/` — per-sketch code + vision records are agent-generated (tagging contracts in `scripts/atlas/tagging/`), color metrics are computed by `visual-metrics.ts`, and `assemble.ts` deterministically rebuilds `atlas.json` (similarity edges, tag counts). See `scripts/atlas/README.md` to regenerate after archiving new sketches.
 
+## Canvas UI (sketch chrome)
+- `src/ui/` — dependency-free canvas controls in "The Flat File" aesthetic: grid rulers with world-coordinate graduations (`drawGridMarkers`), camera (`createCamera`), windows (`createWindow`), toggle groups (`createToggleGroup`), ranges (`createRange`), magnifying-glass loupe (`createLoupe`), and `createShell` which wires them all so a sketch only supplies `drawScene(ctx, cam, view)`.
+- Full example: `src/sketches/canvas-ui/controls-demo.ts` (`VITE_SKETCH="sketches/canvas-ui/controls-demo" npm run dev`).
+- New sketch with the shell: use the `create-ui-sketch` skill (template + scaffold live in `.claude/skills/create-ui-sketch/`).
+
 ## Code Style Guidelines
 - **TypeScript**: Use strict typing with interfaces/types for complex objects
 - **Imports**: Group by external libraries first, then project modules
