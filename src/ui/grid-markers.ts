@@ -154,11 +154,6 @@ export function drawGridMarkers(
     ctx.moveTo(fx0, y);
     ctx.lineTo(fx1, y);
   }
-  // Dotted separator between grid and ruler
-  if (ruler) {
-    ctx.moveTo(x1, fy0);
-    ctx.lineTo(x1, fy1);
-  }
   ctx.stroke();
   ctx.setLineDash([]);
 
@@ -227,7 +222,7 @@ export function drawGridMarkers(
 
   // Tick marks outside the frame at each major boundary (same weight as the frame);
   // they stop at the frame's outer edge rather than crossing into it
-  const tick = Math.min(14, margin * 0.35);
+  const tick = Math.min(8, margin * 0.2);
   const half = theme.border / 2;
   ctx.lineWidth = theme.border;
   ctx.beginPath();
@@ -247,8 +242,9 @@ export function drawGridMarkers(
   }
   ctx.stroke();
 
-  // Labels centred on each major cell, outside the frame on all four sides
+  // Labels centred on each major cell, in the middle of the margin on all four sides
   const fontSize = Math.min(18, Math.max(11, margin * 0.42));
+  const labelOut = margin / 2;
   ctx.font = labelFont(fontSize, 400);
   ctx.fillStyle = ink;
   ctx.textAlign = 'center';
@@ -256,14 +252,14 @@ export function drawGridMarkers(
   for (let c = 0; c < cols; c++) {
     const x = x0 + (c + 0.5) * cw;
     const t = labelFor(xLabels, colIndex(c));
-    ctx.fillText(t, x, fy0 / 2);
-    ctx.fillText(t, x, fy1 + margin / 2);
+    ctx.fillText(t, x, fy0 - labelOut);
+    ctx.fillText(t, x, fy1 + labelOut);
   }
   for (let r = 0; r < rows; r++) {
     const y = y0 + (r + 0.5) * ch;
     const t = labelFor(yLabels, rowIndex(r));
-    ctx.fillText(t, fx0 / 2, y);
-    ctx.fillText(t, fx1 + margin / 2, y);
+    ctx.fillText(t, fx0 - labelOut, y);
+    ctx.fillText(t, fx1 + labelOut, y);
   }
 
   ctx.restore();
@@ -322,7 +318,7 @@ function drawZoomGrid(
   roundRectPath(ctx, frame, frameRadius);
   ctx.clip();
 
-  // Minor dotted grid (skip multiples of the major step) + grid/ruler separator
+  // Minor dotted grid (skip multiples of the major step); horizontals run on across the ruler column
   ctx.strokeStyle = ink;
   ctx.lineWidth = 1;
   ctx.setLineDash([1.5, 3]);
@@ -340,10 +336,6 @@ function drawZoomGrid(
     if (!inFrameY(y)) continue;
     ctx.moveTo(fx0, y);
     ctx.lineTo(fx1, y);
-  }
-  if (ruler) {
-    ctx.moveTo(x1, fy0);
-    ctx.lineTo(x1, fy1);
   }
   ctx.stroke();
   ctx.setLineDash([]);
@@ -367,7 +359,8 @@ function drawZoomGrid(
 
   // Graduation column: value labels at a fine nice step (~20 px apart), alternating ticks, bar per row
   if (ruler) {
-    const sub = niceStep(20 / scale);
+    // Graduation step: ~20 px apart, but never finer than 0.1 so labels stay at one decimal
+    const sub = Math.max(0.1, niceStep(20 / scale));
     const subPx = sub * scale;
     const inset = rulerInset ?? subPx * 0.5;
     const numX = x1 + rulerW * 0.52;
@@ -421,7 +414,7 @@ function drawZoomGrid(
   ctx.stroke();
 
   // Outside ticks at each visible major line
-  const tick = Math.min(14, margin * 0.35);
+  const tick = Math.min(8, margin * 0.2);
   const half = theme.border / 2;
   ctx.beginPath();
   for (const i of majorXs) {
@@ -442,8 +435,10 @@ function drawZoomGrid(
   }
   ctx.stroke();
 
-  // Labels: X values on the lines (top/bottom), Y row letters between lines (left/right)
+  // Labels: X values on the lines (top/bottom), Y row letters between lines (left/right),
+  // in the middle of the margin
   const fontSize = Math.min(18, Math.max(11, margin * 0.42));
+  const labelOut = margin / 2;
   ctx.font = labelFont(fontSize, 400);
   ctx.fillStyle = ink;
   ctx.textAlign = 'center';
@@ -452,15 +447,15 @@ function drawZoomGrid(
     const x = sx(i * step);
     if (x < x0 + 10 || x > x1 - 10) continue;
     const t = xLabels === 'numbers' ? formatValue(i * step, step) : rowLetter(i);
-    ctx.fillText(t, x, fy0 / 2);
-    ctx.fillText(t, x, fy1 + margin / 2);
+    ctx.fillText(t, x, fy0 - labelOut);
+    ctx.fillText(t, x, fy1 + labelOut);
   }
   for (let i = Math.floor(vis.y / step); i <= Math.floor((vis.y + vis.h) / step); i++) {
     const y = sy((i + 0.5) * step);
     if (y < fy0 + 8 || y > fy1 - 8) continue;
     const t = yLabels === 'letters' ? rowLetter(i) : formatValue(i * step, step);
-    ctx.fillText(t, fx0 / 2, y);
-    ctx.fillText(t, fx1 + margin / 2, y);
+    ctx.fillText(t, fx0 - labelOut, y);
+    ctx.fillText(t, fx1 + labelOut, y);
   }
 
   ctx.restore();
