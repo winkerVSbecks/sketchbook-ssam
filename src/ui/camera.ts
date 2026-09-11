@@ -39,6 +39,8 @@ export interface Camera {
   zoomTo(zoom: number, anchor?: Pt): boolean;
   /** Pan by a screen-space delta (content follows the pointer). */
   panBy(dx: number, dy: number): boolean;
+  /** Put world point `p` at the viewport centre. */
+  lookAt(p: Pt): boolean;
   reset(): boolean;
   /** World rect currently visible through the viewport. */
   visibleWorld(): Rect;
@@ -115,6 +117,12 @@ export function createCamera({
       if (dx === 0 && dy === 0) return false;
       center.x -= (dirX * dx) / scale();
       center.y -= (dirY * dy) / scale();
+      return true;
+    },
+    lookAt: (p) => {
+      if (p.x === center.x && p.y === center.y) return false;
+      center.x = p.x;
+      center.y = p.y;
       return true;
     },
     reset: () => {

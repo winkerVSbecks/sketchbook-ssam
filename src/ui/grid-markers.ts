@@ -93,6 +93,76 @@ function knockoutText(
   ctx.fillText(label, x, y);
 }
 
+/** World units per major cell for a camera zoom: the smallest nice step keeping cells ≥ 75 % of base size. */
+export const gridStep = (zoom: number) => niceStep(0.75 / zoom);
+
+export interface GridLinesOptions {
+  /** Major step in world units (use `gridStep(camera.zoom)` to match the outer grid). */
+  step: number;
+  subdivisions?: number;
+  ink?: string;
+  /** Screen area to cover; defaults to the camera viewport. */
+  area?: { x: number; y: number; w: number; h: number };
+}
+
+/** Just the grid lines (dotted minor, hairline major) through `camera` — no frame, labels or ruler. */
+export function drawGridLines(
+  ctx: CanvasRenderingContext2D,
+  camera: Camera,
+  { step, subdivisions = 6, ink = theme.ink, area = camera.viewport }: GridLinesOptions,
+) {
+  const minor = step / subdivisions;
+  const ax1 = area.x + area.w;
+  const ay1 = area.y + area.h;
+  const a = camera.screenToWorld({ x: area.x, y: area.y });
+  const b = camera.screenToWorld({ x: ax1, y: ay1 });
+  const wx0 = Math.min(a.x, b.x);
+  const wx1 = Math.max(a.x, b.x);
+  const wy0 = Math.min(a.y, b.y);
+  const wy1 = Math.max(a.y, b.y);
+  const sx = (wx: number) => camera.worldToScreen({ x: wx, y: 0 }).x;
+  const sy = (wy: number) => camera.worldToScreen({ x: 0, y: wy }).y;
+  const ks = (lo: number, hi: number, st: number) => {
+    const out: number[] = [];
+    for (let k = Math.ceil(lo / st - 1e-9); k <= Math.floor(hi / st + 1e-9); k++) out.push(k);
+    return out;
+  };
+  ctx.save();
+  ctx.lineCap = 'butt';
+  ctx.strokeStyle = ink;
+  ctx.lineWidth = 1;
+  ctx.setLineDash([1.5, 3]);
+  ctx.beginPath();
+  for (const k of ks(wx0, wx1, minor)) {
+    if (k % subdivisions === 0) continue;
+    const x = sx(k * minor);
+    ctx.moveTo(x, area.y);
+    ctx.lineTo(x, ay1);
+  }
+  for (const k of ks(wy0, wy1, minor)) {
+    if (k % subdivisions === 0) continue;
+    const y = sy(k * minor);
+    ctx.moveTo(area.x, y);
+    ctx.lineTo(ax1, y);
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.strokeStyle = theme.hairline;
+  ctx.beginPath();
+  for (const i of ks(wx0, wx1, step)) {
+    const x = sx(i * step);
+    ctx.moveTo(x, area.y);
+    ctx.lineTo(x, ay1);
+  }
+  for (const i of ks(wy0, wy1, step)) {
+    const y = sy(i * step);
+    ctx.moveTo(area.x, y);
+    ctx.lineTo(ax1, y);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
 /** Letter for a signed row index: 0 → A, −1 → −A. */
 const rowLetter = (i: number) => (i >= 0 ? letterLabel(i) : `−${letterLabel(-i - 1)}`);
 
@@ -326,8 +396,7 @@ function drawZoomGrid(
   const frame = { x: fx0, y: fy0, w: fx1 - fx0, h: fy1 - fy0 };
 
   const scale = camera.scale;
-  // World units per major cell: the smallest nice step that keeps cells ≥ 75 % of the base size
-  const step = niceStep(0.75 / camera.zoom);
+  const step = gridStep(camera.zoom);
   const minor = step / subdivisions;
   const vis = camera.visibleWorld();
   const sx = (wx: number) => camera.worldToScreen({ x: wx, y: 0 }).x;

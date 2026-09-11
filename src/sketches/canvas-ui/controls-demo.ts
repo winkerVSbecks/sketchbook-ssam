@@ -2,22 +2,24 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 
 import {
-  attachCameraGestures,
   attachPointer,
   contains,
   createCamera,
+  createLoupe,
   createRangeGroup,
   createToggleGroup,
   createUI,
   createWindow,
+  drawGridLines,
   drawGridMarkers,
   gridMarkersInnerRect,
+  gridStep,
   icons,
   labelFont,
   theme,
 } from '../../ui';
 
-type Tool = 'dot' | 'ring' | 'line' | 'zoom';
+type Tool = 'dot' | 'ring' | 'line';
 
 const KNOB = { weight: '#111111', outside: '#e8541e', inside: '#8a5cf5' };
 const BG = '#f6f6f5';
@@ -61,7 +63,27 @@ function starPath(
   return pts;
 }
 
-export const sketch = ({ wrap, context, canvas, width, height, ...props }: SketchProps) => {
+/** Dot-hatched fill for the magnified shape: a small tile of ink dots over the colour. */
+function makeHatchPattern(ctx: CanvasRenderingContext2D, color: string, pixelRatio: number): CanvasPattern | string {
+  const tile = 6;
+  const c = document.createElement('canvas');
+  c.width = c.height = tile * pixelRatio;
+  const t = c.getContext('2d');
+  if (!t) return color;
+  t.scale(pixelRatio, pixelRatio);
+  t.fillStyle = color;
+  t.fillRect(0, 0, tile, tile);
+  t.fillStyle = 'rgba(17, 17, 17, 0.55)';
+  t.beginPath();
+  t.arc(tile / 2, tile / 2, 0.9, 0, Math.PI * 2);
+  t.fill();
+  const pattern = ctx.createPattern(c, 'repeat');
+  if (!pattern) return color;
+  pattern.setTransform(new DOMMatrix().scale(1 / pixelRatio));
+  return pattern;
+}
+
+export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...props }: SketchProps) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => {
       dispose();
@@ -76,15 +98,26 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
   const repaint = () => props.render();
 
   // --- Controls -----------------------------------------------------------
+  // Render mode (radio) and the magnifier (independent on/off) share one toolbar window
   const tools = createToggleGroup({
     items: [
       { id: 'dot', drawIcon: icons.dot },
       { id: 'ring', drawIcon: icons.ring },
       { id: 'line', drawIcon: icons.line },
-      { id: 'zoom', drawIcon: icons.zoom },
     ],
     exclusive: true,
     active: 'dot',
+  });
+  const magnifier = createToggleGroup({
+    items: [{ id: 'zoom', drawIcon: icons.zoom }],
+    exclusive: false,
+    onChange: (active) => {
+      if (active.includes('zoom')) {
+        // Show at the last position, or the grid centre if never placed
+        if (!loupe.center) loupe.placeAt({ x: inner.x + inner.w / 2, y: inner.y + inner.h / 2 });
+        else loupe.visible = true;
+      } else loupe.hide();
+    },
   });
 
   const ranges = createRangeGroup({
@@ -100,7 +133,7 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     x: 52,
     y: 56,
     width: 64 + 12 * 2,
-    children: [tools],
+    children: [tools, magnifier],
   });
 
   const panel = createWindow({
@@ -110,10 +143,7 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     children: ranges.controls,
   });
 
-  const ui = createUI();
-  ui.add(toolbar, panel);
-
-  // --- Grid + camera ------------------------------------------------------
+  // --- Grid + camera (fixed at the fit view) --------------------------------
   const grid = {
     width,
     height,
@@ -131,37 +161,84 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     flipY: true, // y grows upward, like the type-design reference
   });
   const size = (): [number, number] => [width, height];
+  const px = 1 / camera.fitScale; // world units per screen pixel at the fit view
+
+  // --- Loupe ----------------------------------------------------------------
+  const hatch = makeHatchPattern(context, KNOB.inside, pixelRatio);
+  const loupe = createLoupe({
+    camera,
+    size: [width, height],
+    render: (c, lens, info) => {
+      const v = ranges.values();
+      drawGridLines(c, lens, { step: gridStep(camera.zoom), subdivisions: grid.subdivisions, area: lens.viewport });
+      // Star: build the path in world space, then fill/stroke in screen space so the hatch stays crisp
+      c.save();
+      lens.apply(c);
+      const pts = starPath(c, camera.fitCenter.x, camera.fitCenter.y, 1.2, 5, v.outside * px, v.inside * px);
+      c.restore();
+      c.lineJoin = 'round';
+      const mode = tools.active[0] as Tool;
+      if (mode === 'dot') {
+        c.fillStyle = hatch;
+        c.fill();
+        c.lineWidth = 2;
+        c.strokeStyle = theme.ink;
+        c.stroke();
+      } else if (mode === 'ring') {
+        c.lineWidth = v.weight * info.magnification;
+        c.strokeStyle = KNOB.inside;
+        c.stroke();
+      } else {
+        c.lineWidth = 1.5;
+        c.strokeStyle = theme.ink;
+        c.stroke();
+      }
+      c.lineWidth = 2;
+      c.strokeStyle = theme.ink;
+      // Control nodes at the vertices
+      for (const p of pts) {
+        const sp = lens.worldToScreen(p);
+        c.beginPath();
+        c.arc(sp.x, sp.y, 7, 0, Math.PI * 2);
+        c.fillStyle = theme.paper;
+        c.fill();
+        c.stroke();
+      }
+    },
+  });
+
+  const ui = createUI();
+  ui.add(loupe, toolbar, panel); // loupe first so windows stay above it
 
   const disposePointer = attachPointer(canvas, ui, size, {
     onChange: repaint,
-    // Zoom tool: click on the grid zooms in 2× at the point, shift-click zooms out
-    onMiss: (pt, e) => {
-      if (tools.active[0] !== 'zoom' || !contains(inner, pt)) return false;
-      return camera.zoomBy(e.shiftKey ? 0.5 : 2, pt);
+    // While the magnifier is on, a click on the grid re-places the loupe centred at the point
+    onMiss: (pt) => {
+      if (!loupe.visible || !contains(inner, pt)) return false;
+      return loupe.placeAt(pt);
     },
   });
-  const disposeGestures = attachCameraGestures(canvas, camera, {
-    getSize: size,
-    shouldHandle: (pt) => !ui.hitTest(pt),
-    onChange: repaint,
-  });
+  const disposeWheel = loupe.attachWheel(canvas, size, repaint);
   const dispose = () => {
     disposePointer();
-    disposeGestures();
+    disposeWheel();
   };
 
   if (import.meta.env.DEV) {
-    (window as unknown as { __demo?: unknown }).__demo = { camera, repaint };
+    (window as unknown as { __demo?: unknown }).__demo = { camera, loupe, repaint };
   }
 
-  // `h` brings hidden windows back, `r` resets the camera
+  // `h` brings hidden windows back, Escape hides the loupe
   const onKey = (e: KeyboardEvent) => {
     if (e.key === 'h') {
       toolbar.show();
       panel.show();
       repaint();
     }
-    if (e.key === 'r' && camera.reset()) repaint();
+    if (e.key === 'Escape' && loupe.hide()) {
+      magnifier.setActive('zoom', false);
+      repaint();
+    }
   };
   window.addEventListener('keydown', onKey);
   import.meta.hot?.dispose(() => window.removeEventListener('keydown', onKey));
@@ -177,8 +254,7 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     const tool = tools.active[0] as Tool;
 
     // Subject lives in world space: 1 unit = 1 base cell; pixel-valued controls
-    // are converted so they read true at zoom 1 and scale with the view.
-    const px = 1 / camera.fitScale;
+    // are converted with `px` so they read true at the fit view.
     context.save();
     context.beginPath();
     context.rect(inner.x, inner.y, inner.w, inner.h);
@@ -190,7 +266,7 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     context.lineWidth = v.weight * px;
     context.strokeStyle = KNOB.inside;
     context.fillStyle = KNOB.inside;
-    if (tool === 'dot' || tool === 'zoom') {
+    if (tool === 'dot') {
       context.fill();
       context.stroke();
     } else if (tool === 'ring') {
@@ -220,8 +296,8 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
       ['WEIGHT', v.weight],
       ['OUTSIDE', v.outside],
       ['INSIDE', v.inside],
-      ['ZOOM', camera.zoom],
     ];
+    if (loupe.visible) rows.push(['LOUPE', loupe.magnification]);
     rows.forEach(([k, n], i) => {
       context.textAlign = 'right';
       context.fillText(`:${n.toFixed(2).padStart(6, '0')}`, rx, ry + i * 18);

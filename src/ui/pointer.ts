@@ -1,13 +1,27 @@
 import type { Cursor, Pt } from './types';
 
+export interface PointerMods {
+  shiftKey: boolean;
+  altKey: boolean;
+  ctrlKey: boolean;
+  metaKey: boolean;
+}
+
 export interface PointerTarget {
   /** Optional: whether `pt` is over the target at all (used to detect background clicks). */
   hitTest?(pt: Pt): boolean;
-  pointerDown(pt: Pt): boolean;
-  pointerMove(pt: Pt): boolean;
-  pointerUp(pt: Pt): boolean;
+  pointerDown(pt: Pt, mods?: PointerMods): boolean;
+  pointerMove(pt: Pt, mods?: PointerMods): boolean;
+  pointerUp(pt: Pt, mods?: PointerMods): boolean;
   cursorAt(pt: Pt): Cursor | null;
 }
+
+export const modsOf = (e: MouseEvent): PointerMods => ({
+  shiftKey: e.shiftKey,
+  altKey: e.altKey,
+  ctrlKey: e.ctrlKey,
+  metaKey: e.metaKey,
+});
 
 export interface AttachPointerOptions {
   /** Called whenever a handler reports a change — e.g. `props.render`. */
@@ -53,19 +67,19 @@ export function attachPointer(
     const pt = toLogical(e);
     canvas.setPointerCapture?.(e.pointerId);
     const hit = target.hitTest ? target.hitTest(pt) : true;
-    let changed = target.pointerDown(pt);
+    let changed = target.pointerDown(pt, modsOf(e));
     if (!hit && onMiss) changed = onMiss(pt, e) || changed;
     if (changed) onChange?.();
     updateCursor(pt);
   };
   const onMove = (e: PointerEvent) => {
     const pt = toLogical(e);
-    if (target.pointerMove(pt)) onChange?.();
+    if (target.pointerMove(pt, modsOf(e))) onChange?.();
     updateCursor(pt);
   };
   const onUp = (e: PointerEvent) => {
     const pt = toLogical(e);
-    if (target.pointerUp(pt)) onChange?.();
+    if (target.pointerUp(pt, modsOf(e))) onChange?.();
     updateCursor(pt);
   };
 

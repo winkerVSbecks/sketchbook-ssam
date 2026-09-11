@@ -4,6 +4,8 @@ import type { Cursor, Pt } from './types';
 /** The subset of a window the manager needs; `createWindow` satisfies it. */
 export interface UIWindow extends PointerTarget {
   visible: boolean;
+  /** Never brought to the front on pointerdown (e.g. a loupe that must stay under the windows). */
+  stayBehind?: boolean;
   contains(pt: Pt): boolean;
   draw(ctx: CanvasRenderingContext2D): void;
 }
@@ -59,26 +61,26 @@ export function createUI(): UI {
     draw: (ctx) => {
       for (const w of windows) if (w.visible) w.draw(ctx);
     },
-    pointerDown: (pt) => {
+    pointerDown: (pt, mods) => {
       const w = hit(pt);
       if (!w) return false;
-      const wasBack = windows[windows.length - 1] !== w;
-      bringToFront(w);
+      const wasBack = !w.stayBehind && windows[windows.length - 1] !== w;
+      if (!w.stayBehind) bringToFront(w);
       captured = w;
-      const changed = w.pointerDown(pt);
+      const changed = w.pointerDown(pt, mods);
       return changed || wasBack;
     },
-    pointerMove: (pt) => {
-      if (captured) return captured.pointerMove(pt);
+    pointerMove: (pt, mods) => {
+      if (captured) return captured.pointerMove(pt, mods);
       let changed = false;
-      for (const w of windows) if (w.visible) changed = w.pointerMove(pt) || changed;
+      for (const w of windows) if (w.visible) changed = w.pointerMove(pt, mods) || changed;
       return changed;
     },
-    pointerUp: (pt) => {
+    pointerUp: (pt, mods) => {
       if (!captured) return false;
       const w = captured;
       captured = null;
-      return w.pointerUp(pt);
+      return w.pointerUp(pt, mods);
     },
     cursorAt: (pt): Cursor | null => {
       if (captured) return captured.cursorAt(pt);
