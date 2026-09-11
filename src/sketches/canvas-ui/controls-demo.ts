@@ -2,7 +2,10 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 
 import {
+  attachCameraGestures,
   attachPointer,
+  contains,
+  createCamera,
   createRangeGroup,
   createToggleGroup,
   createUI,
@@ -109,17 +112,55 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
   const ui = createUI();
   ui.add(toolbar, panel);
 
-  const dispose = attachPointer(canvas, ui, () => [width, height], {
+  // --- Grid + camera ------------------------------------------------------
+  const grid = {
+    width,
+    height,
+    margin: 44,
+    cols: 4,
+    rows: 4,
+    subdivisions: 6,
+    xOrigin: 'right' as const,
+  };
+  const inner = gridMarkersInnerRect(grid);
+  const camera = createCamera({
+    viewport: inner,
+    units: grid.cols,
+    flipX: grid.xOrigin === 'right',
+    flipY: true, // y grows upward, like the type-design reference
+  });
+  const size = (): [number, number] => [width, height];
+
+  const disposePointer = attachPointer(canvas, ui, size, {
+    onChange: repaint,
+    // Zoom tool: click on the grid zooms in 2× at the point, shift-click zooms out
+    onMiss: (pt, e) => {
+      if (tools.active[0] !== 'zoom' || !contains(inner, pt)) return false;
+      return camera.zoomBy(e.shiftKey ? 0.5 : 2, pt);
+    },
+  });
+  const disposeGestures = attachCameraGestures(canvas, camera, {
+    getSize: size,
+    shouldHandle: (pt) => !ui.hitTest(pt),
     onChange: repaint,
   });
+  const dispose = () => {
+    disposePointer();
+    disposeGestures();
+  };
 
-  // Bring hidden windows back with `h`
+  if (import.meta.env.DEV) {
+    (window as unknown as { __demo?: unknown }).__demo = { camera, repaint };
+  }
+
+  // `h` brings hidden windows back, `r` resets the camera
   const onKey = (e: KeyboardEvent) => {
     if (e.key === 'h') {
       toolbar.show();
       panel.show();
       repaint();
     }
+    if (e.key === 'r' && camera.reset()) repaint();
   };
   window.addEventListener('keydown', onKey);
   import.meta.hot?.dispose(() => window.removeEventListener('keydown', onKey));
@@ -129,21 +170,23 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     context.fillStyle = '#f6f6f5';
     context.fillRect(0, 0, width, height);
 
-    const grid = { width, height, margin: 44, cols: 4, rows: 4, subdivisions: 6, xOrigin: 'right' as const };
-    drawGridMarkers(context, grid);
-    const inner = gridMarkersInnerRect(grid);
+    drawGridMarkers(context, { ...grid, camera });
 
     const v = ranges.values();
     const tool = tools.active[0] as Tool;
-    const scale = tool === 'zoom' ? 1.5 : 1;
-    const cx = inner.x + inner.w / 2;
-    const cy = inner.y + inner.h / 2;
-    const r = Math.min(inner.w, inner.h) * 0.3 * scale;
 
+    // Subject lives in world space: 1 unit = 1 base cell; pixel-valued controls
+    // are converted so they read true at zoom 1 and scale with the view.
+    const px = 1 / camera.fitScale;
     context.save();
-    const pts = starPath(context, cx, cy, r, 5, v.outside, v.inside);
+    context.beginPath();
+    context.rect(inner.x, inner.y, inner.w, inner.h);
+    context.clip();
+    camera.apply(context);
+    const c = camera.fitCenter;
+    const pts = starPath(context, c.x, c.y, 1.2, 5, v.outside * px, v.inside * px);
     context.lineJoin = 'round';
-    context.lineWidth = v.weight;
+    context.lineWidth = v.weight * px;
     context.strokeStyle = KNOB.inside;
     context.fillStyle = KNOB.inside;
     if (tool === 'dot' || tool === 'zoom') {
@@ -152,12 +195,12 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     } else if (tool === 'ring') {
       context.stroke();
     } else {
-      context.lineWidth = 1.5;
+      context.lineWidth = 1.5 * px;
       context.strokeStyle = theme.ink;
       context.stroke();
       for (const p of pts) {
         context.beginPath();
-        context.arc(p.x, p.y, 6, 0, Math.PI * 2);
+        context.arc(p.x, p.y, 6 * px, 0, Math.PI * 2);
         context.fillStyle = theme.paper;
         context.fill();
         context.stroke();
@@ -176,6 +219,7 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
       ['WEIGHT', v.weight],
       ['OUTSIDE', v.outside],
       ['INSIDE', v.inside],
+      ['ZOOM', camera.zoom],
     ];
     rows.forEach(([k, n], i) => {
       context.textAlign = 'right';

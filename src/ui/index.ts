@@ -6,3 +6,5 @@ export * from './grid-markers';
 export * from './window';
 export * from './toggle';
 export * from './range';
+export * from './camera';
+export * from './gestures';

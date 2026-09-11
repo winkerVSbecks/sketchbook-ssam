@@ -10,6 +10,9 @@ export interface UIWindow extends PointerTarget {
 
 export interface UI extends PointerTarget {
   windows: UIWindow[];
+  /** Front-most visible window under `pt`, or null. */
+  windowAt(pt: Pt): UIWindow | null;
+  hitTest(pt: Pt): boolean;
   add(...windows: UIWindow[]): void;
   remove(win: UIWindow): void;
   bringToFront(win: UIWindow): void;
@@ -51,6 +54,8 @@ export function createUI(): UI {
       if (captured === win) captured = null;
     },
     bringToFront,
+    windowAt: hit,
+    hitTest: (pt) => hit(pt) !== null,
     draw: (ctx) => {
       for (const w of windows) if (w.visible) w.draw(ctx);
     },
