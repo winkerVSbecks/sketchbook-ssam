@@ -20,6 +20,7 @@ import {
 type Tool = 'dot' | 'ring' | 'line' | 'zoom';
 
 const KNOB = { weight: '#111111', outside: '#e8541e', inside: '#8a5cf5' };
+const BG = '#f6f6f5';
 
 /** Rounded polygon: `outer` radius rounds convex corners, `inner` rounds the concave ones. */
 function starPath(
@@ -167,10 +168,10 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
 
   // --- Render -------------------------------------------------------------
   wrap.render = ({ width, height }: SketchProps) => {
-    context.fillStyle = '#f6f6f5';
+    context.fillStyle = BG;
     context.fillRect(0, 0, width, height);
 
-    drawGridMarkers(context, { ...grid, camera });
+    drawGridMarkers(context, { ...grid, camera, paper: BG });
 
     const v = ranges.values();
     const tool = tools.active[0] as Tool;

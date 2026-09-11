@@ -27,6 +27,8 @@ export interface GridMarkersOptions {
   /** Corner radius of the outer frame. */
   frameRadius?: number;
   ink?: string;
+  /** Canvas background, used to knock out a box behind graduation numerals. */
+  paper?: string;
   /**
    * Zoomable mode: grid lines, labels and graduations follow the camera in
    * world coordinates (one unit = one base cell at zoom 1). Major labels sit on
@@ -59,11 +61,36 @@ export function niceStep(target: number): number {
   return 10 * base;
 }
 
+/** Largest "nice" step (1, 2, 5 × 10ⁿ) that is ≤ `target`. */
+export function niceStepFloor(target: number): number {
+  if (!(target > 0) || !Number.isFinite(target)) return 1;
+  const base = 10 ** Math.floor(Math.log10(target));
+  for (const m of [5, 2, 1]) if (m * base <= target + 1e-12) return m * base;
+  return base;
+}
+
 /** Format a world value with just enough decimals for `step`, trailing zeros trimmed. */
 export function formatValue(v: number, step: number): string {
   const decimals = Math.max(0, -Math.floor(Math.log10(step) + 1e-9));
   const s = v.toFixed(decimals).replace(/\.?0+$/, (m) => (m.startsWith('.') ? '' : m));
   return s === '-0' ? '0' : s;
+}
+
+/** Paint `label` right-aligned at (x, y) over a paper box so grid dots don't cross the numerals. */
+function knockoutText(
+  ctx: CanvasRenderingContext2D,
+  label: string,
+  x: number,
+  y: number,
+  fontPx: number,
+  paper: string,
+  ink: string,
+) {
+  const w = ctx.measureText(label).width;
+  ctx.fillStyle = paper;
+  ctx.fillRect(x - w - 2, y - fontPx / 2 - 1, w + 4, fontPx + 2);
+  ctx.fillStyle = ink;
+  ctx.fillText(label, x, y);
 }
 
 /** Letter for a signed row index: 0 → A, −1 → −A. */
@@ -96,12 +123,13 @@ export function drawGridMarkers(
     rulerInset,
     frameRadius = 14,
     ink = theme.ink,
+    paper = theme.paper,
     camera,
   }: GridMarkersOptions,
 ) {
   if (camera) {
     drawZoomGrid(ctx, camera, {
-      width, height, margin, subdivisions, ruler, rulerInset, frameRadius, ink,
+      width, height, margin, subdivisions, ruler, rulerInset, frameRadius, ink, paper,
       yLabels, xLabels,
     });
     return;
@@ -179,6 +207,7 @@ export function drawGridMarkers(
     const tickX = x1 + rulerW * 0.56;
     const longTick = rulerW * 0.18;
     const shortTick = longTick * 0.5;
+    const minorTick = longTick * 0.3;
     const barX = x1 + rulerW * 0.74;
     const barW = rulerW * 0.14;
     // Graduations are inset from the row edges so the first/last numerals don't crowd the boundary
@@ -193,13 +222,15 @@ export function drawGridMarkers(
     ctx.lineWidth = 1.25;
     for (let r = 0; r < rows; r++) {
       const top = y0 + r * ch;
-      // Bar spans the graduation range, so it's inset from the row edges like the numerals
-      ctx.fillRect(barX, top + inset, barW, ch - inset * 2);
+      // Bar runs flush from the first to the last graduation tick of the row
+      const firstY = top + inset + 0.5 * divH;
+      const lastY = top + inset + (rulerDivisions - 0.5) * divH;
+      ctx.fillRect(barX, firstY - ctx.lineWidth / 2, barW, lastY - firstY + ctx.lineWidth);
       ctx.beginPath();
       for (let d = 0; d < rulerDivisions; d++) {
         const cy = top + inset + (d + 0.5) * divH;
         const idx = rulerOrigin === 'top' ? d + 1 : rulerDivisions - d;
-        ctx.fillText(pad2(idx), numX, cy);
+        knockoutText(ctx, pad2(idx), numX, cy, subFont, paper, ink);
         // Long tick at the label, short tick halfway to the next label
         ctx.moveTo(tickX, cy);
         ctx.lineTo(tickX + longTick, cy);
@@ -274,6 +305,7 @@ interface ZoomGridOptions {
   rulerInset?: number;
   frameRadius: number;
   ink: string;
+  paper: string;
   xLabels: 'numbers' | 'letters';
   yLabels: 'numbers' | 'letters';
 }
@@ -282,7 +314,7 @@ interface ZoomGridOptions {
 function drawZoomGrid(
   ctx: CanvasRenderingContext2D,
   camera: Camera,
-  { width, height, margin, subdivisions, ruler, rulerInset, frameRadius, ink, xLabels, yLabels }: ZoomGridOptions,
+  { width, height, margin, subdivisions, ruler, rulerInset, frameRadius, ink, paper, xLabels, yLabels }: ZoomGridOptions,
 ) {
   const rulerW = rulerWidth(margin, ruler);
   const fx0 = margin;
@@ -362,47 +394,72 @@ function drawZoomGrid(
     // Graduation step: ~20 px apart, but never finer than 0.1 so labels stay at one decimal
     const sub = Math.max(0.1, niceStep(20 / scale));
     const subPx = sub * scale;
-    const inset = rulerInset ?? subPx * 0.5;
+    // Unlabelled ticks between labels: the largest nice step ≤ 24 px that divides `sub`; at least the midpoint
+    const fine = niceStepFloor(24 / scale);
+    const perLabel = Math.abs(sub / fine - Math.round(sub / fine)) < 1e-9 ? Math.max(2, Math.round(sub / fine)) : 2;
+    const finePx = subPx / perLabel;
+    // Breathing room from each row boundary: half a label step, but never more than one fine tick
+    const inset = rulerInset ?? Math.min(subPx * 0.5, finePx);
+    // When the label step equals the major step, the only labellable values sit on the major lines
+    const labelsOnMajors = sub >= step - 1e-9;
     const numX = x1 + rulerW * 0.52;
     const tickX = x1 + rulerW * 0.56;
     const longTick = rulerW * 0.18;
     const shortTick = longTick * 0.5;
+    const minorTick = longTick * 0.3;
     const barX = x1 + rulerW * 0.74;
     const barW = rulerW * 0.14;
     const distToMajorPx = (v: number) => {
       const m = ((v % step) + step) % step;
       return Math.min(m, step - m) * scale;
     };
-    ctx.font = labelFont(Math.min(11, Math.max(7, subPx * 0.55)), 400);
+    const subFont = Math.min(11, Math.max(7, subPx * 0.55));
+    ctx.font = labelFont(subFont, 400);
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = ink;
     ctx.strokeStyle = ink;
     ctx.lineWidth = 1.25;
+    // Track the screen extent of each major row's ticks so the bar can run flush with them
+    const rowExtent = new Map<number, { min: number; max: number }>();
+    const noteTick = (v: number, y: number) => {
+      if (distToMajorPx(v) < inset - 1e-6) return; // ticks on/near a major line don't extend a bar
+      const row = Math.floor(v / step + 1e-9);
+      const e = rowExtent.get(row);
+      if (!e) rowExtent.set(row, { min: y, max: y });
+      else {
+        e.min = Math.min(e.min, y);
+        e.max = Math.max(e.max, y);
+      }
+    };
     ctx.beginPath();
-    for (const k of range(vis.y, vis.y + vis.h, sub)) {
+    for (const k of range(vis.y - step, vis.y + vis.h + step, sub)) {
       const v = k * sub;
       const y = sy(v);
-      if (inFrameY(y) && distToMajorPx(v) >= inset - 1e-6) {
-        ctx.fillText(formatValue(v, sub), numX, y);
-        ctx.moveTo(tickX, y);
-        ctx.lineTo(tickX + longTick, y);
+      if (labelsOnMajors || distToMajorPx(v) >= inset - 1e-6) {
+        if (inFrameY(y)) {
+          knockoutText(ctx, formatValue(v, sub), numX, y, subFont, paper, ink);
+          ctx.moveTo(tickX, y);
+          ctx.lineTo(tickX + longTick, y);
+        }
+        noteTick(v, y);
       }
-      const vh = v + sub / 2;
-      const yh = sy(vh);
-      if (inFrameY(yh) && distToMajorPx(vh) >= inset - 1e-6) {
-        ctx.moveTo(tickX + longTick - shortTick, yh);
-        ctx.lineTo(tickX + longTick, yh);
+      for (let j = 1; j < perLabel; j++) {
+        const vj = v + (j * sub) / perLabel;
+        const yj = sy(vj);
+        if (distToMajorPx(vj) < inset - 1e-6) continue;
+        noteTick(vj, yj);
+        if (!inFrameY(yj)) continue;
+        const len = perLabel % 2 === 0 && j === perLabel / 2 ? shortTick : minorTick;
+        ctx.moveTo(tickX + longTick - len, yj);
+        ctx.lineTo(tickX + longTick, yj);
       }
     }
     ctx.stroke();
-    // Bars: one per major row, inset from the row's lines (clipped by the frame)
-    for (let i = Math.floor(vis.y / step) - 1; i <= Math.floor((vis.y + vis.h) / step) + 1; i++) {
-      const a = sy(i * step);
-      const b = sy((i + 1) * step);
-      const top = Math.min(a, b) + inset;
-      const h = Math.abs(b - a) - inset * 2;
-      if (h > 0) ctx.fillRect(barX, top, barW, h);
+    // Bars: one per major row, flush with the row's first and last tick (clipped by the frame)
+    const lw = ctx.lineWidth;
+    for (const { min, max } of rowExtent.values()) {
+      ctx.fillRect(barX, min - lw / 2, barW, max - min + lw);
     }
   }
   ctx.restore(); // clip
