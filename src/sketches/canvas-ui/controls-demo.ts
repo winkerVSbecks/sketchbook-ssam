@@ -3,7 +3,6 @@ import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 
 import {
   attachPointer,
-  contains,
   createCamera,
   createLoupe,
   createRangeGroup,
@@ -210,14 +209,7 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
   const ui = createUI();
   ui.add(loupe, toolbar, panel); // loupe first so windows stay above it
 
-  const disposePointer = attachPointer(canvas, ui, size, {
-    onChange: repaint,
-    // While the magnifier is on, a click on the grid re-places the loupe centred at the point
-    onMiss: (pt) => {
-      if (!loupe.visible || !contains(inner, pt)) return false;
-      return loupe.placeAt(pt);
-    },
-  });
+  const disposePointer = attachPointer(canvas, ui, size, { onChange: repaint });
   const disposeWheel = loupe.attachWheel(canvas, size, repaint);
   const dispose = () => {
     disposePointer();
