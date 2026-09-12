@@ -254,6 +254,7 @@
     "sketches/gravura/multi-color",
     "sketches/gravura/pro-color",
     "sketches/gravura/rybitten-blinds",
+    "sketches/blinds/blinds",
     "sketches/gravura/rybitten",
     "sketches/quantum-equivalence/pro-color-shift",
     "sketches/quantum-equivalence/pro-color",
@@ -587,6 +588,7 @@
     "sketches/domain-polygon/window/sketch-distort",
     "sketches/nalee-jali/b",
     "sketches/gravura/rybitten-blinds",
+    "sketches/blinds/blinds",
     "sketches/clearloop/stretch"
    ]
   },
