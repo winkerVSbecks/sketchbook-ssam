@@ -5,7 +5,8 @@
  *
  * Usage:
  *   npm run archive                      # incremental: only render git-changed + new sketches
- *   npm run archive -- --only <pattern>  # restrict to sketches matching substring
+ *   npm run archive -- --only <pattern>  # restrict to sketches whose id equals, ends with,
+ *                                        # starts with (folder, e.g. sketches/canvas-ui) or contains <pattern>
  *   npm run archive -- --force           # ignore cache, re-render everything
  *   npm run archive -- --site-only       # skip rendering/uploading, only regen HTML
  *   npm run archive -- --dry-run         # print plan, change nothing
@@ -338,7 +339,9 @@ function log(msg: string): void {
 function matchOnly(id: string, pattern: string): boolean {
   if (id === pattern) return true;
   if (id.endsWith('/' + pattern)) return true;
-  if (pattern.includes('/')) return false;
+  // Folder prefix: `sketches/canvas-ui` or `sketches/canvas-ui/`.
+  const prefix = pattern.endsWith('/') ? pattern : pattern + '/';
+  if (id.startsWith(prefix)) return true;
   return id.includes(pattern);
 }
 
