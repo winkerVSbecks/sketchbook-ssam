@@ -105,9 +105,11 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
       { id: 'drift', label: 'Drift', min: 0, max: 1, value: 0, step: 0.01, knobColor: '#e8541e' },
     ],
     loupe: {},
-    // Vertices are shell handles: hit-tested where the disc is painted (the base point)
+    // Vertices are shell handles, hit-tested where the disc is painted (the base
+    // point). They exist only in line mode: in dot mode the artwork is clean and
+    // the vertices are neither marked nor draggable.
     handles: {
-      points: () => verts,
+      points: () => (shell.mode === 'line' ? verts : []),
       onDrag: (i, p) => {
         verts[i] = p;
       },
@@ -218,9 +220,10 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
       }
     }
 
-    // Inside the loupe: a hairline joins each base handle to its drifted vertex,
-    // and the handles are drawn magnified on top (outside, the shell paints them).
-    if (view.magnified) {
+    // Inside the loupe (line mode only, like the handle layer): a hairline joins
+    // each base handle to its drifted vertex, and the handles are drawn magnified
+    // on top (outside, the shell paints them).
+    if (view.magnified && !filled) {
       const drawn = [u, v, w];
       verts.forEach((p, i) => {
         const s = cam.worldToScreen(p);
@@ -230,7 +233,7 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
           ctx.moveTo(s.x, s.y);
           ctx.lineTo(d.x, d.y);
           ctx.lineWidth = 1;
-          ctx.strokeStyle = filled ? clrs.handle : theme.ink;
+          ctx.strokeStyle = theme.ink;
           ctx.stroke();
         }
         ctx.beginPath();
