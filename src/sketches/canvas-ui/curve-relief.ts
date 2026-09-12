@@ -7,7 +7,6 @@ import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import {
   createShell,
   createToggleGroup,
-  createWindow,
   drawFeather,
   iconColors,
   theme,
@@ -59,8 +58,39 @@ const ROTATE_CCW: FeatherPath[] = [
 ];
 
 // --- Colour ------------------------------------------------------------------------
-// The original's Lch(L, C, hue) fills with seeded random hues; `hue` (the slider)
-// is added to every fill so the whole relief rotates round the wheel together.
+// The original's `Lch(L, c, h)` (sketchbook/clrs.js) is OKLCH, not CIE LCH: L and
+// c are ÷100 into OKLab, converted to sRGB and each channel truncated and clamped
+// to 0–255 — so `Lch(100, 70, h)` is a deliberately out-of-gamut colour that the
+// clamp turns into a saturated one. Ported exactly so the four fills read as four
+// distinct colours. `hue` (the slider) is added to every fill so the whole relief
+// rotates round the wheel together.
+
+const clamp = (n: number, lo: number, hi: number) => Math.min(Math.max(n, lo), hi);
+const linearToGamma = (c: number) => (c > 0.0031308 ? 1.055 * Math.pow(c, 1 / 2.4) - 0.055 : 12.92 * c);
+
+/** OKLab → sRGB 0–255, truncating and clamping each channel like the original. */
+const oklabToRGB = (l: number, a: number, b: number): [number, number, number] => {
+  const L = Math.pow(l + 0.3963377774 * a + 0.2158037573 * b, 3);
+  const M = Math.pow(l - 0.1055613458 * a - 0.0638541728 * b, 3);
+  const S = Math.pow(l - 0.0894841775 * a - 1.291485548 * b, 3);
+  const channel = (v: number) => clamp(~~(255 * linearToGamma(v)), 0, 255);
+  return [
+    channel(+4.0767245293 * L - 3.3072168827 * M + 0.2307590544 * S),
+    channel(-1.2681437731 * L + 2.6093323231 * M - 0.341134429 * S),
+    channel(-0.0041119885 * L - 0.7034763098 * M + 1.7068625689 * S),
+  ];
+};
+
+const rgbToHex = ([r, g, b]: [number, number, number]) =>
+  '#' + (b | (g << 8) | (r << 16) | (1 << 24)).toString(16).slice(1);
+
+/** The original's `Lch(L, c, h)`: L, c in 0–100, h in degrees → clamped sRGB hex. */
+const Lch = (L: number, c: number, h: number) => {
+  const a = (h / 180) * Math.PI;
+  c /= 100;
+  L /= 100;
+  return rgbToHex(oklabToRGB(L, c ? c * Math.cos(a) : 0, c ? c * Math.sin(a) : 0));
+};
 
 Random.setSeed('curve-relief');
 
@@ -76,9 +106,9 @@ const FILLS: LchColor[] = [
   { L: 100, C: 20, h: Random.range(0, 180) },
   { L: 20, C: 90, h: Random.range(0, 180) },
 ];
-const BG = 'lch(95% 0 0)';
+const BG = Lch(95, 0, 0);
 
-const lch = ({ L, C, h }: LchColor, hueOffset: number) => `lch(${L}% ${C} ${(((h + hueOffset) % 360) + 360) % 360})`;
+const lch = ({ L, C, h }: LchColor, hueOffset: number) => Lch(L, C, h + hueOffset);
 
 // Seeded control points, as fractions of the original canvas (0.4–0.6 of the size)
 const CONTROL_FRACTIONS: Pt[] = FILLS.map(() => ({
@@ -115,6 +145,24 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
     props.exportFrame();
   });
 
+  // Reset: a momentary toolbar button (appended after the magnifier via `tools`).
+  // It rebuilds every chain taut along its seed curve — the control points stay
+  // where they were dragged — so the drop replays, and un-highlights itself at once.
+  const resetGroup = createToggleGroup({
+    items: [
+      {
+        id: 'reset',
+        drawIcon: (ctx, rect, active) => drawFeather(ctx, rect, ROTATE_CCW, iconColors(active).fg),
+      },
+    ],
+    exclusive: false,
+    onChange: (active) => {
+      if (!active.includes('reset')) return;
+      curves.forEach(rebuild);
+      resetGroup.setActive('reset', false);
+    },
+  });
+
   const shell = createShell({
     ctx: context,
     canvas,
@@ -136,6 +184,7 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
     // Five sliders: lift the panel so every one stays inside the frame
     panel: { y: height - 480 },
     loupe: {},
+    tools: [resetGroup],
     // The control points are handles, visible and draggable only in `line` mode.
     // Dragging one rebuilds that curve's chain in place.
     handles: {
@@ -217,36 +266,6 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
     const f = CONTROL_FRACTIONS[i];
     return build(toWorld({ x: f.x * SIM_W, y: f.y * SIM_H }), color);
   });
-
-  // Reset: a momentary toolbar button in its own small window right under the
-  // shell's toolbar. It rebuilds every chain taut along its seed curve (the
-  // control points stay where they were dragged) so the drop replays, and
-  // un-highlights itself at once.
-  const resetGroup = createToggleGroup({
-    items: [
-      {
-        id: 'reset',
-        drawIcon: (ctx, rect, active) => drawFeather(ctx, rect, ROTATE_CCW, iconColors(active).fg),
-      },
-    ],
-    exclusive: false,
-    onChange: (active) => {
-      if (!active.includes('reset')) return;
-      curves.forEach(rebuild);
-      resetGroup.setActive('reset', false);
-    },
-  });
-  // The shell's toolbar: title bar + padding, the two mode buttons, gap, the loupe button
-  const toolbarHeight = theme.titleBarHeight + 12 * 2 + (64 * 2 + 12) + 12 + 64;
-  const resetWindow = createWindow({
-    x: 52,
-    y: 56 + toolbarHeight + 12,
-    width: 64 + 12 * 2,
-    children: [resetGroup],
-    collapsible: false,
-    closable: false,
-  });
-  shell.ui.add(resetWindow);
 
   // Apply slider changes to the live simulation: tightness re-seeds every chain,
   // stiffness/damping retune every spring, gravity scales the engine's pull.
