@@ -4,22 +4,17 @@ import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import { createShell, type Camera, type Pt, type SceneView } from '../../ui';
 
 /**
- * Chill wave: a looping dashed sine-like stroke built from cubic segments, wiped
- * on the right by a paper-coloured mask. Ported from a 1080² canvas-sketch piece;
- * the wave colour is driven by hue / saturation / lightness sliders and the wave
- * sits directly on the shell's paper and grid.
+ * Chill wave: a looping dashed sine-like stroke built from cubic segments that
+ * travels across the whole grid. Ported from a 1080² canvas-sketch piece (minus
+ * its right-hand wipe mask); the wave colour is driven by hue / saturation /
+ * lightness sliders, `amplitude` scales its height and `wavelength` stretches
+ * it horizontally. The wave sits directly on the shell's paper and grid.
  */
-
-const clrs = {
-  /** Wipe-mask colour: the shell's default paper, so the wipe reads clean against the chrome. */
-  paper: '#f6f6f5',
-};
 
 /** Original canvas pixels per world unit (1080 px canvas → 4 grid cells). */
 const PX_PER_UNIT = 270;
 
 // --- Geometry (original pixel values, kept verbatim so the segment shape is unchanged)
-const W = 260;
 const H = 160;
 const A = H / 4;
 const STEPS = 7;
@@ -28,25 +23,29 @@ const M = 0.512286623256592433;
 
 /**
  * Path commands of one rising segment — the dash length is measured from this.
- * Horizontal advances keep the original `A` (fixed period); `a` is the scaled amplitude.
+ * Every horizontal delta (the `A`-based x steps and the control-point x offsets)
+ * is scaled by `wl` (wavelength); `a` is the scaled amplitude.
  */
-const startCommands = (x0: number, y0: number, a: number) => [
+const startCommands = (x0: number, y0: number, a: number, wl: number) => [
   'M', x0, y0,
-  'c', A * M, 0, -(1 - A) * M, -a, A, -a,
+  'c', A * M * wl, 0, -(1 - A) * M * wl, -a, A * wl, -a,
 ];
 
 /** The full wave: a start segment plus `STEPS` smooth up/down pairs. */
-const waveCommands = (x0: number, y0: number, a: number) => [
-  ...startCommands(x0, y0, a),
+const waveCommands = (x0: number, y0: number, a: number, wl: number) => [
+  ...startCommands(x0, y0, a, wl),
   ...new Array(STEPS)
     .fill(0)
-    .flatMap(() => ['s', -(1 - A) * M, a, A, a, 's', -(1 - A) * M, -a, A, -a]),
+    .flatMap(() => [
+      's', -(1 - A) * M * wl, a, A * wl, a,
+      's', -(1 - A) * M * wl, -a, A * wl, -a,
+    ]),
 ];
 
 /** Arc length of the start segment in original pixels, via an SVG path (as the original did). */
 const measureEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-const measureSegment = (a: number): number => {
-  measureEl.setAttribute('d', startCommands(0, 0, a).join(' '));
+const measureSegment = (a: number, wl: number): number => {
+  measureEl.setAttribute('d', startCommands(0, 0, a, wl).join(' '));
   return measureEl.getTotalLength();
 };
 
@@ -75,9 +74,11 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
       { id: 'lightness', label: 'lightness', min: 0, max: 100, value: 60, step: 1, knobColor: '#111111' },
       { id: 'weight', label: 'weight', min: 1, max: 40, value: 12, step: 0.5 },
       { id: 'amplitude', label: 'Amplitude', min: 0.2, max: 2, value: 1, step: 0.05, knobColor: '#8a5cf5' },
+      { id: 'wavelength', label: 'wavelength', min: 0.5, max: 2, value: 1, step: 0.05, knobColor: '#e8541e' },
     ],
-    // Five sliders are taller than the default panel slot — lift it clear of the bottom edge
-    panel: { y: height - 480 },
+    // Six sliders are taller than the default panel slot: lift it clear of the bottom
+    // edge and park it in the toolbar's column so it doesn't sit on top of the wave.
+    panel: { x: 52, y: height - 560 },
     onChange: () => props.render(),
   });
 
@@ -102,8 +103,8 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
   });
 
   /** SVG path data in world units for the wave starting at local (x0, y0). */
-  const worldPathData = (x0: number, y0: number, a: number): string => {
-    const cmds = waveCommands(x0, y0, a);
+  const worldPathData = (x0: number, y0: number, a: number, wl: number): string => {
+    const cmds = waveCommands(x0, y0, a, wl);
     const out: (string | number)[] = [];
     let i = 0;
     while (i < cmds.length) {
@@ -131,32 +132,23 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
     return new DOMMatrix([ex.x - o.x, ex.y - o.y, ey.x - o.x, ey.y - o.y, o.x, o.y]);
   };
 
-  /** Build a rect (local pixel frame) as a world-space path, then leave the context in screen space. */
-  const localRect = (ctx: CanvasRenderingContext2D, cam: Camera, x0: number, y0: number, x1: number, y1: number) => {
-    const a = toWorld(x0, y0);
-    const b = toWorld(x1, y1);
-    ctx.save();
-    cam.apply(ctx);
-    ctx.beginPath();
-    ctx.rect(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.abs(b.x - a.x), Math.abs(b.y - a.y));
-    ctx.restore();
-  };
-
   let playhead = 0;
 
   const drawScene = (ctx: CanvasRenderingContext2D, cam: Camera, view: SceneView) => {
-    const { hue, saturation, lightness, weight, amplitude } = view.params;
+    const { hue, saturation, lightness, weight, amplitude, wavelength } = view.params;
     const k = view.magnification;
     const color = `hsl(${hue} ${saturation}% ${lightness}%)`;
-    // Scaled amplitude: original a = h/4; the horizontal period and the mask are unchanged
+    // Scaled amplitude (original a = h/4) and wavelength (×1 = the original period).
+    // The start offset and the measured segment follow the wavelength so dashes stay aligned.
     const a = A * amplitude;
-    const segmentLength = measureSegment(a);
+    const wl = wavelength;
+    const segmentLength = measureSegment(a, wl);
 
     // The wave, built in world units and mapped to screen pixels so dashes are in px
-    const x0 = (-STEPS / 2) * A - SHIFT * A * playhead;
+    const x0 = ((-STEPS / 2) * A - SHIFT * A * playhead) * wl;
     const y0 = H / 2 + a / 2;
     const path = new Path2D();
-    path.addPath(new Path2D(worldPathData(x0, y0, a)), worldMatrix(cam));
+    path.addPath(new Path2D(worldPathData(x0, y0, a, wl)), worldMatrix(cam));
 
     const len = (segmentLength * cam.scale) / PX_PER_UNIT;
     ctx.save();
@@ -168,11 +160,6 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
     ctx.lineDashOffset = -SHIFT * len * playhead;
     ctx.stroke(path);
     ctx.restore();
-
-    // Right-hand wipe mask, in the shell's paper colour
-    localRect(ctx, cam, W * 0.7, 0, W * 3, H);
-    ctx.fillStyle = clrs.paper;
-    ctx.fill();
   };
 
   wrap.render = (p: SketchProps) => {
