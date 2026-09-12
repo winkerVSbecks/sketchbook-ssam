@@ -93,16 +93,21 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
     height,
     pixelRatio,
     grid: { cols: 4, subdivisions: 6, xOrigin: 'right' },
-    modes: [],
+    // Both modes draw the same lattice; only `line` shows (and lets you drag) the vertices
+    modes: [
+      { id: 'dot', icon: 'dot' },
+      { id: 'line', icon: 'line' },
+    ],
     params: [
       { id: 'weight', label: 'weight', min: 0.5, max: 20, value: 6, step: 0.5, knobColor: '#1B2280' },
       { id: 'splits', label: 'splits', min: 1, max: 16, value: 6, step: 1, knobColor: '#e8541e' },
       { id: 'drift', label: 'drift', min: 0, max: 1, value: 0, step: 0.01, knobColor: '#e8541e' },
     ],
     loupe: {},
-    // The handles are the base vertices; the drawn vertex = base + drift × wander
+    // The handles are the base vertices; the drawn vertex = base + drift × wander.
+    // Hidden and inert in `dot` mode (no points to hit-test or paint).
     handles: {
-      points: () => verts,
+      points: () => (shell.mode === 'line' ? verts : []),
       onDrag: (i, p) => {
         verts[i] = p;
       },
@@ -213,9 +218,9 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
     ctx.strokeStyle = clrs.lines;
     for (const t of triangles) drawTriangle(ctx, cam, t, splits);
 
-    // Inside the loupe: a hairline from each base handle to its drifted vertex,
-    // and the handles as magnified nodes on top.
-    if (view.magnified) {
+    // Inside the loupe, in `line` mode only: a hairline from each base handle to
+    // its drifted vertex, and the handles as magnified nodes on top.
+    if (view.magnified && view.mode === 'line') {
       if (drift > 0) {
         ctx.lineWidth = 1;
         ctx.strokeStyle = clrs.lines;
