@@ -156,7 +156,10 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
     ctx.lineWidth = weight * k;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    ctx.setLineDash([len * STEPS, len * SHIFT, 0, len * STEPS]);
+    // One dash of STEPS segments per 16-segment period. The original's array was
+    // `[steps, shift, 0, steps]`; its zero-length dash drew a dot under round caps
+    // (hidden by the old mask), so the gap is folded into one `shift + steps` run.
+    ctx.setLineDash([len * STEPS, len * (SHIFT + STEPS)]);
     ctx.lineDashOffset = -SHIFT * len * playhead;
     ctx.stroke(path);
     ctx.restore();
