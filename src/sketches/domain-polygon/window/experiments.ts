@@ -1,4 +1,9 @@
+import Random from 'canvas-sketch-util/random';
+
+import { color } from '../../../colors/radix';
+import { config, colors } from './config';
 import { generateGridSystemLogs } from './mock-logs';
+import { drawWindow } from './ui';
 
 export function drawTerminal(
   context: CanvasRenderingContext2D,
@@ -166,7 +171,7 @@ function drawFinderSection(
   x: number,
   y: number,
   title: string,
-  items: Array<{ icon: string; label: string }>,
+  items: Array<{ icon: IconName; label: string }>,
   width: number = 240
 ): void {
   // Section title - macOS Finder style
@@ -207,6 +212,8 @@ function drawFinderSection(
   context.stroke();
 }
 
+type IconName = keyof typeof icons;
+
 const icons = {
   'vector-network': '',
   window:
@@ -231,7 +238,7 @@ export function drawContextMenu(
   width: number,
   height: number
 ) {
-  context.fillStyle = colors.bg;
+  context.fillStyle = colors.background;
   context.beginPath();
   context.roundRect(x, y, width, height, config.r);
   context.fill();

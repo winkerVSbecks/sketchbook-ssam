@@ -32,6 +32,11 @@ export const config = {
     button: 4,
     buttonSpacing: 15,
   },
+  terminal: {
+    padding: 10,
+    fontSize: 8,
+    lineHeight: 16,
+  },
   toolbar: {
     type: Random.pick(['button', 'knobs']),
     margin: 2,
