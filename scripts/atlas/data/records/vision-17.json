@@ -1,0 +1,123 @@
+[
+  {
+    "id": "sketches/bio-sprue/bio-sprue",
+    "bg": "dark",
+    "palette": "limited",
+    "hues": ["pink", "violet", "blue", "black"],
+    "density": "sparse",
+    "composition": ["scattered", "asymmetric-blocks"],
+    "texture": ["soft-gradient", "outlined", "granular"],
+    "energy": "calm",
+    "keywords": ["neon-on-black", "sticker-like", "molecular", "film-grain", "glow"]
+  },
+  {
+    "id": "sketches/bio-sprue/nalee",
+    "bg": "dark",
+    "palette": "limited",
+    "hues": ["pink", "blue", "violet", "black"],
+    "density": "medium",
+    "composition": ["full-bleed-field"],
+    "texture": ["outlined", "soft-gradient", "granular"],
+    "energy": "moderate",
+    "keywords": ["neon-tubes", "maze-like", "meander", "glow", "signage"]
+  },
+  {
+    "id": "sketches/bio-sprue/sprue",
+    "bg": "dark",
+    "palette": "limited",
+    "hues": ["pink", "violet", "blue", "black"],
+    "density": "dense",
+    "composition": ["framed", "full-bleed-field"],
+    "texture": ["outlined", "soft-gradient", "granular"],
+    "energy": "busy",
+    "keywords": ["neon-maze", "model-kit", "framed-circuit", "glow", "labyrinth"]
+  },
+  {
+    "id": "sketches/blinds/blinds",
+    "bg": "light",
+    "palette": "limited",
+    "hues": ["green", "blue", "grey", "brown", "pink"],
+    "density": "sparse",
+    "composition": ["scattered", "asymmetric-blocks"],
+    "texture": ["flat-shapes", "hard-edge"],
+    "energy": "calm",
+    "keywords": ["pastel-ground", "scattered-blocks", "stamp-like", "muted-brights", "floating-tiles"]
+  },
+  {
+    "id": "sketches/blinds/collapse",
+    "bg": "light",
+    "palette": "monochrome",
+    "hues": ["indigo", "blue", "white"],
+    "density": "sparse",
+    "composition": ["centered-figure", "single-object", "asymmetric-blocks"],
+    "texture": ["flat-shapes", "hard-edge"],
+    "energy": "calm",
+    "keywords": ["navy-monolith", "letterform-like", "tetris-block", "isolated", "flush-stack"]
+  },
+  {
+    "id": "sketches/electric-field/hatch-field",
+    "bg": "light",
+    "palette": "monochrome",
+    "hues": ["grey", "black", "white"],
+    "density": "medium",
+    "composition": ["full-bleed-field", "radial"],
+    "texture": ["stippled", "hatched"],
+    "energy": "moderate",
+    "keywords": ["dipole", "iron-filings", "dotted-contours", "engraving-like", "topographic"]
+  },
+  {
+    "id": "sketches/tensors/tensors",
+    "bg": "light",
+    "palette": "monochrome",
+    "hues": ["black", "grey", "white"],
+    "density": "medium",
+    "composition": ["centered-figure", "single-object"],
+    "texture": ["outlined", "hard-edge"],
+    "energy": "moderate",
+    "keywords": ["arrow-sphere", "vector-field", "wind-swept", "scientific-diagram", "bristling"]
+  },
+  {
+    "id": "sketches/tensors/tensors-blob",
+    "bg": "light",
+    "palette": "monochrome",
+    "hues": ["grey", "black", "cream"],
+    "density": "sparse",
+    "composition": ["centered-figure", "scattered"],
+    "texture": ["hand-drawn-feel", "outlined"],
+    "energy": "calm",
+    "keywords": ["pencil-sketch", "wireframe", "dashed-scatter", "notebook-diagram", "geodesic"]
+  },
+  {
+    "id": "sketches/tensors/tensors-options",
+    "bg": "light",
+    "palette": "monochrome",
+    "hues": ["black", "grey", "white"],
+    "density": "sparse",
+    "composition": ["centered-figure", "single-object"],
+    "texture": ["outlined", "hard-edge"],
+    "energy": "calm",
+    "keywords": ["arrow-sphere", "one-sided-bristle", "scientific-diagram", "sparse-dots"]
+  },
+  {
+    "id": "sketches/tensors/tensors-sketch",
+    "bg": "light",
+    "palette": "monochrome",
+    "hues": ["grey", "black", "cream"],
+    "density": "medium",
+    "composition": ["centered-figure", "single-object"],
+    "texture": ["hand-drawn-feel", "outlined"],
+    "energy": "calm",
+    "keywords": ["pencil-sketch", "geodesic", "construction-lines", "notebook-diagram", "arrow-orb"]
+  },
+  {
+    "id": "sketches/terminal-charts/icons",
+    "bg": "dark",
+    "palette": "monochrome",
+    "hues": ["black", "white", "grey"],
+    "density": "dense",
+    "composition": ["full-bleed-field", "bands-horizontal"],
+    "texture": ["pixelated", "woven", "glitchy"],
+    "energy": "busy",
+    "keywords": ["ascii-weave", "logo-glitch", "teletext", "circuit-board", "terminal"]
+  }
+]

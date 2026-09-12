@@ -50,7 +50,10 @@
     "sketches/nalee-one-line/circle",
     "sketches/nalee-one-line/stacked",
     "sketches/nalee-one-line/basic-gradient",
-    "sketches/nalee-one-line/albers-meander"
+    "sketches/nalee-one-line/albers-meander",
+    "sketches/bio-sprue/bio-sprue",
+    "sketches/bio-sprue/nalee",
+    "sketches/bio-sprue/sprue"
    ]
   },
   {
@@ -274,7 +277,9 @@
     "sketches/flatland/napoleon",
     "sketches/flatland/flatland-waltz",
     "sketches/flatland/flatland-truncation",
-    "sketches/flatland/flatland-grid"
+    "sketches/flatland/flatland-grid",
+    "sketches/blinds/blinds",
+    "sketches/blinds/collapse"
    ]
   },
   {
@@ -444,7 +449,12 @@
     "sketches/electric-field/gradient-paint",
     "sketches/electric-field/gradient",
     "sketches/electric-field/basic",
-    "sketches/canvas-ui/chill-wave"
+    "sketches/canvas-ui/chill-wave",
+    "sketches/electric-field/hatch-field",
+    "sketches/tensors/tensors",
+    "sketches/tensors/tensors-blob",
+    "sketches/tensors/tensors-options",
+    "sketches/tensors/tensors-sketch"
    ]
   },
   {
@@ -468,7 +478,8 @@
     "sketches/terminal-charts/layered-compositions",
     "sketches/terminal-charts/compositions",
     "sketches/terminal-charts/terminal-charts",
-    "sketches/terminal-charts/terminal-charts-patterns"
+    "sketches/terminal-charts/terminal-charts-patterns",
+    "sketches/terminal-charts/icons"
    ]
   }
  ],

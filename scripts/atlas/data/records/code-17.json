@@ -1,0 +1,294 @@
+[
+  {
+    "id": "sketches/bio-sprue/bio-sprue",
+    "description": "Neon glow motifs on a vignetted near-black ground: a stepped pink rail, a rung helix, a shaded rounded cross and a vesicle cluster, grained",
+    "concepts": [
+      "figuration",
+      "minimalism",
+      "neon-glow",
+      "tool-study"
+    ],
+    "techniques": [
+      "glow-lines",
+      "gradients",
+      "trig-waves",
+      "corner-rounding",
+      "film-grain"
+    ],
+    "forms": [
+      "lines",
+      "curves",
+      "circles",
+      "polygons"
+    ],
+    "medium": "canvas2d",
+    "motion": "static",
+    "palette": "custom-hex",
+    "influences": [],
+    "system": "glow-style",
+    "notable": "Style study for the series: every motif is drawn with the shared glow-style module (blurred halo, banded core, specular highlight)"
+  },
+  {
+    "id": "sketches/bio-sprue/nalee",
+    "description": "Nalee walkers on a coarse 12x12 domain rendered as pink, purple and blue neon tubes over a vignetted near-black ground with film grain",
+    "concepts": [
+      "negative-space",
+      "neon-glow",
+      "systematic-variation"
+    ],
+    "techniques": [
+      "space-filling",
+      "glow-lines",
+      "film-grain"
+    ],
+    "forms": [
+      "lines",
+      "ribbons",
+      "grid"
+    ],
+    "medium": "canvas2d",
+    "motion": "static",
+    "palette": "custom-hex",
+    "influences": [],
+    "system": "nalee",
+    "notable": "Tube width is decoupled from the grid pitch, so the same nalee walk reads as sparse neon signage rather than a dense fill"
+  },
+  {
+    "id": "sketches/bio-sprue/sprue",
+    "description": "Neon nalee tubes inside a glowing pink sprue frame; stepped gate nubs bond tube ends to the rail and dead-end tips to neighbouring tubes",
+    "concepts": [
+      "negative-space",
+      "figuration",
+      "neon-glow",
+      "systematic-variation"
+    ],
+    "techniques": [
+      "space-filling",
+      "glow-lines",
+      "film-grain"
+    ],
+    "forms": [
+      "lines",
+      "ribbons",
+      "rectangles",
+      "grid"
+    ],
+    "medium": "canvas2d",
+    "motion": "static",
+    "palette": "custom-hex",
+    "influences": [],
+    "system": "nalee",
+    "notable": "Treats the nalee output as a model-kit sprue: connectors only bridge to stable anchors so no gate ever hangs off another bare tip"
+  },
+  {
+    "id": "sketches/blinds/blinds",
+    "description": "Grid-quantized rects placed greedily for moment balance and one deep void; each a clipped window with harmony-palette panels sliding through",
+    "concepts": [
+      "negative-space",
+      "grid-study",
+      "color-study",
+      "systematic-variation"
+    ],
+    "techniques": [
+      "distance-field",
+      "clipping-mask",
+      "grid-layout",
+      "greedy-placement",
+      "easing"
+    ],
+    "forms": [
+      "rectangles",
+      "windows",
+      "grid"
+    ],
+    "medium": "canvas2d",
+    "motion": "animated",
+    "palette": "pro-color-harmonies",
+    "influences": [],
+    "notable": "The layout scorer penalizes mid-distance gutters and rewards a single deep void, so whitespace is designed rather than leftover"
+  },
+  {
+    "id": "sketches/blinds/collapse",
+    "description": "Fork of blinds: placed rects fall toward the centre until flush, a seal pass closes every lane gap, a tinted backdrop shrink-wraps the pack",
+    "concepts": [
+      "negative-space",
+      "grid-study",
+      "concrete-art",
+      "systematic-variation"
+    ],
+    "techniques": [
+      "space-filling",
+      "distance-field",
+      "clipping-mask",
+      "grid-layout",
+      "easing"
+    ],
+    "forms": [
+      "rectangles",
+      "windows"
+    ],
+    "medium": "canvas2d",
+    "motion": "animated",
+    "palette": "pro-color-harmonies",
+    "influences": [],
+    "notable": "Two-stage gravity: a no-overlap slide toward the centre, then an overlap-permitted seal so no notch survives anywhere in the mass"
+  },
+  {
+    "id": "sketches/electric-field/hatch-field",
+    "description": "Dipole field lines traced from charge and edge seeds, drawn only as short cross ticks whose length decays with distance from the charges",
+    "concepts": [
+      "minimalism",
+      "physics-visualization",
+      "systematic-variation"
+    ],
+    "techniques": [
+      "flow-field",
+      "hatching",
+      "stippling",
+      "spatial-hash",
+      "electric-field"
+    ],
+    "forms": [
+      "lines",
+      "dots",
+      "curves",
+      "field"
+    ],
+    "medium": "canvas2d",
+    "motion": "static",
+    "palette": "black-and-white",
+    "influences": [],
+    "notable": "Lines stop when they drift within minSeparation of an earlier trace, and each tick is capped by neighbour distance so hatches never touch"
+  },
+  {
+    "id": "sketches/tensors/tensors",
+    "description": "EM field tensor: 320 fibonacci-sphere velocities mapped through a random antisymmetric F to Lorentz-force arrows on an orbiting sphere",
+    "concepts": [
+      "physics-visualization",
+      "minimalism",
+      "systematic-variation"
+    ],
+    "techniques": [
+      "vector-field",
+      "tensor-transform",
+      "fibonacci-sphere",
+      "instanced-mesh"
+    ],
+    "forms": [
+      "dots",
+      "lines",
+      "circles",
+      "mesh"
+    ],
+    "medium": "webgl",
+    "motion": "animated",
+    "palette": "black-and-white",
+    "influences": [],
+    "notable": "Picks an electric, magnetic or mixed archetype instead of 16 raw numbers, so every seed is a valid tensor with a readable field shape"
+  },
+  {
+    "id": "sketches/tensors/tensors-blob",
+    "description": "Pencil-stroke arrows and scribbled dots on a noise-deformed icosphere whose normals drive the EM tensor; wobbly wireframe and guide rings",
+    "concepts": [
+      "physics-visualization",
+      "hand-drawn",
+      "systematic-variation"
+    ],
+    "techniques": [
+      "noise-field",
+      "vector-field",
+      "tensor-transform",
+      "pencil-stroke",
+      "instanced-mesh"
+    ],
+    "forms": [
+      "blobs",
+      "lines",
+      "dots",
+      "mesh"
+    ],
+    "medium": "webgl",
+    "motion": "interactive",
+    "palette": "custom-hex",
+    "influences": [],
+    "notable": "Reseeds the RNG every frame so the pencil jitter stays fixed while the blob loops, instead of boiling at 60fps"
+  },
+  {
+    "id": "sketches/tensors/tensors-options",
+    "description": "Tensor force arrows at the deduplicated vertices of a chosen three.js primitive (sphere, box, torus knot...), trackball-rotated and occluded",
+    "concepts": [
+      "physics-visualization",
+      "systematic-variation",
+      "tool-study"
+    ],
+    "techniques": [
+      "vector-field",
+      "tensor-transform",
+      "instanced-mesh"
+    ],
+    "forms": [
+      "dots",
+      "lines",
+      "polygons",
+      "mesh"
+    ],
+    "medium": "webgl",
+    "motion": "interactive",
+    "palette": "black-and-white",
+    "influences": [],
+    "notable": "Each vertex's normalized position is the velocity fed through the tensor, so the sphere case reproduces the original tensors sketch"
+  },
+  {
+    "id": "sketches/tensors/tensors-sketch",
+    "description": "Graphite take on tensors-options: wobbly wireframe of a chosen primitive, hand-jittered force arrows and faint construction circles on paper",
+    "concepts": [
+      "physics-visualization",
+      "hand-drawn",
+      "systematic-variation"
+    ],
+    "techniques": [
+      "vector-field",
+      "tensor-transform",
+      "pencil-stroke"
+    ],
+    "forms": [
+      "mesh",
+      "lines",
+      "dots",
+      "circles"
+    ],
+    "medium": "webgl",
+    "motion": "interactive",
+    "palette": "custom-hex",
+    "influences": [],
+    "notable": "All strokes accumulate into one LineSegments buffer with per-vertex rgba, so overlapping translucent passes build up like pencil pressure"
+  },
+  {
+    "id": "sketches/terminal-charts/icons",
+    "description": "Woven ascii charts: box-drawing and shaded density wefts interlaced with vertical wave warps, plus a scrolling band of logos as block glyphs",
+    "concepts": [
+      "textile",
+      "weaving-structure",
+      "typography",
+      "found-composition",
+      "homage"
+    ],
+    "techniques": [
+      "ascii-render",
+      "image-sampling",
+      "trig-waves",
+      "weave-interlace"
+    ],
+    "forms": [
+      "glyphs",
+      "lines",
+      "bands",
+      "waves"
+    ],
+    "medium": "canvas2d",
+    "motion": "animated",
+    "palette": "black-and-white",
+    "influences": [],
+    "notable": "The Storybook, Chromatic and GitHub marks are rasterized to a 64px coverage map and downsampled into a shade ramp so they weave under the warps"
+  }
+]
