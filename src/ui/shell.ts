@@ -1,6 +1,7 @@
 import { createCamera, type Camera } from './camera';
 import { attachCameraGestures } from './gestures';
 import { drawGridLines, drawGridMarkers, gridMarkersInnerRect, gridStep, type GridMarkersOptions } from './grid-markers';
+import { createHandles, type Handles, type HandlesOptions } from './handles';
 import { createLoupe, type Loupe } from './loupe';
 import { attachPointer } from './pointer';
 import { createRangeGroup, type RangeOptions } from './range';
@@ -43,13 +44,15 @@ export interface ShellOptions {
   params?: RangeOptions[];
   /** Loupe (magnifier) — enabled by default; pass `false` to remove it. */
   loupe?: false | { radiusFactor?: number; steps?: number[]; magnification?: number };
+  /** Draggable world-space points, hosted below the loupe and windows. */
+  handles?: Omit<HandlesOptions, 'camera'>;
   /**
    * Whole-canvas pan/zoom on the grid: wheel pans, ⌃-wheel / trackpad pinch zooms
    * about the cursor, two-finger touch pinch zooms and pans; `r` resets the view.
    * Ignored over windows and the loupe. Enabled by default; pass `false` to remove it.
    */
   gestures?: false | { wheelZoomSpeed?: number };
-  /** Tabular readout of the parameters, top-right of the grid (default true). */
+  /** Tabular readout of the parameters, top-right of the grid (off by default). */
   readout?: boolean;
   toolbar?: { x?: number; y?: number };
   panel?: { x?: number; y?: number; width?: number };
@@ -67,6 +70,7 @@ export interface Shell {
   /** Active mode id (null when no modes were configured). */
   readonly mode: string | null;
   readonly loupe: Loupe | null;
+  readonly handles: Handles | null;
   readonly ui: UI;
   readonly windows: { toolbar: Window | null; panel: Window | null };
   readonly grid: GridMarkersOptions;
@@ -94,8 +98,9 @@ export function createShell({
   modes = [],
   params: paramOpts = [],
   loupe: loupeOpts = {},
+  handles: handleOpts,
   gestures: gestureOpts = {},
-  readout = true,
+  readout = false,
   toolbar: toolbarPos = {},
   panel: panelPos = {},
   onChange,
@@ -162,6 +167,8 @@ export function createShell({
     : null;
 
   const ui = createUI();
+  const handles = handleOpts ? createHandles({ camera, ...handleOpts }) : null;
+  if (handles) ui.add(handles); // lowest layer: under the loupe and the windows
 
   // --- Loupe -------------------------------------------------------------------
   let currentScene: DrawScene | null = null;
@@ -309,6 +316,7 @@ export function createShell({
       return modeGroup ? modeGroup.active[0] : null;
     },
     loupe,
+    handles,
     ui,
     windows: { toolbar, panel },
     grid,

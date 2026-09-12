@@ -10,3 +10,4 @@ export * from './camera';
 export * from './gestures';
 export * from './loupe';
 export * from './shell';
+export * from './handles';

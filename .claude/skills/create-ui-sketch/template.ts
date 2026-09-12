@@ -17,9 +17,10 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
     props.exportFrame();
   });
 
-  // The shell draws the grid rulers, toolbar, parameter window, loupe and
-  // readout, and wires pointer + keyboard. `h` restores closed windows,
-  // `Esc` hides the loupe. See src/ui/shell.ts for every option.
+  // The shell draws the grid rulers, toolbar, parameter window and loupe, and
+  // wires pointer, gestures (wheel pans, ⌃-wheel / pinch zooms) and keyboard:
+  // `h` restores closed windows, `r` resets the view, `Esc` hides the loupe.
+  // See src/ui/shell.ts for every option (`gestures: false`, `readout: true`, `handles`…).
   const shell = createShell({
     ctx: context,
     canvas,
