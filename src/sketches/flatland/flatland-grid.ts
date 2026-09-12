@@ -79,11 +79,14 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
     props.exportFrame();
   });
 
-  // Base vertices in world units (original px ÷ 270, y mirrored), draggable
+  // Base vertices in world units, draggable. With `xOrigin: 'right'` world x grows
+  // leftward, so original x → 4 − x/270 keeps the composition reading the same way
+  // round (and the orientation-dependent apex() erecting outward); y is mirrored
+  // because the original canvas was y-down.
   const verts: Pt[] = [
-    { x: toUnits(270), y: toUnits(PX - 540) },
-    { x: toUnits(540), y: toUnits(PX - 270) },
-    { x: toUnits(810), y: toUnits(PX - 540) },
+    { x: toUnits(PX - 270), y: toUnits(PX - 540) },
+    { x: toUnits(PX - 540), y: toUnits(PX - 270) },
+    { x: toUnits(PX - 810), y: toUnits(PX - 540) },
   ];
 
   const shell = createShell({
@@ -138,19 +141,22 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
     const base = verts[i];
     if (drift === 0) return [base.x, base.y];
     const [dx, dy] = wanderOffset(wanders[i], playhead);
-    // The original wanders in y-down px space; world y is up, so mirror dy
-    return [base.x + drift * dx, base.y - drift * dy];
+    // Both axes are mirrored relative to the original's y-down, x-rightward canvas
+    return [base.x - drift * dx, base.y - drift * dy];
   };
 
-  // Grid corners inset by the original's 3 px margin (in world units), y up
+  // The grid area's world rect at the fit view (4 units across, inner.h / fitScale
+  // tall), inset by the original's 3 px margin. The original's canvas corners map
+  // onto it so the fan fills the whole area; x is mirrored, so its TL (0,0) is [W, H].
   const corners = () => {
     const m = 3 * shell.px;
-    const h = shell.camera.fitCenter.y * 2;
+    const W = shell.camera.units;
+    const H = shell.inner.h / shell.camera.fitScale;
     return {
-      tl: [m, h - m] as Pt2,
-      tr: [UNITS - m, h - m] as Pt2,
-      br: [UNITS - m, m] as Pt2,
-      bl: [m, m] as Pt2,
+      tl: [W - m, H - m] as Pt2,
+      tr: [m, H - m] as Pt2,
+      br: [m, m] as Pt2,
+      bl: [W - m, m] as Pt2,
     };
   };
 
