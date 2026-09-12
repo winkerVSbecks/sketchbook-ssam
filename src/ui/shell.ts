@@ -60,6 +60,8 @@ export interface ShellOptions {
   panel?: { x?: number; y?: number; width?: number };
   /** Called whenever the UI changes something — wire to `props.render`. */
   onChange: () => void;
+  /** Called when a pointer interaction with the chrome ends (a window, slider, handle or button releases the pointer). */
+  onDragEnd?: () => void;
 }
 
 export interface Shell {
@@ -107,6 +109,7 @@ export function createShell({
   toolbar: toolbarPos = {},
   panel: panelPos = {},
   onChange,
+  onDragEnd,
 }: ShellOptions): Shell {
   const grid: GridMarkersOptions = {
     width,
@@ -171,7 +174,7 @@ export function createShell({
       })
     : null;
 
-  const ui = createUI();
+  const ui = createUI({ onDragEnd: onDragEnd && (() => onDragEnd()) });
   const handles = handleOpts ? createHandles({ camera, ...handleOpts }) : null;
   if (handles) ui.add(handles); // lowest layer: under the loupe and the windows
 

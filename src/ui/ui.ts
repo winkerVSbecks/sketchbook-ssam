@@ -12,6 +12,8 @@ export interface UIWindow extends PointerTarget {
 
 export interface UI extends PointerTarget {
   windows: UIWindow[];
+  /** True while a window holds the pointer (between its `pointerDown` and `pointerUp`). */
+  readonly dragging: boolean;
   /** Front-most visible window under `pt`, or null. */
   windowAt(pt: Pt): UIWindow | null;
   hitTest(pt: Pt): boolean;
@@ -21,12 +23,17 @@ export interface UI extends PointerTarget {
   draw(ctx: CanvasRenderingContext2D): void;
 }
 
+export interface UIOptions {
+  /** Called after a captured window releases the pointer (`pointerUp` following its `pointerDown`). */
+  onDragEnd?: (win: UIWindow) => void;
+}
+
 /**
  * Holds windows in z-order (last = front). Draws back-to-front, dispatches
  * pointer events front-to-back (first hit wins) and captures the window that
  * took `pointerDown` until `pointerUp` so drags never leak to siblings.
  */
-export function createUI(): UI {
+export function createUI({ onDragEnd }: UIOptions = {}): UI {
   const windows: UIWindow[] = [];
   let captured: UIWindow | null = null;
 
@@ -47,6 +54,9 @@ export function createUI(): UI {
 
   return {
     windows,
+    get dragging() {
+      return captured !== null;
+    },
     add: (...ws) => {
       windows.push(...ws);
     },
@@ -80,7 +90,9 @@ export function createUI(): UI {
       if (!captured) return false;
       const w = captured;
       captured = null;
-      return w.pointerUp(pt, mods);
+      const changed = w.pointerUp(pt, mods);
+      onDragEnd?.(w);
+      return changed;
     },
     cursorAt: (pt): Cursor | null => {
       if (captured) return captured.cursorAt(pt);
