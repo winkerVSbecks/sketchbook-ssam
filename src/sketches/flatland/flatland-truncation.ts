@@ -104,6 +104,8 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
       { id: 'weight', label: 'weight', min: 0, max: 200, value: 144, step: 1, knobColor: '#8a5cf5' },
     ],
     loupe: {},
+    // Five sliders are taller than the default panel slot — lift it clear of the bottom ruler
+    panel: { y: height - 480 },
     onChange: () => props.render(),
   });
 
