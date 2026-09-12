@@ -282,6 +282,9 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
       loupe: shell.loupe,
       engine,
       curves,
+      resetGroup,
+      /** Press the reset button programmatically (what a click does). */
+      reset: () => resetGroup.setActive('reset', true),
       repaint: () => props.render(),
     };
   }
