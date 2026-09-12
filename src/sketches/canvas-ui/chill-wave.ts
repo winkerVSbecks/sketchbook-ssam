@@ -77,8 +77,9 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
       { id: 'wavelength', label: 'wavelength', min: 0.5, max: 2, value: 1, step: 0.05, knobColor: '#e8541e' },
     ],
     // Six sliders are taller than the default panel slot: lift it clear of the bottom
-    // edge and park it in the toolbar's column so it doesn't sit on top of the wave.
-    panel: { x: 52, y: height - 560 },
+    // edge and park it in the toolbar's column, narrowed so it stays clear of the
+    // wave's left tip even at wavelength 2.
+    panel: { x: 52, y: height - 560, width: 190 },
     onChange: () => props.render(),
   });
 
