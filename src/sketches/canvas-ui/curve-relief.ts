@@ -106,8 +106,6 @@ const FILLS: LchColor[] = [
   { L: 100, C: 20, h: Random.range(0, 180) },
   { L: 20, C: 90, h: Random.range(0, 180) },
 ];
-const BG = Lch(95, 0, 0);
-
 const lch = ({ L, C, h }: LchColor, hueOffset: number) => Lch(L, C, h + hueOffset);
 
 // Seeded control points, as fractions of the original canvas (0.4–0.6 of the size)
@@ -319,18 +317,6 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
 
   // --- Drawing ---------------------------------------------------------------------
 
-  /** Fill the visible world rect with `color`. */
-  const ground = (ctx: CanvasRenderingContext2D, cam: Camera, color: string) => {
-    const vw = cam.visibleWorld();
-    ctx.save();
-    cam.apply(ctx);
-    ctx.beginPath();
-    ctx.rect(vw.x, vw.y, vw.w, vw.h);
-    ctx.restore();
-    ctx.fillStyle = color;
-    ctx.fill();
-  };
-
   /**
    * One relief: from the start corner, the original's double quadratic through
    * each node pair (a smooth pass through the node, then on to the midpoint), to
@@ -364,8 +350,6 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
     const k = view.magnification;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
-
-    ground(ctx, cam, BG);
 
     // Back to front: the curve whose control point is furthest from the origin
     // corner is the largest relief and goes down first, like the original.
