@@ -42,11 +42,15 @@ export const sketch = ({
     props.exportFrame();
   });
 
-  // Vertices in world units (the original's 1080 px canvas ÷ 270, y up), draggable
+  // Vertices in world units, draggable. The original's u=(270,540) v=(405,270)
+  // w=(810,540) on a 1080 px canvas map as x → 4 − x/270, y → 4 − y/270: x is
+  // mirrored because `xOrigin: 'right'` makes world x grow leftward, y because
+  // the original was y-down — so the orientation-dependent apex() erects the
+  // equilateral triangles outward like the original piece.
   const verts: Pt[] = [
-    { x: 1, y: 2 },
-    { x: 1.5, y: 3 },
     { x: 3, y: 2 },
+    { x: 2.5, y: 3 },
+    { x: 1, y: 2 },
   ];
 
   const shell = createShell({
