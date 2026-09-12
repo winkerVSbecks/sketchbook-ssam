@@ -337,6 +337,54 @@
    "#202000"
   ]
  },
+ "sketches/bio-sprue/bio-sprue": {
+  "bg": "#0a0a0c",
+  "bgL": 0.146,
+  "meanL": 0.183,
+  "meanC": 0.0195,
+  "ink": 0.123,
+  "hue": 345,
+  "hueShare": 0.467,
+  "colors": [
+   "#301020",
+   "#803060",
+   "#703050",
+   "#403060",
+   "#502030"
+  ]
+ },
+ "sketches/bio-sprue/nalee": {
+  "bg": "#110b12",
+  "bgL": 0.161,
+  "meanL": 0.331,
+  "meanC": 0.0741,
+  "ink": 0.557,
+  "hue": 345,
+  "hueShare": 0.693,
+  "colors": [
+   "#401030",
+   "#102040",
+   "#702050",
+   "#a04070",
+   "#305080"
+  ]
+ },
+ "sketches/bio-sprue/sprue": {
+  "bg": "#180b13",
+  "bgL": 0.172,
+  "meanL": 0.369,
+  "meanC": 0.0895,
+  "ink": 0.644,
+  "hue": 345,
+  "hueShare": 0.66,
+  "colors": [
+   "#a04070",
+   "#803060",
+   "#804060",
+   "#302040",
+   "#703050"
+  ]
+ },
  "sketches/bipolar/basic": {
   "bg": "#f5f4f5",
   "bgL": 0.968,
@@ -442,6 +490,38 @@
    "#202020"
   ]
  },
+ "sketches/blinds/blinds": {
+  "bg": "#fee2f1",
+  "bgL": 0.94,
+  "meanL": 0.844,
+  "meanC": 0.0436,
+  "ink": 0.235,
+  "hue": 135,
+  "hueShare": 0.547,
+  "colors": [
+   "#406000",
+   "#60b0e0",
+   "#404040",
+   "#607010",
+   "#70b0e0"
+  ]
+ },
+ "sketches/blinds/collapse": {
+  "bg": "#feffff",
+  "bgL": 0.999,
+  "meanL": 0.905,
+  "meanC": 0.0168,
+  "ink": 0.14,
+  "hue": 255,
+  "hueShare": 0.705,
+  "colors": [
+   "#000050",
+   "#000040",
+   "#000020",
+   "#6060a0",
+   "#203070"
+  ]
+ },
  "sketches/boids/cohesion-color": {
   "bg": "#bcbab9",
   "bgL": 0.79,
@@ -536,6 +616,70 @@
    "#103040",
    "#f0f0f0",
    "#e06050"
+  ]
+ },
+ "sketches/canvas-ui/chill-wave": {
+  "bg": "#f4f4f2",
+  "bgL": 0.967,
+  "meanL": 0.938,
+  "meanC": 0.0037,
+  "ink": 0.078,
+  "hue": 285,
+  "hueShare": 0.801,
+  "colors": [
+   "#909090",
+   "#d0d0d0",
+   "#c0c0c0",
+   "#b0b0b0",
+   "#202020"
+  ]
+ },
+ "sketches/canvas-ui/controls-demo": {
+  "bg": "#f4f4f2",
+  "bgL": 0.967,
+  "meanL": 0.893,
+  "meanC": 0.03,
+  "ink": 0.207,
+  "hue": 285,
+  "hueShare": 0.991,
+  "colors": [
+   "#8050f0",
+   "#d0d0d0",
+   "#909090",
+   "#c0c0c0",
+   "#b0b0b0"
+  ]
+ },
+ "sketches/canvas-ui/curve-relief": {
+  "bg": "#f5f4f2",
+  "bgL": 0.967,
+  "meanL": 0.867,
+  "meanC": 0.0456,
+  "ink": 0.466,
+  "hue": 75,
+  "hueShare": 0.779,
+  "colors": [
+   "#f0d070",
+   "#004000",
+   "#f0c070",
+   "#f0c080",
+   "#d0d0d0"
+  ]
+ },
+ "sketches/canvas-ui/torsions": {
+  "bg": "#f5f5f3",
+  "bgL": 0.97,
+  "meanL": 0.921,
+  "meanC": 0.0021,
+  "ink": 0.161,
+  "hue": 285,
+  "hueShare": 0.521,
+  "colors": [
+   "#d0d0d0",
+   "#c0c0c0",
+   "#909090",
+   "#d0d0c0",
+   "#909080"
   ]
  },
  "sketches/chaikin-paths": {
@@ -1754,6 +1898,16 @@
    "#506070"
   ]
  },
+ "sketches/electric-field/hatch-field": {
+  "bg": "#fdfdfd",
+  "bgL": 0.994,
+  "meanL": 0.988,
+  "meanC": 0,
+  "ink": 0,
+  "hue": null,
+  "hueShare": 0,
+  "colors": []
+ },
  "sketches/embroidered-spirals": {
   "bg": "#0e000d",
   "bgL": 0.114,
@@ -1780,6 +1934,70 @@
   "hueShare": 0.966,
   "colors": [
    "#102020"
+  ]
+ },
+ "sketches/flatland/flatland-grid": {
+  "bg": "#f5f5f2",
+  "bgL": 0.969,
+  "meanL": 0.778,
+  "meanC": 0.0352,
+  "ink": 0.757,
+  "hue": 285,
+  "hueShare": 0.986,
+  "colors": [
+   "#c0c0d0",
+   "#a0a0c0",
+   "#b0b0c0",
+   "#b0b0d0",
+   "#9090b0"
+  ]
+ },
+ "sketches/flatland/flatland-truncation": {
+  "bg": "#f3f4f1",
+  "bgL": 0.966,
+  "meanL": 0.781,
+  "meanC": 0.0836,
+  "ink": 0.76,
+  "hue": 165,
+  "hueShare": 0.456,
+  "colors": [
+   "#108050",
+   "#f0b030",
+   "#f0d0c0",
+   "#f07040",
+   "#109050"
+  ]
+ },
+ "sketches/flatland/flatland-waltz": {
+  "bg": "#f5f5f3",
+  "bgL": 0.97,
+  "meanL": 0.728,
+  "meanC": 0.1117,
+  "ink": 0.784,
+  "hue": 15,
+  "hueShare": 0.419,
+  "colors": [
+   "#f0c040",
+   "#e03020",
+   "#e05020",
+   "#e07090",
+   "#40a0e0"
+  ]
+ },
+ "sketches/flatland/napoleon": {
+  "bg": "#fdfdfd",
+  "bgL": 0.994,
+  "meanL": 0.95,
+  "meanC": 0.0032,
+  "ink": 0.165,
+  "hue": 165,
+  "hueShare": 0.706,
+  "colors": [
+   "#d0d0d0",
+   "#c0c0c0",
+   "#909090",
+   "#e0e0e0",
+   "#b0b0b0"
   ]
  },
  "sketches/fractal-grid/b&w": {
@@ -3861,19 +4079,19 @@
   ]
  },
  "sketches/paint-without-thinking/arcs-reduction-rounded-animated": {
-  "bg": "#eab6b7",
-  "bgL": 0.823,
-  "meanL": 0.504,
-  "meanC": 0.1416,
-  "ink": 0.927,
-  "hue": 15,
+  "bg": "#c4c2c4",
+  "bgL": 0.816,
+  "meanL": 0.324,
+  "meanC": 0.065,
+  "ink": 0.921,
+  "hue": 135,
   "hueShare": 1,
   "colors": [
-   "#800000",
-   "#f0d0d0",
-   "#900000",
-   "#f0e0e0",
-   "#c06060"
+   "#002000",
+   "#001000",
+   "#e0e0e0",
+   "#f0e0f0",
+   "#103010"
   ]
  },
  "sketches/paint-without-thinking/everything": {
@@ -5018,6 +5236,66 @@
    "#005030"
   ]
  },
+ "sketches/tensors/tensors": {
+  "bg": "#ffffff",
+  "bgL": 1,
+  "meanL": 0.924,
+  "meanC": 0,
+  "ink": 0.257,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#d0d0d0",
+   "#b0b0b0",
+   "#c0c0c0",
+   "#a0a0a0",
+   "#808080"
+  ]
+ },
+ "sketches/tensors/tensors-blob": {
+  "bg": "#f8f5ee",
+  "bgL": 0.971,
+  "meanL": 0.965,
+  "meanC": 0.0093,
+  "ink": 0.001,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#d0d0d0",
+   "#d0d0c0"
+  ]
+ },
+ "sketches/tensors/tensors-options": {
+  "bg": "#ffffff",
+  "bgL": 1,
+  "meanL": 0.972,
+  "meanC": 0,
+  "ink": 0.104,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#d0d0d0",
+   "#c0c0c0",
+   "#b0b0b0",
+   "#e0e0e0",
+   "#a0a0a0"
+  ]
+ },
+ "sketches/tensors/tensors-sketch": {
+  "bg": "#f8f5ee",
+  "bgL": 0.971,
+  "meanL": 0.961,
+  "meanC": 0.0092,
+  "ink": 0.009,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#d0d0d0",
+   "#d0d0c0",
+   "#c0c0c0",
+   "#d0c0c0"
+  ]
+ },
  "sketches/tentacle/alt": {
   "bg": "#1d1f1e",
   "bgL": 0.237,
@@ -5096,6 +5374,22 @@
    "#903000",
    "#702000",
    "#b04010"
+  ]
+ },
+ "sketches/terminal-charts/icons": {
+  "bg": "#000000",
+  "bgL": 0,
+  "meanL": 0.353,
+  "meanC": 0,
+  "ink": 0.55,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#a0a0a0",
+   "#b0b0b0",
+   "#909090",
+   "#202020",
+   "#808080"
   ]
  },
  "sketches/terminal-charts/layered-compositions": {

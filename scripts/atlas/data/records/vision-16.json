@@ -1,0 +1,90 @@
+[
+  {
+    "id": "sketches/canvas-ui/chill-wave",
+    "bg": "light",
+    "palette": "duotone",
+    "hues": ["violet", "orange", "grey", "white"],
+    "density": "sparse",
+    "composition": ["centered-figure", "single-object"],
+    "texture": ["hard-edge", "outlined"],
+    "energy": "calm",
+    "keywords": ["squiggle", "sine-wave", "graph-paper", "instrument-panel", "ui-chrome"]
+  },
+  {
+    "id": "sketches/canvas-ui/controls-demo",
+    "bg": "light",
+    "palette": "monochrome",
+    "hues": ["violet", "grey", "white"],
+    "density": "medium",
+    "composition": ["centered-figure", "single-object"],
+    "texture": ["flat-shapes", "hard-edge"],
+    "energy": "calm",
+    "keywords": ["purple-star", "badge-like", "graph-paper", "ui-chrome"]
+  },
+  {
+    "id": "sketches/canvas-ui/curve-relief",
+    "bg": "light",
+    "palette": "limited",
+    "hues": ["orange", "green", "magenta", "grey"],
+    "density": "medium",
+    "composition": ["diagonal", "asymmetric-blocks"],
+    "texture": ["flat-shapes", "hard-edge"],
+    "energy": "calm",
+    "keywords": ["diagonal-split", "layered-relief", "color-fields", "topographic", "graph-paper"]
+  },
+  {
+    "id": "sketches/canvas-ui/torsions",
+    "bg": "light",
+    "palette": "monochrome",
+    "hues": ["grey", "black", "white"],
+    "density": "medium",
+    "composition": ["bands-vertical", "full-bleed-field"],
+    "texture": ["outlined", "flat-shapes", "hard-edge"],
+    "energy": "moderate",
+    "keywords": ["twisted-ribbons", "blinds", "columns", "helix", "graph-paper"]
+  },
+  {
+    "id": "sketches/flatland/napoleon",
+    "bg": "light",
+    "palette": "duotone",
+    "hues": ["green", "violet", "black"],
+    "density": "sparse",
+    "composition": ["centered-figure"],
+    "texture": ["outlined", "hard-edge"],
+    "energy": "calm",
+    "keywords": ["geometric-proof", "diagram", "triangles", "blueprint", "graph-paper"]
+  },
+  {
+    "id": "sketches/flatland/flatland-waltz",
+    "bg": "colored",
+    "palette": "multicolor",
+    "hues": ["red", "yellow", "blue", "pink"],
+    "density": "dense",
+    "composition": ["full-bleed-field", "radial", "centered-figure"],
+    "texture": ["flat-shapes", "hard-edge"],
+    "energy": "busy",
+    "keywords": ["crystalline", "stained-glass", "kaleidoscopic", "facets", "primary-colors"]
+  },
+  {
+    "id": "sketches/flatland/flatland-truncation",
+    "bg": "colored",
+    "palette": "limited",
+    "hues": ["green", "orange", "yellow", "pink"],
+    "density": "medium",
+    "composition": ["centered-figure", "asymmetric-blocks", "diagonal"],
+    "texture": ["flat-shapes", "hard-edge"],
+    "energy": "moderate",
+    "keywords": ["rounded-polygon", "color-blocking", "poster-like", "retro-palette"]
+  },
+  {
+    "id": "sketches/flatland/flatland-grid",
+    "bg": "light",
+    "palette": "monochrome",
+    "hues": ["indigo", "cream"],
+    "density": "dense",
+    "composition": ["full-bleed-field", "radial"],
+    "texture": ["outlined", "hatched", "hard-edge"],
+    "energy": "busy",
+    "keywords": ["string-art", "radiating-lines", "lattice", "ruled-lines", "blueprint"]
+  }
+]

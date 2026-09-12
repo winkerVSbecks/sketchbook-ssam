@@ -269,7 +269,12 @@
     "sketches/bauhaus/nalee-composition",
     "sketches/bauhaus/nalee-composition-2",
     "sketches/siep-van-den-berg/no-251",
-    "sketches/siep-van-den-berg/no-250"
+    "sketches/siep-van-den-berg/no-250",
+    "sketches/canvas-ui/controls-demo",
+    "sketches/flatland/napoleon",
+    "sketches/flatland/flatland-waltz",
+    "sketches/flatland/flatland-truncation",
+    "sketches/flatland/flatland-grid"
    ]
   },
   {
@@ -324,7 +329,8 @@
     "sketches/voxels/nalee-p",
     "sketches/voxels/textbox",
     "sketches/voxels/alphabet",
-    "sketches/voxels/alphabet-pixel"
+    "sketches/voxels/alphabet-pixel",
+    "sketches/canvas-ui/torsions"
    ]
   },
   {
@@ -363,7 +369,8 @@
     "sketches/collision/explode",
     "sketches/collision/basic",
     "sketches/collision/spaw-debug",
-    "sketches/not-every-body-lives-the-same-way"
+    "sketches/not-every-body-lives-the-same-way",
+    "sketches/canvas-ui/curve-relief"
    ]
   },
   {
@@ -436,7 +443,8 @@
     "sketches/conformal-mapping/nalee",
     "sketches/electric-field/gradient-paint",
     "sketches/electric-field/gradient",
-    "sketches/electric-field/basic"
+    "sketches/electric-field/basic",
+    "sketches/canvas-ui/chill-wave"
    ]
   },
   {
