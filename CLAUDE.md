@@ -13,7 +13,7 @@
 - `npm run archive:site` — regenerate the static site from existing `archive.json` only (no rendering or uploads). Useful for tweaking HTML/CSS.
 - `npm run archive:dev` — rebuild the site and serve it locally (opens the browser; `/` = by year, `/series/` = by series).
 - `npm run archive:force` — re-render and re-upload every sketch.
-- `npm run archive -- --only <substr>` — restrict to sketches whose id contains the substring.
+- `npm run archive -- --only <pattern>` — restrict to sketches whose id contains the pattern or starts with it as a folder prefix (`--only sketches/canvas-ui`, `--only canvas-ui`).
 - `npm run archive -- --dry-run` — print the plan without rendering.
 - Requires `.env` at repo root with `CLOUDINARY_URL=cloudinary://<api_key>:<api_secret>@<cloud_name>`.
 
