@@ -43,7 +43,7 @@ The generated file has one function to replace, clearly marked: `drawScene(ctx, 
 - `view.params` — slider values by id; `view.mode` — active toolbar mode; `view.magnified` / `view.magnification` — true inside the loupe, so the magnified view can be styled differently (e.g. `shell.hatch(color)` for the dotted fill, control nodes, measurements).
 - Build paths under the camera transform, then `ctx.restore()` and fill/stroke in screen space so strokes and patterns stay crisp at any magnification.
 
-Everything else (`shell.camera`, `shell.loupe`, `shell.handles`, `shell.windows`, `shell.params`) is exposed on the shell for customisation; `src/sketches/canvas-ui/controls-demo.ts` is the full example and `napoleon.ts` shows draggable world-space points via the `handles` option.
+Everything else (`shell.camera`, `shell.loupe`, `shell.handles`, `shell.windows`, `shell.params`) is exposed on the shell for customisation; `src/sketches/canvas-ui/controls-demo.ts` is the full example and `src/sketches/flatland/napoleon.ts` shows draggable world-space points via the `handles` option.
 
 Built-in interaction: wheel pans and ⌃-wheel / trackpad pinch zooms the grid (rulers re-label; `r` resets; `gestures: false` disables), the magnifier toggle shows a draggable loupe (click inside steps 2×/4×/8×, shift+drag resizes, `Esc` hides), `h` restores closed windows.
 
