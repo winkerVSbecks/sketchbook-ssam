@@ -146,12 +146,14 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
   /**
    * Restart the drop: rebuild every chain taut along its seed curve — the control
    * points stay where they were dragged — so the simulation replays from the
-   * current settings. Shared by the reset button and every slider.
+   * current settings. Runs once whenever a pointer interaction with the chrome
+   * ends (the shell's `onDragEnd`), which covers slider drags, handle drags,
+   * window drags and the reset button alike.
    */
   const restart = () => curves.forEach(rebuild);
 
   // Reset: a momentary toolbar button (appended after the magnifier via `tools`).
-  // It restarts the drop and un-highlights itself at once.
+  // Releasing it ends a drag, which restarts the drop; here it only un-highlights.
   const resetGroup = createToggleGroup({
     items: [
       {
@@ -161,9 +163,7 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
     ],
     exclusive: false,
     onChange: (active) => {
-      if (!active.includes('reset')) return;
-      restart();
-      resetGroup.setActive('reset', false);
+      if (active.includes('reset')) resetGroup.setActive('reset', false);
     },
   });
 
@@ -178,16 +178,13 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
       { id: 'dot', icon: 'dot' },
       { id: 'line', icon: 'line' },
     ],
-    // Every slider change restarts the drop (the range's change hook fires on
-    // pointer drags and programmatic sets alike), so the new settings replay
-    // from the seed curves rather than nudging a half-settled chain.
     params: [
       { id: 'tightness', label: 'tightness', min: 0, max: 1, value: 0.5, step: 0.01, knobColor: '#8a5cf5' },
       { id: 'stiffness', label: 'stiffness', min: 0.01, max: 1, value: 0.5, step: 0.01, knobColor: '#e8541e' },
       { id: 'damping', label: 'damping', min: 0, max: 0.2, value: 0.05, step: 0.005, knobColor: '#111111' },
       { id: 'gravity', label: 'gravity', min: 0, max: 2, value: 1, step: 0.05, knobColor: '#111111' },
       { id: 'hue', label: 'hue', min: 0, max: 360, value: 0, step: 1, knobColor: '#8a5cf5' },
-    ].map((range) => ({ ...range, onChange: restart })),
+    ],
     // Five sliders: lift the panel so every one stays inside the frame
     panel: { y: height - 480 },
     loupe: {},
@@ -209,6 +206,7 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
       },
     },
     onChange: () => props.render(),
+    onDragEnd: restart,
   });
 
   // The grid area's world rect at the fit view: 4 units across, inner.h / fitScale
@@ -301,6 +299,14 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
     if (dt > 0) Matter.Engine.update(engine, dt);
   };
 
+  // While the pointer holds any piece of chrome (a slider knob, a control-point
+  // handle, a window, the reset button) the physics is frozen — the current state
+  // keeps drawing — until the release restarts the drop from the final values.
+  const tick = () => {
+    if (shell.ui.dragging) lastStep = performance.now();
+    else step();
+  };
+
   if (import.meta.env.DEV) {
     (window as unknown as { __demo?: unknown }).__demo = {
       shell,
@@ -309,8 +315,8 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
       engine,
       curves,
       resetGroup,
-      /** Press the reset button programmatically (what a click does). */
-      reset: () => resetGroup.setActive('reset', true),
+      /** Restart the drop programmatically (what releasing the reset button does). */
+      reset: restart,
       repaint: () => props.render(),
     };
   }
@@ -388,7 +394,7 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
 
   wrap.render = () => {
     applyParams(shell.params.values());
-    step();
+    tick();
     shell.render(drawScene);
   };
 };
