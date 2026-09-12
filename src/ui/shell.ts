@@ -46,6 +46,8 @@ export interface ShellOptions {
   loupe?: false | { radiusFactor?: number; steps?: number[]; magnification?: number };
   /** Draggable world-space points, hosted below the loupe and windows. */
   handles?: Omit<HandlesOptions, 'camera'>;
+  /** Extra toggle groups appended to the toolbar after the magnifier. */
+  tools?: ToggleGroup[];
   /**
    * Whole-canvas pan/zoom on the grid: wheel pans, ⌃-wheel / trackpad pinch zooms
    * about the cursor, two-finger touch pinch zooms and pans; `r` resets the view.
@@ -99,6 +101,7 @@ export function createShell({
   params: paramOpts = [],
   loupe: loupeOpts = {},
   handles: handleOpts,
+  tools = [],
   gestures: gestureOpts = {},
   readout = false,
   toolbar: toolbarPos = {},
@@ -146,8 +149,10 @@ export function createShell({
   const toolbarChildren: ToggleGroup[] = [];
   if (modeGroup) toolbarChildren.push(modeGroup);
 
+  // The window lays its children out lazily from this array, so groups pushed
+  // after creation (the magnifier, `tools`) still appear.
   const toolbar =
-    modeGroup || loupeOpts !== false
+    modeGroup || loupeOpts !== false || tools.length
       ? createWindow({
           x: toolbarPos.x ?? 52,
           y: toolbarPos.y ?? 56,
@@ -205,6 +210,7 @@ export function createShell({
     toolbarChildren.push(magnifier);
     ui.add(loupe);
   }
+  toolbarChildren.push(...tools);
   if (toolbar) ui.add(toolbar);
   if (panel) ui.add(panel);
 
