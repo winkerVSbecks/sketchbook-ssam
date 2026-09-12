@@ -105,7 +105,10 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
       { id: 'weight', label: 'weight', min: 0.5, max: 20, value: 6, step: 0.5, knobColor: '#1B2280' },
       { id: 'splits', label: 'splits', min: 1, max: 16, value: 6, step: 1, knobColor: '#e8541e' },
       { id: 'drift', label: 'drift', min: 0, max: 1, value: 0, step: 0.01, knobColor: '#e8541e' },
+      { id: 'backdrop', label: 'backdrop', min: 0, max: 1, value: 0.5, step: 0.01, knobColor: '#111111' },
     ],
+    // Four sliders are taller than the default panel slot — lift it clear of the bottom ruler
+    panel: { y: height - 400 },
     loupe: {},
     // The handles are the base vertices; the drawn vertex = base + drift × wander.
     // Hidden and inert in `dot` mode (no points to hit-test or paint).
@@ -179,17 +182,18 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
   };
 
   const drawScene = (ctx: CanvasRenderingContext2D, cam: Camera, view: SceneView) => {
-    const { weight, splits, drift } = view.params;
+    const { weight, splits, drift, backdrop } = view.params;
     const k = view.magnification;
 
-    // Coloured ground over the visible world
+    // Translucent ground over the visible world: `backdrop` is its alpha, so the
+    // UI grid shows through (0 = bare grid, 1 = the original opaque off-white).
     const vw = cam.visibleWorld();
     ctx.save();
     cam.apply(ctx);
     ctx.beginPath();
     ctx.rect(vw.x, vw.y, vw.w, vw.h);
     ctx.restore();
-    ctx.fillStyle = clrs.bg;
+    ctx.fillStyle = `rgb(from ${clrs.bg} r g b / ${backdrop})`;
     ctx.fill();
 
     const u = drifted(0, drift);
