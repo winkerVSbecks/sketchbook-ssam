@@ -26,25 +26,28 @@ const STEPS = 7;
 const SHIFT = 2;
 const M = 0.512286623256592433;
 
-/** Path commands of one rising segment — the dash length is measured from this. */
-const startCommands = (x0: number, y0: number) => [
+/**
+ * Path commands of one rising segment — the dash length is measured from this.
+ * Horizontal advances keep the original `A` (fixed period); `a` is the scaled amplitude.
+ */
+const startCommands = (x0: number, y0: number, a: number) => [
   'M', x0, y0,
-  'c', A * M, 0, -(1 - A) * M, -A, A, -A,
+  'c', A * M, 0, -(1 - A) * M, -a, A, -a,
 ];
 
 /** The full wave: a start segment plus `STEPS` smooth up/down pairs. */
-const waveCommands = (x0: number, y0: number) => [
-  ...startCommands(x0, y0),
+const waveCommands = (x0: number, y0: number, a: number) => [
+  ...startCommands(x0, y0, a),
   ...new Array(STEPS)
     .fill(0)
-    .flatMap(() => ['s', -(1 - A) * M, A, A, A, 's', -(1 - A) * M, -A, A, -A]),
+    .flatMap(() => ['s', -(1 - A) * M, a, A, a, 's', -(1 - A) * M, -a, A, -a]),
 ];
 
 /** Arc length of the start segment in original pixels, via an SVG path (as the original did). */
-const measureSegment = (): number => {
-  const el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  el.setAttribute('d', startCommands(0, 0).join(' '));
-  return el.getTotalLength();
+const measureEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+const measureSegment = (a: number): number => {
+  measureEl.setAttribute('d', startCommands(0, 0, a).join(' '));
+  return measureEl.getTotalLength();
 };
 
 export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...props }: SketchProps) => {
@@ -71,9 +74,10 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
       { id: 'saturation', label: 'saturation', min: 0, max: 100, value: 80, step: 1, knobColor: '#e8541e' },
       { id: 'lightness', label: 'lightness', min: 0, max: 100, value: 60, step: 1, knobColor: '#111111' },
       { id: 'weight', label: 'weight', min: 1, max: 40, value: 12, step: 0.5 },
+      { id: 'amplitude', label: 'Amplitude', min: 0.2, max: 2, value: 1, step: 0.05, knobColor: '#8a5cf5' },
     ],
-    // Four sliders are taller than the default panel slot — lift it clear of the bottom edge
-    panel: { y: height - 400 },
+    // Five sliders are taller than the default panel slot — lift it clear of the bottom edge
+    panel: { y: height - 480 },
     onChange: () => props.render(),
   });
 
@@ -85,8 +89,6 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
       repaint: () => props.render(),
     };
   }
-
-  const segmentLength = measureSegment();
 
   // The original drew in a frame translated to (centre.x, centre.y - H/2), y down.
   // Map that local pixel frame into world units about the fit centre, flipping
@@ -100,8 +102,8 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
   });
 
   /** SVG path data in world units for the wave starting at local (x0, y0). */
-  const worldPathData = (x0: number, y0: number): string => {
-    const cmds = waveCommands(x0, y0);
+  const worldPathData = (x0: number, y0: number, a: number): string => {
+    const cmds = waveCommands(x0, y0, a);
     const out: (string | number)[] = [];
     let i = 0;
     while (i < cmds.length) {
@@ -143,15 +145,18 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
   let playhead = 0;
 
   const drawScene = (ctx: CanvasRenderingContext2D, cam: Camera, view: SceneView) => {
-    const { hue, saturation, lightness, weight } = view.params;
+    const { hue, saturation, lightness, weight, amplitude } = view.params;
     const k = view.magnification;
     const color = `hsl(${hue} ${saturation}% ${lightness}%)`;
+    // Scaled amplitude: original a = h/4; the horizontal period and the mask are unchanged
+    const a = A * amplitude;
+    const segmentLength = measureSegment(a);
 
     // The wave, built in world units and mapped to screen pixels so dashes are in px
     const x0 = (-STEPS / 2) * A - SHIFT * A * playhead;
-    const y0 = H / 2 + A / 2;
+    const y0 = H / 2 + a / 2;
     const path = new Path2D();
-    path.addPath(new Path2D(worldPathData(x0, y0)), worldMatrix(cam));
+    path.addPath(new Path2D(worldPathData(x0, y0, a)), worldMatrix(cam));
 
     const len = (segmentLength * cam.scale) / PX_PER_UNIT;
     ctx.save();
