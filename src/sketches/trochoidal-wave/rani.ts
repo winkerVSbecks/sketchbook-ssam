@@ -165,10 +165,10 @@ export const sketch = ({ wrap, context, canvas }: SketchProps) => {
   };
 };
 
-function createButtonPress(mapping) {
+function createButtonPress(mapping: number) {
   let wasPressed = false;
 
-  return (buttons) => {
+  return (buttons: ReadonlyArray<GamepadButton>) => {
     const button = buttons[mapping];
     if (button.pressed && !wasPressed) {
       wasPressed = true;

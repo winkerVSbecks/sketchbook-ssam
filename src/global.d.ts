@@ -12,7 +12,63 @@ declare module 'canvas-sketch-util/penplot';
 declare module 'webfontloader';
 declare module 'polyline-normals';
 declare module 'resolve-lygia';
-declare module 'joy-joy';
+declare module 'joy-joy' {
+  /** Gamepad events are keyed by `${id}#${index}`. */
+  export type GamepadKey = string;
+  export interface GamepadEventInfo {
+    key: GamepadKey;
+    gamepad: Gamepad;
+  }
+  export interface SubscribeOptions {
+    onGamepadConnected?: (info: GamepadEventInfo) => void;
+    onGamepadDisconnected?: (info: GamepadEventInfo) => void;
+  }
+  /** Whatever `navigator.getGamepads()` returns on the current tick. */
+  export type GamepadState = ReturnType<Navigator['getGamepads']>;
+  export type JoystickDirection =
+    | 'UP'
+    | 'UP_RIGHT'
+    | 'RIGHT'
+    | 'DOWN_RIGHT'
+    | 'DOWN'
+    | 'DOWN_LEFT'
+    | 'LEFT'
+    | 'UP_LEFT';
+  export type ButtonName =
+    | 'DOWN'
+    | 'RIGHT'
+    | 'LEFT'
+    | 'UP'
+    | 'A'
+    | 'X'
+    | 'B'
+    | 'Y'
+    | 'SL'
+    | 'SR'
+    | 'MINUS'
+    | 'PLUS'
+    | 'LEFT_STICK'
+    | 'RIGHT_STICK'
+    | 'HOME'
+    | 'CAPTURE'
+    | 'TRIGGER'
+    | 'Z_TRIGGER';
+  export const CONSTANTS: {
+    COLORS: { GRAY: string; BLUE: string; RED: string };
+    GAMEPAD_IDS: { LEFT_JOY_CON: string; RIGHT_JOY_CON: string };
+    GAMEPAD_INFO: Record<string, { id: string; name: string }>;
+    JOYSTICK_AXES_INDEX: number;
+    JOYSTICK_DIRECTIONS: Record<JoystickDirection, number>;
+    /** Joy-Con button → index into `Gamepad.buttons` (sideways orientation). */
+    BUTTON_MAPPINGS: Record<ButtonName, number>;
+  };
+  export function getKey(gamepad: Pick<Gamepad, 'id' | 'index'>): GamepadKey;
+  export function getJoystickDirection(axes: ReadonlyArray<number>): JoystickDirection | undefined;
+  export function subscribeToGamepads(options: SubscribeOptions): void;
+  export function unsubscribeFromGamepads(): void;
+  /** Polls `navigator.getGamepads()` at ~60fps until `stopPolling()` is called. */
+  export function startPolling(handler: (state: GamepadState) => void): { stopPolling: () => void };
+}
 declare module '@texel/color';
 declare module 'load-asset';
 declare module 'chromotome';
