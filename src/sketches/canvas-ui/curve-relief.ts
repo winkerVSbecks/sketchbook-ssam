@@ -145,9 +145,15 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
     props.exportFrame();
   });
 
+  /**
+   * Restart the drop: rebuild every chain taut along its seed curve — the control
+   * points stay where they were dragged — so the simulation replays from the
+   * current settings. Shared by the reset button and every slider.
+   */
+  const restart = () => curves.forEach(rebuild);
+
   // Reset: a momentary toolbar button (appended after the magnifier via `tools`).
-  // It rebuilds every chain taut along its seed curve — the control points stay
-  // where they were dragged — so the drop replays, and un-highlights itself at once.
+  // It restarts the drop and un-highlights itself at once.
   const resetGroup = createToggleGroup({
     items: [
       {
@@ -158,7 +164,7 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
     exclusive: false,
     onChange: (active) => {
       if (!active.includes('reset')) return;
-      curves.forEach(rebuild);
+      restart();
       resetGroup.setActive('reset', false);
     },
   });
@@ -174,13 +180,16 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
       { id: 'dot', icon: 'dot' },
       { id: 'line', icon: 'line' },
     ],
+    // Every slider change restarts the drop (the range's change hook fires on
+    // pointer drags and programmatic sets alike), so the new settings replay
+    // from the seed curves rather than nudging a half-settled chain.
     params: [
       { id: 'tightness', label: 'tightness', min: 0, max: 1, value: 0.5, step: 0.01, knobColor: '#8a5cf5' },
       { id: 'stiffness', label: 'stiffness', min: 0.01, max: 1, value: 0.5, step: 0.01, knobColor: '#e8541e' },
       { id: 'damping', label: 'damping', min: 0, max: 0.2, value: 0.05, step: 0.005, knobColor: '#111111' },
       { id: 'gravity', label: 'gravity', min: 0, max: 2, value: 1, step: 0.05, knobColor: '#111111' },
       { id: 'hue', label: 'hue', min: 0, max: 360, value: 0, step: 1, knobColor: '#8a5cf5' },
-    ],
+    ].map((range) => ({ ...range, onChange: restart })),
     // Five sliders: lift the panel so every one stays inside the frame
     panel: { y: height - 480 },
     loupe: {},
@@ -267,12 +276,12 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
     return build(toWorld({ x: f.x * SIM_W, y: f.y * SIM_H }), color);
   });
 
-  // Apply slider changes to the live simulation: tightness re-seeds every chain,
-  // stiffness/damping retune every spring, gravity scales the engine's pull.
-  let applied = { tightness: NaN, stiffness: NaN, damping: NaN, gravity: NaN };
+  // Keep the live simulation on the sliders after a restart: stiffness/damping
+  // retune every spring, gravity scales the engine's pull. (Tightness only
+  // matters at build time, and every change already rebuilds via `restart`.)
+  let applied = { stiffness: NaN, damping: NaN, gravity: NaN };
   const applyParams = (params: Record<string, number>) => {
-    const { tightness, stiffness, damping, gravity } = params;
-    if (tightness !== applied.tightness && !Number.isNaN(applied.tightness)) curves.forEach(rebuild);
+    const { stiffness, damping, gravity } = params;
     if (stiffness !== applied.stiffness || damping !== applied.damping) {
       for (const c of curves) {
         for (const s of c.springs) {
@@ -282,7 +291,7 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
       }
     }
     if (gravity !== applied.gravity) engine.gravity.y = gravity;
-    applied = { tightness, stiffness, damping, gravity };
+    applied = { stiffness, damping, gravity };
   };
 
   // Step by wall-clock time so a UI-triggered repaint mid-frame never double-steps
