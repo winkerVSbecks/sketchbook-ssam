@@ -5,13 +5,14 @@ import { createShell, type Camera, type Pt, type SceneView } from '../../ui';
 
 /**
  * Chill wave: a looping dashed sine-like stroke built from cubic segments, wiped
- * on the right by a white mask. Ported from a 1080² canvas-sketch piece; the
- * wave colour is driven by hue / saturation / lightness sliders and the ground
- * is white.
+ * on the right by a paper-coloured mask. Ported from a 1080² canvas-sketch piece;
+ * the wave colour is driven by hue / saturation / lightness sliders and the wave
+ * sits directly on the shell's paper and grid.
  */
 
 const clrs = {
-  ground: '#fff',
+  /** Wipe-mask colour: the shell's default paper, so the wipe reads clean against the chrome. */
+  paper: '#f6f6f5',
 };
 
 /** Original canvas pixels per world unit (1080 px canvas → 4 grid cells). */
@@ -146,16 +147,6 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
     const k = view.magnification;
     const color = `hsl(${hue} ${saturation}% ${lightness}%)`;
 
-    // White ground across the visible world
-    const vis = cam.visibleWorld();
-    ctx.save();
-    cam.apply(ctx);
-    ctx.beginPath();
-    ctx.rect(vis.x, vis.y, vis.w, vis.h);
-    ctx.restore();
-    ctx.fillStyle = clrs.ground;
-    ctx.fill();
-
     // The wave, built in world units and mapped to screen pixels so dashes are in px
     const x0 = (-STEPS / 2) * A - SHIFT * A * playhead;
     const y0 = H / 2 + A / 2;
@@ -173,9 +164,9 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
     ctx.stroke(path);
     ctx.restore();
 
-    // Right-hand wipe mask, in the ground colour
+    // Right-hand wipe mask, in the shell's paper colour
     localRect(ctx, cam, W * 0.7, 0, W * 3, H);
-    ctx.fillStyle = clrs.ground;
+    ctx.fillStyle = clrs.paper;
     ctx.fill();
   };
 
