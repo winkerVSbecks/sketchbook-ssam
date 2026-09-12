@@ -1,6 +1,7 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 
+import { palettes } from '../../colors/mindful-palettes';
 import { createShell, type Camera, type SceneView } from '../../ui';
 import type { Pt2 } from './napoleon-geometry';
 
@@ -8,16 +9,10 @@ import type { Pt2 } from './napoleon-geometry';
  * Flatland — truncation. A regular polygon whose vertices slide towards the
  * midpoints of their edges, cutting the corners off. Ported from a looping
  * canvas-sketch piece; here it is static and every value the noise used to
- * drive is a slider.
+ * drive is a slider. The polygon sits directly on the shell's paper — no
+ * coloured ground — and takes its two colours from a Mindful palette: colour
+ * [0] for the base polygon, colour [1] for the truncated one.
  */
-
-const clrs = {
-  bg: '#fad1c2',
-  left: '#188F5C',
-  right: '#FCBE31',
-  polygon: '#fff',
-  truncatedPolygon: '#f17447',
-};
 
 // --- Geometry (world units) -----------------------------------------------------
 // The shell's grid has its x-origin on the right and y-origin at the bottom, so
@@ -102,10 +97,11 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
       { id: 'radius', label: 'radius', min: 0.2, max: 2, value: 1, step: 0.05, knobColor: '#FCBE31' },
       { id: 'rotation', label: 'rotation', min: 0, max: 360, value: 0, step: 1, knobColor: '#111111' },
       { id: 'weight', label: 'weight', min: 0, max: 200, value: 144, step: 1, knobColor: '#8a5cf5' },
+      { id: 'palette', label: 'palette', min: 0, max: palettes.length - 1, value: 0, step: 1, knobColor: '#111111' },
     ],
     loupe: {},
-    // Five sliders are taller than the default panel slot — lift it clear of the bottom ruler
-    panel: { y: height - 480 },
+    // Six sliders (52 px each) are taller than the default panel slot — lift it clear of the bottom ruler
+    panel: { y: height - 560 },
     onChange: () => props.render(),
   });
 
@@ -132,8 +128,8 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
   };
 
   const drawScene = (ctx: CanvasRenderingContext2D, cam: Camera, view: SceneView) => {
-    const { vertices, truncation, radius, rotation, weight } = view.params;
-    const vis = cam.visibleWorld();
+    const { vertices, truncation, radius, rotation, weight, palette } = view.params;
+    const colors = palettes[Math.round(palette)] ?? palettes[0];
 
     const fill = (color: string) => {
       ctx.fillStyle = view.magnified ? shell.hatch(color) : color;
@@ -153,23 +149,12 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
       fill(color);
     };
 
-    // Ground: peach over everything visible, green over the left half (world
-    // x ≥ 2, since x grows leftward), a yellow triangle in the bottom-right
-    // corner — the original's `[[size, 0], [size, size], [c, size]]` mirrored.
-    path(ctx, cam, [[vis.x, vis.y], [vis.x + vis.w, vis.y], [vis.x + vis.w, vis.y + vis.h], [vis.x, vis.y + vis.h]]);
-    fill(clrs.bg);
-    const leftEdge = Math.max(vis.x + vis.w, 6);
-    path(ctx, cam, [[2, vis.y], [leftEdge, vis.y], [leftEdge, vis.y + vis.h], [2, vis.y + vis.h]]);
-    fill(clrs.left);
-    path(ctx, cam, [[0, 4], [0, 0], [2, 0]]);
-    fill(clrs.right);
-
     const polygon = generatePolygon(vertices, radius, CENTER, rotation);
     const midpoints = generateMidpoints(polygon);
     const truncated = truncatePolygon(generateSplitVertices(polygon, midpoints), truncation);
 
-    shape(polygon, clrs.polygon, weight);
-    shape(truncated, clrs.truncatedPolygon, weight * 0.75);
+    shape(polygon, colors[0], weight);
+    shape(truncated, colors[1], weight * 0.75);
   };
 
   wrap.render = () => shell.render(drawScene);
