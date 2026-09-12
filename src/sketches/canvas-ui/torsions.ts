@@ -2,21 +2,39 @@ import { Bezier } from 'bezier-js';
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 
+import { palettes } from '../../colors/mindful-palettes';
 import { createShell, theme, type Camera, type SceneView } from '../../ui';
 
 /**
  * Torsions — seven blocks hanging from the top edge, each twisted about its
  * vertical axis. Ported from a canvas-sketch loop (800×600); the `twist`
  * slider scrubs the original playhead, `stagger` scales the per-block phase
- * offset (1 = original, 0 = all blocks identical) and `weight` is the outline.
+ * offset (1 = original, 0 = all blocks identical), `weight` is the outline and
+ * `palette` picks a Mindful Palette for the faces.
  */
 
-const clrs = {
-  front: '#ffffff',
-  back: '#eeeeee',
-  edge: '#ffffff',
-  outline: theme.ink,
-};
+const OUTLINE = theme.ink;
+
+interface FaceColors {
+  front: string;
+  back: string;
+  edge: string;
+}
+
+/**
+ * Face colours from palette `idx`: front ← [0], back ← [1], thick edge ← [2].
+ * Palettes shorter than three colours wrap; a missing edge colour falls back to
+ * the paper so the edge still reads as a lit surface.
+ */
+function faceColors(idx: number): FaceColors {
+  const palette = palettes[Math.min(Math.max(Math.round(idx), 0), palettes.length - 1)];
+  const at = (i: number) => palette[i % palette.length];
+  return {
+    front: at(0),
+    back: at(1),
+    edge: palette.length >= 3 ? at(2) : theme.paper,
+  };
+}
 
 /**
  * Shear factor for the thick edge. Dimensionless, but the original derived it
@@ -187,7 +205,10 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
       { id: 'twist', label: 'Twist', min: 0, max: 1, value: 0.35, step: 0.01, knobColor: '#8a5cf5' },
       { id: 'stagger', label: 'Stagger', min: 0, max: 1, value: 1, step: 0.01, knobColor: '#e8541e' },
       { id: 'weight', label: 'Weight', min: 0.5, max: 6, value: 2, step: 0.25, knobColor: '#111111' },
+      { id: 'palette', label: 'Palette', min: 0, max: palettes.length - 1, value: 0, step: 1, knobColor: '#111111' },
     ],
+    // Four sliders are taller than the default panel slot — lift it clear of the bottom ruler
+    panel: { y: height - 400 },
     onChange: () => props.render(),
   });
 
@@ -236,6 +257,7 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
     view: SceneView,
     { tA, tB, curve1, curve2, curve3, curve4 }: Intersections,
     { x, y, width }: Pick<BlockProps, 'x' | 'y' | 'width'>,
+    clrs: FaceColors,
   ) => {
     const U: Pt2 = [x, y];
     const V: Pt2 = [x + width, y];
@@ -282,7 +304,13 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
   };
 
   /** The thick front edge: two curves from b, closed along the bottom, filled even-odd. */
-  const drawFrontEdge = (ctx: CanvasRenderingContext2D, cam: Camera, view: SceneView, { ec1, ec2, a, b }: Edge) => {
+  const drawFrontEdge = (
+    ctx: CanvasRenderingContext2D,
+    cam: Camera,
+    view: SceneView,
+    { ec1, ec2, a, b }: Edge,
+    clrs: FaceColors,
+  ) => {
     inWorld(ctx, cam, () => {
       ctx.moveTo(...b);
       ctx.bezierCurveTo(...ec1);
@@ -295,7 +323,13 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
     ctx.stroke();
   };
 
-  const drawBlock = (ctx: CanvasRenderingContext2D, cam: Camera, view: SceneView, block: BlockProps) => {
+  const drawBlock = (
+    ctx: CanvasRenderingContext2D,
+    cam: Camera,
+    view: SceneView,
+    block: BlockProps,
+    clrs: FaceColors,
+  ) => {
     const { x, y, width, height, playhead } = block;
     // Start points for the edge curves
     const b1: Pt2 = [x, mapRange(playhead, 0, 1, y + height, y)];
@@ -304,17 +338,18 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
     const edge1 = edge(b1, block, false, true);
     const edge2 = edge(b2, block, true);
 
-    drawFaces(ctx, cam, view, intersections(edge1, edge2), { x, y, width });
-    drawFrontEdge(ctx, cam, view, edge1);
+    drawFaces(ctx, cam, view, intersections(edge1, edge2), { x, y, width }, clrs);
+    drawFrontEdge(ctx, cam, view, edge1, clrs);
   };
 
   const drawScene = (ctx: CanvasRenderingContext2D, cam: Camera, view: SceneView) => {
-    const { twist, stagger, weight } = view.params;
+    const { twist, stagger, weight, palette } = view.params;
+    const clrs = faceColors(palette);
 
     ctx.lineWidth = weight * view.magnification;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    ctx.strokeStyle = clrs.outline;
+    ctx.strokeStyle = OUTLINE;
 
     const margin = W / 22;
     const w = W / 11;
@@ -330,7 +365,7 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
         height: H - w,
         thickness: THICKNESS,
         playhead: Math.min(pingPong(idx), 0.99),
-      });
+      }, clrs);
     }
   };
 
