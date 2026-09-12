@@ -25,14 +25,14 @@ const clrs = {
 const HANDLE_FILL = `rgb(from ${clrs.handle} r g b / 0.55)`;
 const HANDLE_RADIUS = 27; // screen px, as the original
 
-/** The original 1080 px canvas spans the 4-unit grid. */
+/**
+ * The original 1080 px canvas spans the 4-unit grid. With `xOrigin: 'right'`
+ * world x grows leftward, so original x → 4 − x/270 keeps the composition
+ * reading the same way round (u left, w right, v upper-left); y is mirrored
+ * because the original was y-down.
+ */
 const PX = 270;
 const UNITS = 4;
-/** Canvas corners → grid corners (y up): TL, TR, BR, BL. */
-const TL: Pt2 = [0, UNITS];
-const TR: Pt2 = [UNITS, UNITS];
-const BR: Pt2 = [UNITS, 0];
-const BL: Pt2 = [0, 0];
 
 // --- Noise wander (ported; noise is sampled in the original's pixel space so the
 // path is identical, only its output is scaled to world units) -------------------
@@ -59,8 +59,8 @@ function loopNoise({ cx, cy, offset }: Wander, range: number, playhead: number) 
 function wanderOffset(w: Wander, playhead: number): Pt2 {
   const r = loopNoise({ ...w, offset: w.offset + 0 }, 1, playhead);
   const theta = loopNoise({ ...w, offset: w.offset + 1000 }, 2 * Math.PI, playhead);
-  // y is mirrored: the original's canvas was y-down
-  return [r * Math.cos(theta), -r * Math.sin(theta)];
+  // Both axes are mirrored relative to the original's y-down, x-rightward canvas
+  return [-r * Math.cos(theta), -r * Math.sin(theta)];
 }
 
 // --- Sketch -------------------------------------------------------------------
@@ -79,11 +79,11 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
 
   Random.setSeed('napoleon-theorem');
 
-  // Base vertices in world units (the original's u/v/w ÷ 270, y up), draggable
+  // Base vertices in world units (the original's u/v/w: x → 4 − x/270, y → 4 − y/270), draggable
   const verts: Pt[] = [
-    { x: 1, y: 2 },
-    { x: 1.5, y: 3 },
     { x: 3, y: 2 },
+    { x: 2.5, y: 3 },
+    { x: 1, y: 2 },
   ];
   // The original's noise circle centres (px ÷ 270) and per-vertex offsets
   const wanders: Wander[] = [
@@ -131,6 +131,16 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
       repaint: () => props.render(),
     };
   }
+
+  // The grid area's world rect at the fit view: 4 units across, slightly taller
+  // (inner.h / fitScale). The original's canvas corners map onto it so the fan
+  // fills the whole area; x is mirrored, so the original's TL (0,0) is [W, H].
+  const W = shell.camera.units;
+  const H = shell.inner.h / shell.camera.fitScale;
+  const TL: Pt2 = [W, H];
+  const TR: Pt2 = [0, H];
+  const BR: Pt2 = [0, 0];
+  const BL: Pt2 = [W, 0];
 
   let playhead = 0;
 
