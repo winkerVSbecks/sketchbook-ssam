@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1789070932624,
+  "lastScanned": 1789158299918,
   "projectRoot": "/Users/varun/Documents/projects/sketchbook-ssam",
   "techStack": {
     "languages": [
@@ -81,7 +81,7 @@
       "path": "archive-app",
       "purpose": null,
       "fileCount": 8,
-      "lastAccessed": 1789070932604,
+      "lastAccessed": 1789158299901,
       "keyFiles": [
         "archive.json",
         "atlas.json",
@@ -94,7 +94,7 @@
       "path": "assets",
       "purpose": "Static assets",
       "fileCount": 3,
-      "lastAccessed": 1789070932605,
+      "lastAccessed": 1789158299901,
       "keyFiles": [
         "skeletor.svg",
         "varun.svg"
@@ -104,7 +104,7 @@
       "path": "docs",
       "purpose": "Documentation",
       "fileCount": 2,
-      "lastAccessed": 1789070932606,
+      "lastAccessed": 1789158299903,
       "keyFiles": [
         "cloud-rendering.md",
         "ideas.md"
@@ -114,7 +114,7 @@
       "path": "learn-webgpu",
       "purpose": null,
       "fileCount": 3,
-      "lastAccessed": 1789070932606,
+      "lastAccessed": 1789158299903,
       "keyFiles": [
         "MISSION.md",
         "NOTES.md",
@@ -124,8 +124,8 @@
     "output": {
       "path": "output",
       "purpose": null,
-      "fileCount": 5731,
-      "lastAccessed": 1789070932619,
+      "fileCount": 5757,
+      "lastAccessed": 1789158299912,
       "keyFiles": [
         "2023.12.13-15.21.58.mp4",
         "2023.12.13-15.33.09.mp4",
@@ -138,7 +138,7 @@
       "path": "previews",
       "purpose": null,
       "fileCount": 1,
-      "lastAccessed": 1789070932619,
+      "lastAccessed": 1789158299913,
       "keyFiles": [
         "albers-meander.png"
       ]
@@ -147,7 +147,7 @@
       "path": "scripts",
       "purpose": "Build/utility scripts",
       "fileCount": 6,
-      "lastAccessed": 1789070932619,
+      "lastAccessed": 1789158299913,
       "keyFiles": [
         "archive-types.ts",
         "archive.ts",
@@ -160,7 +160,7 @@
       "path": "src",
       "purpose": "Source code",
       "fileCount": 14,
-      "lastAccessed": 1789070932619,
+      "lastAccessed": 1789158299913,
       "keyFiles": [
         "dither.ts",
         "gallery.ts",
@@ -173,7 +173,7 @@
       "path": "timelapse",
       "purpose": null,
       "fileCount": 77,
-      "lastAccessed": 1789070932620,
+      "lastAccessed": 1789158299913,
       "keyFiles": [
         "00000.png",
         "00001.png",
@@ -186,7 +186,7 @@
       "path": "archive-app/dist",
       "purpose": "Distribution/build output",
       "fileCount": 4,
-      "lastAccessed": 1789070932620,
+      "lastAccessed": 1789158299914,
       "keyFiles": [
         "filter.js",
         "index.html",
@@ -197,14 +197,14 @@
       "path": "archive-app/node_modules",
       "purpose": "Dependencies",
       "fileCount": 0,
-      "lastAccessed": 1789070932620,
+      "lastAccessed": 1789158299914,
       "keyFiles": []
     },
     "archive-app/src": {
       "path": "archive-app/src",
       "purpose": "Source code",
       "fileCount": 6,
-      "lastAccessed": 1789070932620,
+      "lastAccessed": 1789158299914,
       "keyFiles": [
         "components.tsx",
         "model.ts",
@@ -215,7 +215,7 @@
       "path": "learn-webgpu/assets",
       "purpose": "Static assets",
       "fileCount": 2,
-      "lastAccessed": 1789070932620,
+      "lastAccessed": 1789158299914,
       "keyFiles": [
         "course.css",
         "quiz.js"
@@ -224,21 +224,15 @@
   },
   "hotPaths": [
     {
-      "path": "atlas-recent.png",
+      "path": "output/2026.09.11-16.35.49.png",
       "accessCount": 1,
-      "lastAccessed": 1789071277831,
+      "lastAccessed": 1789158957986,
       "type": "file"
     },
     {
-      "path": ".playwright-mcp/atlas-recent-2.png",
+      "path": "output/2026.09.11-19.54.53.png",
       "accessCount": 1,
-      "lastAccessed": 1789071346520,
-      "type": "file"
-    },
-    {
-      "path": "output/2026.09.11-10.52.11.png",
-      "accessCount": 1,
-      "lastAccessed": 1789138341294,
+      "lastAccessed": 1789170902762,
       "type": "file"
     }
   ],
