@@ -1,0 +1,279 @@
+// cspell:words randomart
+/**
+ * layered-compositions on the terminal desktop: every chart rect of the
+ * terminal-charts original is a `TuiWindow` (drag, resize, minimize, close),
+ * and its Tweakpane is the desktop's `≡ settings` window. Patterns live in
+ * local cell coordinates (see ./patterns), so moving a window is free and
+ * resizing rebuilds the pattern for the new size.
+ */
+import { ssam } from 'ssam';
+import type { Sketch, SketchProps, SketchSettings } from 'ssam';
+import Random from 'canvas-sketch-util/random';
+
+import { randomPalette } from '../../colors';
+import {
+  createButton,
+  createDesktop,
+  createRange,
+  createToggleGroup,
+  themeFromPalette,
+  type Desktop,
+  type GlyphBuffer,
+  type TuiControl,
+  type TuiWindow,
+} from '../../tui';
+import {
+  buildPattern,
+  defaultConfig,
+  drawPattern,
+  layoutRects,
+  LAYOUT_NAMES,
+  type LayoutName,
+  type PatternConfig,
+  type RectPattern,
+} from './patterns';
+
+const N = 64;
+const BUFFER_N = N + 16;
+
+/** One chart window's state: its pattern and the outer size it was built for. */
+interface Chart {
+  seed: string;
+  win: TuiWindow;
+  pattern: RectPattern;
+  rows: number;
+  cols: number;
+}
+
+export const sketch = ({ wrap, context, canvas, width, height, ...props }: SketchProps) => {
+  if (import.meta.hot) {
+    import.meta.hot.dispose(() => {
+      desktop.dispose();
+      wrap.dispose();
+    });
+    import.meta.hot.accept(() => wrap.hotReload());
+  }
+  import.meta.hot?.on('mcp:export', () => {
+    props.exportFrame();
+  });
+
+  const config: PatternConfig = defaultConfig();
+  let seed = Random.getRandomSeed();
+  let layoutChoice: LayoutName | 'auto' = 'auto';
+  let layoutName: LayoutName = 'A';
+  let animate = true;
+  let borders = true;
+  /** Frozen weft offset while `animate` is off. */
+  let offset = 0;
+
+  let rawPalette = randomPalette();
+  /** Pattern colours: everything but the background, as in the original. */
+  let palette = rawPalette.length > 1 ? rawPalette.slice(1) : rawPalette.slice();
+
+  const charts = new Map<TuiWindow, Chart>();
+
+  // ─── Patterns ───────────────────────────────────────────────────────────
+
+  const build = (chart: Pick<Chart, 'seed' | 'rows' | 'cols'>): RectPattern => {
+    Random.setSeed(chart.seed);
+    return buildPattern(chart.rows, chart.cols, palette, BUFFER_N, config);
+  };
+
+  /** Rebuild every pattern in place (same windows, same seeds; config/palette changed). */
+  const rebuildPatterns = () => {
+    for (const chart of charts.values()) {
+      chart.rows = chart.win.rect.rows;
+      chart.cols = chart.win.rect.cols;
+      chart.pattern = build(chart);
+    }
+  };
+
+  const drawChart = (buf: GlyphBuffer, win: TuiWindow) => {
+    const chart = charts.get(win);
+    if (!chart) return;
+    if (chart.rows !== win.rect.rows || chart.cols !== win.rect.cols) {
+      chart.rows = win.rect.rows;
+      chart.cols = win.rect.cols;
+      chart.pattern = build(chart);
+    }
+    drawPattern(buf, chart.pattern, win.rect, offset, N);
+  };
+
+  /**
+   * The `borders` toggle: the desktop marks the front window `active` every
+   * frame (double frame + highlighted title); with borders off we clear it
+   * just before the window paints so every frame is single.
+   */
+  const wrapBorders = (win: TuiWindow) => {
+    const draw = win.draw;
+    win.draw = ((target: GlyphBuffer | CanvasRenderingContext2D) => {
+      if (!borders) win.active = false;
+      (draw as (t: GlyphBuffer | CanvasRenderingContext2D) => void).call(win, target);
+    }) as TuiWindow['draw'];
+  };
+
+  // ─── Layout: one window per rect ────────────────────────────────────────
+
+  const relayout = () => {
+    for (const chart of charts.values()) desktop.removeWindow(chart.win);
+    charts.clear();
+
+    Random.setSeed(seed);
+    const { name, rects } = layoutRects(layoutChoice, desktop.area.rows, desktop.area.cols, config);
+    layoutName = name;
+
+    rects.forEach((rect, i) => {
+      const title = `chart ${String(i + 1).padStart(2, '0')}`;
+      const win = desktop.addWindow({
+        title,
+        rect,
+        minRows: 3,
+        minCols: 8,
+        draw: (buf, _inner, w) => drawChart(buf, w),
+        onClose: (w) => {
+          charts.delete(w);
+          desktop.removeWindow(w);
+        },
+      });
+      wrapBorders(win);
+      const chart: Chart = {
+        seed: `${seed}/${i}`,
+        win,
+        rows: win.rect.rows,
+        cols: win.rect.cols,
+        pattern: null as unknown as RectPattern,
+      };
+      chart.pattern = build(chart);
+      charts.set(win, chart);
+    });
+  };
+
+  const reseed = () => {
+    seed = Random.getRandomSeed();
+    relayout();
+  };
+
+  const newPalette = () => {
+    // Uniform pick, but never the palette already on screen (~2 % repeat rate otherwise).
+    const previous = rawPalette;
+    for (let tries = 0; tries < 8 && rawPalette === previous; tries++) {
+      Random.setSeed(Random.getRandomSeed());
+      rawPalette = randomPalette();
+    }
+    palette = rawPalette.length > 1 ? rawPalette.slice(1) : rawPalette.slice();
+    // Every window, the bar and the render pass hold this one theme object.
+    Object.assign(desktop.theme, themeFromPalette(rawPalette));
+    rebuildPatterns();
+  };
+
+  // ─── Settings controls ──────────────────────────────────────────────────
+
+  const integer = (v: number) => String(v);
+  const range = (
+    id: keyof PatternConfig,
+    min: number,
+    max: number,
+    step: number,
+    onSet: () => void,
+    format?: (v: number) => string,
+  ): TuiControl =>
+    createRange({
+      id,
+      label: id,
+      min,
+      max,
+      step,
+      value: config[id],
+      inline: true,
+      format,
+      onChange: (v) => {
+        config[id] = v;
+        onSet();
+      },
+    });
+
+  const controls: TuiControl[] = [
+    range('gutter', 0, 4, 1, rebuildPatterns, integer),
+    range('weftDensity', 0.1, 1, 0.01, rebuildPatterns),
+    range('warpDensity', 0.05, 0.8, 0.01, rebuildPatterns),
+    range('densityMix', 0, 1, 0.01, rebuildPatterns),
+    range('asciiMix', 0, 1, 0.01, rebuildPatterns),
+    range('randomartMix', 0, 1, 0.01, rebuildPatterns),
+    range('warpAmplitude', 0, 5, 1, rebuildPatterns, integer),
+    // Margins only shape the next layout.
+    range('marginRows', 0, 12, 1, () => {}, integer),
+    range('marginCols', 0, 16, 1, () => {}, integer),
+    createToggleGroup({
+      exclusive: true,
+      active: 'auto',
+      items: [
+        { id: 'auto', label: 'layout: auto' },
+        ...LAYOUT_NAMES.map((n) => ({ id: n, label: `layout: ${n}` })),
+      ],
+      onChange: ([id]) => {
+        layoutChoice = id as LayoutName | 'auto';
+        relayout();
+      },
+    }),
+    createToggleGroup({
+      active: ['animate', 'borders'],
+      items: [
+        { id: 'animate', label: 'animate' },
+        { id: 'borders', label: 'borders' },
+      ],
+      onChange: (active) => {
+        animate = active.includes('animate');
+        borders = active.includes('borders');
+      },
+    }),
+    createButton({ id: 'rebuild', label: 'rebuild', onPress: reseed }),
+    createButton({ id: 'palette', label: 'new palette', onPress: newPalette }),
+  ];
+
+  // ─── Desktop ────────────────────────────────────────────────────────────
+
+  const desktop: Desktop = createDesktop({
+    ctx: context,
+    canvas,
+    width,
+    height,
+    palette: rawPalette,
+    settings: { controls, cols: 36 },
+    status: () => `seed ${seed} · layout ${layoutName}`,
+    onChange: () => props.render(),
+  });
+  if (desktop.settings) wrapBorders(desktop.settings);
+
+  relayout();
+
+  if (import.meta.env.DEV) {
+    (window as unknown as { __demo?: unknown }).__demo = {
+      desktop,
+      config,
+      controls,
+      charts,
+      relayout,
+      reseed,
+      newPalette,
+      repaint: () => props.render(),
+    };
+  }
+
+  wrap.render = ({ playhead }: SketchProps) => {
+    if (animate) offset = Math.floor(playhead * BUFFER_N) % BUFFER_N;
+    desktop.render();
+  };
+};
+
+export const settings: SketchSettings = {
+  mode: '2d',
+  dimensions: [1080, 1080],
+  pixelRatio: window.devicePixelRatio,
+  animate: true,
+  duration: 8_000,
+  playFps: 24,
+  exportFps: 24,
+  framesFormat: ['mp4'],
+};
+
+ssam(sketch as Sketch<'2d'>, settings);
