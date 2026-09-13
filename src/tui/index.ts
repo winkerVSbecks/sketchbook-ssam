@@ -2,3 +2,7 @@ export * from './cells';
 export * from './metrics';
 export * from './theme';
 export * from './grid';
+export * from './window';
+export * from './menubar';
+export * from './controls';
+export * from './desktop';

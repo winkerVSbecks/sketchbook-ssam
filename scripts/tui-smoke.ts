@@ -14,8 +14,13 @@ import {
   cellRect,
   intersectCellRect,
   insetCellRect,
+  createDesktop,
+  createButton,
+  createRange,
+  createToggleGroup,
+  settingsRect,
 } from '../src/tui';
-import type { BlitContext } from '../src/tui';
+import type { BlitContext, DesktopContext } from '../src/tui';
 
 let passed = 0;
 function test(name: string, fn: () => void) {
@@ -244,6 +249,224 @@ test('cell rect helpers', () => {
   assert.deepEqual(intersectCellRect(cellRect(0, 0, 2, 2), cellRect(5, 5, 2, 2)).rows, 0);
   assert.deepEqual(insetCellRect(cellRect(1, 1, 5, 7), 1), cellRect(2, 2, 3, 5));
   assert.deepEqual(insetCellRect(cellRect(0, 0, 1, 1), 1), cellRect(1, 1, 0, 0));
+});
+
+console.log('desktop');
+
+/** Stub 2D context: measures 'M' as 8 px and records blit calls. */
+function stubCtx(): DesktopContext & { rects: number; texts: number } {
+  return {
+    font: '',
+    fillStyle: '',
+    textBaseline: 'alphabetic',
+    textAlign: 'start',
+    rects: 0,
+    texts: 0,
+    measureText: () => ({ width: 8 }),
+    fillRect() {
+      this.rects++;
+    },
+    fillText() {
+      this.texts++;
+    },
+  };
+}
+
+const D_CHAR = 8;
+const D_LINE = 20;
+/** Pixel point just inside a cell. */
+const at = (row: number, col: number) => ({ x: col * D_CHAR + 1, y: row * D_LINE + 1 });
+const rowText = (buf: ReturnType<typeof createGlyphBuffer>, row: number) =>
+  buf.cells[row].map((g) => g?.ch ?? '.').join('');
+
+function makeDesktop(over: Partial<Parameters<typeof createDesktop>[0]> = {}) {
+  let changes = 0;
+  const ctx = stubCtx();
+  const desk = createDesktop({
+    ctx,
+    width: 80 * D_CHAR,
+    height: 30 * D_LINE,
+    onChange: () => changes++,
+    settings: {
+      controls: [
+        createButton({ id: 'go', label: 'Go' }),
+        createToggleGroup({ items: [{ id: 'a', label: 'a' }, { id: 'b', label: 'b' }], exclusive: true }),
+        createRange({ id: 'n', label: 'n', min: 0, max: 10, value: 5 }),
+      ],
+    },
+    ...over,
+  });
+  const w1 = desk.addWindow({ title: 'chart 01', rect: cellRect(2, 2, 8, 24) });
+  const w2 = desk.addWindow({ title: 'chart 02', rect: cellRect(4, 30, 8, 24) });
+  const w3 = desk.addWindow({ title: 'chart 03', rect: cellRect(12, 10, 8, 24) });
+  return { ctx, desk, w1, w2, w3, changes: () => changes };
+}
+
+test('grid from width/height; bar on the bottom row; area is everything above', () => {
+  const { desk } = makeDesktop();
+  assert.equal(desk.metrics.charW, 8);
+  assert.equal(desk.buffer.rows, 30);
+  assert.equal(desk.buffer.cols, 80);
+  assert.equal(desk.menuBar.row, 29);
+  assert.deepEqual(desk.area, cellRect(0, 0, 29, 80));
+  assert.deepEqual(desk.windows[0].bounds, desk.area);
+  const top = createDesktop({ ctx: stubCtx(), width: 80 * D_CHAR, height: 30 * D_LINE, menuBar: 'top', onChange() {} });
+  assert.equal(top.menuBar.row, 0);
+  assert.deepEqual(top.area, cellRect(1, 0, 29, 80));
+});
+
+test('addWindow ×3, minimize one: 2 visible, bar lists the minimized title, selecting it restores + fronts', () => {
+  const { desk, w1, w2, w3 } = makeDesktop();
+  assert.equal(desk.windows.length, 3);
+  assert.deepEqual(desk.windows, [w1, w2, w3]);
+  assert.equal(desk.settings?.visible, false);
+
+  // Click [–] of chart 02: press + release over the button.
+  const minimizeCol = w2.rect.col + w2.rect.cols - 1 - 9; // [–] is 9 cells left of the corner
+  assert.equal(w2.buttonAt({ row: w2.rect.row, col: minimizeCol }), 'minimize');
+  desk.pointerDown(at(w2.rect.row, minimizeCol));
+  desk.pointerUp(at(w2.rect.row, minimizeCol));
+  assert.equal(w2.minimized, true);
+  assert.equal(w2.visible, false);
+  assert.deepEqual(desk.ui.windows.filter((w) => w.visible).length, 2);
+
+  desk.render();
+  const bar = rowText(desk.buffer, 29);
+  assert.ok(bar.startsWith(' ≡ settings │ chart 02 '), bar);
+
+  const span = desk.menuBar.layout().spans.find((s) => s.label === 'chart 02')!;
+  desk.pointerDown(at(29, span.labelCol));
+  desk.pointerUp(at(29, span.labelCol));
+  assert.equal(w2.minimized, false);
+  assert.equal(w2.visible, true);
+  assert.equal(desk.ui.windows[desk.ui.windows.length - 1], w2, 'restored window is in front');
+  desk.render();
+  assert.ok(!rowText(desk.buffer, 29).includes('chart 02'));
+  assert.equal(w2.active, true);
+  assert.equal(w3.active, false);
+});
+
+test('toggleSettings shows/hides; ≡ settings item toggles it too and reads active', () => {
+  const { desk } = makeDesktop();
+  const s = desk.settings!;
+  assert.equal(s.visible, false);
+  desk.toggleSettings();
+  assert.equal(s.visible, true);
+  assert.equal(desk.ui.windows[desk.ui.windows.length - 1], s);
+  assert.equal(desk.menuBar.layout().spans[0].item.active, true);
+  desk.toggleSettings();
+  assert.equal(s.visible, false);
+  const span = desk.menuBar.layout().spans[0];
+  assert.equal(span.label, '≡ settings');
+  assert.equal(span.item.active, false);
+  desk.pointerDown(at(29, span.labelCol));
+  desk.pointerUp(at(29, span.labelCol));
+  assert.equal(s.visible, true);
+  // Escape-equivalent: closing via [×] then the bar item reopens it.
+  s.visible = false;
+  desk.pointerDown(at(29, span.labelCol));
+  desk.pointerUp(at(29, span.labelCol));
+  assert.equal(s.visible, true);
+});
+
+test('settings window is sized to its controls and sits top-right of the area', () => {
+  const { desk } = makeDesktop();
+  const s = desk.settings!;
+  // button 1 + gap + toggles 2 + gap + range 2 = 7 inner rows, +2 frame; 32 inner cols + 2 frame.
+  assert.deepEqual(s.rect, cellRect(0, 80 - 34, 9, 34));
+  assert.deepEqual(settingsRect([], 32, cellRect(0, 0, 29, 80)), cellRect(0, 46, 2, 34));
+  desk.toggleSettings();
+  desk.render();
+  const inner = s.inner;
+  assert.equal(rowText(desk.buffer, inner.row).slice(inner.col, inner.col + 6), '[ Go ]');
+  assert.equal(rowText(desk.buffer, inner.row + 2).slice(inner.col, inner.col + 5), '(●) a');
+  // Click the second radio through the composed target → exclusive switch.
+  desk.pointerDown(at(inner.row + 3, inner.col + 1));
+  desk.pointerUp(at(inner.row + 3, inner.col + 1));
+  desk.render();
+  assert.equal(rowText(desk.buffer, inner.row + 2).slice(inner.col, inner.col + 5), '( ) a');
+  assert.equal(rowText(desk.buffer, inner.row + 3).slice(inner.col, inner.col + 5), '(●) b');
+});
+
+test('a drag on a title row through the composed target moves that window in whole cells', () => {
+  const { desk, w1, w3 } = makeDesktop();
+  const from = { ...w1.rect };
+  desk.pointerDown(at(from.row, from.col + 3));
+  assert.equal(desk.dragging, true);
+  assert.equal(desk.cursorAt(at(from.row, from.col + 3)), 'move');
+  desk.pointerMove({ x: (from.col + 3) * D_CHAR + 1 + 25, y: from.row * D_LINE + 1 + 45 });
+  desk.pointerUp({ x: (from.col + 3) * D_CHAR + 1 + 25, y: from.row * D_LINE + 1 + 45 });
+  assert.deepEqual(w1.rect, { ...from, row: from.row + 2, col: from.col + 3 });
+  assert.equal(desk.dragging, false);
+  assert.equal(desk.ui.windows[desk.ui.windows.length - 1], w1, 'dragged window comes to front');
+  assert.deepEqual(w3.rect, cellRect(12, 10, 8, 24), 'other windows untouched');
+  // Cannot leave the area: drag far down-right clamps to the bottom row above the bar.
+  desk.pointerDown(at(w1.rect.row, w1.rect.col + 3));
+  desk.pointerMove(at(60, 200));
+  desk.pointerUp(at(60, 200));
+  assert.equal(w1.rect.row + w1.rect.rows, desk.area.rows);
+  assert.equal(w1.rect.col + w1.rect.cols, desk.area.cols);
+});
+
+test('the bar swallows clicks over it, even where a window would otherwise be', () => {
+  const { desk, w1 } = makeDesktop();
+  // Move chart 01 flush against the bar, then click the bar's empty space right below its title row.
+  w1.setRect(cellRect(desk.area.rows - 8, 40, 8, 24));
+  assert.equal(w1.rect.row + w1.rect.rows, 29);
+  const before = { ...w1.rect };
+  const changed = desk.pointerDown(at(29, 50));
+  assert.equal(changed, false);
+  assert.equal(desk.hitTest!(at(29, 50)), true);
+  assert.equal(desk.dragging, true, 'bar holds the pointer until release');
+  desk.pointerMove(at(20, 50));
+  assert.deepEqual(w1.rect, before, 'window did not move');
+  desk.pointerUp(at(20, 50));
+  assert.equal(desk.dragging, false);
+  assert.notEqual(desk.ui.windows[desk.ui.windows.length - 1], w1, 'bar click does not front the window');
+  assert.equal(desk.cursorAt(at(29, 50)), 'default');
+  assert.equal(desk.cursorAt(at(29, 2)), 'pointer');
+});
+
+test('render paints bg, windows back-to-front (front = double frame), bar last, and blits once', () => {
+  const { desk, ctx, w1, w2, w3 } = makeDesktop({
+    wallpaper: (buf, area) => buf.fill(area, '·', '#888'),
+  });
+  desk.render();
+  assert.equal(w3.active, true);
+  assert.equal(w1.active, false);
+  assert.equal(w2.active, false);
+  const b = desk.buffer;
+  assert.equal(b.get(0, 0)?.ch, '·', 'wallpaper shows on the desktop');
+  assert.equal(b.get(29, 0)?.ch, ' ', 'bar row is not wallpapered');
+  assert.equal(b.get(29, 0)?.bg, desk.theme.chromeBg);
+  assert.equal(b.get(w3.rect.row, w3.rect.col)?.ch, '╔', 'front window: double frame');
+  assert.equal(b.get(w1.rect.row, w1.rect.col)?.ch, '┌', 'back window: single frame');
+  // The three windows are disjoint; a fourth one on top of chart 01 checks z-order.
+  const w4 = desk.addWindow({ title: 'over', rect: cellRect(2, 2, 8, 24) });
+  desk.render();
+  assert.equal(w4.active, true);
+  assert.equal(b.get(2, 2)?.ch, '╔', 'later window covers the earlier one');
+  assert.ok(ctx.rects > 0 && ctx.texts > 0);
+  assert.equal(ctx.font, desk.metrics.font);
+  desk.removeWindow(w4);
+  assert.equal(desk.windows.length, 3);
+  desk.render();
+  assert.equal(b.get(2, 2)?.ch, '┌');
+});
+
+test('restoreAll brings every minimized window back; theme from palette; headless dispose is safe', () => {
+  const { desk, w1, w2 } = makeDesktop({ palette: ['#101010', '#eeeeee', '#ff8800'] });
+  assert.equal(desk.theme.bg, '#101010');
+  assert.equal(w1.theme.accent, '#ff8800');
+  w1.minimized = true;
+  w1.visible = false;
+  w2.minimized = true;
+  w2.visible = false;
+  assert.equal(desk.menuBar.layout().spans.length, 3);
+  desk.restoreAll();
+  assert.equal(w1.visible && w2.visible, true);
+  assert.equal(desk.menuBar.layout().spans.length, 1);
+  desk.dispose();
 });
 
 console.log(`\n${passed} tests passed`);
