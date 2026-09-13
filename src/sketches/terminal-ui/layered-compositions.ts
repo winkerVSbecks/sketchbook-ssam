@@ -16,7 +16,6 @@ import {
   createDesktop,
   createRange,
   createToggleGroup,
-  themeFromPalette,
   type Desktop,
   type GlyphBuffer,
   type TuiControl,
@@ -99,19 +98,6 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     drawPattern(buf, chart.pattern, win.rect, offset, N);
   };
 
-  /**
-   * The `borders` toggle: the desktop marks the front window `active` every
-   * frame (double frame + highlighted title); with borders off we clear it
-   * just before the window paints so every frame is single.
-   */
-  const wrapBorders = (win: TuiWindow) => {
-    const draw = win.draw;
-    win.draw = ((target: GlyphBuffer | CanvasRenderingContext2D) => {
-      if (!borders) win.active = false;
-      (draw as (t: GlyphBuffer | CanvasRenderingContext2D) => void).call(win, target);
-    }) as TuiWindow['draw'];
-  };
-
   // ─── Layout: one window per rect ────────────────────────────────────────
 
   const relayout = () => {
@@ -135,7 +121,6 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
           desktop.removeWindow(w);
         },
       });
-      wrapBorders(win);
       const chart: Chart = {
         seed: `${seed}/${i}`,
         win,
@@ -161,8 +146,7 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
       rawPalette = randomPalette();
     }
     palette = rawPalette.length > 1 ? rawPalette.slice(1) : rawPalette.slice();
-    // Every window, the bar and the render pass hold this one theme object.
-    Object.assign(desktop.theme, themeFromPalette(rawPalette));
+    desktop.setTheme(rawPalette);
     rebuildPatterns();
   };
 
@@ -224,6 +208,7 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
       onChange: (active) => {
         animate = active.includes('animate');
         borders = active.includes('borders');
+        desktop.activeFrame = borders;
       },
     }),
     createButton({ id: 'rebuild', label: 'rebuild', onPress: reseed }),
@@ -238,11 +223,11 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     width,
     height,
     palette: rawPalette,
+    activeFrame: borders,
     settings: { controls, cols: 36 },
     status: () => `seed ${seed} · layout ${layoutName}`,
     onChange: () => props.render(),
   });
-  if (desktop.settings) wrapBorders(desktop.settings);
 
   relayout();
 

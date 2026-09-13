@@ -59,6 +59,8 @@ export interface DesktopOptions {
   status?: () => string;
   /** Paint the desktop background inside `area` before the windows. */
   wallpaper?: (buf: GlyphBuffer, area: CellRect) => void;
+  /** Draw the front window with the double frame + highlighted title (default true). */
+  activeFrame?: boolean;
   /** Called whenever the UI changes something — wire to `props.render`. */
   onChange: () => void;
   /** Called when a pointer interaction ends (a window or bar item releases the pointer). */
@@ -78,6 +80,14 @@ export interface Desktop extends PointerTarget {
   readonly settings: TuiWindow | null;
   /** True while the bar or a window holds the pointer. */
   readonly dragging: boolean;
+  /** Whether the front window shows the double frame; `active` is still stamped on it. */
+  activeFrame: boolean;
+  /**
+   * Retint in place: updates the shared `theme` object (a palette array goes
+   * through `themeFromPalette`) so every window, the bar and the render pass
+   * pick it up on the next frame. Returns `theme`. Font metrics are not re-measured.
+   */
+  setTheme(theme: TuiTheme | readonly string[]): TuiTheme;
   addWindow(opts: DesktopWindowOptions): TuiWindow;
   removeWindow(win: TuiWindow): void;
   toggleSettings(): void;
@@ -111,6 +121,14 @@ export function createDesktop(opts: DesktopOptions): Desktop {
 
   const ui = createUI({ onDragEnd: () => onDragEnd?.() });
   const size = (): [number, number] => [width, height];
+  let activeFrame = opts.activeFrame ?? true;
+  const showActiveFrame = () => activeFrame;
+
+  const setTheme = (next: TuiTheme | readonly string[]): TuiTheme => {
+    const resolved = Array.isArray(next) ? themeFromPalette(next as readonly string[]) : (next as TuiTheme);
+    Object.assign(theme, resolved);
+    return theme;
+  };
 
   // --- Windows ---------------------------------------------------------------
   const tuiWindows = (): TuiWindow[] => ui.windows as TuiWindow[];
@@ -124,7 +142,13 @@ export function createDesktop(opts: DesktopOptions): Desktop {
   };
 
   const addWindow = (o: DesktopWindowOptions): TuiWindow => {
-    const win = createTuiWindow({ ...o, metrics, bounds: area, theme: o.theme ?? theme });
+    const win = createTuiWindow({
+      ...o,
+      metrics,
+      bounds: area,
+      theme: o.theme ?? theme,
+      activeFrame: o.activeFrame ?? showActiveFrame,
+    });
     ui.add(win);
     return win;
   };
@@ -147,6 +171,7 @@ export function createDesktop(opts: DesktopOptions): Desktop {
       rect,
       bounds: area,
       minCols: Math.min(12, rect.cols),
+      activeFrame: showActiveFrame,
       draw: (buf, inner) => host.draw(buf, inner, theme),
       content: host,
     });
@@ -265,6 +290,13 @@ export function createDesktop(opts: DesktopOptions): Desktop {
     get dragging() {
       return barCaptured || ui.dragging;
     },
+    get activeFrame() {
+      return activeFrame;
+    },
+    set activeFrame(v: boolean) {
+      activeFrame = v;
+    },
+    setTheme,
     addWindow,
     removeWindow: (win) => ui.remove(win),
     toggleSettings,

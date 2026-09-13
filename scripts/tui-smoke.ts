@@ -469,4 +469,52 @@ test('restoreAll brings every minimized window back; theme from palette; headles
   desk.dispose();
 });
 
+test('activeFrame: option + runtime setter drop the double frame while `active` is still stamped', () => {
+  const { desk, w3 } = makeDesktop({ activeFrame: false });
+  assert.equal(desk.activeFrame, false);
+  desk.render();
+  const b = desk.buffer;
+  assert.equal(w3.active, true, 'front window is still marked active');
+  assert.equal(b.get(w3.rect.row, w3.rect.col)?.ch, '┌', 'but draws a single frame');
+  assert.equal(b.get(w3.rect.row, w3.rect.col + 3)?.bg, desk.theme.bg, 'and a plain title row');
+  desk.activeFrame = true;
+  desk.render();
+  assert.equal(b.get(w3.rect.row, w3.rect.col)?.ch, '╔', 'setter restores the double frame');
+  assert.equal(b.get(w3.rect.row, w3.rect.col + 3)?.bg, desk.theme.chromeBg, 'and the highlighted title');
+  desk.activeFrame = false;
+  desk.toggleSettings();
+  desk.render();
+  const s = desk.settings!;
+  assert.equal(s.active, true);
+  assert.equal(b.get(s.rect.row, s.rect.col)?.ch, '┌', 'the settings window follows the flag too');
+  // Default: on.
+  const { desk: d2, w3: f2 } = makeDesktop();
+  assert.equal(d2.activeFrame, true);
+  d2.render();
+  assert.equal(d2.buffer.get(f2.rect.row, f2.rect.col)?.ch, '╔');
+});
+
+test('setTheme retints the shared theme in place: windows, bar and render pick it up', () => {
+  const { desk, w1, w3 } = makeDesktop({ palette: ['#101010', '#eeeeee', '#ff8800'] });
+  const before = desk.theme;
+  const own = desk.addWindow({ title: 'own', rect: cellRect(14, 2, 6, 20), theme: { ...fallbackTheme } });
+  const returned = desk.setTheme(['#202020', '#dddddd', '#00ff88']);
+  assert.equal(returned, before, 'returns the same theme object');
+  assert.equal(desk.theme, before, 'desktop.theme identity is stable');
+  assert.equal(desk.theme.bg, '#202020');
+  assert.equal(w1.theme.accent, '#00ff88', 'windows share the object');
+  assert.equal(w3.theme.bg, '#202020');
+  assert.equal(own.theme.bg, fallbackTheme.bg, 'a window with its own theme is untouched');
+  desk.render();
+  const b = desk.buffer;
+  assert.equal(b.get(29, 0)?.bg, desk.theme.chromeBg, 'bar uses the new chrome');
+  assert.equal(b.get(w1.rect.row + 1, w1.rect.col + 1)?.bg, '#202020', 'window body uses the new bg');
+  // A full TuiTheme object works too.
+  const custom = { ...fallbackTheme, bg: '#333333', accent: '#123456' };
+  desk.setTheme(custom);
+  assert.equal(desk.theme.bg, '#333333');
+  assert.equal(w1.theme.accent, '#123456');
+  assert.notEqual(desk.theme, custom, 'copied in, not swapped');
+});
+
 console.log(`\n${passed} tests passed`);

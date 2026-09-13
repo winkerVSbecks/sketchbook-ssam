@@ -44,6 +44,11 @@ export interface TuiWindowOptions {
   closable?: boolean;
   minimizable?: boolean;
   maximizable?: boolean;
+  /**
+   * Host-wired predicate: when it returns false the window never draws the
+   * double frame / highlighted title, whatever `active` says (default: always true).
+   */
+  activeFrame?: () => boolean;
   /** Paint the body; the buffer is already clipped to `inner`. */
   draw?: (buf: GlyphBuffer, inner: CellRect, win: TuiWindow) => void;
   /** Pointer handler for clicks inside the inner rect (e.g. the settings controls). */
@@ -321,8 +326,9 @@ export function createTuiWindow(opts: TuiWindowOptions): TuiWindow {
       const buf = target;
       if (!win.visible) return;
       const t = win.theme;
-      const style = win.active ? 'double' : 'single';
-      const frameFg = win.active ? t.fg : t.dim;
+      const highlight = win.active && (opts.activeFrame?.() ?? true);
+      const style = highlight ? 'double' : 'single';
+      const frameFg = highlight ? t.fg : t.dim;
 
       buf.fill(rect, ' ', t.fg, t.bg);
       buf.box(rect, style, frameFg, t.bg);
@@ -333,7 +339,7 @@ export function createTuiWindow(opts: TuiWindowOptions): TuiWindow {
       const room = firstButtonCol - 1 - titleCol;
       if (room > 0) {
         const label = ` ${win.title} `;
-        if (win.active) buf.text(top(), titleCol, label, t.chromeFg, t.chromeBg, room);
+        if (highlight) buf.text(top(), titleCol, label, t.chromeFg, t.chromeBg, room);
         else buf.text(top(), titleCol, label, t.dim, t.bg, room);
       }
 
