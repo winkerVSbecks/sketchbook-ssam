@@ -422,7 +422,7 @@ test('grid from width/height; two-row bar at the bottom; area is everything abov
   assert.deepEqual(desk.area, cellRect(0, 0, 28, 80), 'area rows = rows − 2');
   assert.deepEqual(desk.windows[0].bounds, desk.area);
   desk.render();
-  assert.equal(rowText(desk.buffer, 28).trimEnd(), ' ≡ settings', 'text on the upper row');
+  assert.equal(rowText(desk.buffer, 28).trimEnd(), '  ≡ settings', 'text on the upper row, two pad cells in');
   assert.equal(desk.buffer.get(28, 2)?.dy, 0.5, 'centred on the band midline via dy');
   assert.equal(rowText(desk.buffer, 29).trim(), '', 'lower row is blank band');
   assert.equal(desk.buffer.get(29, 40)?.bg, desk.theme.chromeBg, 'ground fills both rows');
@@ -446,8 +446,8 @@ test('bottom band absorbs the canvas remainder: ground to the bottom edge, hit-t
   assert.equal(desk.hitTest!({ x: 10, y: 559 }), false);
   desk.render();
   const dy = (47 / 20 - 1) / 2;
-  assert.equal(desk.buffer.get(28, 1)?.ch, '+');
-  assert.equal(desk.buffer.get(28, 1)?.dy, dy, 'text centred on the 47 px band, not on two rows');
+  assert.equal(desk.buffer.get(28, 2)?.ch, '+');
+  assert.equal(desk.buffer.get(28, 2)?.dy, dy, 'text centred on the 47 px band, not on two rows');
   const strip = ctx.fills.find((f) => f.y === 600);
   assert.deepEqual(strip, { x: 0, y: 600, w: 640, h: 7, style: composite(desk.theme.chromeBg, desk.theme.bg) }, 'remainder strip painted in the flattened chrome');
   assert.equal(ctx.fills[0].h, 607, 'bg fill covers the whole canvas first');
@@ -456,7 +456,7 @@ test('bottom band absorbs the canvas remainder: ground to the bottom edge, hit-t
   const even = createDesktop({ ctx: exact, width: 80 * D_CHAR, height: 30 * D_LINE, onNewWindow() {}, onChange() {} });
   even.render();
   assert.deepEqual(even.menuBar.pxRect(), { x: 0, y: 560, w: 640, h: 40 });
-  assert.equal(even.buffer.get(28, 1)?.dy, 0.5);
+  assert.equal(even.buffer.get(28, 2)?.dy, 0.5);
   assert.equal(exact.fills.filter((f) => f.y === 600).length, 0);
   // A top bar leaves the remainder to the desktop ground.
   const topCtx = stubCtx();
@@ -464,6 +464,47 @@ test('bottom band absorbs the canvas remainder: ground to the bottom edge, hit-t
   top.render();
   assert.deepEqual(top.menuBar.pxRect(), { x: 0, y: 0, w: 640, h: 40 });
   assert.equal(topCtx.fills.filter((f) => f.y === 600).length, 0);
+});
+
+test('band spans the full canvas width: the strip past the last column is painted and hit-testable', () => {
+  // 80 columns of 8 px plus a 5 px remainder on the right, 7 px below.
+  const ctx = stubCtx();
+  const desk = createDesktop({ ctx, width: 80 * D_CHAR + 5, height: 30 * D_LINE + 7, onNewWindow() {}, onChange() {} });
+  assert.equal(desk.buffer.cols, 80);
+  assert.deepEqual(desk.menuBar.pxRect(), { x: 0, y: 560, w: 645, h: 47 });
+  assert.equal(desk.hitTest!({ x: 643, y: 570 }), true, 'right remainder is part of the band');
+  assert.equal(desk.cursorAt({ x: 643, y: 570 }), 'default');
+  assert.equal(desk.hitTest!({ x: 643, y: 559 }), false, 'but not above it');
+  desk.render();
+  const ground = composite(desk.theme.chromeBg, desk.theme.bg);
+  const right = ctx.fills.find((f) => f.x === 640 && f.y === 560);
+  assert.deepEqual(right, { x: 640, y: 560, w: 5, h: 47, style: ground }, 'right strip: band height, to the canvas edge');
+  const below = ctx.fills.find((f) => f.y === 600);
+  assert.deepEqual(below, { x: 0, y: 600, w: 640, h: 7, style: ground }, 'bottom strip: up to the right strip');
+  assert.equal(ctx.fills[0].w, 645, 'bg fill covers the whole canvas first');
+  // Top bar: the right strip is painted at the top, nothing at the bottom.
+  const topCtx = stubCtx();
+  const top = createDesktop({ ctx: topCtx, width: 80 * D_CHAR + 5, height: 30 * D_LINE + 7, menuBar: 'top', onChange() {} });
+  top.render();
+  assert.deepEqual(top.menuBar.pxRect(), { x: 0, y: 0, w: 645, h: 40 });
+  assert.deepEqual(topCtx.fills.find((f) => f.x === 640), { x: 640, y: 0, w: 5, h: 40, style: ground });
+  assert.equal(topCtx.fills.filter((f) => f.y === 600).length, 0);
+  assert.equal(top.hitTest!({ x: 643, y: 30 }), true);
+  // Item padding: two cells each side; the inverted active item covers the padded span.
+  const { desk: d } = makeDesktop({ onNewWindow() {} });
+  d.render();
+  assert.equal(rowText(d.buffer, 28).slice(0, 24), '  + new  │  ≡ settings  ');
+  const [nw, st] = d.menuBar.layout().spans;
+  assert.deepEqual([nw.col, nw.cols, nw.labelCol], [0, 9, 2]);
+  assert.deepEqual([st.col, st.cols, st.labelCol], [10, 14, 12]);
+  assert.equal(d.menuBar.itemAtCol(9)?.id, undefined, 'the │ cell belongs to no item');
+  assert.equal(d.menuBar.itemAtCol(8)?.id, 'new');
+  assert.equal(d.menuBar.itemAtCol(10)?.id, '≡ settings');
+  d.toggleSettings();
+  d.render();
+  for (let c = st.col; c < st.col + st.cols; c++) assert.equal(d.buffer.get(29, c)?.bg, d.theme.chromeFg, `inverted pad/label col ${c}`);
+  assert.equal(d.buffer.get(29, st.col - 1)?.bg, d.theme.chromeBg, 'separator cell stays plain');
+  assert.equal(d.buffer.get(29, st.col + st.cols)?.bg, d.theme.chromeBg);
 });
 
 test('resize: rows/cols/area follow the canvas; the bar moves; windows re-clamp and a maximized one re-fits', () => {
@@ -485,7 +526,7 @@ test('resize: rows/cols/area follow the canvas; the bar moves; windows re-clamp 
   assert.deepEqual(w1.rect, cellRect(10, 36, 8, 24), 'slid back inside the area');
   assert.deepEqual(w1.bounds, desk.area);
   desk.render();
-  assert.ok(rowText(desk.buffer, 18).startsWith(' ≡ settings'), 'bar painted on its new row');
+  assert.ok(rowText(desk.buffer, 18).startsWith('  ≡ settings'), 'bar painted on its new row');
   assert.equal(desk.buffer.cells.length, 20);
   // Growing back moves nothing.
   desk.resize(80 * D_CHAR, 30 * D_LINE);
@@ -499,7 +540,7 @@ test('resize: rows/cols/area follow the canvas; the bar moves; windows re-clamp 
   const buf = desk.buffer;
   desk.resize(20 * D_CHAR + 3, 8 * D_LINE + 5);
   assert.equal(desk.buffer, buf);
-  assert.deepEqual(desk.menuBar.pxRect(), { x: 0, y: 120, w: 160, h: 45 });
+  assert.deepEqual(desk.menuBar.pxRect(), { x: 0, y: 120, w: 163, h: 45 }, 'band spans the full canvas width');
 });
 
 test('addWindow ×3, minimize one: 2 visible, bar lists the minimized title, selecting it restores + fronts', () => {
@@ -519,7 +560,7 @@ test('addWindow ×3, minimize one: 2 visible, bar lists the minimized title, sel
 
   desk.render();
   const bar = rowText(desk.buffer, 28);
-  assert.ok(bar.startsWith(' ≡ settings │ chart 02 '), bar);
+  assert.ok(bar.startsWith('  ≡ settings  │  chart 02  '), bar);
 
   // Clicking the lower band row selects the item too.
   const span = desk.menuBar.layout().spans.find((s) => s.label === 'chart 02')!;

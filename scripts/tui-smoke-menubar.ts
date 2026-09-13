@@ -22,7 +22,7 @@ function dump(buf: ReturnType<typeof createGlyphBuffer>): string[] {
 }
 
 const metrics = createMetrics(null, { charW: 8.43, lineH: 20 });
-const COLS = 48;
+const COLS = 56;
 const ROWS = 6;
 /** First row of the two-row band (the text row); the band also covers ROW + 1. */
 const ROW = ROWS - 2;
@@ -46,7 +46,7 @@ test('lists settings then minimized windows on the bottom row', () => {
   const buf = createGlyphBuffer(ROWS, COLS);
   bar.paint(buf);
   const lines = dump(buf);
-  assert.equal(lines[ROW], ' ≡ settings │ chart 02 │ chart 05'.padEnd(COLS));
+  assert.equal(lines[ROW], '  ≡ settings  │  chart 02  │  chart 05'.padEnd(COLS), 'two padding cells around each item');
   assert.equal(lines[ROW + 1], ' '.repeat(COLS), 'lower band row is blank ground');
   for (let r = 0; r < ROW; r++) assert.equal(lines[r], '.'.repeat(COLS));
   for (let c = 0; c < COLS; c++) {
@@ -56,9 +56,14 @@ test('lists settings then minimized windows on the bottom row', () => {
   assert.equal(bar.rows, 2);
   assert.deepEqual(bar.rect(), { row: ROW, col: 0, rows: 2, cols: COLS });
   // Text glyphs carry dy 0.5 so they sit on the band's midline; the ground cells do not.
-  for (let c = 1; c < 11; c++) assert.equal(buf.get(ROW, c)?.dy, 0.5, `text col ${c}`);
-  assert.equal(buf.get(ROW, 12)?.dy, 0.5, 'separator glyph too');
-  assert.equal(buf.get(ROW, 40)?.dy, undefined, 'empty band cell');
+  for (let c = 2; c < 12; c++) assert.equal(buf.get(ROW, c)?.dy, 0.5, `text col ${c}`);
+  assert.equal(buf.get(ROW, 14)?.ch, '│');
+  assert.equal(buf.get(ROW, 14)?.dy, 0.5, 'separator glyph too');
+  assert.equal(buf.get(ROW, 45)?.dy, undefined, 'empty band cell');
+  // Spans: label + 2 pad cells each side; the first starts at the bar edge; the `│` sits between two pads.
+  const spans = bar.layout().spans;
+  assert.deepEqual(spans.map((s) => [s.col, s.cols, s.labelCol]), [[0, 14, 2], [15, 12, 17], [28, 12, 30]]);
+  assert.deepEqual(bar.pxRect(), { x: 0, y: ROW * metrics.lineH, w: COLS * metrics.charW, h: 2 * metrics.lineH });
   assert.equal(buf.get(ROW + 1, 3)?.dy, undefined, 'lower row ground');
 });
 
@@ -69,8 +74,10 @@ test('contains / cursor: pointer over items, default on empty bar, null off the 
   assert.equal(bar.cursorAt(px(3, ROW + 1)), 'pointer', 'items hit on both rows');
   assert.equal(bar.itemAt(px(3, ROW + 1))?.id, 'settings');
   assert.equal(bar.cursorAt(px(3)), 'pointer'); // inside '≡ settings'
-  assert.equal(bar.cursorAt(px(12)), 'default'); // the '│' separator cell
-  assert.equal(bar.cursorAt(px(35)), 'default'); // empty tail
+  assert.equal(bar.cursorAt(px(13)), 'pointer'); // its second trailing pad cell
+  assert.equal(bar.cursorAt(px(14)), 'default'); // the '│' separator cell
+  assert.equal(bar.cursorAt(px(15)), 'pointer'); // first pad cell of chart 02
+  assert.equal(bar.cursorAt(px(45)), 'default'); // empty tail
   assert.equal(bar.cursorAt(px(3, 0)), null);
 });
 
@@ -86,8 +93,8 @@ test('clicking the span of chart 05 calls its onSelect', () => {
 
 test('clicking empty bar space does nothing', () => {
   calls.length = 0;
-  assert.equal(bar.pointerDown(px(35)), false);
-  assert.equal(bar.pointerUp(px(35)), false);
+  assert.equal(bar.pointerDown(px(45)), false);
+  assert.equal(bar.pointerUp(px(45)), false);
   assert.equal(bar.pointerDown(px(3, 0)), false);
   assert.deepEqual(calls, []);
 });
@@ -147,7 +154,7 @@ test('status text is right-aligned with one padding cell', () => {
   statusText = 'seed 42';
   const buf = createGlyphBuffer(ROWS, COLS);
   bar.paint(buf);
-  assert.equal(dump(buf)[ROW], ' ≡ settings │ chart 02 │ chart 05       seed 42 ');
+  assert.equal(dump(buf)[ROW], '  ≡ settings  │  chart 02  │  chart 05          seed 42 ');
   assert.equal(buf.get(ROW, COLS - 2)?.dy, 0.5, 'status text is centred on the band too');
   assert.equal(bar.layout().status?.col, COLS - 1 - 'seed 42'.length);
 });
@@ -159,7 +166,7 @@ test('status truncates before overlapping items', () => {
   assert.ok(lay.status);
   assert.ok(lay.status.col >= last.col + last.cols + 1);
   assert.equal(lay.status.col + Array.from(lay.status.text).length, COLS - 1);
-  assert.equal(lay.status.text, 'fps 60 · see');
+  assert.equal(lay.status.text, 'fps 60 · seed ');
   statusText = '';
 });
 
@@ -170,16 +177,18 @@ test('status disappears when there is no room at all', () => {
 });
 
 test('items that do not fit are truncated / dropped', () => {
-  const lay = layoutMenuBar(items(), 20);
+  const lay = layoutMenuBar(items(), 24);
   assert.equal(lay.spans.length, 2);
   assert.equal(lay.spans[0].label, '≡ settings');
-  assert.equal(lay.spans[1].label, 'chart');
-  const buf = createGlyphBuffer(1, 20);
-  createMenuBar({ metrics, theme: fallbackTheme, cols: 20, row: 0, items }).paint(buf);
-  assert.equal(dump(buf)[0], ' ≡ settings │ chart ');
-  const tiny = layoutMenuBar(items(), 4);
+  assert.equal(lay.spans[1].label, 'chart', 'truncated so its trailing padding still fits');
+  assert.equal(lay.spans[1].col + lay.spans[1].cols, 24);
+  const buf = createGlyphBuffer(1, 24);
+  createMenuBar({ metrics, theme: fallbackTheme, cols: 24, row: 0, items }).paint(buf);
+  assert.equal(dump(buf)[0], '  ≡ settings  │  chart  ');
+  const tiny = layoutMenuBar(items(), 5);
   assert.equal(tiny.spans.length, 1);
-  assert.equal(tiny.spans[0].label, '≡ ');
+  assert.equal(tiny.spans[0].label, '≡');
+  assert.deepEqual(layoutMenuBar(items(), 4), { spans: [], status: null }, 'no room for a label between the pads');
   assert.deepEqual(layoutMenuBar(items(), 0), { spans: [], status: null });
 });
 
@@ -197,11 +206,20 @@ test('row and cols accept getters (top-edge bar, resize)', () => {
   assert.equal(one.contains(px(2, 1)), false);
   const b1 = createGlyphBuffer(2, 30);
   one.paint(b1);
-  assert.equal(b1.get(0, 3)?.ch, 's');
-  assert.equal(b1.get(0, 3)?.dy ?? 0, 0, 'a 1-row bar writes plain glyphs');
+  assert.equal(b1.get(0, 4)?.ch, 's');
+  assert.equal(b1.get(0, 4)?.dy ?? 0, 0, 'a 1-row bar writes plain glyphs');
   cols = 12;
   assert.equal(top.cols, 12);
   assert.equal(top.contains(px(20, 0)), false);
+  // widthPx stretches the band (ground + hit-test) past the last whole cell.
+  const wide = createMenuBar({ metrics, theme: fallbackTheme, cols: 12, row: 0, widthPx: 130, items });
+  assert.deepEqual(wide.pxRect(), { x: 0, y: 0, w: 130, h: 40 });
+  assert.equal(wide.contains({ x: 129, y: 5 }), true);
+  assert.equal(wide.contains({ x: 130, y: 5 }), false);
+  assert.equal(wide.cursorAt({ x: 129, y: 5 }), 'default');
+  assert.equal(wide.itemAt({ x: 129, y: 5 }), null);
+  const narrow = createMenuBar({ metrics, theme: fallbackTheme, cols: 12, row: 0, widthPx: 50, items });
+  assert.equal(narrow.pxRect().w, 12 * metrics.charW, 'never narrower than the cells');
 });
 
 test('spans are hit-testable through metrics.toCell at fractional charW', () => {

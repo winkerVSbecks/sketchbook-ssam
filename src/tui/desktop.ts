@@ -268,7 +268,18 @@ export function createDesktop(opts: DesktopOptions): Desktop {
     }
     return list;
   };
-  const menuBar = createMenuBar({ metrics, theme, cols: () => buffer.cols, row: barRow, rows: BAR_ROWS, bandPx, items, status: opts.status });
+  // The bar band spans the whole canvas width, not just `cols` cells.
+  const menuBar = createMenuBar({
+    metrics,
+    theme,
+    cols: () => buffer.cols,
+    row: barRow,
+    rows: BAR_ROWS,
+    bandPx,
+    widthPx: () => width,
+    items,
+    status: opts.status,
+  });
 
   // --- Composed pointer target: bar first, then the window manager -------------
   let barCaptured = false;
@@ -339,19 +350,18 @@ export function createDesktop(opts: DesktopOptions): Desktop {
 
     ctx.fillStyle = theme.bg;
     ctx.fillRect(0, 0, width, height);
-    // The canvas is rarely a whole number of rows. The strip below the last row
-    // belongs to a bottom bar's band: paint it here, in pixel space, in the
-    // band's flattened ground (the band cells above get chromeBg over bg from
-    // the blit, so a translucent chromeBg still ends up one even colour).
-    if (barSide === 'bottom') {
-      const band = menuBar.pxRect();
-      const cellsBottom = buffer.rows * metrics.lineH;
-      const remainder = band.y + band.h - cellsBottom;
-      if (remainder > 0) {
-        ctx.fillStyle = composite(theme.chromeBg, theme.bg);
-        ctx.fillRect(band.x, cellsBottom, band.w, remainder);
-      }
-    }
+    // The canvas is rarely a whole number of cells. The strips past the last
+    // column and (for a bottom bar) below the last row belong to the band: paint
+    // them here, in pixel space, in the band's flattened ground (the band cells
+    // get chromeBg over bg from the blit, so a translucent chromeBg still ends
+    // up one even colour).
+    const band = menuBar.pxRect();
+    const cellsRight = buffer.cols * metrics.charW;
+    const cellsBottom = buffer.rows * metrics.lineH;
+    ctx.fillStyle = composite(theme.chromeBg, theme.bg);
+    if (band.w > cellsRight) ctx.fillRect(cellsRight, band.y, band.w - cellsRight, band.h);
+    const below = band.y + band.h - cellsBottom;
+    if (below > 0) ctx.fillRect(band.x, cellsBottom, cellsRight, below);
     buffer.blit(ctx, metrics);
   };
 
