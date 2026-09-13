@@ -3,7 +3,7 @@ import type { CellRect } from './cells';
 import { cellRect } from './cells';
 import type { GlyphBuffer } from './grid';
 import type { TuiMetrics } from './metrics';
-import type { TuiTheme } from './theme';
+import { composite, legibleOn, type TuiTheme } from './theme';
 
 /**
  * One entry on the system bar. The desktop supplies them: first `≡ settings`
@@ -13,7 +13,7 @@ import type { TuiTheme } from './theme';
 export interface MenuItem {
   id: string;
   label: string;
-  /** Drawn in the theme's `accent` colour. */
+  /** Drawn inverted: `chromeBg` text on a `chromeFg` ground (same contrast pair as the bar). */
   active?: boolean;
   onSelect: () => void;
 }
@@ -150,9 +150,17 @@ export function createMenuBar(opts: MenuBarOptions): TuiMenuBar {
       if (i > 0) {
         buf.text(r.row, s.labelCol - MENU_SEPARATOR.length, MENU_SEPARATOR, theme.chromeFg, theme.chromeBg);
       }
-      const fg = s.item.active ? theme.accent : theme.chromeFg;
-      const bg = pressed === s.item.id ? theme.selectionBg : theme.chromeBg;
-      if (pressed === s.item.id) buf.fill(cellRect(r.row, s.col, 1, s.cols), ' ', fg, bg);
+      // Active: inverted over the whole span (label + one pad cell each side), so
+      // its contrast is the bar's own pair — `accent` never reaches the bar.
+      // Pressed: the translucent selectionBg, with text kept at AA on the flattened ground.
+      const isPressed = pressed === s.item.id;
+      const bg = s.item.active ? theme.chromeFg : isPressed ? theme.selectionBg : theme.chromeBg;
+      const fg = s.item.active
+        ? theme.chromeBg
+        : isPressed
+          ? legibleOn(composite(bg, theme.chromeBg), theme.chromeFg, theme.frameActive)
+          : theme.chromeFg;
+      if (s.item.active || isPressed) buf.fill(cellRect(r.row, s.col, 1, s.cols), ' ', fg, bg);
       buf.text(r.row, s.labelCol, s.label, fg, bg);
     });
     if (st) buf.text(r.row, st.col, st.text, theme.chromeFg, theme.chromeBg);

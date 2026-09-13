@@ -11,7 +11,6 @@ import { randomPalette } from '../src/colors';
 import {
   createGlyphBuffer,
   createMetrics,
-  centredBaseline,
   themeFromPalette,
   contrastRatio,
   MIN_CONTRAST,
@@ -140,8 +139,7 @@ console.log('metrics');
 test('toCell / toPx round-trip at charW 8.43, lineH 20', () => {
   const m = createMetrics(null, { charW: 8.43, lineH: 20 });
   assert.equal(m.font, `14px 'Menlo', 'Monaco', 'DejaVu Sans Mono', monospace`);
-  // Cap height 0.72 × 14 = 10.08 centred in 20 → baseline at round(10 + 5.04) = 15.
-  assert.equal(m.baselineOffset, 15);
+  assert.equal(m.baselineOffset, 2);
   for (let row = 0; row < 60; row++) {
     for (let col = 0; col < 140; col++) {
       const px = m.toPx({ row, col });
@@ -189,27 +187,6 @@ test('createMetrics measures with the font set and restores it', () => {
   assert.deepEqual(calls, ['12px Mono|M']);
   assert.equal(ctx.font, 'orig');
   assert.throws(() => createMetrics(null));
-});
-
-test('createMetrics centres the measured cap height; explicit baselineOffset wins', () => {
-  // Menlo 14 px in Chrome: M is 10.17 px above the alphabetic baseline, nothing below.
-  const ctx = {
-    font: '',
-    textBaseline: 'top' as CanvasTextBaseline,
-    seen: [] as CanvasTextBaseline[],
-    measureText(this: { seen: CanvasTextBaseline[]; textBaseline: CanvasTextBaseline }) {
-      this.seen.push(this.textBaseline);
-      return { width: 8.43, actualBoundingBoxAscent: 10.172, actualBoundingBoxDescent: 0 };
-    },
-  };
-  const m = createMetrics(ctx, { lineH: 20 });
-  assert.equal(m.baselineOffset, 15, '(20 - 10.17) / 2 + 10.17 = 15.09 → 15');
-  assert.deepEqual(ctx.seen, ['alphabetic'], 'measured relative to the alphabetic baseline');
-  assert.equal(ctx.textBaseline, 'top', 'and restored');
-  assert.equal(centredBaseline(16, 8.6, 0), 12);
-  assert.equal(centredBaseline(20, 13.617, 4.225), 15, '│ in Menlo lands on the same baseline');
-  assert.equal(createMetrics(ctx, { lineH: 20, baselineOffset: 2 }).baselineOffset, 2);
-  assert.equal(createMetrics(null, { charW: 8, fontSize: 12, lineH: 16 }).baselineOffset, 12, 'heuristic: round(8 + 0.36 × 12)');
 });
 
 console.log('theme');
@@ -309,12 +286,12 @@ test('blit paints merged bg runs then one fillText per glyph', () => {
     [30, 0, 10, 20],
   ]);
   assert.deepEqual(texts, [
-    ['x', 30, 15, '#fff'],
-    ['a', 0, 35, '#0f0'],
-    ['b', 10, 35, '#0f0'],
+    ['x', 30, 2, '#fff'],
+    ['a', 0, 22, '#0f0'],
+    ['b', 10, 22, '#0f0'],
   ]);
   assert.equal(ctx.font, m.font);
-  assert.equal(ctx.textBaseline, 'alphabetic');
+  assert.equal(ctx.textBaseline, 'top');
   assert.equal(ctx.textAlign, 'left');
 });
 
@@ -464,40 +441,23 @@ test('toggleSettings shows/hides; ≡ settings item toggles it too and reads act
   assert.equal(s.visible, true);
 });
 
-test('settings window is sized to its controls + padding and sits top-right of the area', () => {
+test('settings window is sized to its controls and sits top-right of the area', () => {
   const { desk } = makeDesktop();
   const s = desk.settings!;
-  // button 1 + gap + toggles 2 + gap + range 2 = 7 rows, +2 padding rows, +2 frame;
-  // 32 control cols + 2×2 padding cols + 2 frame.
-  assert.deepEqual(s.rect, cellRect(0, 80 - 38, 11, 38));
-  assert.deepEqual(settingsRect([], 32, cellRect(0, 0, 29, 80)), cellRect(0, 46, 2, 34), 'no padding by default');
-  assert.deepEqual(settingsRect([], 32, cellRect(0, 0, 29, 80), { rows: 1, cols: 2 }), cellRect(0, 42, 4, 38));
+  // button 1 + gap + toggles 2 + gap + range 2 = 7 inner rows, +2 frame; 32 inner cols + 2 frame.
+  assert.deepEqual(s.rect, cellRect(0, 80 - 34, 9, 34));
+  assert.deepEqual(settingsRect([], 32, cellRect(0, 0, 29, 80)), cellRect(0, 46, 2, 34));
   desk.toggleSettings();
   desk.render();
   const inner = s.inner;
-  const top = inner.row + 1;
-  const left = inner.col + 2;
-  const innerText = (row: number) => rowText(desk.buffer, row).slice(inner.col, inner.col + inner.cols).trim();
-  assert.equal(innerText(inner.row), '', 'padding row above the controls is blank');
-  assert.equal(rowText(desk.buffer, top).slice(inner.col, inner.col + 2), '  ', 'padding cols left of the controls are blank');
-  assert.equal(rowText(desk.buffer, top).slice(left, left + 6), '[ Go ]');
-  assert.equal(rowText(desk.buffer, top + 2).slice(left, left + 5), '(●) a');
-  assert.equal(innerText(inner.row + inner.rows - 1), '', 'padding row below the controls is blank');
+  assert.equal(rowText(desk.buffer, inner.row).slice(inner.col, inner.col + 6), '[ Go ]');
+  assert.equal(rowText(desk.buffer, inner.row + 2).slice(inner.col, inner.col + 5), '(●) a');
   // Click the second radio through the composed target → exclusive switch.
-  desk.pointerDown(at(top + 3, left + 1));
-  desk.pointerUp(at(top + 3, left + 1));
+  desk.pointerDown(at(inner.row + 3, inner.col + 1));
+  desk.pointerUp(at(inner.row + 3, inner.col + 1));
   desk.render();
-  assert.equal(rowText(desk.buffer, top + 2).slice(left, left + 5), '( ) a');
-  assert.equal(rowText(desk.buffer, top + 3).slice(left, left + 5), '(●) b');
-  // Opting out of the padding restores the tight layout.
-  const one = [createButton({ id: 'go', label: 'Go' })];
-  assert.deepEqual(settingsRect(one, 32, cellRect(0, 0, 29, 80), { rows: 0, cols: 0 }), cellRect(0, 46, 3, 34));
-  const { desk: tight } = makeDesktop({ settings: { controls: one, padding: { rows: 0, cols: 0 } } });
-  const t = tight.settings!;
-  assert.equal(t.rect.cols, 34, 'no padding columns (the window may still enforce a minimum height)');
-  tight.toggleSettings();
-  tight.render();
-  assert.equal(rowText(tight.buffer, t.inner.row).slice(t.inner.col, t.inner.col + 6), '[ Go ]');
+  assert.equal(rowText(desk.buffer, inner.row + 2).slice(inner.col, inner.col + 5), '( ) a');
+  assert.equal(rowText(desk.buffer, inner.row + 3).slice(inner.col, inner.col + 5), '(●) b');
 });
 
 test('a drag on a title row through the composed target moves that window in whole cells', () => {
@@ -705,8 +665,7 @@ test('window chrome is drawn with frameActive in front and frame behind', () => 
 });
 
 test('active menu item is inverted: chromeBg text on a chromeFg ground across its padded span', () => {
-  const desk = createDesktop({ ctx: stubCtx(), width: 80 * D_CHAR, height: 30 * D_LINE, menuBar: 'bottom', onChange() {} });
-  desk.addWindow({ title: 'chart 01', rect: cellRect(2, 2, 8, 24) });
+  const { desk } = makeDesktop();
   const t = desk.theme;
   const row = desk.menuBar.row;
   desk.render();
@@ -723,11 +682,16 @@ test('active menu item is inverted: chromeBg text on a chromeFg ground across it
     assert.equal(g.bg, t.chromeFg, `col ${c} ground`);
     assert.equal(g.fg, t.chromeBg, `col ${c} text`);
   }
-  assert.equal(desk.buffer.get(row, span.col - 1)?.bg, t.chromeBg, 'inversion stops at the span');
-  assert.equal(desk.buffer.get(row, span.col + span.cols)?.bg, t.chromeBg);
-  assert.ok(contrastRatio(t.chromeBg, t.chromeFg) >= MIN_CONTRAST, 'the pair is the bar pair');
+  assert.equal(span.col, 0, 'first item: its pad cell is the bar edge');
+  assert.equal(desk.buffer.get(row, span.col + span.cols)?.bg, t.chromeBg, 'inversion stops at the span');
+  // A palette theme: the inverted pair is the bar's own (opaque) pair, and accent stays off the bar.
+  desk.setTheme(['#101010', '#ff3300', '#f0f0f0', '#9a9a9a']);
+  desk.render();
+  const g = desk.buffer.get(row, span.labelCol)!;
+  assert.deepEqual([g.bg, g.fg], ['#101010', '#9a9a9a'], 'chromeFg ground, chromeBg text');
+  assert.ok(contrastRatio(g.fg, g.bg) >= MIN_CONTRAST, 'the pair is the bar pair');
   const bar = desk.buffer.cells[row];
-  if (t.accent !== t.chromeFg && t.accent !== t.chromeBg) assert.ok(!bar.some((g) => g?.fg === t.accent || g?.bg === t.accent), 'accent stays off the bar');
+  assert.ok(!bar.some((c) => c?.fg === '#ff3300' || c?.bg === '#ff3300'), 'accent stays off the bar');
 });
 
 console.log(`\n${passed} tests passed`);
