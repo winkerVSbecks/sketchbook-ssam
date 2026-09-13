@@ -5434,6 +5434,22 @@
    "#e09030"
   ]
  },
+ "sketches/terminal-ui/layered-compositions": {
+  "bg": "#ff5518",
+  "bgL": 0.677,
+  "meanL": 0.647,
+  "meanC": 0.1996,
+  "ink": 0.132,
+  "hue": 45,
+  "hueShare": 0.995,
+  "colors": [
+   "#201000",
+   "#401000",
+   "#f07040",
+   "#f07050",
+   "#f08060"
+  ]
+ },
  "sketches/test": {
   "bg": "#1a1a1a",
   "bgL": 0.218,

@@ -40,13 +40,13 @@
   },
   {
     "id": "sketches/canvas-ui/torsions",
-    "description": "Seven white blocks hanging from the top edge, each twisted about its vertical axis; front and back faces split at bezier intersections",
+    "description": "Seven blocks hanging from the top edge, each twisted about its vertical axis; front, back and edge faces filled from a Mindful palette",
     "concepts": ["tool-study", "systematic-variation", "minimalism"],
     "techniques": ["bezier-curves", "curve-intersection", "easing"],
     "forms": ["ribbons", "curves", "rectangles"],
     "medium": "canvas2d",
     "motion": "interactive",
-    "palette": "black-and-white",
+    "palette": "mindful-palettes",
     "influences": [],
     "system": "canvas-ui",
     "notable": "Front/back faces come from intersecting the outer bezier of one edge with the inner bezier of the other and splitting both at t"
@@ -79,13 +79,13 @@
   },
   {
     "id": "sketches/flatland/flatland-truncation",
-    "description": "A regular polygon whose vertices slide toward edge midpoints, cutting off the corners; white over orange on a green, peach and yellow ground",
+    "description": "A regular polygon whose vertices slide toward edge midpoints, cutting off the corners; two Mindful-palette fills on bare paper",
     "concepts": ["tool-study", "concrete-art", "geometric-construction", "systematic-variation"],
     "techniques": ["polar-geometry", "polygon-truncation"],
-    "forms": ["polygons", "rectangles", "triangles"],
+    "forms": ["polygons", "triangles"],
     "medium": "canvas2d",
     "motion": "interactive",
-    "palette": "custom-hex",
+    "palette": "mindful-palettes",
     "influences": [],
     "system": "canvas-ui",
     "notable": "A fractional vertex count yields ceil(n) vertices spaced 360/n apart: the original's non-closing polygons, kept deliberately"

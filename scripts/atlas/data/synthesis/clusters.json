@@ -477,6 +477,7 @@
     "sketches/grid-stairs/ascii-layer",
     "sketches/quine",
     "sketches/terminal-charts/layered-compositions",
+    "sketches/terminal-ui/layered-compositions",
     "sketches/terminal-charts/compositions",
     "sketches/terminal-charts/terminal-charts",
     "sketches/terminal-charts/terminal-charts-patterns",

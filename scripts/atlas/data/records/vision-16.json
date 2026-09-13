@@ -35,13 +35,13 @@
   {
     "id": "sketches/canvas-ui/torsions",
     "bg": "light",
-    "palette": "monochrome",
-    "hues": ["grey", "black", "white"],
+    "palette": "limited",
+    "hues": ["pink", "orange", "yellow", "black"],
     "density": "medium",
     "composition": ["bands-vertical", "full-bleed-field"],
     "texture": ["outlined", "flat-shapes", "hard-edge"],
     "energy": "moderate",
-    "keywords": ["twisted-ribbons", "blinds", "columns", "helix", "graph-paper"]
+    "keywords": ["twisted-ribbons", "hourglass-columns", "pink-over-orange", "yellow-edge-sliver", "graph-paper"]
   },
   {
     "id": "sketches/flatland/napoleon",
@@ -67,14 +67,14 @@
   },
   {
     "id": "sketches/flatland/flatland-truncation",
-    "bg": "colored",
-    "palette": "limited",
-    "hues": ["green", "orange", "yellow", "pink"],
-    "density": "medium",
-    "composition": ["centered-figure", "asymmetric-blocks", "diagonal"],
+    "bg": "light",
+    "palette": "duotone",
+    "hues": ["pink", "orange"],
+    "density": "sparse",
+    "composition": ["single-object", "asymmetric-blocks"],
     "texture": ["flat-shapes", "hard-edge"],
-    "energy": "moderate",
-    "keywords": ["rounded-polygon", "color-blocking", "poster-like", "retro-palette"]
+    "energy": "calm",
+    "keywords": ["rounded-triangle", "offset-pair", "graph-paper", "lots-of-white"]
   },
   {
     "id": "sketches/flatland/flatland-grid",

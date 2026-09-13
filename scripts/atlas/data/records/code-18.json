@@ -1,0 +1,15 @@
+[
+  {
+    "id": "sketches/terminal-ui/layered-compositions",
+    "description": "The terminal-charts weave laid out as a glyph-grid desktop: every chart is a draggable, resizable box-drawing window over a system bar",
+    "concepts": ["textile", "weaving-structure", "typography", "tool-study", "self-reference"],
+    "techniques": ["ascii-render", "trig-waves", "tiling", "space-filling"],
+    "forms": ["windows", "grid", "lines", "waves", "glyphs"],
+    "medium": "canvas2d",
+    "motion": "interactive",
+    "palette": "generated",
+    "influences": [],
+    "system": "tui",
+    "notable": "Patterns are built in local cell coordinates, so dragging a window is free and only a resize rebuilds; the sketch fills the viewport instead of declaring dimensions"
+  }
+]

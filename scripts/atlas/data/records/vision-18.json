@@ -1,0 +1,13 @@
+[
+  {
+    "id": "sketches/terminal-ui/layered-compositions",
+    "bg": "colored",
+    "palette": "limited",
+    "hues": ["orange", "black", "blue", "white"],
+    "density": "medium",
+    "composition": ["asymmetric-blocks", "framed", "grid-array"],
+    "texture": ["pixelated", "flat-shapes", "outlined"],
+    "energy": "moderate",
+    "keywords": ["terminal-desktop", "box-drawing-windows", "ascii-weave", "menu-bar", "landscape-frame"]
+  }
+]
