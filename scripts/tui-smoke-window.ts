@@ -94,6 +94,101 @@ test('active window uses the double frame; buttons hit-test', () => {
   assert.equal(w.buttonAt({ row: 6, col: 28 }), null);
 });
 
+test('double-click on the title toggles maximize like [□]', () => {
+  let t = 0;
+  const w = make({ now: () => t });
+  const title = px(5, 13);
+  const original = rectOf(w);
+  w.pointerDown(title);
+  w.pointerUp(title);
+  t += 200;
+  assert.equal(w.pointerDown(title), true);
+  assert.equal(w.maximized, true, 'two presses 200 ms apart maximize');
+  assert.equal(w.dragging, null, 'the second press starts no move drag');
+  assert.deepEqual(rectOf(w), BOUNDS);
+  w.pointerUp(px(0, 3));
+  // The timer is reset: a third press soon after is a fresh first press…
+  t += 100;
+  w.pointerDown(px(0, 3));
+  assert.equal(w.maximized, true, 'third press alone does not toggle');
+  assert.equal(w.dragging, 'move');
+  w.pointerUp(px(0, 3));
+  // …and its own partner restores.
+  t += 200;
+  w.pointerDown(px(0, 3));
+  assert.equal(w.maximized, false, 'double-click again restores');
+  assert.deepEqual(rectOf(w), original);
+  w.pointerUp(px(5, 13));
+});
+
+test('slow, far-apart, button and non-maximizable presses do not maximize', () => {
+  let t = 0;
+  const slow = make({ now: () => t });
+  slow.pointerDown(px(5, 13));
+  slow.pointerUp(px(5, 13));
+  t += 600;
+  slow.pointerDown(px(5, 13));
+  assert.equal(slow.maximized, false, '600 ms apart is two single clicks');
+  assert.equal(slow.dragging, 'move', 'the second press is a normal move drag');
+  slow.pointerUp(px(5, 13));
+
+  t = 0;
+  const far = make({ now: () => t });
+  far.pointerDown(px(5, 13));
+  far.pointerUp(px(5, 13));
+  t += 200;
+  far.pointerDown(px(5, 16));
+  assert.equal(far.maximized, false, 'a second press more than one cell away is not a double-click');
+  assert.equal(far.dragging, 'move');
+  far.pointerUp(px(5, 16));
+  // …but a neighbouring cell counts.
+  t = 0;
+  const near = make({ now: () => t });
+  near.pointerDown(px(5, 13));
+  near.pointerUp(px(5, 13));
+  t += 200;
+  near.pointerDown(px(5, 14));
+  assert.equal(near.maximized, true, 'one cell of slack');
+  near.pointerUp(px(0, 3));
+
+  t = 0;
+  for (const col of [20, 28]) {
+    const btn = make({ now: () => t });
+    btn.pointerDown(px(5, col));
+    t += 100;
+    btn.pointerDown(px(5, col));
+    assert.equal(btn.maximized, false, `two presses on the button at col ${col} never maximize`);
+    assert.equal(btn.dragging, null);
+  }
+  // A title press followed quickly by a button press does not arm the next title press.
+  t = 0;
+  const mixed = make({ now: () => t });
+  mixed.pointerDown(px(5, 13));
+  mixed.pointerUp(px(5, 13));
+  t += 100;
+  mixed.pointerDown(px(5, 20));
+  t += 100;
+  mixed.pointerDown(px(5, 13));
+  assert.equal(mixed.maximized, false);
+
+  t = 0;
+  const fixed = make({ now: () => t, maximizable: false });
+  fixed.pointerDown(px(5, 13));
+  fixed.pointerUp(px(5, 13));
+  t += 200;
+  fixed.pointerDown(px(5, 13));
+  assert.equal(fixed.maximized, false, 'a non-maximizable window ignores the double-click');
+  assert.equal(fixed.dragging, null, 'but still swallows the second press');
+
+  t = 0;
+  const quick = make({ now: () => t, doubleClickMs: 100 });
+  quick.pointerDown(px(5, 13));
+  quick.pointerUp(px(5, 13));
+  t += 150;
+  quick.pointerDown(px(5, 13));
+  assert.equal(quick.maximized, false, 'doubleClickMs is honoured');
+});
+
 test('drag title by 25 px at charW 8 moves 3 cols', () => {
   const w = make();
   assert.equal(w.pointerDown({ x: 12 * CHAR_W, y: 5 * LINE_H + 3 }), true);

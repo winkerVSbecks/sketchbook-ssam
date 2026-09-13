@@ -4,7 +4,9 @@
  * Chrome is all glyphs (theme.frame / theme.frameActive): a 1-cell box frame whose top row doubles as the title
  * row — ` title ` inset at the left, `[–][□][×]` (minimize, maximize, close)
  * at the right end — and whose bottom-right corner is the resize grip. The
- * front window uses the 'double' box style, others 'single'.
+ * front window uses the 'double' box style, others 'single'. Double-clicking
+ * the title row (two presses within `doubleClickMs`, one cell apart at most)
+ * toggles maximize like `[□]`; the pointer plumbing has no dblclick event.
  *
  * Pointer methods take pixel points (the `UIWindow` contract) and convert to
  * cells through `metrics.toCell`; drags snap to whole cells and stay inside
@@ -44,6 +46,10 @@ export interface TuiWindowOptions {
   closable?: boolean;
   minimizable?: boolean;
   maximizable?: boolean;
+  /** Two title-row presses this close in time toggle maximize (default 350 ms). */
+  doubleClickMs?: number;
+  /** Clock for double-click timing, in ms (default `performance.now`); injectable for tests. */
+  now?: () => number;
   /**
    * Host-wired predicate: when it returns false the window never draws the
    * double frame / highlighted title, whatever `active` says (default: always true).
@@ -106,6 +112,11 @@ export function createTuiWindow(opts: TuiWindowOptions): TuiWindow {
   let hoverGrip = false;
   let pressed: TuiWindowButton | null = null;
   let drag: { kind: 'move' | 'resize'; start: Cell; from: CellRect } | null = null;
+  /** Last press on the title row (not a button), for double-click detection. */
+  let lastTitlePress: { at: number; cell: Cell } | null = null;
+  const doubleClickMs = opts.doubleClickMs ?? 350;
+  const now = opts.now ?? (() => (typeof performance !== 'undefined' ? performance.now() : Date.now()));
+  const maximizable = opts.maximizable ?? true;
   let contentCaptured = false;
 
   const fitSize = (r: CellRect): CellRect => ({
@@ -221,6 +232,7 @@ export function createTuiWindow(opts: TuiWindowOptions): TuiWindow {
       const b = buttonAt(cell);
       if (b) {
         pressed = b;
+        lastTitlePress = null;
         return true;
       }
       if (isGrip(cell)) {
@@ -229,6 +241,18 @@ export function createTuiWindow(opts: TuiWindowOptions): TuiWindow {
         return true;
       }
       if (cell.row === top()) {
+        // Double-click: a second title press within doubleClickMs and one cell of
+        // the first toggles maximize (like [□]) instead of starting a move drag.
+        const at = now();
+        const prev = lastTitlePress;
+        const near = prev && Math.abs(cell.row - prev.cell.row) <= 1 && Math.abs(cell.col - prev.cell.col) <= 1;
+        if (prev && near && at - prev.at <= doubleClickMs) {
+          lastTitlePress = null;
+          drag = null;
+          if (maximizable) win.toggleMaximize();
+          return true;
+        }
+        lastTitlePress = { at, cell };
         drag = { kind: 'move', start: cell, from: { ...rect } };
         return true;
       }
