@@ -9,6 +9,11 @@
  * painted last so nothing can cover it. `render()` clears the buffer, paints
  * wallpaper → windows (back-to-front) → bar, then blits once. Everything but
  * the blit is pure cell logic, so the desktop runs headless with a stub ctx.
+ *
+ * The grid follows the canvas: `resize(width, height)` rebuilds the buffer,
+ * moves the bar and re-clamps every window into the new area. A bottom bar's
+ * band runs flush to the canvas edge — the `height − rows · lineH` remainder
+ * is painted as part of it, not left as a bare strip.
  */
 import { attachPointer, createUI } from '../ui';
 import type { Cursor, PointerMods, PointerTarget, Pt, UI } from '../ui';
@@ -18,7 +23,7 @@ import { createControlHost, type LayoutPadding, type TuiControl } from './contro
 import { createGlyphBuffer, type BlitContext, type GlyphBuffer } from './grid';
 import { createMenuBar, type MenuItem, type TuiMenuBar } from './menubar';
 import { createMetrics, type TextMeasurer, type TuiMetrics } from './metrics';
-import { fallbackTheme, themeFromPalette, type TuiTheme } from './theme';
+import { composite, fallbackTheme, themeFromPalette, type TuiTheme } from './theme';
 import { createTuiWindow, type TuiWindow, type TuiWindowOptions } from './window';
 
 /** What the desktop needs from a 2D context: glyph measuring + the blit. `CanvasRenderingContext2D` satisfies it. */
@@ -50,6 +55,7 @@ export interface DesktopOptions {
   ctx: DesktopContext;
   /** Omit for headless use (node tests): no pointer or keyboard listeners are attached. */
   canvas?: HTMLCanvasElement;
+  /** Initial canvas size in logical pixels; `resize()` updates it. */
   width: number;
   height: number;
   /** Sketch palette (`palette[0]` = background) mapped through `themeFromPalette`… */
@@ -76,11 +82,15 @@ export interface DesktopOptions {
 
 export interface Desktop extends PointerTarget {
   readonly metrics: TuiMetrics;
+  /** Glyph buffer for the current size (a fresh one after a `resize` that changes rows/cols). */
   readonly buffer: GlyphBuffer;
+  /** Current canvas size in logical pixels. */
+  readonly width: number;
+  readonly height: number;
   readonly ui: UI;
   readonly theme: TuiTheme;
   readonly menuBar: TuiMenuBar;
-  /** Desktop area in cells: the whole buffer minus the bar band (`BAR_ROWS` rows). */
+  /** Desktop area in cells: the whole buffer minus the bar band (`BAR_ROWS` rows). Updated in place by `resize`. */
   readonly area: CellRect;
   /** Sketch windows in z-order (back → front), excluding the settings window. */
   readonly windows: TuiWindow[];
@@ -100,6 +110,11 @@ export interface Desktop extends PointerTarget {
   toggleSettings(): void;
   /** Restore every minimized window (what the `h` key does). */
   restoreAll(): void;
+  /**
+   * Follow the canvas: recompute rows/cols and the area, move the bar, re-clamp
+   * every window into the new area (maximized windows re-fit). Wire to `wrap.resize`.
+   */
+  resize(width: number, height: number): void;
   /** Paint one frame: bg, wallpaper, windows back-to-front, bar; blit. */
   render(): void;
   dispose(): void;
@@ -113,8 +128,12 @@ export const BAR_ROWS = 2;
 const DEFAULT_SETTINGS_COLS = 32;
 const DEFAULT_SETTINGS_PADDING: Required<LayoutPadding> = { rows: 1, cols: 2 };
 
+const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+
 export function createDesktop(opts: DesktopOptions): Desktop {
-  const { ctx, width, height, onChange, onDragEnd } = opts;
+  const { ctx, onChange, onDragEnd } = opts;
+  let width = opts.width;
+  let height = opts.height;
   const theme: TuiTheme = opts.theme ?? (opts.palette ? themeFromPalette(opts.palette) : { ...fallbackTheme });
   const metrics = createMetrics(ctx, {
     fontSize: opts.font?.size,
@@ -122,14 +141,19 @@ export function createDesktop(opts: DesktopOptions): Desktop {
     family: opts.font?.family ?? theme.font,
     charW: opts.font?.charW,
   });
-  const rows = metrics.rows(height);
-  const cols = metrics.cols(width);
-  const buffer = createGlyphBuffer(rows, cols);
+  let buffer = createGlyphBuffer(metrics.rows(height), metrics.cols(width));
 
   const barSide = opts.menuBar ?? 'bottom';
-  const barRow = barSide === 'bottom' ? Math.max(0, rows - BAR_ROWS) : 0;
-  const areaRows = Math.max(0, rows - BAR_ROWS);
-  const area: CellRect = barSide === 'bottom' ? cellRect(0, 0, areaRows, cols) : cellRect(BAR_ROWS, 0, areaRows, cols);
+  const barRow = () => (barSide === 'bottom' ? Math.max(0, buffer.rows - BAR_ROWS) : 0);
+  /** A bottom band reaches the canvas edge: its pixel height includes the remainder below the last row. */
+  const bandPx = () => (barSide === 'bottom' ? Math.max(0, height - barRow() * metrics.lineH) : BAR_ROWS * metrics.lineH);
+  /** One stable object (windows and sketches hold references); `layoutArea` updates it in place. */
+  const area: CellRect = cellRect(0, 0, 0, 0);
+  const layoutArea = () => {
+    const areaRows = Math.max(0, buffer.rows - BAR_ROWS);
+    Object.assign(area, barSide === 'bottom' ? cellRect(0, 0, areaRows, buffer.cols) : cellRect(BAR_ROWS, 0, areaRows, buffer.cols));
+  };
+  layoutArea();
 
   const ui = createUI({ onDragEnd: () => onDragEnd?.() });
   const size = (): [number, number] => [width, height];
@@ -209,6 +233,29 @@ export function createDesktop(opts: DesktopOptions): Desktop {
     for (const w of tuiWindows()) if (w.minimized) w.restore();
   };
 
+  /** Keep a window inside the (new) area: shrink to fit, then slide back in. */
+  const clampIntoArea = (w: TuiWindow) => {
+    const r = w.rect;
+    const rows = Math.min(r.rows, Math.max(1, area.rows));
+    const cols = Math.min(r.cols, Math.max(1, area.cols));
+    const row = clamp(r.row, area.row, Math.max(area.row, area.row + area.rows - rows));
+    const col = clamp(r.col, area.col, Math.max(area.col, area.col + area.cols - cols));
+    if (row !== r.row || col !== r.col || rows !== r.rows || cols !== r.cols) w.setRect(cellRect(row, col, rows, cols));
+  };
+
+  const resize = (w: number, h: number) => {
+    width = w;
+    height = h;
+    const rows = metrics.rows(h);
+    const cols = metrics.cols(w);
+    if (rows !== buffer.rows || cols !== buffer.cols) buffer = createGlyphBuffer(rows, cols);
+    layoutArea();
+    for (const win of tuiWindows()) {
+      win.bounds = area; // re-fits a maximized window
+      if (!win.maximized) clampIntoArea(win);
+    }
+  };
+
   // --- Menu bar ----------------------------------------------------------------
   const items = (): MenuItem[] => {
     const list: MenuItem[] = [];
@@ -221,7 +268,7 @@ export function createDesktop(opts: DesktopOptions): Desktop {
     }
     return list;
   };
-  const menuBar = createMenuBar({ metrics, theme, cols, row: barRow, rows: BAR_ROWS, items, status: opts.status });
+  const menuBar = createMenuBar({ metrics, theme, cols: () => buffer.cols, row: barRow, rows: BAR_ROWS, bandPx, items, status: opts.status });
 
   // --- Composed pointer target: bar first, then the window manager -------------
   let barCaptured = false;
@@ -292,12 +339,33 @@ export function createDesktop(opts: DesktopOptions): Desktop {
 
     ctx.fillStyle = theme.bg;
     ctx.fillRect(0, 0, width, height);
-    buffer.blit(ctx, metrics, theme.bg);
+    // The canvas is rarely a whole number of rows. The strip below the last row
+    // belongs to a bottom bar's band: paint it here, in pixel space, in the
+    // band's flattened ground (the band cells above get chromeBg over bg from
+    // the blit, so a translucent chromeBg still ends up one even colour).
+    if (barSide === 'bottom') {
+      const band = menuBar.pxRect();
+      const cellsBottom = buffer.rows * metrics.lineH;
+      const remainder = band.y + band.h - cellsBottom;
+      if (remainder > 0) {
+        ctx.fillStyle = composite(theme.chromeBg, theme.bg);
+        ctx.fillRect(band.x, cellsBottom, band.w, remainder);
+      }
+    }
+    buffer.blit(ctx, metrics);
   };
 
   return {
     metrics,
-    buffer,
+    get buffer() {
+      return buffer;
+    },
+    get width() {
+      return width;
+    },
+    get height() {
+      return height;
+    },
     ui,
     theme,
     menuBar,
@@ -322,6 +390,7 @@ export function createDesktop(opts: DesktopOptions): Desktop {
     removeWindow: (win) => ui.remove(win),
     toggleSettings,
     restoreAll,
+    resize,
     render,
     hitTest: target.hitTest!,
     pointerDown: (pt: Pt, mods?: PointerMods) => target.pointerDown(pt, mods),

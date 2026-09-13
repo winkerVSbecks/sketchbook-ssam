@@ -359,8 +359,9 @@ test('cell rect helpers', () => {
 
 console.log('desktop');
 
-/** Stub 2D context: measures 'M' as 8 px and records blit calls. */
-function stubCtx(): DesktopContext & { rects: number; texts: number } {
+type Fill = { x: number; y: number; w: number; h: number; style: string };
+/** Stub 2D context: measures 'M' as 8 px and records blit calls (`fills` keeps every fillRect with its style). */
+function stubCtx(): DesktopContext & { rects: number; texts: number; fills: Fill[] } {
   return {
     font: '',
     fillStyle: '',
@@ -368,9 +369,11 @@ function stubCtx(): DesktopContext & { rects: number; texts: number } {
     textAlign: 'start',
     rects: 0,
     texts: 0,
+    fills: [],
     measureText: () => ({ width: 8 }),
-    fillRect() {
+    fillRect(x: number, y: number, w: number, h: number) {
       this.rects++;
+      this.fills.push({ x, y, w, h, style: String(this.fillStyle) });
     },
     fillText() {
       this.texts++;
@@ -427,6 +430,76 @@ test('grid from width/height; two-row bar at the bottom; area is everything abov
   const top = createDesktop({ ctx: stubCtx(), width: 80 * D_CHAR, height: 30 * D_LINE, menuBar: 'top', onChange() {} });
   assert.equal(top.menuBar.row, 0);
   assert.deepEqual(top.area, cellRect(2, 0, 28, 80));
+});
+
+test('bottom band absorbs the canvas remainder: ground to the bottom edge, hit-test and text centred on the real height', () => {
+  // 30 rows of 20 px plus a 7 px remainder: the band is rows 28–29 and the strip below.
+  const ctx = stubCtx();
+  const desk = createDesktop({ ctx, width: 80 * D_CHAR, height: 30 * D_LINE + 7, onNewWindow() {}, onChange() {} });
+  assert.equal(desk.buffer.rows, 30);
+  assert.equal(desk.height, 607);
+  assert.deepEqual(desk.menuBar.rect(), cellRect(28, 0, 2, 80));
+  assert.deepEqual(desk.menuBar.pxRect(), { x: 0, y: 560, w: 640, h: 47 }, 'band top px 560, 47 px tall');
+  assert.equal(desk.hitTest!({ x: 10, y: 605 }), true, 'the strip below the last row is part of the band');
+  assert.equal(desk.menuBar.cursorAt({ x: 10, y: 605 }), 'pointer', 'items are reachable from the strip too');
+  assert.equal(desk.menuBar.cursorAt({ x: 400, y: 605 }), 'default');
+  assert.equal(desk.hitTest!({ x: 10, y: 559 }), false);
+  desk.render();
+  const dy = (47 / 20 - 1) / 2;
+  assert.equal(desk.buffer.get(28, 1)?.ch, '+');
+  assert.equal(desk.buffer.get(28, 1)?.dy, dy, 'text centred on the 47 px band, not on two rows');
+  const strip = ctx.fills.find((f) => f.y === 600);
+  assert.deepEqual(strip, { x: 0, y: 600, w: 640, h: 7, style: composite(desk.theme.chromeBg, desk.theme.bg) }, 'remainder strip painted in the flattened chrome');
+  assert.equal(ctx.fills[0].h, 607, 'bg fill covers the whole canvas first');
+  // An exact number of rows: nothing extra to paint, dy is the plain half row.
+  const exact = stubCtx();
+  const even = createDesktop({ ctx: exact, width: 80 * D_CHAR, height: 30 * D_LINE, onNewWindow() {}, onChange() {} });
+  even.render();
+  assert.deepEqual(even.menuBar.pxRect(), { x: 0, y: 560, w: 640, h: 40 });
+  assert.equal(even.buffer.get(28, 1)?.dy, 0.5);
+  assert.equal(exact.fills.filter((f) => f.y === 600).length, 0);
+  // A top bar leaves the remainder to the desktop ground.
+  const topCtx = stubCtx();
+  const top = createDesktop({ ctx: topCtx, width: 80 * D_CHAR, height: 30 * D_LINE + 7, menuBar: 'top', onChange() {} });
+  top.render();
+  assert.deepEqual(top.menuBar.pxRect(), { x: 0, y: 0, w: 640, h: 40 });
+  assert.equal(topCtx.fills.filter((f) => f.y === 600).length, 0);
+});
+
+test('resize: rows/cols/area follow the canvas; the bar moves; windows re-clamp and a maximized one re-fits', () => {
+  const { desk, w1, w3 } = makeDesktop();
+  w3.toggleMaximize();
+  assert.deepEqual(w3.rect, cellRect(0, 0, 28, 80));
+  w1.setRect(cellRect(20, 56, 8, 24)); // bottom-right corner of the 28×80 area
+  const area = desk.area;
+  desk.resize(60 * D_CHAR, 20 * D_LINE);
+  assert.equal(desk.width, 480);
+  assert.equal(desk.buffer.rows, 20);
+  assert.equal(desk.buffer.cols, 60);
+  assert.equal(desk.area, area, 'area object is stable');
+  assert.deepEqual(desk.area, cellRect(0, 0, 18, 60));
+  assert.equal(desk.menuBar.row, 18);
+  assert.deepEqual(desk.menuBar.rect(), cellRect(18, 0, 2, 60));
+  assert.deepEqual(w3.rect, cellRect(0, 0, 18, 60), 'maximized window re-fits');
+  assert.equal(w3.maximized, true);
+  assert.deepEqual(w1.rect, cellRect(10, 36, 8, 24), 'slid back inside the area');
+  assert.deepEqual(w1.bounds, desk.area);
+  desk.render();
+  assert.ok(rowText(desk.buffer, 18).startsWith(' ≡ settings'), 'bar painted on its new row');
+  assert.equal(desk.buffer.cells.length, 20);
+  // Growing back moves nothing.
+  desk.resize(80 * D_CHAR, 30 * D_LINE);
+  assert.deepEqual(w1.rect, cellRect(10, 36, 8, 24));
+  assert.deepEqual(w3.rect, cellRect(0, 0, 28, 80));
+  // An area smaller than a window shrinks it to fit.
+  desk.resize(20 * D_CHAR, 8 * D_LINE);
+  assert.deepEqual(desk.area, cellRect(0, 0, 6, 20));
+  assert.deepEqual(w1.rect, cellRect(0, 0, 6, 20));
+  // Same grid size: the buffer is kept.
+  const buf = desk.buffer;
+  desk.resize(20 * D_CHAR + 3, 8 * D_LINE + 5);
+  assert.equal(desk.buffer, buf);
+  assert.deepEqual(desk.menuBar.pxRect(), { x: 0, y: 120, w: 160, h: 45 });
 });
 
 test('addWindow ×3, minimize one: 2 visible, bar lists the minimized title, selecting it restores + fronts', () => {

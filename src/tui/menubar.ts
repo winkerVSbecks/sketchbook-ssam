@@ -1,4 +1,4 @@
-import type { Cursor, Pt, UIWindow } from '../ui';
+import type { Cursor, Pt, Rect, UIWindow } from '../ui';
 import type { CellRect } from './cells';
 import { cellRect } from './cells';
 import type { GlyphBuffer } from './grid';
@@ -27,6 +27,12 @@ export interface MenuBarOptions {
   row: number | (() => number);
   /** Height of the band in rows (default 2): the ground fills every row; the text sits on the upper row with `dy` centring it on the band. */
   rows?: number;
+  /**
+   * Pixel height of the band when it is taller than `rows` rows: a bottom bar
+   * absorbs the canvas remainder below the last row (`height − rows · lineH`),
+   * so its hit-test and text centring use the real height. Default `rows · lineH`.
+   */
+  bandPx?: number | (() => number);
   /** Current items, queried on every layout/draw/hit-test. */
   items: () => MenuItem[];
   /** Optional right-aligned status text (seed, fps…). Truncated before it would overlap items. */
@@ -57,6 +63,8 @@ export interface TuiMenuBar extends UIWindow {
   /** The bar's width in cells (evaluated now). */
   readonly cols: number;
   rect(): CellRect;
+  /** The band in pixels: `rect()` converted, but `bandPx` tall (the ground the desktop paints reaches the canvas edge). */
+  pxRect(): Rect;
   layout(): MenuBarLayout;
   /** Item whose span covers buffer column `col`, or null. */
   itemAtCol(col: number): MenuItem | null;
@@ -124,11 +132,16 @@ export function createMenuBar(opts: MenuBarOptions): TuiMenuBar {
   const getCols = () => Math.max(0, Math.floor(typeof opts.cols === 'function' ? opts.cols() : opts.cols));
   const getRow = () => Math.floor(typeof opts.row === 'function' ? opts.row() : opts.row);
   const getRows = () => Math.max(1, Math.floor(opts.rows ?? 2));
+  const getBandPx = () => {
+    const px = typeof opts.bandPx === 'function' ? opts.bandPx() : opts.bandPx;
+    return Math.max(getRows() * metrics.lineH, px ?? 0);
+  };
 
   /** Id of the item the pointer went down on; selection fires on `pointerUp` over the same item. */
   let pressed: string | null = null;
 
   const rect = (): CellRect => cellRect(getRow(), 0, getRows(), getCols());
+  const pxRect = (): Rect => ({ x: 0, y: getRow() * metrics.lineH, w: getCols() * metrics.charW, h: getBandPx() });
   const layout = (): MenuBarLayout => layoutMenuBar(items(), getCols(), status?.());
 
   const spanAtCol = (col: number): MenuSpan | null => {
@@ -140,15 +153,14 @@ export function createMenuBar(opts: MenuBarOptions): TuiMenuBar {
   const itemAtCol = (col: number): MenuItem | null => spanAtCol(col)?.item ?? null;
 
   const inBar = (pt: Pt): boolean => {
-    const c = metrics.toCell(pt);
-    const row = getRow();
-    return c.row >= row && c.row < row + getRows() && c.col >= 0 && c.col < getCols();
+    const r = pxRect();
+    return pt.x >= r.x && pt.x < r.x + r.w && pt.y >= r.y && pt.y < r.y + r.h;
   };
   const itemAt = (pt: Pt): MenuItem | null =>
     inBar(pt) ? itemAtCol(metrics.toCell(pt).col) : null;
 
-  /** Text is written on the upper row, shifted down so its em box is centred on the band's midline (0 for a 1-row bar). */
-  const textDy = () => (getRows() - 1) / 2;
+  /** Text is written on the upper row, shifted down so its em box is centred on the band's real (pixel) midline (0 for a 1-row bar). */
+  const textDy = () => (getBandPx() / metrics.lineH - 1) / 2;
 
   const paint = (buf: GlyphBuffer) => {
     const r = rect();
@@ -192,6 +204,7 @@ export function createMenuBar(opts: MenuBarOptions): TuiMenuBar {
       return getRows();
     },
     rect,
+    pxRect,
     layout,
     itemAtCol,
     itemAt,

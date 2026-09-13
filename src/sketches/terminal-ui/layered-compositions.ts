@@ -4,7 +4,8 @@
  * terminal-charts original is a `TuiWindow` (drag, resize, minimize, close),
  * and its Tweakpane is the desktop's `≡ settings` window. Patterns live in
  * local cell coordinates (see ./patterns), so moving a window is free and
- * resizing rebuilds the pattern for the new size.
+ * resizing rebuilds the pattern for the new size. The sketch fills the
+ * viewport (no fixed `dimensions`); `wrap.resize` hands the new size to the desktop.
  */
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
@@ -271,6 +272,8 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     };
   }
 
+  wrap.resize = ({ width, height }: SketchProps) => desktop.resize(width, height);
+
   wrap.render = ({ playhead }: SketchProps) => {
     if (animate) offset = Math.floor(playhead * BUFFER_N) % BUFFER_N;
     desktop.render();
@@ -279,7 +282,7 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
 
 export const settings: SketchSettings = {
   mode: '2d',
-  dimensions: [1080, 1080],
+  // No `dimensions`: ssam sizes the canvas to the viewport and calls `wrap.resize` on window resize.
   pixelRatio: window.devicePixelRatio,
   animate: true,
   duration: 8_000,
