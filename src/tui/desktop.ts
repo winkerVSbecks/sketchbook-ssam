@@ -14,7 +14,7 @@ import { attachPointer, createUI } from '../ui';
 import type { Cursor, PointerMods, PointerTarget, Pt, UI } from '../ui';
 
 import { cellRect, type CellRect } from './cells';
-import { createControlHost, type TuiControl } from './controls';
+import { createControlHost, type LayoutPadding, type TuiControl } from './controls';
 import { createGlyphBuffer, type BlitContext, type GlyphBuffer } from './grid';
 import { createMenuBar, type MenuItem, type TuiMenuBar } from './menubar';
 import { createMetrics, type TextMeasurer, type TuiMetrics } from './metrics';
@@ -37,8 +37,13 @@ export interface DesktopSettingsOptions {
   rect?: CellRect;
   /** Start visible (default false). */
   open?: boolean;
-  /** Inner width in cells when sizing automatically (default 32). */
+  /** Width available to the controls, in cells, when sizing automatically (default 32); padding is added on top. */
   cols?: number;
+  /**
+   * Breathing space between the frame and the controls (default 1 row / 2 cols).
+   * The automatic window size grows by it so nothing is clipped.
+   */
+  padding?: LayoutPadding;
 }
 
 export interface DesktopOptions {
@@ -100,6 +105,7 @@ export interface Desktop extends PointerTarget {
 
 const SETTINGS_ID = '≡ settings';
 const DEFAULT_SETTINGS_COLS = 32;
+const DEFAULT_SETTINGS_PADDING: Required<LayoutPadding> = { rows: 1, cols: 2 };
 
 export function createDesktop(opts: DesktopOptions): Desktop {
   const { ctx, width, height, onChange, onDragEnd } = opts;
@@ -166,8 +172,12 @@ export function createDesktop(opts: DesktopOptions): Desktop {
   let settings: TuiWindow | null = null;
   if (opts.settings) {
     const s = opts.settings;
-    const host = createControlHost(s.controls);
-    const rect = s.rect ?? settingsRect(s.controls, s.cols ?? DEFAULT_SETTINGS_COLS, area);
+    const padding: Required<LayoutPadding> = {
+      rows: s.padding?.rows ?? DEFAULT_SETTINGS_PADDING.rows,
+      cols: s.padding?.cols ?? DEFAULT_SETTINGS_PADDING.cols,
+    };
+    const host = createControlHost(s.controls, padding);
+    const rect = s.rect ?? settingsRect(s.controls, s.cols ?? DEFAULT_SETTINGS_COLS, area, padding);
     settings = createTuiWindow({
       metrics,
       theme,
@@ -320,11 +330,19 @@ export function createDesktop(opts: DesktopOptions): Desktop {
 
 /**
  * Size a settings window to its controls (stacked with one blank row between,
- * plus the 1-cell frame) and place it in the top-right corner of `area`.
+ * plus `padding` on every side and the 1-cell frame) and place it in the
+ * top-right corner of `area`. `innerCols` is the width the controls get.
  */
-export function settingsRect(controls: readonly TuiControl[], innerCols: number, area: CellRect): CellRect {
+export function settingsRect(
+  controls: readonly TuiControl[],
+  innerCols: number,
+  area: CellRect,
+  padding: number | LayoutPadding = 0,
+): CellRect {
+  const padRows = typeof padding === 'number' ? padding : (padding.rows ?? 0);
+  const padCols = typeof padding === 'number' ? padding : (padding.cols ?? 0);
   const innerRows = controls.reduce((sum, c, i) => sum + c.rows(innerCols) + (i > 0 ? 1 : 0), 0);
-  const cols = Math.min(area.cols, innerCols + 2);
-  const rows = Math.min(area.rows, innerRows + 2);
+  const cols = Math.min(area.cols, innerCols + 2 * padCols + 2);
+  const rows = Math.min(area.rows, innerRows + 2 * padRows + 2);
   return cellRect(area.row, area.col + area.cols - cols, rows, cols);
 }

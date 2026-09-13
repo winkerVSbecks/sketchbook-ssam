@@ -11,6 +11,7 @@ import {
   createRange,
   createToggleGroup,
   layoutControls,
+  padInner,
 } from '../src/tui/controls';
 
 let passed = 0;
@@ -24,6 +25,9 @@ const dump = (buf: ReturnType<typeof createGlyphBuffer>): string[] =>
   buf.cells.map((line) => line.map((g) => g?.ch ?? '.').join(''));
 
 const at = (row: number, col: number) => ({ row, col });
+/** One row as text, empty cells as spaces. */
+const rowText = (buf: ReturnType<typeof createGlyphBuffer>, row: number): string =>
+  buf.cells[row].map((g) => g?.ch ?? ' ').join('');
 
 console.log('controls');
 
@@ -166,6 +170,37 @@ test('layout: overflow is clipped, hidden controls get rows 0', () => {
   ];
   const rects = layoutControls(controls, cellRect(0, 0, 4, 10));
   assert.deepEqual(rects.map((r) => [r.row, r.rows]), [[0, 2], [3, 1], [4, 0]]);
+});
+
+test('layout: padding insets the controls; a padded host lays out and hit-tests the same way', () => {
+  const controls = [
+    createButton({ id: 'b', label: 'B' }),
+    createRange({ id: 'r', label: 'r', min: 0, max: 1, value: 0 }),
+  ];
+  const inner = cellRect(2, 3, 10, 20);
+  assert.deepEqual(layoutControls(controls, inner, { rows: 1, cols: 2 }), [
+    { row: 3, col: 5, rows: 1, cols: 16 },
+    { row: 5, col: 5, rows: 2, cols: 16 },
+  ]);
+  assert.deepEqual(layoutControls(controls, inner, 1), layoutControls(controls, inner, { rows: 1, cols: 1 }));
+  assert.deepEqual(layoutControls(controls, inner), layoutControls(controls, inner, 0));
+  // Padding larger than the rect collapses to an empty content area, never negative.
+  assert.deepEqual(padInner(cellRect(0, 0, 2, 4), { rows: 3, cols: 5 }), cellRect(3, 5, 0, 0));
+  assert.ok(layoutControls(controls, cellRect(0, 0, 2, 4), 3).every((r) => r.rows === 0));
+
+  let pressed = 0;
+  const btn = createButton({ id: 'p', label: 'Go', onPress: () => pressed++ });
+  const host = createControlHost([btn], { rows: 1, cols: 2 });
+  const buf = createGlyphBuffer(12, 24);
+  host.draw(buf, inner, fallbackTheme);
+  assert.equal(rowText(buf, 3).slice(5, 11), '[ Go ]', 'drawn inside the padding');
+  assert.equal(rowText(buf, 2).trim(), '', 'padding row stays blank');
+  assert.equal(host.pointerDown(at(2, 3), inner), false, 'the padding is not part of the button');
+  assert.equal(host.pointerDown(at(3, 6), inner), true);
+  assert.equal(host.pointerUp(at(3, 6), inner), true);
+  assert.equal(pressed, 1);
+  assert.equal(host.cursorAt(at(3, 6), inner), 'pointer');
+  assert.equal(host.cursorAt(at(3, 4), inner), null);
 });
 
 test('host: routes down/move/up to the hit control, tracks hover, clips drawing', () => {

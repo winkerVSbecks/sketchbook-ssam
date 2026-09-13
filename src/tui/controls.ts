@@ -357,19 +357,47 @@ export function createRange({
 
 // ─── Layout + host ──────────────────────────────────────────────────────────
 
+/** Breathing space between a window's inner rect and its controls, in cells. */
+export interface LayoutPadding {
+  rows?: number;
+  cols?: number;
+}
+
+const resolvePadding = (p: number | LayoutPadding): { rows: number; cols: number } =>
+  typeof p === 'number'
+    ? { rows: Math.max(0, p), cols: Math.max(0, p) }
+    : { rows: Math.max(0, p.rows ?? 0), cols: Math.max(0, p.cols ?? 0) };
+
+/** `inner` shrunk by `padding` on every side (never negative). */
+export function padInner(inner: CellRect, padding: number | LayoutPadding): CellRect {
+  const p = resolvePadding(padding);
+  return cellRect(
+    inner.row + p.rows,
+    inner.col + p.cols,
+    Math.max(0, inner.rows - 2 * p.rows),
+    Math.max(0, inner.cols - 2 * p.cols),
+  );
+}
+
 /**
- * Stack controls top-to-bottom inside `inner` with one blank row between.
- * Returns one rect per control (same order). Controls that overflow are
- * clipped to the remaining rows — an entirely hidden control gets `rows: 0`.
+ * Stack controls top-to-bottom inside `inner` (inset by `padding`, default 0)
+ * with one blank row between. Returns one rect per control (same order).
+ * Controls that overflow are clipped to the remaining rows — an entirely
+ * hidden control gets `rows: 0`.
  */
-export function layoutControls(controls: readonly TuiControl[], inner: CellRect): CellRect[] {
+export function layoutControls(
+  controls: readonly TuiControl[],
+  inner: CellRect,
+  padding: number | LayoutPadding = 0,
+): CellRect[] {
+  const content = padInner(inner, padding);
   const rects: CellRect[] = [];
-  let row = inner.row;
-  const bottom = inner.row + inner.rows;
+  let row = content.row;
+  const bottom = content.row + content.rows;
   for (const c of controls) {
-    const want = Math.max(0, c.rows(inner.cols));
-    const rect = cellRect(row, inner.col, want, inner.cols);
-    rects.push(intersectCellRect(rect, inner));
+    const want = Math.max(0, c.rows(content.cols));
+    const rect = cellRect(row, content.col, want, content.cols);
+    rects.push(intersectCellRect(rect, content));
     row += want + 1;
     if (row >= bottom) row = bottom;
   }
@@ -378,10 +406,13 @@ export function layoutControls(controls: readonly TuiControl[], inner: CellRect)
 
 /**
  * Routes a window's inner-rect events to its controls: lays them out per call
- * (the inner rect can change with a resize), tracks hover for `hot`, and
- * captures the control that took `pointerDown` until `pointerUp`.
+ * (the inner rect can change with a resize) inset by `padding`, tracks hover
+ * for `hot`, and captures the control that took `pointerDown` until `pointerUp`.
  */
-export function createControlHost(controls: readonly TuiControl[]): TuiContentHandler {
+export function createControlHost(
+  controls: readonly TuiControl[],
+  padding: number | LayoutPadding = 0,
+): TuiContentHandler {
   let hot = -1;
   let captured = -1;
 
@@ -390,7 +421,7 @@ export function createControlHost(controls: readonly TuiControl[]): TuiContentHa
 
   return {
     draw(buf, inner, theme) {
-      const rects = layoutControls(controls, inner);
+      const rects = layoutControls(controls, inner, padding);
       controls.forEach((c, i) => {
         const r = rects[i];
         if (isEmptyCellRect(r)) return;
@@ -398,7 +429,7 @@ export function createControlHost(controls: readonly TuiControl[]): TuiContentHa
       });
     },
     pointerDown(cell, inner) {
-      const rects = layoutControls(controls, inner);
+      const rects = layoutControls(controls, inner, padding);
       const i = indexAt(cell, rects);
       if (i < 0) return false;
       captured = i;
@@ -406,7 +437,7 @@ export function createControlHost(controls: readonly TuiControl[]): TuiContentHa
       return controls[i].pointerDown(cell, rects[i]);
     },
     pointerMove(cell, inner) {
-      const rects = layoutControls(controls, inner);
+      const rects = layoutControls(controls, inner, padding);
       if (captured >= 0) return controls[captured].pointerMove(cell, rects[captured]);
       const i = indexAt(cell, rects);
       const changed = i !== hot;
@@ -415,7 +446,7 @@ export function createControlHost(controls: readonly TuiControl[]): TuiContentHa
     },
     pointerUp(cell, inner) {
       if (captured < 0) return false;
-      const rects = layoutControls(controls, inner);
+      const rects = layoutControls(controls, inner, padding);
       const i = captured;
       captured = -1;
       const changed = controls[i].pointerUp(cell, rects[i]);
@@ -425,7 +456,7 @@ export function createControlHost(controls: readonly TuiControl[]): TuiContentHa
       return changed || hotChanged;
     },
     cursorAt(cell, inner) {
-      const rects = layoutControls(controls, inner);
+      const rects = layoutControls(controls, inner, padding);
       if (captured >= 0) return controls[captured].cursorAt(cell, rects[captured]);
       const i = indexAt(cell, rects);
       return i < 0 ? null : controls[i].cursorAt(cell, rects[i]);

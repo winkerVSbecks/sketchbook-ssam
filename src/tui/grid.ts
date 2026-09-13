@@ -209,8 +209,10 @@ export function createGlyphBuffer(rows: number, cols: number): GlyphBuffer {
           col = end;
         }
       }
+      // Glyphs sit on the alphabetic baseline at `baselineOffset`, which
+      // `createMetrics` places so the reference glyph is centred in the row.
       ctx.font = m.font;
-      ctx.textBaseline = 'top';
+      ctx.textBaseline = 'alphabetic';
       ctx.textAlign = 'left';
       for (let row = 0; row < rows; row++) {
         const line = cells[row];
