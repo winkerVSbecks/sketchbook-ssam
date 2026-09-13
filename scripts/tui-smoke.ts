@@ -702,6 +702,58 @@ test('a drag on a title row through the composed target moves that window in who
   assert.equal(w1.rect.col + w1.rect.cols, desk.area.cols);
 });
 
+test('keyDown: Tab / Shift+Tab cycle focus through the visible windows in z-order; Esc and h', () => {
+  const { desk, w1, w2, w3, changes } = makeDesktop();
+  const s = desk.settings!;
+  assert.deepEqual(desk.windows, [w1, w2, w3]);
+  assert.equal(desk.keyDown('Tab'), true);
+  assert.deepEqual(desk.windows, [w2, w3, w1], 'the back-most window comes to the front');
+  desk.render();
+  assert.equal(w1.active, true);
+  assert.equal(w3.active, false);
+  desk.keyDown('Tab');
+  desk.keyDown('Tab');
+  assert.deepEqual(desk.windows, [w1, w2, w3], 'wraps after every window');
+  assert.equal(desk.keyDown('Tab', { shiftKey: true }), true);
+  assert.deepEqual(desk.windows, [w3, w1, w2], 'Shift+Tab: the front goes to the back, the one under it is front');
+  desk.keyDown('Tab', { shiftKey: true });
+  assert.deepEqual(desk.windows, [w2, w3, w1]);
+  desk.keyDown('Tab', { shiftKey: false });
+  assert.deepEqual(desk.windows, [w3, w1, w2], 'Shift+Tab then Tab is a round trip');
+  // Minimized and closed windows are skipped and untouched.
+  w3.minimized = true;
+  w3.visible = false;
+  desk.keyDown('Tab');
+  assert.deepEqual(desk.windows, [w3, w2, w1], 'w3 stays at the back, w1 fronted');
+  assert.equal(w3.minimized, true);
+  w2.visible = false; // closed
+  desk.keyDown('Tab');
+  assert.deepEqual(desk.windows, [w3, w2, w1], 'a single stop: nothing moves');
+  w2.visible = true;
+  // Settings open: Tab closes it first, then cycles; settings is never a stop.
+  desk.toggleSettings();
+  assert.equal(s.visible, true);
+  assert.equal(desk.ui.windows[desk.ui.windows.length - 1], s);
+  desk.keyDown('Tab');
+  assert.equal(s.visible, false, 'settings closed');
+  assert.deepEqual(desk.windows, [w3, w1, w2], 'and the cycle went on');
+  desk.render();
+  assert.equal(w2.active, true);
+  // Esc only does something while settings is visible; h restores minimized windows; other keys fall through.
+  assert.equal(desk.keyDown('Escape'), false);
+  desk.toggleSettings();
+  assert.equal(desk.keyDown('Escape'), true);
+  assert.equal(s.visible, false);
+  assert.equal(desk.keyDown('h'), true);
+  assert.equal(w3.minimized, false);
+  assert.equal(w3.visible, true);
+  assert.equal(desk.keyDown('x'), false);
+  assert.equal(changes(), 0, 'headless: no DOM listener, keyDown itself never calls onChange');
+  // Tab is always handled (so the DOM listener can preventDefault), even with nothing to cycle.
+  const bare = createDesktop({ ctx: stubCtx(), width: 80 * D_CHAR, height: 30 * D_LINE, onChange() {} });
+  assert.equal(bare.keyDown('Tab'), true);
+});
+
 test('the bar swallows clicks over it, even where a window would otherwise be', () => {
   const { desk, w1 } = makeDesktop();
   // Move chart 01 flush against the bar, then click the bar's empty space right below its title row.

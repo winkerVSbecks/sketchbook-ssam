@@ -111,6 +111,14 @@ export interface Desktop extends PointerTarget {
   /** Restore every minimized window (what the `h` key does). */
   restoreAll(): void;
   /**
+   * Keyboard entry point (the DOM listener calls it; tests call it directly):
+   * `Escape` hides settings, `h` restores every minimized window, `Tab` fronts
+   * the next visible window in z-order and `Shift+Tab` the previous one
+   * (wrapping, minimized and closed windows skipped, settings closed first).
+   * Returns true when the key did something.
+   */
+  keyDown(key: string, mods?: { shiftKey?: boolean }): boolean;
+  /**
    * Follow the canvas: recompute rows/cols and the area, move the bar, re-clamp
    * every window into the new area (maximized windows re-fit). Wire to `wrap.resize`.
    */
@@ -233,6 +241,40 @@ export function createDesktop(opts: DesktopOptions): Desktop {
     for (const w of tuiWindows()) if (w.minimized) w.restore();
   };
 
+  /**
+   * Tab order is z-order: the front window is last, so "next" wraps to the
+   * back-most visible window and "previous" sends the front one to the back
+   * (the window just under it becomes the front). Settings is not a stop.
+   */
+  const cycleFocus = (dir: 1 | -1) => {
+    if (settings?.visible) settings.visible = false;
+    const stops = tuiWindows().filter((w) => w.visible && !w.minimized && w !== settings);
+    if (stops.length < 2) return;
+    if (dir === 1) {
+      ui.bringToFront(stops[0]);
+    } else {
+      const front = stops[stops.length - 1];
+      ui.windows.splice(ui.windows.indexOf(front), 1);
+      ui.windows.unshift(front);
+    }
+  };
+
+  const keyDown = (key: string, mods?: { shiftKey?: boolean }): boolean => {
+    if (key === 'Tab') {
+      cycleFocus(mods?.shiftKey ? -1 : 1);
+      return true;
+    }
+    if (key === 'Escape' && settings?.visible) {
+      settings.visible = false;
+      return true;
+    }
+    if (key === 'h') {
+      restoreAll();
+      return true;
+    }
+    return false;
+  };
+
   /** Keep a window inside the (new) area: shrink to fit, then slide back in. */
   const clampIntoArea = (w: TuiWindow) => {
     const r = w.rect;
@@ -315,14 +357,10 @@ export function createDesktop(opts: DesktopOptions): Desktop {
   const disposePointer = opts.canvas ? attachPointer(opts.canvas, target, size, { onChange }) : () => {};
 
   const onKey = (e: KeyboardEvent) => {
-    if (e.key === 'Escape' && settings?.visible) {
-      settings.visible = false;
-      onChange();
-    }
-    if (e.key === 'h') {
-      restoreAll();
-      onChange();
-    }
+    if (!keyDown(e.key, e)) return;
+    // Tab must not move the browser's focus off the canvas.
+    if (e.key === 'Tab') e.preventDefault();
+    onChange();
   };
   const hasDom = typeof window !== 'undefined' && !!opts.canvas;
   if (hasDom) window.addEventListener('keydown', onKey);
@@ -400,6 +438,7 @@ export function createDesktop(opts: DesktopOptions): Desktop {
     removeWindow: (win) => ui.remove(win),
     toggleSettings,
     restoreAll,
+    keyDown,
     resize,
     render,
     hitTest: target.hitTest!,

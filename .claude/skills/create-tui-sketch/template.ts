@@ -75,8 +75,8 @@ __CASES__
   // The desktop owns the glyph buffer, the windows (drag by title, double-click
   // the title to maximize, resize by the bottom-right grip, [–][□][×]), the
   // two-row menu bar (`+ new` + `≡ settings` + minimized windows) and the
-  // pointer/keyboard wiring: `Esc` hides settings, `h`
-  // restores minimized windows. See src/tui/desktop.ts for every option.
+  // pointer/keyboard wiring: `Tab`/`Shift+Tab` cycle window focus, `Esc` hides
+  // settings, `h` restores minimized windows. See src/tui/desktop.ts for every option.
   const desktop: Desktop = createDesktop({
     ctx: context,
     canvas,
