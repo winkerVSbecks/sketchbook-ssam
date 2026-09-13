@@ -5,12 +5,18 @@
  */
 import assert from 'node:assert/strict';
 
+import Random from 'canvas-sketch-util/random';
+
+import { randomPalette } from '../src/colors';
 import {
   createGlyphBuffer,
   createMetrics,
   themeFromPalette,
   contrastRatio,
   MIN_CONTRAST,
+  AA_CONTRAST,
+  composite,
+  legibleOn,
   parseColor,
   fallbackTheme,
   withAlpha,
@@ -581,6 +587,81 @@ test('setTheme retints the shared theme in place: windows, bar and render pick i
   assert.equal(desk.theme.bg, '#333333');
   assert.equal(w1.theme.accent, '#123456');
   assert.notEqual(desk.theme, custom, 'copied in, not swapped');
+});
+
+console.log('frame contrast');
+
+test('frame / frameActive reach AA against bg and differ, across seeded palettes', () => {
+  const palettes: Array<[string, readonly string[]]> = [
+    ['pale', ['#FCFAFA', '#FEEEEE', '#F7D7D7', '#3A3A3A']],
+    ['dark', ['#101010', '#ff3300', '#f0f0f0', '#9a9a9a']],
+  ];
+  for (let i = 0; i < 12; i++) {
+    Random.setSeed(String(1000 + i));
+    palettes.push([`seed ${1000 + i}`, randomPalette()]);
+  }
+  for (const [name, palette] of palettes) {
+    const t = themeFromPalette(palette);
+    const fr = contrastRatio(t.frame, t.bg);
+    const ar = contrastRatio(t.frameActive, t.bg);
+    assert.ok(fr >= AA_CONTRAST, `${name}: frame ${t.frame} on ${t.bg} is ${fr.toFixed(2)}:1`);
+    assert.ok(ar >= AA_CONTRAST, `${name}: frameActive ${t.frameActive} on ${t.bg} is ${ar.toFixed(2)}:1`);
+    assert.notEqual(t.frame, t.frameActive, `${name}: frames must differ`);
+    assert.ok(ar > fr, `${name}: the active frame is the stronger one`);
+    assert.match(t.frame, /^#[0-9a-f]{6}$/, `${name}: frame is opaque hex, not a translucent dim`);
+    // Highlighted text keeps AA on its own ground: pressed buttons and the front title.
+    const pressedBg = composite(t.selectionBg, t.bg);
+    assert.ok(contrastRatio(legibleOn(pressedBg, t.frame, t.frameActive), pressedBg) >= AA_CONTRAST, `${name}: pressed button text`);
+    assert.ok(contrastRatio(legibleOn(t.chromeBg, t.chromeFg, t.frameActive), t.chromeBg) >= AA_CONTRAST, `${name}: title text`);
+  }
+  // Known values: a strong ink is the active frame; the quiet frame fades toward bg.
+  const pale = themeFromPalette(palettes[0][1]);
+  assert.equal(pale.frameActive, '#3a3a3a');
+  assert.equal(pale.frame, '#747373');
+  // An ink under 7:1 is pushed toward black/white so the quiet frame has room below it.
+  const low = themeFromPalette(['#333333', '#aaaaaa', '#ff0000']);
+  assert.ok(contrastRatio(low.frameActive, low.bg) >= 7, low.frameActive);
+  assert.notEqual(low.frameActive, '#aaaaaa');
+  // Nothing in the palette reaches AA → pure black / white, whichever contrasts more.
+  const blue = themeFromPalette(['#0067E2', '#DBCCC5']);
+  assert.equal(blue.frameActive, '#ffffff');
+  assert.ok(contrastRatio(blue.frame, blue.bg) >= AA_CONTRAST);
+  // The fallback theme's explicit values meet the same bar.
+  assert.ok(contrastRatio(fallbackTheme.frame, fallbackTheme.bg) >= AA_CONTRAST);
+  assert.ok(contrastRatio(fallbackTheme.frameActive, fallbackTheme.bg) >= AA_CONTRAST);
+  // Unreadable backgrounds cannot be measured: both frames are the ink.
+  assert.equal(themeFromPalette(['hsl(0 0% 5%)', 'white']).frame, 'white');
+});
+
+test('composite flattens translucent colours; legibleOn falls back to black / white', () => {
+  assert.equal(composite('rgba(255, 255, 255, 0.5)', '#000000'), '#808080');
+  assert.equal(composite('#ff000080', '#ffffff'), '#ff7f7f', '0x80 / 255 rounds down');
+  assert.equal(composite('#ff0000', '#ffffff'), '#ff0000', 'opaque colours pass through');
+  assert.equal(composite('hsl(0 0% 5%)', '#fff'), 'hsl(0 0% 5%)', 'unreadable colours pass through');
+  assert.equal(legibleOn('#ffffff', '#777777', '#000000'), '#000000', 'skips a 4.48:1 grey');
+  assert.equal(legibleOn('#ffffff', '#767676'), '#767676', '4.54:1 passes');
+  assert.equal(legibleOn('#7b7b7b', '#888888'), '#000000');
+  assert.equal(legibleOn('#202020'), '#ffffff');
+});
+
+test('window chrome is drawn with frameActive in front and frame behind', () => {
+  const desk = createDesktop({ ctx: stubCtx(), width: 80 * D_CHAR, height: 30 * D_LINE, menuBar: 'top', onChange() {} });
+  const back = desk.addWindow({ title: 'back', rect: cellRect(2, 2, 8, 24) });
+  const front = desk.addWindow({ title: 'front', rect: cellRect(12, 30, 8, 24) });
+  desk.render();
+  const b = desk.buffer;
+  const t = desk.theme;
+  assert.equal(b.get(front.rect.row, front.rect.col)?.ch, '╔');
+  assert.equal(b.get(front.rect.row, front.rect.col)?.fg, t.frameActive, 'front corner');
+  assert.equal(b.get(back.rect.row, back.rect.col)?.ch, '┌');
+  assert.equal(b.get(back.rect.row, back.rect.col)?.fg, t.frame, 'back corner');
+  assert.equal(b.get(back.rect.row, back.rect.col + 3)?.fg, t.frame, 'back title text');
+  assert.equal(b.get(back.rect.row + back.rect.rows - 1, back.rect.col + back.rect.cols - 1)?.fg, t.frame, 'back grip');
+  assert.equal(b.get(front.rect.row + front.rect.rows - 1, front.rect.col + front.rect.cols - 1)?.fg, t.frameActive, 'front grip');
+  const title = b.get(front.rect.row, front.rect.col + 3)!;
+  assert.equal(title.bg, t.chromeBg);
+  assert.ok(contrastRatio(title.fg, title.bg) >= AA_CONTRAST, 'front title text is AA on the chrome');
+  assert.ok(!Object.values(b.cells.flat()).some((g) => g?.fg === t.dim), 'no frame glyph uses the translucent dim');
 });
 
 console.log(`\n${passed} tests passed`);

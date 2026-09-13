@@ -5,8 +5,12 @@ export interface TuiTheme {
   bg: string;
   /** Body text and frames. */
   fg: string;
-  /** Secondary text, inactive frames, grips. */
+  /** Secondary text in controls (translucent; not for frames). */
   dim: string;
+  /** Inactive window frames — box glyphs, title, buttons, grip. Solid, ≥ `AA_CONTRAST` against `bg`. */
+  frame: string;
+  /** Front-window frame. Solid, ≥ `AA_CONTRAST` against `bg` and visibly stronger than `frame`. */
+  frameActive: string;
   /** Highlights: active toggles, range thumbs, front-window title. */
   accent: string;
   /** Menu bar + window title-row background. */
@@ -24,6 +28,8 @@ export const fallbackTheme: TuiTheme = {
   bg: '#0b0b0c',
   fg: '#f2f2f2',
   dim: 'rgba(255, 255, 255, 0.4)',
+  frame: '#7a7a7a',
+  frameActive: '#f2f2f2',
   accent: '#ffffff',
   chromeBg: 'rgba(255, 255, 255, 0.12)',
   chromeFg: '#f2f2f2',
@@ -64,29 +70,55 @@ function args(body: string): number[] {
  * channels. `null` for anything else (named colours, hsl, …).
  */
 export function parseColor(color: string): Rgb | null {
+  const c = parseRgba(color);
+  return c ? [c[0], c[1], c[2]] : null;
+}
+
+type Rgba = readonly [number, number, number, number];
+
+/** Like `parseColor`, plus the alpha (0–1, default 1) from `#rrggbbaa`, `rgba(…, a)` or `… / a`. */
+function parseRgba(color: string): Rgba | null {
   const c = color.trim();
   const hex = /^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.exec(c);
   if (hex) {
     let h = hex[1];
     if (h.length === 3) h = h.split('').map((ch) => ch + ch).join('');
-    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+    const a = h.length === 8 ? parseInt(h.slice(6, 8), 16) / 255 : 1;
+    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16), a];
   }
   const fn = /^(rgba?|oklab|oklch)\((.*)\)$/i.exec(c);
   if (!fn) return null;
   const v = args(fn[2]);
   if (v.length < 3 || v.some((n) => Number.isNaN(n))) return null;
+  const a = v.length > 3 ? Math.min(1, Math.max(0, v[3])) : 1;
   switch (fn[1].toLowerCase()) {
     case 'rgb':
     case 'rgba':
-      return [clamp255(v[0]), clamp255(v[1]), clamp255(v[2])];
+      return [clamp255(v[0]), clamp255(v[1]), clamp255(v[2]), a];
     case 'oklab':
-      return oklabToRgb(v[0], v[1], v[2]);
+      return [...oklabToRgb(v[0], v[1], v[2]), a];
     case 'oklch': {
       const h = (v[2] * Math.PI) / 180;
-      return oklabToRgb(v[0], v[1] * Math.cos(h), v[1] * Math.sin(h));
+      return [...oklabToRgb(v[0], v[1] * Math.cos(h), v[1] * Math.sin(h)), a];
     }
   }
   return null;
+}
+
+const toHex = ([r, g, b]: Rgb): string => '#' + [r, g, b].map((v) => clamp255(v).toString(16).padStart(2, '0')).join('');
+
+/** Gamma-space mix: `t` = 0 → `a`, 1 → `b`. */
+const mix = (a: Rgb, b: Rgb, t: number): Rgb => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t].map(clamp255) as unknown as Rgb;
+
+/**
+ * A translucent colour flattened over a solid one → opaque `#rrggbb`, so its
+ * contrast can be measured. Opaque or unreadable colours come back unchanged.
+ */
+export function composite(color: string, over: string): string {
+  const c = parseRgba(color);
+  const o = parseColor(over);
+  if (!c || !o || c[3] >= 1) return color;
+  return toHex(mix(o, [c[0], c[1], c[2]], c[3]));
 }
 
 /**
@@ -124,8 +156,66 @@ function chroma(color: string): number {
   return c ? Math.max(...c) - Math.min(...c) : 0;
 }
 
-/** Minimum contrast against `bg` for text / frames and for the chrome ground (WCAG large-text AA). */
+/** Minimum contrast against `bg` for body text and for the chrome ground (WCAG large-text AA). */
 export const MIN_CONTRAST = 3;
+
+/** Minimum contrast for window frames and highlighted text (WCAG text-level AA). */
+export const AA_CONTRAST = 4.5;
+
+/** Contrast the active frame aims for so the quiet frame (at `AA_CONTRAST`) reads as visibly quieter (WCAG AAA). */
+const ACTIVE_CONTRAST = 7;
+
+/** Pure black or white — whichever contrasts more with `bg` (always ≥ 4.58:1 against any opaque colour). */
+function extremeInk(bg: string): string {
+  return contrastRatio('#000000', bg) >= contrastRatio('#ffffff', bg) ? '#000000' : '#ffffff';
+}
+
+/**
+ * Binary-search the gamma-space mix of `from` toward `to` for the point where
+ * `contrastRatio(mix, bg)` crosses `min`. `keepAbove` = true returns the
+ * furthest mix that still reaches `min` (fading toward `to`); false returns
+ * the nearest mix that reaches `min` (strengthening toward `to`), or `to`
+ * itself when even that falls short. Luminance is monotonic in the mix.
+ */
+function mixToContrast(from: string, to: string, bg: string, min: number, keepAbove: boolean): string {
+  const a = parseColor(from);
+  const b = parseColor(to);
+  if (!a || !b) return from;
+  const ok = (t: number) => contrastRatio(toHex(mix(a, b, t)), bg) >= min;
+  if (keepAbove ? !ok(0) : ok(0)) return toHex(a);
+  if (!keepAbove && !ok(1)) return toHex(b);
+  // Invariant: ok(lo) === keepAbove, ok(hi) === !keepAbove.
+  let lo = 0;
+  let hi = 1;
+  for (let i = 0; i < 16; i++) {
+    const mid = (lo + hi) / 2;
+    if (ok(mid) === keepAbove) lo = mid;
+    else hi = mid;
+  }
+  return toHex(mix(a, b, keepAbove ? lo : hi));
+}
+
+/**
+ * The first of `preferred` that reaches `AA_CONTRAST` against `bg`, else pure
+ * black or white. For text drawn over highlights whose ground is not `bg`.
+ * Translucent `bg` values should be flattened with `composite` first.
+ */
+export function legibleOn(bg: string, ...preferred: string[]): string {
+  return preferred.find((c) => contrastRatio(c, bg) >= AA_CONTRAST) ?? extremeInk(bg);
+}
+
+/**
+ * Frame pair for `bg` from the ink: `frameActive` is the ink when it reaches
+ * `ACTIVE_CONTRAST`, else the ink pushed toward pure black/white until it does
+ * (or as far as possible); `frame` is `frameActive` faded toward `bg` as far as
+ * `AA_CONTRAST` allows. Both are opaque hex strings ≥ 4.5:1 against any opaque
+ * `bg` (pure black/white alone guarantees 4.58:1). `ink` must be legible.
+ */
+function framePair(ink: string, bg: string): { frame: string; frameActive: string } {
+  const frameActive = mixToContrast(ink, extremeInk(bg), bg, ACTIVE_CONTRAST, false);
+  const frame = mixToContrast(frameActive, bg, bg, AA_CONTRAST, true);
+  return { frame, frameActive };
+}
 
 /**
  * Contrast-aware mapping from a sketch palette (palette[0] = background, as
@@ -137,7 +227,9 @@ export const MIN_CONTRAST = 3;
  *   else fg) · chromeBg = the
  *   remaining entry with the highest contrast against bg (must reach
  *   `MIN_CONTRAST`, else fg) · dim = fg @ 45 % · chromeFg = bg ·
- *   selectionBg = accent @ 30 %.
+ *   selectionBg = accent @ 30 % · frameActive / frame = the ink (or the
+ *   highest-contrast entry reaching `AA_CONTRAST`, else pure black/white)
+ *   and its fade toward bg, both ≥ `AA_CONTRAST` — see `framePair`.
  * Ties keep palette order, so the result is deterministic. Palettes whose
  * background `parseColor` cannot read use the positional mapping
  * ([1] fg · [2] accent · [3] chromeBg). Missing entries fall through to `fallbackTheme`.
@@ -151,12 +243,15 @@ export function themeFromPalette(palette: readonly string[]): TuiTheme {
   let ink: string;
   let hi: string;
   let chromeBg: string;
+  let frames: { frame: string; frameActive: string };
   if (!bgRgb || candidates.length === 0) {
     // Positional fallback: unknown colour strings, or no readable entries besides bg.
     const [, fg, accent, chrome] = palette;
     ink = fg ?? (bgRgb && luminance(bgRgb) > 0.5 ? fallbackTheme.bg : fallbackTheme.fg);
     hi = accent ?? ink;
     chromeBg = chrome ?? hi;
+    // Unmeasurable: both frames are the ink; the box style alone tells the states apart.
+    frames = bgRgb ? framePair(ink, bg) : { frame: ink, frameActive: ink };
   } else {
     const byContrast = (list: string[]) =>
       list.reduce((best, c) => (contrastRatio(c, bg) > contrastRatio(best, bg) ? c : best));
@@ -176,12 +271,18 @@ export function themeFromPalette(palette: readonly string[]): TuiTheme {
     const chromeCandidates = rest.filter((c) => c !== vividRest);
     const bestChrome = chromeCandidates.length ? byContrast(chromeCandidates) : rest.length ? hi : ink;
     chromeBg = contrastRatio(bestChrome, bg) >= MIN_CONTRAST ? bestChrome : ink;
+    // Frames need text-level AA: the ink when it gets there, else the strongest
+    // palette entry that does (often the accent), else pure black/white.
+    const aa = candidates.filter((c) => contrastRatio(c, bg) >= AA_CONTRAST);
+    const frameInk = contrastRatio(ink, bg) >= AA_CONTRAST ? ink : aa.length ? byContrast(aa) : extremeInk(bg);
+    frames = framePair(frameInk, bg);
   }
 
   return {
     bg,
     fg: ink,
     dim: withAlpha(ink, 0.45),
+    ...frames,
     accent: hi,
     chromeBg,
     chromeFg: bg,

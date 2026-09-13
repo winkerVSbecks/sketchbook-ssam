@@ -1,7 +1,7 @@
 /**
  * A window positioned and sized in cells, hosted by `createUI` from `src/ui`.
  *
- * Chrome is all glyphs: a 1-cell box frame whose top row doubles as the title
+ * Chrome is all glyphs (theme.frame / theme.frameActive): a 1-cell box frame whose top row doubles as the title
  * row — ` title ` inset at the left, `[–][□][×]` (minimize, maximize, close)
  * at the right end — and whose bottom-right corner is the resize grip. The
  * front window uses the 'double' box style, others 'single'.
@@ -15,7 +15,7 @@ import type { Cursor, PointerMods, Pt, UIWindow } from '../ui';
 import { cellRectContains, insetCellRect, type Cell, type CellRect } from './cells';
 import { BOX, type GlyphBuffer } from './grid';
 import type { TuiMetrics } from './metrics';
-import { fallbackTheme, type TuiTheme } from './theme';
+import { composite, fallbackTheme, legibleOn, type TuiTheme } from './theme';
 
 export type TuiWindowButton = 'minimize' | 'maximize' | 'close';
 
@@ -328,7 +328,8 @@ export function createTuiWindow(opts: TuiWindowOptions): TuiWindow {
       const t = win.theme;
       const highlight = win.active && (opts.activeFrame?.() ?? true);
       const style = highlight ? 'double' : 'single';
-      const frameFg = highlight ? t.fg : t.dim;
+      // Both frame colours are solid and ≥ 4.5:1 against bg (see theme.ts).
+      const frameFg = highlight ? t.frameActive : t.frame;
 
       buf.fill(rect, ' ', t.fg, t.bg);
       buf.box(rect, style, frameFg, t.bg);
@@ -339,8 +340,9 @@ export function createTuiWindow(opts: TuiWindowOptions): TuiWindow {
       const room = firstButtonCol - 1 - titleCol;
       if (room > 0) {
         const label = ` ${win.title} `;
-        if (highlight) buf.text(top(), titleCol, label, t.chromeFg, t.chromeBg, room);
-        else buf.text(top(), titleCol, label, t.dim, t.bg, room);
+        // The highlighted title keeps text-level AA against its own ground.
+        if (highlight) buf.text(top(), titleCol, label, legibleOn(t.chromeBg, t.chromeFg, t.frameActive), t.chromeBg, room);
+        else buf.text(top(), titleCol, label, t.frame, t.bg, room);
       }
 
       for (let i = 0; i < buttons.length; i++) {
@@ -348,12 +350,14 @@ export function createTuiWindow(opts: TuiWindowOptions): TuiWindow {
         if (c0 <= rect.col) continue;
         const b = buttons[i];
         const bg = pressed === b ? t.selectionBg : t.bg;
-        buf.text(top(), c0, buttonGlyph(b, win.maximized), frameFg, bg, BUTTON_W);
+        // selectionBg is translucent: measure against it flattened over bg.
+        const fg = pressed === b ? legibleOn(composite(bg, t.bg), frameFg, t.frameActive) : frameFg;
+        buf.text(top(), c0, buttonGlyph(b, win.maximized), fg, bg, BUTTON_W);
       }
 
       if (resizable) {
         const grip = hoverGrip || drag?.kind === 'resize' ? '◢' : BOX[style].br;
-        buf.put(bottom(), right(), grip, t.accent, t.bg);
+        buf.put(bottom(), right(), grip, frameFg, t.bg);
       }
 
       const inner = win.inner;
