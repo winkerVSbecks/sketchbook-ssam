@@ -621,17 +621,17 @@
  "sketches/canvas-ui/chill-wave": {
   "bg": "#f4f4f2",
   "bgL": 0.967,
-  "meanL": 0.938,
-  "meanC": 0.0037,
+  "meanL": 0.939,
+  "meanC": 0.0039,
   "ink": 0.078,
   "hue": 285,
-  "hueShare": 0.801,
+  "hueShare": 0.72,
   "colors": [
-   "#909090",
    "#d0d0d0",
+   "#909090",
    "#c0c0c0",
-   "#b0b0b0",
-   "#202020"
+   "#606060",
+   "#505050"
   ]
  },
  "sketches/canvas-ui/controls-demo": {
@@ -651,35 +651,35 @@
   ]
  },
  "sketches/canvas-ui/curve-relief": {
-  "bg": "#f5f4f2",
+  "bg": "#f4f4f2",
   "bgL": 0.967,
-  "meanL": 0.867,
-  "meanC": 0.0456,
-  "ink": 0.466,
+  "meanL": 0.87,
+  "meanC": 0.0463,
+  "ink": 0.467,
   "hue": 75,
-  "hueShare": 0.779,
+  "hueShare": 0.78,
   "colors": [
    "#f0d070",
    "#004000",
    "#f0c070",
    "#f0c080",
-   "#d0d0d0"
+   "#909090"
   ]
  },
  "sketches/canvas-ui/torsions": {
   "bg": "#f5f5f3",
   "bgL": 0.97,
-  "meanL": 0.921,
-  "meanC": 0.0021,
-  "ink": 0.161,
-  "hue": 285,
-  "hueShare": 0.521,
+  "meanL": 0.873,
+  "meanC": 0.0376,
+  "ink": 0.414,
+  "hue": 15,
+  "hueShare": 0.51,
   "colors": [
+   "#f080a0",
+   "#f09060",
    "#d0d0d0",
-   "#c0c0c0",
-   "#909090",
-   "#d0d0c0",
-   "#909080"
+   "#f09050",
+   "#e080a0"
   ]
  },
  "sketches/chaikin-paths": {
@@ -1939,33 +1939,33 @@
  "sketches/flatland/flatland-grid": {
   "bg": "#f5f5f2",
   "bgL": 0.969,
-  "meanL": 0.778,
-  "meanC": 0.0352,
-  "ink": 0.757,
+  "meanL": 0.781,
+  "meanC": 0.0355,
+  "ink": 0.743,
   "hue": 285,
   "hueShare": 0.986,
   "colors": [
    "#c0c0d0",
    "#a0a0c0",
-   "#b0b0c0",
    "#b0b0d0",
-   "#9090b0"
+   "#9090c0",
+   "#b0b0c0"
   ]
  },
  "sketches/flatland/flatland-truncation": {
-  "bg": "#f3f4f1",
-  "bgL": 0.966,
-  "meanL": 0.781,
-  "meanC": 0.0836,
-  "ink": 0.76,
-  "hue": 165,
-  "hueShare": 0.456,
+  "bg": "#f4f4f2",
+  "bgL": 0.967,
+  "meanL": 0.922,
+  "meanC": 0.0149,
+  "ink": 0.159,
+  "hue": 45,
+  "hueShare": 0.533,
   "colors": [
-   "#108050",
-   "#f0b030",
-   "#f0d0c0",
-   "#f07040",
-   "#109050"
+   "#f09060",
+   "#f080a0",
+   "#d0d0d0",
+   "#909090",
+   "#c0c0c0"
   ]
  },
  "sketches/flatland/flatland-waltz": {

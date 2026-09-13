@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-12T20:08:36.007Z",
+  "generatedAt": "2026-09-13T14:39:26.742Z",
   "sketches": [
     {
       "id": "sketches/42-loc",
@@ -647,14 +647,14 @@
       "path": "src/sketches/canvas-ui/chill-wave.ts",
       "firstCommitDate": "2026-09-12T15:28:49-04:00",
       "year": 2026,
-      "lastCommitSha": "8872ebb0cdf99ee13aab68e6da156fbfe53409ef",
-      "archivedAt": "2026-09-12T20:07:51.876Z",
+      "lastCommitSha": "e9290d49410d9d740ef588d82b25543067b36b10",
+      "archivedAt": "2026-09-13T14:39:07.584Z",
       "cloudinary": {
         "publicId": "sketchbook/2026/canvas-ui-chill-wave",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1789243671/sketchbook/2026/canvas-ui-chill-wave.png",
-        "version": 1789243671,
-        "width": 1080,
-        "height": 1080
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1789310347/sketchbook/2026/canvas-ui-chill-wave.png",
+        "version": 1789310347,
+        "width": 2160,
+        "height": 2160
       }
     },
     {
@@ -679,14 +679,14 @@
       "path": "src/sketches/canvas-ui/curve-relief.ts",
       "firstCommitDate": "2026-09-12T15:53:17-04:00",
       "year": 2026,
-      "lastCommitSha": "0e36f12ca39c257985c587c2ca7a41ef42df335e",
-      "archivedAt": "2026-09-12T20:07:54.919Z",
+      "lastCommitSha": "ed520c778ab9f48ed34ca999a67fcc3895bfd96c",
+      "archivedAt": "2026-09-13T14:39:10.068Z",
       "cloudinary": {
         "publicId": "sketchbook/2026/canvas-ui-curve-relief",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1789243674/sketchbook/2026/canvas-ui-curve-relief.png",
-        "version": 1789243674,
-        "width": 1080,
-        "height": 1080
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1789310349/sketchbook/2026/canvas-ui-curve-relief.png",
+        "version": 1789310349,
+        "width": 2160,
+        "height": 2160
       }
     },
     {
@@ -695,14 +695,14 @@
       "path": "src/sketches/canvas-ui/torsions.ts",
       "firstCommitDate": "2026-09-12T15:27:26-04:00",
       "year": 2026,
-      "lastCommitSha": "31f0b489b18056705db6243dcf55783d59eb39c3",
-      "archivedAt": "2026-09-12T20:07:56.555Z",
+      "lastCommitSha": "a633c58f457ed0ae395154e05dd9cdda07dbed8b",
+      "archivedAt": "2026-09-13T14:39:12.544Z",
       "cloudinary": {
         "publicId": "sketchbook/2026/canvas-ui-torsions",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1789243676/sketchbook/2026/canvas-ui-torsions.png",
-        "version": 1789243676,
-        "width": 1080,
-        "height": 810
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1789310351/sketchbook/2026/canvas-ui-torsions.png",
+        "version": 1789310351,
+        "width": 2160,
+        "height": 1620
       }
     },
     {
@@ -2055,14 +2055,14 @@
       "path": "src/sketches/flatland/flatland-grid.ts",
       "firstCommitDate": "2026-09-12T15:35:18-04:00",
       "year": 2026,
-      "lastCommitSha": "0b5864d1214d9f3541bbcd4fda158ca7e8f75ddd",
-      "archivedAt": "2026-09-12T20:07:59.250Z",
+      "lastCommitSha": "9d51c80392368c53aa34bfca50a66171711a6cd5",
+      "archivedAt": "2026-09-13T14:39:24.146Z",
       "cloudinary": {
         "publicId": "sketchbook/2026/flatland-flatland-grid",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1789243678/sketchbook/2026/flatland-flatland-grid.png",
-        "version": 1789243678,
-        "width": 1080,
-        "height": 1080
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1789310363/sketchbook/2026/flatland-flatland-grid.png",
+        "version": 1789310363,
+        "width": 2160,
+        "height": 2160
       }
     },
     {
@@ -2071,14 +2071,14 @@
       "path": "src/sketches/flatland/flatland-truncation.ts",
       "firstCommitDate": "2026-09-12T15:36:43-04:00",
       "year": 2026,
-      "lastCommitSha": "9714e28f1bbc3e36794e9028243d3e26e49291a2",
-      "archivedAt": "2026-09-12T20:08:00.921Z",
+      "lastCommitSha": "5cd3b10d0b2f45cc0880987bfa98387c6322c0ff",
+      "archivedAt": "2026-09-13T14:39:26.196Z",
       "cloudinary": {
         "publicId": "sketchbook/2026/flatland-flatland-truncation",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1789243680/sketchbook/2026/flatland-flatland-truncation.png",
-        "version": 1789243680,
-        "width": 1080,
-        "height": 1080
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1789310365/sketchbook/2026/flatland-flatland-truncation.png",
+        "version": 1789310365,
+        "width": 2160,
+        "height": 2160
       }
     },
     {
