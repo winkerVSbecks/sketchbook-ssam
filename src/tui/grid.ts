@@ -13,6 +13,21 @@ export interface Glyph {
    * sit on the midline of a two-row band. Absent = 0.
    */
   dy?: number;
+  /** Optional inset background painted over `bg`, under the glyph. Absent = none. */
+  box?: GlyphBox;
+}
+
+/**
+ * A background box inset inside a cell: painted over the cell's `bg` and under
+ * its glyph, so the surrounding ground still shows. `dy`/`h` are fractions of
+ * the line height, measured from the cell's top edge; `h` may reach past the
+ * row (the menu bar's highlight spills into the pixel remainder the bottom
+ * band absorbs below the last row).
+ */
+export interface GlyphBox {
+  fill: string;
+  dy: number;
+  h: number;
 }
 
 export type BoxStyle = 'single' | 'double' | 'heavy' | 'round';
@@ -75,11 +90,17 @@ export interface GlyphBuffer {
   /** Box-drawing frame on the perimeter of `rect` (1 cell thick). */
   box(rect: CellRect, style: BoxStyle, fg: string, bg?: string): void;
   fill(rect: CellRect, ch: string, fg: string, bg?: string): void;
+  /**
+   * Give every already-written cell of `rect` the inset background `box` (or
+   * clear it with `null`), leaving its glyph, `fg` and `bg` alone. Empty cells
+   * are skipped — the box paints over a ground, it does not create one.
+   */
+  bgBox(rect: CellRect, box: GlyphBox | null): void;
   /** Run `fn` with writes restricted to `rect` ∩ the current clip. */
   clip(rect: CellRect, fn: () => void): void;
   /** The active clip (whole buffer when none is pushed). */
   clipRect(): CellRect;
-  /** Paint the buffer: bg runs first, then one `fillText` per glyph (at `y + dy · lineH` when `dy` is set). */
+  /** Paint the buffer: bg runs first, then the inset `box` runs over them, then one `fillText` per glyph (at `y + dy · lineH` when `dy` is set). */
   blit(ctx: BlitContext, metrics: TuiMetrics, fallbackBg?: string): void;
 }
 
@@ -114,6 +135,19 @@ export function createGlyphBuffer(rows: number, cols: number): GlyphBuffer {
     for (let row = r.row; row < r.row + r.rows; row++) {
       for (let col = r.col; col < r.col + r.cols; col++) {
         cells[row][col] = bg === undefined ? { ch, fg } : { ch, fg, bg };
+      }
+    }
+  };
+
+  const bgBox = (rect: CellRect, box: GlyphBox | null) => {
+    const r = intersectCellRect(rect, clipRect());
+    if (isEmptyCellRect(r)) return;
+    for (let row = r.row; row < r.row + r.rows; row++) {
+      for (let col = r.col; col < r.col + r.cols; col++) {
+        const g = cells[row][col];
+        if (!g) continue; // no ground to paint the box over
+        if (box === null) delete g.box;
+        else g.box = box;
       }
     }
   };
@@ -189,6 +223,8 @@ export function createGlyphBuffer(rows: number, cols: number): GlyphBuffer {
 
     fill,
 
+    bgBox,
+
     clip(rect, fn) {
       clips.push(intersectCellRect(rect, clipRect()));
       try {
@@ -221,6 +257,28 @@ export function createGlyphBuffer(rows: number, cols: number): GlyphBuffer {
           while (end < cols && line[end]?.bg === bg) end++;
           ctx.fillStyle = bg;
           ctx.fillRect(col * charW, row * lineH, (end - col) * charW, lineH);
+          col = end;
+        }
+      }
+      // Inset boxes over those grounds (the menu bar's centred highlight): a
+      // run merges only when colour and geometry match, so each box is one rect.
+      for (let row = 0; row < rows; row++) {
+        const line = cells[row];
+        let col = 0;
+        while (col < cols) {
+          const box = line[col]?.box;
+          if (box === undefined || box.h <= 0) {
+            col++;
+            continue;
+          }
+          let end = col + 1;
+          while (end < cols) {
+            const b = line[end]?.box;
+            if (!b || b.fill !== box.fill || b.dy !== box.dy || b.h !== box.h) break;
+            end++;
+          }
+          ctx.fillStyle = box.fill;
+          ctx.fillRect(col * charW, row * lineH + box.dy * lineH, (end - col) * charW, box.h * lineH);
           col = end;
         }
       }

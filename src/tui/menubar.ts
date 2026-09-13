@@ -1,7 +1,7 @@
 import type { Cursor, Pt, Rect, UIWindow } from '../ui';
 import type { CellRect } from './cells';
 import { cellRect } from './cells';
-import type { GlyphBuffer } from './grid';
+import type { GlyphBox, GlyphBuffer } from './grid';
 import type { TuiMetrics } from './metrics';
 import { composite, legibleOn, type TuiTheme } from './theme';
 
@@ -13,7 +13,7 @@ import { composite, legibleOn, type TuiTheme } from './theme';
 export interface MenuItem {
   id: string;
   label: string;
-  /** Drawn inverted: `chromeBg` text on a `chromeFg` ground (same contrast pair as the bar). */
+  /** Drawn inverted: `chromeBg` text on a `chromeFg` block, centred in the band (same contrast pair as the bar). */
   active?: boolean;
   onSelect: () => void;
 }
@@ -86,6 +86,37 @@ export const MENU_SEPARATOR = ' │ ';
 const PAD = 1;
 /** Padding cells on each side of an item label: `  + new  `. The first item's span starts at the bar edge. */
 export const ITEM_PAD = 2;
+/**
+ * Margin left above and below an item highlight, as a fraction of a row: the
+ * highlight is a centred inset block inside the band, not the whole band.
+ */
+export const HIGHLIGHT_INSET = 1 / 3;
+
+/**
+ * The highlight behind an item, sliced per band row. The block is centred on
+ * the band's REAL pixel height (`bandPx`, which the bottom band stretches past
+ * `rows · lineH` to reach the canvas edge), inset by `HIGHLIGHT_INSET` of a row
+ * top and bottom — so row 0 loses the inset off its top and the last row keeps
+ * everything down to the block's bottom, remainder included.
+ * Returned boxes are `{ dy, h }` in fractions of `lineH`, from each row's top.
+ */
+export function highlightBoxes(
+  rows: number,
+  bandPx: number,
+  lineH: number,
+): { dy: number; h: number }[] {
+  const inset = HIGHLIGHT_INSET * lineH;
+  const top = inset;
+  const bottom = Math.max(top, bandPx - inset);
+  return Array.from({ length: Math.max(0, rows) }, (_, i) => {
+    const rowTop = i * lineH;
+    const sliceTop = Math.min(Math.max(top, rowTop), bottom);
+    // Every row but the last stops at its own bottom edge; the last one keeps
+    // the block's remainder below the grid.
+    const sliceBottom = i === rows - 1 ? bottom : Math.min(bottom, rowTop + lineH);
+    return { dy: (sliceTop - rowTop) / lineH, h: Math.max(0, sliceBottom - sliceTop) / lineH };
+  });
+}
 
 const chars = (s: string): string[] => Array.from(s);
 const len = (s: string): number => chars(s).length;
@@ -178,6 +209,8 @@ export function createMenuBar(opts: MenuBarOptions): TuiMenuBar {
     const r = rect();
     if (r.cols < 1) return;
     const dy = textDy();
+    // One geometry for every highlight on the bar: the band is the same height everywhere.
+    const boxes = highlightBoxes(r.rows, getBandPx(), metrics.lineH);
     buf.fill(r, ' ', theme.chromeFg, theme.chromeBg);
     const { spans, status: st } = layout();
     // Separators first: the `│` sits between two items' padding and the string's
@@ -191,15 +224,22 @@ export function createMenuBar(opts: MenuBarOptions): TuiMenuBar {
       // Pressed: the translucent selectionBg, with text kept at AA on the flattened
       // ground (bg ← chromeBg ← selectionBg; chromeBg itself may be translucent).
       const isPressed = pressed === s.item.id;
-      const bg = s.item.active ? theme.chromeFg : isPressed ? theme.selectionBg : theme.chromeBg;
+      const hl = s.item.active ? theme.chromeFg : isPressed ? theme.selectionBg : null;
       const fg = s.item.active
         ? theme.chromeBg
         : isPressed
-          ? legibleOn(composite(bg, composite(theme.chromeBg, theme.bg)), theme.chromeFg, theme.frameActive)
+          ? legibleOn(composite(theme.selectionBg, composite(theme.chromeBg, theme.bg)), theme.chromeFg, theme.frameActive)
           : theme.chromeFg;
-      // Highlights cover the whole band, not just the text row.
-      if (s.item.active || isPressed) buf.fill(cellRect(r.row, s.col, r.rows, s.cols), ' ', fg, bg);
-      buf.text(r.row, s.labelCol, s.label, fg, bg, undefined, dy);
+      // The highlight is an inset block centred on the band's pixel midline, so
+      // the band's own ground stays under it (and above and below it).
+      if (hl) buf.fill(cellRect(r.row, s.col, r.rows, s.cols), ' ', fg, theme.chromeBg);
+      buf.text(r.row, s.labelCol, s.label, fg, theme.chromeBg, undefined, dy);
+      if (hl) {
+        // After the text: a fresh glyph would drop the box.
+        boxes.forEach((box, i) => {
+          buf.bgBox(cellRect(r.row + i, s.col, 1, s.cols), { fill: hl, ...box } satisfies GlyphBox);
+        });
+      }
     });
     if (st) buf.text(r.row, st.col, st.text, theme.chromeFg, theme.chromeBg, undefined, dy);
   };

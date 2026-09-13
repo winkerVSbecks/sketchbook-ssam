@@ -502,9 +502,16 @@ test('band spans the full canvas width: the strip past the last column is painte
   assert.equal(d.menuBar.itemAtCol(10)?.id, '≡ settings');
   d.toggleSettings();
   d.render();
-  for (let c = st.col; c < st.col + st.cols; c++) assert.equal(d.buffer.get(29, c)?.bg, d.theme.chromeFg, `inverted pad/label col ${c}`);
-  assert.equal(d.buffer.get(29, st.col - 1)?.bg, d.theme.chromeBg, 'separator cell stays plain');
-  assert.equal(d.buffer.get(29, st.col + st.cols)?.bg, d.theme.chromeBg);
+  // The inversion is an inset box over the band ground, centred on the band's
+  // pixel height (47 here: two rows plus the 7 px the bottom band absorbs).
+  for (let c = st.col; c < st.col + st.cols; c++) assert.equal(d.buffer.get(29, c)?.box?.fill, d.theme.chromeFg, `inverted pad/label col ${c}`);
+  assert.equal(d.buffer.get(29, st.col - 1)?.box, undefined, 'separator cell stays plain');
+  assert.equal(d.buffer.get(29, st.col + st.cols)?.box, undefined);
+  const band = d.menuBar.pxRect();
+  const boxTop = (28 + d.buffer.get(28, st.col)!.box!.dy) * D_LINE;
+  const lower = d.buffer.get(29, st.col)!.box!;
+  const boxBottom = (29 + lower.dy + lower.h) * D_LINE;
+  assert.equal(Math.round((boxTop - band.y) * 1e6) / 1e6, Math.round((band.y + band.h - boxBottom) * 1e6) / 1e6, 'highlight is centred in the band');
 });
 
 test('resize: rows/cols/area follow the canvas; the bar moves; windows re-clamp and a maximized one re-fits', () => {
@@ -597,8 +604,8 @@ test('the settings popup lives outside the z-order: addWindow always appends, th
   assert.equal(b0.get(s.rect.row, s.rect.col)?.bg, desk.theme.chromeBg, 'frame in the bar colours');
   assert.equal(b0.get(s.rect.row + s.rect.rows - 1, s.rect.col)?.ch, '└');
   assert.equal(s.rect.row + s.rect.rows, desk.menuBar.row, 'sits directly on the band');
-  assert.equal(b0.get(s.rect.row + s.rect.rows, s.rect.col)?.bg, desk.theme.chromeFg, 'whose item is inverted underneath it');
-  assert.equal(b0.get(s.rect.row + s.rect.rows, 50)?.bg, desk.theme.chromeBg);
+  assert.equal(b0.get(s.rect.row + s.rect.rows, s.rect.col)?.box?.fill, desk.theme.chromeFg, 'whose item is inverted underneath it');
+  assert.equal(b0.get(s.rect.row + s.rect.rows, 50)?.box, undefined);
   assert.equal(c.active, true, 'the front window keeps its active state');
   assert.equal(b0.get(c.rect.row, c.rect.col)?.ch, '╔');
   // Pointer inside the popup never reaches the window beneath.
@@ -1041,18 +1048,19 @@ test('active menu item is inverted: chromeBg text on a chromeFg ground across it
   for (let r = row; r < row + desk.menuBar.rows; r++) {
     for (let c = span.col; c < span.col + span.cols; c++) {
       const g = desk.buffer.get(r, c)!;
-      assert.equal(g.bg, t.chromeFg, `row ${r} col ${c} ground`);
+      assert.equal(g.box?.fill, t.chromeFg, `row ${r} col ${c} ground`);
+      assert.equal(g.bg, t.chromeBg, `row ${r} col ${c} band under the block`);
       assert.equal(g.fg, t.chromeBg, `row ${r} col ${c} text`);
     }
   }
   assert.equal(span.col, 0, 'first item: its pad cell is the bar edge');
-  assert.equal(desk.buffer.get(row, span.col + span.cols)?.bg, t.chromeBg, 'inversion stops at the span');
+  assert.equal(desk.buffer.get(row, span.col + span.cols)?.box, undefined, 'inversion stops at the span');
   // A palette theme: the inverted pair is the bar's own (opaque) pair, and accent stays off the bar.
   desk.setTheme(['#101010', '#ff3300', '#f0f0f0', '#9a9a9a']);
   desk.render();
   const g = desk.buffer.get(row, span.labelCol)!;
-  assert.deepEqual([g.bg, g.fg], ['#101010', '#9a9a9a'], 'chromeFg ground, chromeBg text');
-  assert.ok(contrastRatio(g.fg, g.bg) >= MIN_CONTRAST, 'the pair is the bar pair');
+  assert.deepEqual([g.box?.fill, g.fg], ['#101010', '#9a9a9a'], 'chromeFg ground, chromeBg text');
+  assert.ok(contrastRatio(g.fg, g.box!.fill) >= MIN_CONTRAST, 'the pair is the bar pair');
   const bar = desk.buffer.cells[row];
   assert.ok(!bar.some((c) => c?.fg === '#ff3300' || c?.bg === '#ff3300'), 'accent stays off the bar');
 });

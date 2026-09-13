@@ -30,6 +30,35 @@ const ROW = ROWS - 2;
 /** Pixel centre of a cell on the bar row. */
 const px = (col: number, row = ROW) => ({ x: (col + 0.5) * metrics.charW, y: (row + 0.5) * metrics.lineH });
 
+const EPS = 1e-9;
+const near = (a: number, b: number, msg: string) =>
+  assert.ok(Math.abs(a - b) < EPS, `${msg}: ${a} ≉ ${b}`);
+
+/**
+ * The highlight block's pixel extent on column `col`, read back out of the
+ * per-row boxes — and a check that the slices tile the block without a seam.
+ */
+function boxExtent(
+  buf: ReturnType<typeof createGlyphBuffer>,
+  col: number,
+  row = ROW,
+  rows = 2,
+): { top: number; bottom: number } {
+  let top = Infinity;
+  let bottom = -Infinity;
+  let sum = 0;
+  for (let i = 0; i < rows; i++) {
+    const b = buf.get(row + i, col)?.box;
+    if (!b || b.h <= 0) continue;
+    const t = (row + i + b.dy) * metrics.lineH;
+    top = Math.min(top, t);
+    bottom = Math.max(bottom, t + b.h * metrics.lineH);
+    sum += b.h * metrics.lineH;
+  }
+  near(sum, bottom - top, 'row slices tile the highlight with no gap or overlap');
+  return { top, bottom };
+}
+
 console.log('menubar');
 
 const calls: string[] = [];
@@ -114,14 +143,22 @@ test('settings toggles active and is drawn inverted (chromeBg text on a chromeFg
   assert.equal(settingsVisible, true);
   const buf = createGlyphBuffer(ROWS, COLS);
   bar.paint(buf);
-  // The whole padded span is inverted; accent never reaches the bar.
+  // The whole padded span is inverted — as an inset box over the band's own
+  // ground, not as the cell background; accent never reaches the bar.
   for (const r of [ROW, ROW + 1]) {
     for (let c = span.col; c < span.col + span.cols; c++) {
-      assert.equal(buf.get(r, c)?.bg, fallbackTheme.chromeFg, `row ${r} col ${c} ground`);
+      assert.equal(buf.get(r, c)?.bg, fallbackTheme.chromeBg, `row ${r} col ${c} band ground`);
+      assert.equal(buf.get(r, c)?.box?.fill, fallbackTheme.chromeFg, `row ${r} col ${c} highlight`);
       assert.equal(buf.get(r, c)?.fg, fallbackTheme.chromeBg, `row ${r} col ${c} text`);
     }
-    assert.equal(buf.get(r, span.col + span.cols)?.bg, fallbackTheme.chromeBg, 'inversion stops at the span');
+    assert.equal(buf.get(r, span.col + span.cols)?.box, undefined, 'inversion stops at the span');
   }
+  // Centred in the band: a third of a row of ground above and below it.
+  const bandTop = ROW * metrics.lineH;
+  const bandBottom = bandTop + 2 * metrics.lineH;
+  const ext = boxExtent(buf, span.col);
+  near(ext.top - bandTop, bandBottom - ext.bottom, 'equal margin above and below the highlight');
+  near(ext.top - bandTop, metrics.lineH / 3, 'margin is a third of a row');
   const other = bar.layout().spans[1];
   assert.equal(buf.get(ROW, other.labelCol)?.fg, fallbackTheme.chromeFg);
   assert.equal(buf.get(ROW, other.labelCol)?.bg, fallbackTheme.chromeBg);
@@ -134,9 +171,10 @@ test('pressed item is highlighted with selectionBg until release', () => {
   bar.pointerDown(px(s.labelCol));
   const buf = createGlyphBuffer(ROWS, COLS);
   bar.paint(buf);
-  assert.equal(buf.get(ROW, s.labelCol)?.bg, fallbackTheme.selectionBg);
-  assert.equal(buf.get(ROW, s.col)?.bg, fallbackTheme.selectionBg);
-  assert.equal(buf.get(ROW + 1, s.col)?.bg, fallbackTheme.selectionBg, 'pressed highlight covers the band');
+  assert.equal(buf.get(ROW, s.labelCol)?.box?.fill, fallbackTheme.selectionBg);
+  assert.equal(buf.get(ROW, s.col)?.box?.fill, fallbackTheme.selectionBg);
+  assert.equal(buf.get(ROW + 1, s.col)?.box?.fill, fallbackTheme.selectionBg, 'pressed highlight spans the band');
+  assert.equal(buf.get(ROW, s.col)?.bg, fallbackTheme.chromeBg, 'over the band ground, not instead of it');
   // Text is chosen for AA on the real ground: bg ← chromeBg ← selectionBg, all flattened.
   const ground = composite(fallbackTheme.selectionBg, composite(fallbackTheme.chromeBg, fallbackTheme.bg));
   const fg = buf.get(ROW, s.labelCol)?.fg;
@@ -146,6 +184,7 @@ test('pressed item is highlighted with selectionBg until release', () => {
   bar.pointerUp(px(s.labelCol));
   buf.clear();
   bar.paint(buf);
+  assert.equal(buf.get(ROW, s.labelCol)?.box, undefined);
   assert.equal(buf.get(ROW, s.labelCol)?.bg, fallbackTheme.chromeBg);
   calls.length = 0;
 });
@@ -229,6 +268,29 @@ test('spans are hit-testable through metrics.toCell at fractional charW', () => 
       assert.equal(bar.itemAt({ x: c * metrics.charW, y: ROW * metrics.lineH })?.id, s.item.id);
       assert.equal(bar.itemAt(px(c))?.id, s.item.id);
     }
+  }
+});
+
+test('the highlight is centred on the band\'s pixel midline, remainder included', () => {
+  // A bottom band absorbs `height - rows * lineH` below its last row, so the
+  // block has to centre on the real pixels, not on the two cell rows.
+  const active = (): MenuItem[] => [{ id: 'settings', label: '≡ settings', active: true, onSelect: () => {} }];
+  for (const bandPx of [40, 45, 47, 2 * metrics.lineH + 19]) {
+    const b = createMenuBar({ metrics, theme: fallbackTheme, cols: COLS, row: ROW, bandPx, items: active });
+    const buf = createGlyphBuffer(ROWS, COLS);
+    b.paint(buf);
+    const span = b.layout().spans[0];
+    const bandTop = ROW * metrics.lineH;
+    const ext = boxExtent(buf, span.labelCol);
+    near(ext.top - bandTop, bandTop + bandPx - ext.bottom, `equal margins at bandPx ${bandPx}`);
+    near((ext.top + ext.bottom) / 2, bandTop + bandPx / 2, `centred at bandPx ${bandPx}`);
+    near(ext.top - bandTop, metrics.lineH / 3, `top margin at bandPx ${bandPx}`);
+    assert.ok(ext.bottom < bandTop + bandPx, 'never reaches the band bottom edge');
+    assert.ok(ext.top > bandTop, 'never reaches the band top edge');
+    // The label keeps its ground under the block and its inverted pair.
+    assert.equal(buf.get(ROW, span.labelCol)?.bg, fallbackTheme.chromeBg);
+    assert.equal(buf.get(ROW, span.labelCol)?.fg, fallbackTheme.chromeBg);
+    assert.equal(buf.get(ROW, span.labelCol)?.box?.fill, fallbackTheme.chromeFg);
   }
 });
 
