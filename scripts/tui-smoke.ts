@@ -29,6 +29,7 @@ import {
   createRange,
   createToggleGroup,
   popupMenuRect,
+  highlightBoxes,
 } from '../src/tui';
 import type { BlitContext, DesktopContext } from '../src/tui';
 
@@ -503,7 +504,7 @@ test('band spans the full canvas width: the strip past the last column is painte
   d.toggleSettings();
   d.render();
   // The inversion is an inset box over the band ground, centred on the band's
-  // pixel height (47 here: two rows plus the 7 px the bottom band absorbs).
+  // real pixel height (`pxRect().h`, which a bottom band stretches past its rows).
   for (let c = st.col; c < st.col + st.cols; c++) assert.equal(d.buffer.get(29, c)?.box?.fill, d.theme.chromeFg, `inverted pad/label col ${c}`);
   assert.equal(d.buffer.get(29, st.col - 1)?.box, undefined, 'separator cell stays plain');
   assert.equal(d.buffer.get(29, st.col + st.cols)?.box, undefined);
@@ -512,6 +513,42 @@ test('band spans the full canvas width: the strip past the last column is painte
   const lower = d.buffer.get(29, st.col)!.box!;
   const boxBottom = (29 + lower.dy + lower.h) * D_LINE;
   assert.equal(Math.round((boxTop - band.y) * 1e6) / 1e6, Math.round((band.y + band.h - boxBottom) * 1e6) / 1e6, 'highlight is centred in the band');
+});
+
+test('a minimized window\'s bar item: no ground until pressed, then the same centred block', () => {
+  // 7 px of remainder, so a ground pinned to the cell rows would be visibly off-centre.
+  const d = createDesktop({ ctx: stubCtx(), width: 80 * D_CHAR, height: 30 * D_LINE + 7, onChange() {} });
+  const w = d.addWindow({ title: 'chart 01', rect: cellRect(2, 2, 8, 24) });
+  w.minimized = true;
+  d.render();
+  const span = d.menuBar.layout().spans.find((s) => s.label === 'chart 01')!;
+  const band = d.menuBar.pxRect();
+  assert.equal(band.h, 47);
+  for (let r = d.menuBar.row; r < d.menuBar.row + d.menuBar.rows; r++) {
+    for (let c = span.col; c < span.col + span.cols; c++) {
+      const g = d.buffer.get(r, c)!;
+      assert.equal(g.box, undefined, `minimized item is plain band ground at row ${r} col ${c}`);
+      assert.equal(g.bg, d.theme.chromeBg);
+    }
+  }
+  // Pressed: the ground comes from the one shared helper, centred on the band.
+  d.pointerDown(at(d.menuBar.row, span.labelCol));
+  d.render();
+  const boxes = highlightBoxes(d.menuBar.rows, band.h, d.metrics.lineH);
+  for (let i = 0; i < d.menuBar.rows; i++) {
+    for (let c = span.col; c < span.col + span.cols; c++) {
+      assert.deepEqual(d.buffer.get(d.menuBar.row + i, c)?.box, { fill: d.theme.selectionBg, ...boxes[i] }, `pressed box row ${i} col ${c}`);
+    }
+  }
+  const top = (d.menuBar.row + boxes[0].dy) * D_LINE;
+  const last = boxes[boxes.length - 1];
+  const bottom = (d.menuBar.row + d.menuBar.rows - 1 + last.dy + last.h) * D_LINE;
+  assert.ok(Math.abs((top - band.y) - (band.y + band.h - bottom)) < 1e-9, 'equal margin above and below');
+  assert.ok(Math.abs((top - band.y) - D_LINE / 3) < 1e-9, 'a third of a row of margin');
+  d.pointerUp(at(d.menuBar.row, span.labelCol));
+  d.render();
+  assert.equal(d.buffer.get(d.menuBar.row, span.col)?.box, undefined, 'released: back to plain band ground');
+  assert.equal(w.minimized, false, 'and the window is restored');
 });
 
 test('resize: rows/cols/area follow the canvas; the bar moves; windows re-clamp and a maximized one re-fits', () => {
