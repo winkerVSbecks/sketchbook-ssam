@@ -62,6 +62,8 @@ export interface DesktopOptions {
   settings?: DesktopSettingsOptions;
   /** Right-aligned status text on the bar (seed, fps…). */
   status?: () => string;
+  /** When given, the bar starts with a `+ new` item (left of `≡ settings`) that calls this. */
+  onNewWindow?: () => void;
   /** Paint the desktop background inside `area` before the windows. */
   wallpaper?: (buf: GlyphBuffer, area: CellRect) => void;
   /** Draw the front window with the double frame + highlighted title (default true). */
@@ -104,6 +106,8 @@ export interface Desktop extends PointerTarget {
 }
 
 const SETTINGS_ID = '≡ settings';
+const NEW_ID = 'new';
+const NEW_LABEL = '+ new';
 /** Height of the menu bar band in rows (text on the upper row). */
 export const BAR_ROWS = 2;
 const DEFAULT_SETTINGS_COLS = 32;
@@ -208,6 +212,7 @@ export function createDesktop(opts: DesktopOptions): Desktop {
   // --- Menu bar ----------------------------------------------------------------
   const items = (): MenuItem[] => {
     const list: MenuItem[] = [];
+    if (opts.onNewWindow) list.push({ id: NEW_ID, label: NEW_LABEL, onSelect: opts.onNewWindow });
     if (settings) {
       list.push({ id: SETTINGS_ID, label: SETTINGS_ID, active: settings.visible, onSelect: toggleSettings });
     }

@@ -449,6 +449,32 @@ test('addWindow keeps a visible settings window in front; hidden settings → ne
   assert.equal(z[z.length - 1], c, 'a user click still brings a chart over settings');
 });
 
+test('onNewWindow adds a `+ new` item left of ≡ settings; selecting it calls back once', () => {
+  let calls = 0;
+  const { desk, w2 } = makeDesktop({ onNewWindow: () => calls++ });
+  const minimizeCol = w2.rect.col + w2.rect.cols - 1 - 9;
+  desk.pointerDown(at(w2.rect.row, minimizeCol));
+  desk.pointerUp(at(w2.rect.row, minimizeCol));
+  assert.equal(w2.minimized, true);
+  const labels = () => desk.menuBar.layout().spans.map((s) => s.label);
+  assert.deepEqual(labels(), ['+ new', '≡ settings', 'chart 02']);
+  assert.equal(desk.menuBar.layout().spans[0].item.id, 'new');
+  const span = desk.menuBar.layout().spans[0];
+  desk.pointerDown(at(desk.menuBar.row, span.labelCol));
+  desk.pointerUp(at(desk.menuBar.row, span.labelCol));
+  assert.equal(calls, 1, 'one select per click');
+  // Release elsewhere: no call.
+  desk.pointerDown(at(desk.menuBar.row, span.labelCol));
+  desk.pointerUp(at(desk.menuBar.row + 1, 40));
+  assert.equal(calls, 1);
+  // Without the option the bar starts with settings.
+  const { desk: plain } = makeDesktop();
+  assert.deepEqual(plain.menuBar.layout().spans.map((s) => s.label), ['≡ settings']);
+  // With the option but no settings window: `+ new` alone.
+  const bare = createDesktop({ ctx: stubCtx(), width: 80 * D_CHAR, height: 30 * D_LINE, onNewWindow: () => calls++, onChange() {} });
+  assert.deepEqual(bare.menuBar.layout().spans.map((s) => s.label), ['+ new']);
+});
+
 test('toggleSettings shows/hides; ≡ settings item toggles it too and reads active', () => {
   const { desk } = makeDesktop();
   const s = desk.settings!;

@@ -72,9 +72,10 @@ __CASES__
     buf.text(inner.row, inner.col + 1, ` ${win.title} · ${inner.rows}×${inner.cols} `, fg, desktop.theme.bg);
   };
 
-  // The desktop owns the glyph buffer, the windows (drag by title, resize by the
-  // bottom-right grip, [–][□][×]), the menu bar (`≡ settings` + minimized
-  // windows) and the pointer/keyboard wiring: `Esc` hides settings, `h`
+  // The desktop owns the glyph buffer, the windows (drag by title, double-click
+  // the title to maximize, resize by the bottom-right grip, [–][□][×]), the
+  // two-row menu bar (`+ new` + `≡ settings` + minimized windows) and the
+  // pointer/keyboard wiring: `Esc` hides settings, `h`
   // restores minimized windows. See src/tui/desktop.ts for every option.
   const desktop: Desktop = createDesktop({
     ctx: context,
@@ -87,6 +88,23 @@ __CASES__
     settings: controls.length ? { controls } : undefined,
     status: () => '__NAME__',
     wallpaper,
+    // `+ new` on the bar (left of `≡ settings`): add a window cascaded from the front one.
+    onNewWindow: () => {
+      const area = desktop.area;
+      const front = desktop.windows[desktop.windows.length - 1];
+      const rows = Math.min(12, area.rows);
+      const cols = Math.min(32, area.cols);
+      const row = Math.min(Math.max(front ? front.rect.row + 1 : area.row, area.row), Math.max(area.row, area.row + area.rows - rows));
+      const col = Math.min(Math.max(front ? front.rect.col + 2 : area.col, area.col), Math.max(area.col, area.col + area.cols - cols));
+      desktop.addWindow({
+        title: `window ${String(desktop.windows.length + 1).padStart(2, '0')}`,
+        rect: cellRect(row, col, rows, cols),
+        minRows: 3,
+        minCols: 8,
+        draw: drawWindow,
+        onClose: (win) => desktop.removeWindow(win),
+      });
+    },
     onChange: () => props.render(),
   });
 

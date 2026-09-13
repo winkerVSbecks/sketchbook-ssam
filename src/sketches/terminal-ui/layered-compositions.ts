@@ -12,10 +12,12 @@ import Random from 'canvas-sketch-util/random';
 
 import { randomPalette } from '../../colors';
 import {
+  cellRect,
   createButton,
   createDesktop,
   createRange,
   createToggleGroup,
+  type CellRect,
   type Desktop,
   type GlyphBuffer,
   type TuiControl,
@@ -108,29 +110,52 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     const { name, rects } = layoutRects(layoutChoice, desktop.area.rows, desktop.area.cols, config);
     layoutName = name;
 
-    rects.forEach((rect, i) => {
-      const title = `chart ${String(i + 1).padStart(2, '0')}`;
-      const win = desktop.addWindow({
-        title,
-        rect,
-        minRows: 3,
-        minCols: 8,
-        draw: (buf, _inner, w) => drawChart(buf, w),
-        onClose: (w) => {
-          charts.delete(w);
-          desktop.removeWindow(w);
-        },
-      });
-      const chart: Chart = {
-        seed: `${seed}/${i}`,
-        win,
-        rows: win.rect.rows,
-        cols: win.rect.cols,
-        pattern: null as unknown as RectPattern,
-      };
-      chart.pattern = build(chart);
-      charts.set(win, chart);
+    rects.forEach((rect, i) => addChart(`chart ${String(i + 1).padStart(2, '0')}`, rect, `${seed}/${i}`));
+  };
+
+  /** One chart window with its own seeded pattern (the same build path `rebuild` uses). */
+  const addChart = (title: string, rect: CellRect, chartSeed: string): TuiWindow => {
+    const win = desktop.addWindow({
+      title,
+      rect,
+      minRows: 3,
+      minCols: 8,
+      draw: (buf, _inner, w) => drawChart(buf, w),
+      onClose: (w) => {
+        charts.delete(w);
+        desktop.removeWindow(w);
+      },
     });
+    const chart: Chart = {
+      seed: chartSeed,
+      win,
+      rows: win.rect.rows,
+      cols: win.rect.cols,
+      pattern: null as unknown as RectPattern,
+    };
+    chart.pattern = build(chart);
+    charts.set(win, chart);
+    return win;
+  };
+
+  /** `+ new` on the bar: the next `chart NN`, cascaded from the front chart's origin, clamped to the area. */
+  const newWindow = () => {
+    const area = desktop.area;
+    let max = 0;
+    for (const c of charts.values()) {
+      const m = /chart (\d+)/.exec(c.win.title);
+      if (m) max = Math.max(max, Number(m[1]));
+    }
+    const title = `chart ${String(max + 1).padStart(2, '0')}`;
+    const rows = Math.min(12, area.rows);
+    const cols = Math.min(32, area.cols);
+    const front = desktop.windows[desktop.windows.length - 1];
+    const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), Math.max(lo, hi));
+    const row = clamp(front ? front.rect.row + 1 : area.row, area.row, area.row + area.rows - rows);
+    const col = clamp(front ? front.rect.col + 2 : area.col, area.col, area.col + area.cols - cols);
+    // addWindow already fronts it among the charts (just below a visible settings window).
+    addChart(title, cellRect(row, col, rows, cols), `${seed}/${title}`);
+    props.render();
   };
 
   const reseed = () => {
@@ -226,6 +251,7 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     activeFrame: borders,
     settings: { controls, cols: 36 },
     status: () => `seed ${seed} · layout ${layoutName}`,
+    onNewWindow: () => newWindow(),
     onChange: () => props.render(),
   });
 
@@ -240,6 +266,7 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
       relayout,
       reseed,
       newPalette,
+      newWindow,
       repaint: () => props.render(),
     };
   }
