@@ -700,7 +700,8 @@ test('window chrome is drawn with frameActive in front and frame behind', () => 
   assert.equal(b.get(front.rect.row + front.rect.rows - 1, front.rect.col + front.rect.cols - 1)?.fg, t.frameActive, 'front grip');
   const title = b.get(front.rect.row, front.rect.col + 3)!;
   assert.equal(title.bg, t.chromeBg);
-  assert.ok(contrastRatio(title.fg, title.bg) >= AA_CONTRAST, 'front title text is AA on the chrome');
+  assert.equal(title.fg, t.chromeFg, 'chromeFg clears AA on the flattened fallback chrome');
+  assert.ok(contrastRatio(title.fg, composite(title.bg, t.bg)) >= AA_CONTRAST, 'front title text is AA on the chrome flattened over bg');
   assert.ok(!Object.values(b.cells.flat()).some((g) => g?.fg === t.dim), 'no frame glyph uses the translucent dim');
 });
 

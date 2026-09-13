@@ -340,8 +340,9 @@ export function createTuiWindow(opts: TuiWindowOptions): TuiWindow {
       const room = firstButtonCol - 1 - titleCol;
       if (room > 0) {
         const label = ` ${win.title} `;
-        // The highlighted title keeps text-level AA against its own ground.
-        if (highlight) buf.text(top(), titleCol, label, legibleOn(t.chromeBg, t.chromeFg, t.frameActive), t.chromeBg, room);
+        // The highlighted title keeps text-level AA against its real ground
+        // (chromeBg may be translucent, as in fallbackTheme: flatten it over bg first).
+        if (highlight) buf.text(top(), titleCol, label, legibleOn(composite(t.chromeBg, t.bg), t.chromeFg, t.frameActive), t.chromeBg, room);
         else buf.text(top(), titleCol, label, t.frame, t.bg, room);
       }
 

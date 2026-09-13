@@ -146,19 +146,22 @@ export function createMenuBar(opts: MenuBarOptions): TuiMenuBar {
     if (r.cols < 1) return;
     buf.fill(r, ' ', theme.chromeFg, theme.chromeBg);
     const { spans, status: st } = layout();
+    // Separators first: their padding spaces overlap the items' pad cells, and an
+    // active item's inversion must win those cells.
     spans.forEach((s, i) => {
-      if (i > 0) {
-        buf.text(r.row, s.labelCol - MENU_SEPARATOR.length, MENU_SEPARATOR, theme.chromeFg, theme.chromeBg);
-      }
+      if (i > 0) buf.text(r.row, s.labelCol - MENU_SEPARATOR.length, MENU_SEPARATOR, theme.chromeFg, theme.chromeBg);
+    });
+    spans.forEach((s) => {
       // Active: inverted over the whole span (label + one pad cell each side), so
       // its contrast is the bar's own pair — `accent` never reaches the bar.
-      // Pressed: the translucent selectionBg, with text kept at AA on the flattened ground.
+      // Pressed: the translucent selectionBg, with text kept at AA on the flattened
+      // ground (bg ← chromeBg ← selectionBg; chromeBg itself may be translucent).
       const isPressed = pressed === s.item.id;
       const bg = s.item.active ? theme.chromeFg : isPressed ? theme.selectionBg : theme.chromeBg;
       const fg = s.item.active
         ? theme.chromeBg
         : isPressed
-          ? legibleOn(composite(bg, theme.chromeBg), theme.chromeFg, theme.frameActive)
+          ? legibleOn(composite(bg, composite(theme.chromeBg, theme.bg)), theme.chromeFg, theme.frameActive)
           : theme.chromeFg;
       if (s.item.active || isPressed) buf.fill(cellRect(r.row, s.col, 1, s.cols), ' ', fg, bg);
       buf.text(r.row, s.labelCol, s.label, fg, bg);
