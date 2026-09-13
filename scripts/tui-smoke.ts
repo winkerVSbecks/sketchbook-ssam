@@ -515,23 +515,36 @@ test('band spans the full canvas width: the strip past the last column is painte
   assert.equal(Math.round((boxTop - band.y) * 1e6) / 1e6, Math.round((band.y + band.h - boxBottom) * 1e6) / 1e6, 'highlight is centred in the band');
 });
 
-test('a minimized window\'s bar item: no ground until pressed, then the same centred block', () => {
+test('a minimized window\'s bar item: bracketed at rest, the same centred block when pressed', () => {
   // 7 px of remainder, so a ground pinned to the cell rows would be visibly off-centre.
-  const d = createDesktop({ ctx: stubCtx(), width: 80 * D_CHAR, height: 30 * D_LINE + 7, onChange() {} });
+  const d = createDesktop({ ctx: stubCtx(), width: 80 * D_CHAR, height: 30 * D_LINE + 7, onNewWindow: () => {}, onChange() {} });
   const w = d.addWindow({ title: 'chart 01', rect: cellRect(2, 2, 8, 24) });
   w.minimized = true;
   d.render();
   const span = d.menuBar.layout().spans.find((s) => s.label === 'chart 01')!;
   const band = d.menuBar.pxRect();
   assert.equal(band.h, 47);
-  for (let r = d.menuBar.row; r < d.menuBar.row + d.menuBar.rows; r++) {
+  // At rest: brackets around the label and nothing else — no ground of its own.
+  const row = d.buffer.cells[d.menuBar.row].map((g) => g?.ch ?? ' ').join('');
+  assert.ok(row.includes('[ chart 01 ]'), `bracketed label on the bar: ${row.trim()}`);
+  assert.ok(!row.includes('[ + new ]') && !row.includes('[ ≡ settings ]'), 'the bar commands stay unbracketed');
+  for (let i = 0; i < d.menuBar.rows; i++) {
     for (let c = span.col; c < span.col + span.cols; c++) {
-      const g = d.buffer.get(r, c)!;
-      assert.equal(g.box, undefined, `minimized item is plain band ground at row ${r} col ${c}`);
+      const g = d.buffer.get(d.menuBar.row + i, c)!;
+      assert.equal(g.box, undefined, `minimized item is plain band ground at row ${i} col ${c}`);
       assert.equal(g.bg, d.theme.chromeBg);
     }
   }
-  // Pressed: the ground comes from the one shared helper, centred on the band.
+  // The span covers the brackets, so the hit-test and click-to-restore line up
+  // with what is drawn.
+  assert.equal(d.buffer.get(d.menuBar.row, span.labelCol - 2)?.ch, '[');
+  assert.equal(d.buffer.get(d.menuBar.row, span.labelCol + 'chart 01'.length + 1)?.ch, ']');
+  for (const c of [span.col, span.labelCol - 2, span.labelCol + 'chart 01'.length + 1, span.col + span.cols - 1]) {
+    assert.equal(d.menuBar.itemAtCol(c)?.id, span.item.id, `col ${c} hits the parked item`);
+  }
+  assert.equal(d.menuBar.itemAtCol(span.col + span.cols), null, 'and the span stops there');
+  // Pressed: the ground comes from the one shared helper, centred on the band —
+  // unchanged by the brackets, which stay drawn on top of it.
   d.pointerDown(at(d.menuBar.row, span.labelCol));
   d.render();
   const boxes = highlightBoxes(d.menuBar.rows, band.h, d.metrics.lineH);
@@ -540,6 +553,7 @@ test('a minimized window\'s bar item: no ground until pressed, then the same cen
       assert.deepEqual(d.buffer.get(d.menuBar.row + i, c)?.box, { fill: d.theme.selectionBg, ...boxes[i] }, `pressed box row ${i} col ${c}`);
     }
   }
+  assert.equal(d.buffer.get(d.menuBar.row, span.labelCol - 2)?.ch, '[', 'brackets survive the press');
   const top = (d.menuBar.row + boxes[0].dy) * D_LINE;
   const last = boxes[boxes.length - 1];
   const bottom = (d.menuBar.row + d.menuBar.rows - 1 + last.dy + last.h) * D_LINE;
@@ -547,8 +561,9 @@ test('a minimized window\'s bar item: no ground until pressed, then the same cen
   assert.ok(Math.abs((top - band.y) - D_LINE / 3) < 1e-9, 'a third of a row of margin');
   d.pointerUp(at(d.menuBar.row, span.labelCol));
   d.render();
+  assert.equal(w.minimized, false, 'released over the item: the window is restored');
   assert.equal(d.buffer.get(d.menuBar.row, span.col)?.box, undefined, 'released: back to plain band ground');
-  assert.equal(w.minimized, false, 'and the window is restored');
+  assert.ok(!d.buffer.cells[d.menuBar.row].map((g) => g?.ch ?? ' ').join('').includes('[ chart 01 ]'), 'and its bar item leaves with it');
 });
 
 test('resize: rows/cols/area follow the canvas; the bar moves; windows re-clamp and a maximized one re-fits', () => {
@@ -604,7 +619,7 @@ test('addWindow ×3, minimize one: 2 visible, bar lists the minimized title, sel
 
   desk.render();
   const bar = rowText(desk.buffer, 28);
-  assert.ok(bar.startsWith('  ≡ settings  │  chart 02  '), bar);
+  assert.ok(bar.startsWith('  ≡ settings  │  [ chart 02 ]  '), bar);
 
   // Clicking the lower band row selects the item too.
   const span = desk.menuBar.layout().spans.find((s) => s.label === 'chart 02')!;

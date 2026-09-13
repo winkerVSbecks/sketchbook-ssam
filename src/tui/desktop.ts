@@ -291,7 +291,9 @@ export function createDesktop(opts: DesktopOptions): Desktop {
       list.push({ id: SETTINGS_ID, label: SETTINGS_ID, active: settings.visible, onSelect: toggleSettings });
     }
     for (const w of tuiWindows()) {
-      if (w.minimized) list.push({ id: idOf(w), label: w.title, onSelect: () => raise(w) });
+      // `parked` brackets the label — `[ chart 03 ]` — so a stowed window reads
+      // as one at a glance, unlike the `+ new` / `≡ settings` commands.
+      if (w.minimized) list.push({ id: idOf(w), label: w.title, parked: true, onSelect: () => raise(w) });
     }
     return list;
   };

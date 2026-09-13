@@ -3,7 +3,7 @@ import type { CellRect } from './cells';
 import { cellRect } from './cells';
 import type { GlyphBox, GlyphBuffer } from './grid';
 import type { TuiMetrics } from './metrics';
-import { composite, legibleOn, type TuiTheme } from './theme';
+import { composite, legibleOn, withAlpha, type TuiTheme } from './theme';
 
 /**
  * One entry on the system bar. The desktop supplies them: first `≡ settings`
@@ -15,6 +15,12 @@ export interface MenuItem {
   label: string;
   /** Drawn inverted: `chromeBg` text on a `chromeFg` block, centred in the band (same contrast pair as the bar). */
   active?: boolean;
+  /**
+   * A parked window (minimized): its label is bracketed, `[ chart 03 ]`, so it
+   * reads as a stowed window rather than as a command like `+ new`. The
+   * brackets are decoration only — they never change the active/pressed grounds.
+   */
+  parked?: boolean;
   onSelect: () => void;
 }
 
@@ -45,10 +51,10 @@ export interface MenuBarOptions {
   status?: () => string;
 }
 
-/** A laid-out item: `col`/`cols` is the hit-testable span (label + `ITEM_PAD` cells of padding each side). */
+/** A laid-out item: `col`/`cols` is the hit-testable span (label + its brackets, if parked, + `ITEM_PAD` cells of padding each side). */
 export interface MenuSpan {
   item: MenuItem;
-  /** First cell of the (possibly truncated) label. */
+  /** First cell of the (possibly truncated) label — past the `[ ` on a parked item. */
   labelCol: number;
   label: string;
   col: number;
@@ -91,6 +97,10 @@ export const ITEM_PAD = 2;
  * highlight is a centred inset block inside the band, not the whole band.
  */
 export const HIGHLIGHT_INSET = 1 / 3;
+/** Cells a parked item's `[ ` / ` ]` takes on each side of its label. */
+export const BRACKET_PAD = 2;
+/** Alpha the brackets wear over the item's own text colour, so they recede from the label. */
+export const BRACKET_ALPHA = 0.55;
 
 /**
  * The highlight behind an item, sliced per band row. The block is centred on
@@ -126,7 +136,9 @@ const head = (s: string, n: number): string => chars(s).slice(0, Math.max(0, n))
  * Pure layout: place items left-to-right from column `ITEM_PAD`, `ITEM_PAD`
  * cells + `│` + `ITEM_PAD` cells apart; drop items that no longer fit (the last
  * visible one is truncated so its trailing padding still fits); right-align
- * `status`, shortening it so it never overlaps the items.
+ * `status`, shortening it so it never overlaps the items. A `parked` item's
+ * brackets take `BRACKET_PAD` cells on each side of its label — inside the
+ * span, so the hit-test covers them and the label still truncates to fit.
  */
 export function layoutMenuBar(
   items: readonly MenuItem[],
@@ -138,19 +150,21 @@ export function layoutMenuBar(
   let cursor = ITEM_PAD;
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
+    const lead = item.parked ? BRACKET_PAD : 0;
+    // `start` is the item's first drawn cell — the `[` for a parked window.
     const start = i === 0 ? cursor : cursor + 2 * ITEM_PAD + 1;
-    const room = limit - start;
+    const room = limit - start - 2 * lead;
     if (room < 1) break;
     const label = head(item.label, room);
     const n = len(label);
     spans.push({
       item,
       label,
-      labelCol: start,
+      labelCol: start + lead,
       col: start - ITEM_PAD,
-      cols: n + 2 * ITEM_PAD,
+      cols: n + 2 * lead + 2 * ITEM_PAD,
     });
-    cursor = start + n;
+    cursor = start + n + 2 * lead;
   }
 
   let statusOut: MenuBarLayout['status'] = null;
@@ -216,7 +230,9 @@ export function createMenuBar(opts: MenuBarOptions): TuiMenuBar {
     // Separators first: the `│` sits between two items' padding and the string's
     // spaces overlap their pad cells — an active item's inversion must win those.
     spans.forEach((s, i) => {
-      if (i > 0) buf.text(r.row, s.labelCol - ITEM_PAD - 2, MENU_SEPARATOR, theme.chromeFg, theme.chromeBg, undefined, dy);
+      // `s.col - 2` is the separator's own cell plus the space each side: the span
+      // start, not the label — a parked item's brackets sit inside its span.
+      if (i > 0) buf.text(r.row, s.col - 2, MENU_SEPARATOR, theme.chromeFg, theme.chromeBg, undefined, dy);
     });
     spans.forEach((s) => {
       // Active: inverted over the whole span (label + ITEM_PAD cells each side), so
@@ -234,6 +250,13 @@ export function createMenuBar(opts: MenuBarOptions): TuiMenuBar {
       // the band's own ground stays under it (and above and below it).
       if (hl) buf.fill(cellRect(r.row, s.col, r.rows, s.cols), ' ', fg, theme.chromeBg);
       buf.text(r.row, s.labelCol, s.label, fg, theme.chromeBg, undefined, dy);
+      // A parked window wears brackets at rest and in every other state: they are
+      // the item's own ink faded, so they read as chrome next to the live label.
+      if (s.item.parked) {
+        const dim = withAlpha(fg, BRACKET_ALPHA);
+        buf.text(r.row, s.labelCol - BRACKET_PAD, '[', dim, theme.chromeBg, undefined, dy);
+        buf.text(r.row, s.labelCol + len(s.label) + 1, ']', dim, theme.chromeBg, undefined, dy);
+      }
       if (hl) {
         // After the text: a fresh glyph would drop the box.
         boxes.forEach((box, i) => {
