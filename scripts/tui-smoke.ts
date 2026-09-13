@@ -498,14 +498,17 @@ test('toggleSettings shows/hides; ≡ settings item toggles it too and reads act
   assert.equal(s.visible, true);
 });
 
-test('settings window is sized to its controls + padding and sits top-right of the area', () => {
+test('settings window is sized to its controls + padding and sits bottom-left of the area, above the bar', () => {
   const { desk } = makeDesktop();
   const s = desk.settings!;
   // button 1 + gap + toggles 2 + gap + range 2 = 7 rows, +2 padding rows, +2 frame;
-  // 32 control cols + 2×2 padding cols + 2 frame.
-  assert.deepEqual(s.rect, cellRect(0, 80 - 38, 11, 38));
-  assert.deepEqual(settingsRect([], 32, cellRect(0, 0, 29, 80)), cellRect(0, 46, 2, 34), 'no padding by default');
-  assert.deepEqual(settingsRect([], 32, cellRect(0, 0, 29, 80), { rows: 1, cols: 2 }), cellRect(0, 42, 4, 38));
+  // 32 control cols + 2×2 padding cols + 2 frame. Area is 28 rows (two-row bar).
+  assert.deepEqual(s.rect, cellRect(28 - 11, 0, 11, 38));
+  assert.equal(s.rect.col, desk.area.col, 'flush to the left edge');
+  assert.equal(s.rect.row + s.rect.rows, desk.menuBar.row, 'bottom row directly above the bar band');
+  assert.deepEqual(settingsRect([], 32, cellRect(0, 0, 29, 80)), cellRect(27, 0, 2, 34), 'no padding by default');
+  assert.deepEqual(settingsRect([], 32, cellRect(0, 0, 29, 80), { rows: 1, cols: 2 }), cellRect(25, 0, 4, 38));
+  assert.deepEqual(settingsRect([], 32, cellRect(2, 0, 28, 80)), cellRect(28, 0, 2, 34), 'top bar: bottom of the area is the buffer bottom');
   desk.toggleSettings();
   desk.render();
   const inner = s.inner;
@@ -525,7 +528,7 @@ test('settings window is sized to its controls + padding and sits top-right of t
   assert.equal(rowText(desk.buffer, top + 3).slice(left, left + 5), '(●) b');
   // Opting out of the padding restores the tight layout.
   const one = [createButton({ id: 'go', label: 'Go' })];
-  assert.deepEqual(settingsRect(one, 32, cellRect(0, 0, 29, 80), { rows: 0, cols: 0 }), cellRect(0, 46, 3, 34));
+  assert.deepEqual(settingsRect(one, 32, cellRect(0, 0, 29, 80), { rows: 0, cols: 0 }), cellRect(26, 0, 3, 34));
   const { desk: tight } = makeDesktop({ settings: { controls: one, padding: { rows: 0, cols: 0 } } });
   const t = tight.settings!;
   assert.equal(t.rect.cols, 34, 'no padding columns (the window may still enforce a minimum height)');

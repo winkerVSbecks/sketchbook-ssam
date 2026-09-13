@@ -33,7 +33,7 @@ export interface DesktopSettingsOptions {
   /** Window title (default `settings`). */
   title?: string;
   controls: TuiControl[];
-  /** Explicit geometry; by default the window is sized to its controls and placed top-right. */
+  /** Explicit geometry; by default the window is sized to its controls and placed bottom-left (above the bar). */
   rect?: CellRect;
   /** Start visible (default false). */
   open?: boolean;
@@ -338,7 +338,7 @@ export function createDesktop(opts: DesktopOptions): Desktop {
 /**
  * Size a settings window to its controls (stacked with one blank row between,
  * plus `padding` on every side and the 1-cell frame) and place it in the
- * top-right corner of `area`. `innerCols` is the width the controls get.
+ * bottom-left corner of `area`. `innerCols` is the width the controls get.
  */
 export function settingsRect(
   controls: readonly TuiControl[],
@@ -351,5 +351,6 @@ export function settingsRect(
   const innerRows = controls.reduce((sum, c, i) => sum + c.rows(innerCols) + (i > 0 ? 1 : 0), 0);
   const cols = Math.min(area.cols, innerCols + 2 * padCols + 2);
   const rows = Math.min(area.rows, innerRows + 2 * padRows + 2);
-  return cellRect(area.row, area.col + area.cols - cols, rows, cols);
+  // Bottom-left: flush to the left edge, bottom row directly above the bar band.
+  return cellRect(area.row + area.rows - rows, area.col, rows, cols);
 }
