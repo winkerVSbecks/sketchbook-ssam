@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-13T14:39:26.742Z",
+  "generatedAt": "2026-09-13T22:37:37.115Z",
   "sketches": [
     {
       "id": "sketches/42-loc",
@@ -5615,6 +5615,22 @@
         "version": 1779062548,
         "width": 1080,
         "height": 1080
+      }
+    },
+    {
+      "id": "sketches/terminal-ui/layered-compositions",
+      "name": "layered-compositions",
+      "path": "src/sketches/terminal-ui/layered-compositions.ts",
+      "firstCommitDate": "2026-09-13T12:12:44-04:00",
+      "year": 2026,
+      "lastCommitSha": "3b5e3bcc8df1bf8350f567e93559e63a86e50ecd",
+      "archivedAt": "2026-09-13T22:37:36.550Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/terminal-ui-layered-compositions",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1789339056/sketchbook/2026/terminal-ui-layered-compositions.png",
+        "version": 1789339056,
+        "width": 1600,
+        "height": 1000
       }
     },
     {

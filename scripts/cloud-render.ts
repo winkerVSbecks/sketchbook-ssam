@@ -35,6 +35,13 @@ const INSTALL_LOG_FILE = join(CLOUD_DIR, 'install.log');
 const OUTPUT_DIR = join(PROJECT_ROOT, 'output');
 const BROWSERS_PATH = join(CLOUD_DIR, 'browsers');
 
+// The headless page size. Sketches that declare `dimensions` are unaffected —
+// their canvas has a fixed backing store and /export reads the canvas, not the
+// window — but a sketch with no `dimensions` is sized by ssam to the viewport,
+// so this is the frame every full-screen sketch gets archived in. Landscape,
+// because full-screen sketches are composed for a screen, not a square.
+const HEADLESS_VIEWPORT = { width: 1600, height: 1000 };
+
 const READY_FLAG_TIMEOUT_MS = 15_000;
 const EXPORT_TIMEOUT_MS = 12_000;
 const LOCK_STALE_MS = 60_000;
@@ -170,7 +177,7 @@ async function renderOnce(sketchPath: string): Promise<string> {
 
   let resultFilename = '';
   try {
-    const context = await browser.newContext({ viewport: { width: 1280, height: 1280 } });
+    const context = await browser.newContext({ viewport: HEADLESS_VIEWPORT });
     const page = await context.newPage();
     await page.goto(`http://localhost:${VITE_PORT}/`, {
       waitUntil: 'domcontentloaded',
