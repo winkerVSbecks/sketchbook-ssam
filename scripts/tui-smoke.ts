@@ -9,6 +9,9 @@ import {
   createGlyphBuffer,
   createMetrics,
   themeFromPalette,
+  contrastRatio,
+  MIN_CONTRAST,
+  parseColor,
   fallbackTheme,
   withAlpha,
   cellRect,
@@ -187,12 +190,56 @@ test('themeFromPalette maps palette[0] → bg deterministically', () => {
   assert.equal(t.bg, '#111');
   assert.equal(t.fg, '#eee');
   assert.equal(t.accent, '#f80');
-  assert.equal(t.chromeBg, '#345');
+  assert.equal(t.chromeBg, '#eee', '#345 is under 3:1 against #111 → chrome falls back to fg');
   assert.equal(t.chromeFg, '#111');
   assert.equal(t.dim, 'rgba(238, 238, 238, 0.45)');
   assert.equal(t.selectionBg, 'rgba(255, 136, 0, 0.3)');
   assert.equal(t.font, fallbackTheme.font);
   assert.deepEqual(themeFromPalette(['#111', '#eee', '#f80', '#345']), t);
+});
+
+test('themeFromPalette picks fg / chromeBg by contrast, accent by saturation', () => {
+  // Pale palette from the verification report: positional fg (#FEEEEE) was invisible.
+  const pale = themeFromPalette(['#FCFAFA', '#FEEEEE', '#F7D7D7', '#3A3A3A']);
+  assert.equal(pale.bg, '#FCFAFA');
+  assert.equal(pale.fg, '#3A3A3A', 'darkest entry is the ink');
+  assert.ok(contrastRatio(pale.fg, pale.bg) >= MIN_CONTRAST);
+  assert.equal(pale.accent, '#3A3A3A', 'the most saturated remaining entry (#F7D7D7) is illegible → accent uses the ink');
+  const paleVivid = themeFromPalette(['#FCFAFA', '#FEEEEE', '#C0392B', '#3A3A3A']);
+  assert.equal(paleVivid.fg, '#3A3A3A');
+  assert.equal(paleVivid.accent, '#C0392B', 'a legible saturated entry is the accent');
+  assert.equal(pale.chromeBg, '#3A3A3A', 'no remaining entry reaches 3:1 → chrome uses the ink');
+  assert.equal(pale.chromeFg, '#FCFAFA');
+  // Dark bg keeps a light ink; a legible mid-tone becomes the chrome.
+  const dark = themeFromPalette(['#101010', '#ff3300', '#f0f0f0', '#9a9a9a']);
+  assert.equal(dark.fg, '#f0f0f0');
+  assert.equal(dark.accent, '#ff3300');
+  assert.equal(dark.chromeBg, '#9a9a9a');
+  // The most saturated entry is reserved for the accent even when it is the brightest.
+  const vivid = themeFromPalette(['#202020', '#dddddd', '#00ff88']);
+  assert.equal(vivid.fg, '#dddddd');
+  assert.equal(vivid.accent, '#00ff88');
+  // Palette order does not matter for the roles.
+  assert.deepEqual(themeFromPalette(['#101010', '#9a9a9a', '#f0f0f0', '#ff3300']), dark);
+  // Nothing legible: fall back to the fallback theme's paper (light bg) / ink (dark bg).
+  assert.equal(themeFromPalette(['#ffffff', '#fefefe', '#f0f0f0']).fg, fallbackTheme.bg);
+  assert.equal(themeFromPalette(['#000000', '#101010']).fg, fallbackTheme.fg);
+  // auto-albers (oklab) and clrs (rgb()) palettes are read too: the pale entry becomes the ink.
+  const ok = themeFromPalette(['oklab(0.44 -0.07 -0.08)', 'oklab(0.61 -0.06 -0.11)', 'oklab(0.78 -0.05 -0.14)', 'oklab(0.94 -0.04 -0.17)']);
+  assert.equal(ok.fg, 'oklab(0.94 -0.04 -0.17)');
+  assert.ok(contrastRatio(ok.fg, ok.bg) >= MIN_CONTRAST, `oklab contrast ${contrastRatio(ok.fg, ok.bg)}`);
+  assert.match(ok.dim, /^rgba\(\d+, \d+, \d+, 0\.45\)$/, 'dim is derived from the parsed ink');
+  const rgb = themeFromPalette(['rgb(247, 245, 238)', 'rgb(162, 168, 255)', 'rgb(34, 44, 50)']);
+  assert.equal(rgb.fg, 'rgb(34, 44, 50)');
+  assert.equal(rgb.accent, 'rgb(34, 44, 50)', 'lavender on near-white is ~1.9:1 → accent uses the ink');
+  assert.deepEqual(parseColor('oklch(50% 0 0)')!.map((v) => Math.abs(v - 99) <= 1), [true, true, true], 'oklch L 50 % is the grey #636363');
+  assert.deepEqual(parseColor('oklab(1 0 0)'), [255, 255, 255]);
+  assert.deepEqual(parseColor('oklab(0 0 0)'), [0, 0, 0]);
+  assert.equal(parseColor('rebeccapurple'), null);
+  // Unreadable backgrounds keep the positional mapping.
+  const raw = themeFromPalette(['hsl(0 0% 5%)', 'white', 'red']);
+  assert.equal(raw.fg, 'white');
+  assert.equal(raw.accent, 'red');
 });
 
 test('themeFromPalette falls back for short palettes', () => {
@@ -344,6 +391,25 @@ test('addWindow ×3, minimize one: 2 visible, bar lists the minimized title, sel
   assert.ok(!rowText(desk.buffer, 29).includes('chart 02'));
   assert.equal(w2.active, true);
   assert.equal(w3.active, false);
+});
+
+test('addWindow keeps a visible settings window in front; hidden settings → new windows on top', () => {
+  const { desk, w3 } = makeDesktop();
+  const s = desk.settings!;
+  const a = desk.addWindow({ title: 'chart 04', rect: cellRect(1, 1, 6, 20) });
+  assert.equal(desk.ui.windows[desk.ui.windows.length - 1], a, 'settings hidden: plain append');
+  desk.toggleSettings();
+  assert.equal(desk.ui.windows[desk.ui.windows.length - 1], s);
+  const b = desk.addWindow({ title: 'chart 05', rect: cellRect(3, 3, 6, 20) });
+  const c = desk.addWindow({ title: 'chart 06', rect: cellRect(5, 5, 6, 20) });
+  const z = desk.ui.windows;
+  assert.equal(z[z.length - 1], s, 'settings stays last');
+  assert.equal(z[z.length - 2], c, 'newest window just below it');
+  assert.equal(z[z.length - 3], b);
+  assert.ok(z.indexOf(w3) < z.indexOf(b), 'older windows stay behind the new ones');
+  assert.deepEqual(desk.windows.slice(-2), [b, c], 'desktop.windows excludes settings');
+  desk.ui.bringToFront(c);
+  assert.equal(z[z.length - 1], c, 'a user click still brings a chart over settings');
 });
 
 test('toggleSettings shows/hides; ≡ settings item toggles it too and reads active', () => {

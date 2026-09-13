@@ -149,7 +149,11 @@ export function createDesktop(opts: DesktopOptions): Desktop {
       theme: o.theme ?? theme,
       activeFrame: o.activeFrame ?? showActiveFrame,
     });
-    ui.add(win);
+    // Windows created while the settings window is open (re-layouts, rebuilds
+    // triggered from it) slot in just below it, so it never gets buried.
+    const settingsIdx = settings?.visible ? ui.windows.indexOf(settings) : -1;
+    if (settingsIdx >= 0) ui.windows.splice(settingsIdx, 0, win);
+    else ui.add(win);
     return win;
   };
 
