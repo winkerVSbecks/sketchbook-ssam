@@ -631,7 +631,7 @@ test('setTheme retints the shared theme in place: windows, bar and render pick i
 
 console.log('frame contrast');
 
-test('frame / frameActive reach AA against bg and differ, across seeded palettes', () => {
+test('frame ≥ 3:1 and frameActive ≥ 4.5:1 against bg, differing, across seeded palettes', () => {
   const palettes: Array<[string, readonly string[]]> = [
     ['pale', ['#FCFAFA', '#FEEEEE', '#F7D7D7', '#3A3A3A']],
     ['dark', ['#101010', '#ff3300', '#f0f0f0', '#9a9a9a']],
@@ -644,7 +644,7 @@ test('frame / frameActive reach AA against bg and differ, across seeded palettes
     const t = themeFromPalette(palette);
     const fr = contrastRatio(t.frame, t.bg);
     const ar = contrastRatio(t.frameActive, t.bg);
-    assert.ok(fr >= AA_CONTRAST, `${name}: frame ${t.frame} on ${t.bg} is ${fr.toFixed(2)}:1`);
+    assert.ok(fr >= MIN_CONTRAST, `${name}: frame ${t.frame} on ${t.bg} is ${fr.toFixed(2)}:1`);
     assert.ok(ar >= AA_CONTRAST, `${name}: frameActive ${t.frameActive} on ${t.bg} is ${ar.toFixed(2)}:1`);
     assert.notEqual(t.frame, t.frameActive, `${name}: frames must differ`);
     assert.ok(ar > fr, `${name}: the active frame is the stronger one`);
@@ -654,20 +654,22 @@ test('frame / frameActive reach AA against bg and differ, across seeded palettes
     assert.ok(contrastRatio(legibleOn(pressedBg, t.frame, t.frameActive), pressedBg) >= AA_CONTRAST, `${name}: pressed button text`);
     assert.ok(contrastRatio(legibleOn(t.chromeBg, t.chromeFg, t.frameActive), t.chromeBg) >= AA_CONTRAST, `${name}: title text`);
   }
-  // Known values: a strong ink is the active frame; the quiet frame fades toward bg.
+  // Known values: the ink is the active frame; the quiet frame fades toward bg to just ≥ 3:1.
   const pale = themeFromPalette(palettes[0][1]);
   assert.equal(pale.frameActive, '#3a3a3a');
-  assert.equal(pale.frame, '#747373');
-  // An ink under 7:1 is pushed toward black/white so the quiet frame has room below it.
+  assert.equal(pale.frame, '#929191');
+  assert.ok(contrastRatio(pale.frame, pale.bg) < 3.1, 'fades as far as 3:1 allows');
+  // An ink at 5.44:1 is kept as-is for the active frame (≥ 4.5 is enough).
   const low = themeFromPalette(['#333333', '#aaaaaa', '#ff0000']);
-  assert.ok(contrastRatio(low.frameActive, low.bg) >= 7, low.frameActive);
-  assert.notEqual(low.frameActive, '#aaaaaa');
+  assert.equal(low.frameActive, '#aaaaaa');
+  assert.ok(contrastRatio(low.frame, low.bg) >= MIN_CONTRAST);
   // Nothing in the palette reaches AA → pure black / white, whichever contrasts more.
   const blue = themeFromPalette(['#0067E2', '#DBCCC5']);
   assert.equal(blue.frameActive, '#ffffff');
-  assert.ok(contrastRatio(blue.frame, blue.bg) >= AA_CONTRAST);
-  // The fallback theme's explicit values meet the same bar.
-  assert.ok(contrastRatio(fallbackTheme.frame, fallbackTheme.bg) >= AA_CONTRAST);
+  assert.ok(contrastRatio(blue.frame, blue.bg) >= MIN_CONTRAST);
+  // The fallback theme's explicit values meet the same bars.
+  assert.ok(contrastRatio(fallbackTheme.frame, fallbackTheme.bg) >= MIN_CONTRAST);
+  assert.ok(contrastRatio(fallbackTheme.frame, fallbackTheme.bg) < 3.2, `fallback frame is just over 3:1: ${contrastRatio(fallbackTheme.frame, fallbackTheme.bg)}`);
   assert.ok(contrastRatio(fallbackTheme.frameActive, fallbackTheme.bg) >= AA_CONTRAST);
   // Unreadable backgrounds cannot be measured: both frames are the ink.
   assert.equal(themeFromPalette(['hsl(0 0% 5%)', 'white']).frame, 'white');

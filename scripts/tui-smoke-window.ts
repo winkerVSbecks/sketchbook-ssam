@@ -4,7 +4,7 @@
  */
 import assert from 'node:assert/strict';
 
-import { createGlyphBuffer, createMetrics, cellRect, composite, contrastRatio, AA_CONTRAST, fallbackTheme } from '../src/tui';
+import { createGlyphBuffer, createMetrics, cellRect, composite, contrastRatio, AA_CONTRAST, MIN_CONTRAST, fallbackTheme } from '../src/tui';
 import type { CellRect } from '../src/tui';
 import { createTuiWindow, type TuiContent } from '../src/tui/window';
 
@@ -66,7 +66,8 @@ test('drawn window renders ┌… title …[–][□][×]┐ in the top row', ()
   assert.equal(buf.get(5, 13)?.fg, w.theme.frame, 'title drawn in frame');
   assert.equal(buf.get(5, 13)?.bg, w.theme.bg);
   assert.notEqual(w.theme.frame, w.theme.dim, 'never the translucent dim');
-  assert.ok(contrastRatio(w.theme.frame, w.theme.bg) >= AA_CONTRAST);
+  assert.ok(contrastRatio(w.theme.frame, w.theme.bg) >= MIN_CONTRAST, 'inactive frame at graphics-level AA');
+  assert.ok(contrastRatio(w.theme.frameActive, w.theme.bg) >= AA_CONTRAST, 'active frame at text-level AA');
 });
 
 test('active window uses the double frame; buttons hit-test', () => {

@@ -7,9 +7,9 @@ export interface TuiTheme {
   fg: string;
   /** Secondary text in controls (translucent; not for frames). */
   dim: string;
-  /** Inactive window frames — box glyphs, title, buttons, grip. Solid, ≥ `AA_CONTRAST` against `bg`. */
+  /** Inactive window frames — box glyphs, title, buttons, grip. Solid, ≥ `MIN_CONTRAST` (3:1) against `bg` so it recedes. */
   frame: string;
-  /** Front-window frame. Solid, ≥ `AA_CONTRAST` against `bg` and visibly stronger than `frame`. */
+  /** Front-window frame. Solid, ≥ `AA_CONTRAST` (4.5:1) against `bg`. */
   frameActive: string;
   /** Highlights: active toggles, range thumbs, front-window title. */
   accent: string;
@@ -28,7 +28,7 @@ export const fallbackTheme: TuiTheme = {
   bg: '#0b0b0c',
   fg: '#f2f2f2',
   dim: 'rgba(255, 255, 255, 0.4)',
-  frame: '#7a7a7a',
+  frame: '#5e5e5e',
   frameActive: '#f2f2f2',
   accent: '#ffffff',
   chromeBg: 'rgba(255, 255, 255, 0.12)',
@@ -159,11 +159,8 @@ function chroma(color: string): number {
 /** Minimum contrast against `bg` for body text and for the chrome ground (WCAG large-text AA). */
 export const MIN_CONTRAST = 3;
 
-/** Minimum contrast for window frames and highlighted text (WCAG text-level AA). */
+/** Minimum contrast for the active window frame and highlighted text (WCAG text-level AA). */
 export const AA_CONTRAST = 4.5;
-
-/** Contrast the active frame aims for so the quiet frame (at `AA_CONTRAST`) reads as visibly quieter (WCAG AAA). */
-const ACTIVE_CONTRAST = 7;
 
 /** Pure black or white — whichever contrasts more with `bg` (always ≥ 4.58:1 against any opaque colour). */
 function extremeInk(bg: string): string {
@@ -205,15 +202,15 @@ export function legibleOn(bg: string, ...preferred: string[]): string {
 }
 
 /**
- * Frame pair for `bg` from the ink: `frameActive` is the ink when it reaches
- * `ACTIVE_CONTRAST`, else the ink pushed toward pure black/white until it does
- * (or as far as possible); `frame` is `frameActive` faded toward `bg` as far as
- * `AA_CONTRAST` allows. Both are opaque hex strings ≥ 4.5:1 against any opaque
- * `bg` (pure black/white alone guarantees 4.58:1). `ink` must be legible.
+ * Frame pair for `bg` from an ink that already reaches `AA_CONTRAST`:
+ * `frameActive` is that ink; `frame` is it faded toward `bg` as far as
+ * `MIN_CONTRAST` (3:1, WCAG graphics AA) allows, so inactive frames visibly
+ * recede. Both are opaque hex strings.
  */
 function framePair(ink: string, bg: string): { frame: string; frameActive: string } {
-  const frameActive = mixToContrast(ink, extremeInk(bg), bg, ACTIVE_CONTRAST, false);
-  const frame = mixToContrast(frameActive, bg, bg, AA_CONTRAST, true);
+  const a = parseColor(ink);
+  const frameActive = a ? toHex(a) : ink;
+  const frame = mixToContrast(frameActive, bg, bg, MIN_CONTRAST, true);
   return { frame, frameActive };
 }
 
@@ -227,9 +224,9 @@ function framePair(ink: string, bg: string): { frame: string; frameActive: strin
  *   else fg) · chromeBg = the
  *   remaining entry with the highest contrast against bg (must reach
  *   `MIN_CONTRAST`, else fg) · dim = fg @ 45 % · chromeFg = bg ·
- *   selectionBg = accent @ 30 % · frameActive / frame = the ink (or the
- *   highest-contrast entry reaching `AA_CONTRAST`, else pure black/white)
- *   and its fade toward bg, both ≥ `AA_CONTRAST` — see `framePair`.
+ *   selectionBg = accent @ 30 % · frameActive = the ink (or the
+ *   highest-contrast entry reaching `AA_CONTRAST`, else pure black/white),
+ *   ≥ 4.5:1 · frame = frameActive faded toward bg to just ≥ 3:1 — see `framePair`.
  * Ties keep palette order, so the result is deterministic. Palettes whose
  * background `parseColor` cannot read use the positional mapping
  * ([1] fg · [2] accent · [3] chromeBg). Missing entries fall through to `fallbackTheme`.
@@ -271,8 +268,8 @@ export function themeFromPalette(palette: readonly string[]): TuiTheme {
     const chromeCandidates = rest.filter((c) => c !== vividRest);
     const bestChrome = chromeCandidates.length ? byContrast(chromeCandidates) : rest.length ? hi : ink;
     chromeBg = contrastRatio(bestChrome, bg) >= MIN_CONTRAST ? bestChrome : ink;
-    // Frames need text-level AA: the ink when it gets there, else the strongest
-    // palette entry that does (often the accent), else pure black/white.
+    // The active frame needs text-level AA: the ink when it gets there, else the
+    // strongest palette entry that does (often the accent), else pure black/white.
     const aa = candidates.filter((c) => contrastRatio(c, bg) >= AA_CONTRAST);
     const frameInk = contrastRatio(ink, bg) >= AA_CONTRAST ? ink : aa.length ? byContrast(aa) : extremeInk(bg);
     frames = framePair(frameInk, bg);
