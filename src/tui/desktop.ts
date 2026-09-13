@@ -57,7 +57,7 @@ export interface DesktopOptions {
   /** …or a ready-made theme (wins over `palette`). */
   theme?: TuiTheme;
   font?: { size?: number; lineH?: number; family?: string; charW?: number };
-  /** Where the system bar lives; the desktop area is the rest. Default `bottom` (taskbar-style). */
+  /** Which edge the two-row system bar lives on; the desktop area is the rest. Default `bottom` (taskbar-style). */
   menuBar?: 'top' | 'bottom';
   settings?: DesktopSettingsOptions;
   /** Right-aligned status text on the bar (seed, fps…). */
@@ -78,7 +78,7 @@ export interface Desktop extends PointerTarget {
   readonly ui: UI;
   readonly theme: TuiTheme;
   readonly menuBar: TuiMenuBar;
-  /** Desktop area in cells: the whole buffer minus the bar row. */
+  /** Desktop area in cells: the whole buffer minus the bar band (`BAR_ROWS` rows). */
   readonly area: CellRect;
   /** Sketch windows in z-order (back → front), excluding the settings window. */
   readonly windows: TuiWindow[];
@@ -104,6 +104,8 @@ export interface Desktop extends PointerTarget {
 }
 
 const SETTINGS_ID = '≡ settings';
+/** Height of the menu bar band in rows (text on the upper row). */
+export const BAR_ROWS = 2;
 const DEFAULT_SETTINGS_COLS = 32;
 const DEFAULT_SETTINGS_PADDING: Required<LayoutPadding> = { rows: 1, cols: 2 };
 
@@ -121,9 +123,9 @@ export function createDesktop(opts: DesktopOptions): Desktop {
   const buffer = createGlyphBuffer(rows, cols);
 
   const barSide = opts.menuBar ?? 'bottom';
-  const barRow = barSide === 'bottom' ? rows - 1 : 0;
-  const area: CellRect =
-    barSide === 'bottom' ? cellRect(0, 0, Math.max(0, rows - 1), cols) : cellRect(1, 0, Math.max(0, rows - 1), cols);
+  const barRow = barSide === 'bottom' ? Math.max(0, rows - BAR_ROWS) : 0;
+  const areaRows = Math.max(0, rows - BAR_ROWS);
+  const area: CellRect = barSide === 'bottom' ? cellRect(0, 0, areaRows, cols) : cellRect(BAR_ROWS, 0, areaRows, cols);
 
   const ui = createUI({ onDragEnd: () => onDragEnd?.() });
   const size = (): [number, number] => [width, height];
@@ -214,7 +216,7 @@ export function createDesktop(opts: DesktopOptions): Desktop {
     }
     return list;
   };
-  const menuBar = createMenuBar({ metrics, theme, cols, row: barRow, items, status: opts.status });
+  const menuBar = createMenuBar({ metrics, theme, cols, row: barRow, rows: BAR_ROWS, items, status: opts.status });
 
   // --- Composed pointer target: bar first, then the window manager -------------
   let barCaptured = false;

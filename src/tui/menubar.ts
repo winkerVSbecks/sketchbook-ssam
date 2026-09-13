@@ -23,8 +23,10 @@ export interface MenuBarOptions {
   theme: TuiTheme;
   /** Width of the bar in cells (a getter lets the desktop resize). */
   cols: number | (() => number);
-  /** Buffer row the bar occupies — the bottom row by default, but any edge works. */
+  /** First buffer row of the bar band — the bottom `rows` rows by default, but any edge works. */
   row: number | (() => number);
+  /** Height of the band in rows (default 2): the ground fills every row, the text sits on the upper one. */
+  rows?: number;
   /** Current items, queried on every layout/draw/hit-test. */
   items: () => MenuItem[];
   /** Optional right-aligned status text (seed, fps…). Truncated before it would overlap items. */
@@ -48,8 +50,10 @@ export interface MenuBarLayout {
 }
 
 export interface TuiMenuBar extends UIWindow {
-  /** The bar's row in the buffer (evaluated now). */
+  /** The band's first row in the buffer (evaluated now); the text sits on it. */
   readonly row: number;
+  /** Height of the band in rows. */
+  readonly rows: number;
   /** The bar's width in cells (evaluated now). */
   readonly cols: number;
   rect(): CellRect;
@@ -58,7 +62,7 @@ export interface TuiMenuBar extends UIWindow {
   itemAtCol(col: number): MenuItem | null;
   /** Item under a pixel point, or null. */
   itemAt(pt: Pt): MenuItem | null;
-  /** Paint the bar into the glyph buffer (reverse-video row). */
+  /** Paint the bar into the glyph buffer (reverse-video band). */
   paint(buf: GlyphBuffer): void;
 }
 
@@ -119,11 +123,12 @@ export function createMenuBar(opts: MenuBarOptions): TuiMenuBar {
   const { metrics, theme, items, status } = opts;
   const getCols = () => Math.max(0, Math.floor(typeof opts.cols === 'function' ? opts.cols() : opts.cols));
   const getRow = () => Math.floor(typeof opts.row === 'function' ? opts.row() : opts.row);
+  const getRows = () => Math.max(1, Math.floor(opts.rows ?? 2));
 
   /** Id of the item the pointer went down on; selection fires on `pointerUp` over the same item. */
   let pressed: string | null = null;
 
-  const rect = (): CellRect => cellRect(getRow(), 0, 1, getCols());
+  const rect = (): CellRect => cellRect(getRow(), 0, getRows(), getCols());
   const layout = (): MenuBarLayout => layoutMenuBar(items(), getCols(), status?.());
 
   const spanAtCol = (col: number): MenuSpan | null => {
@@ -136,7 +141,8 @@ export function createMenuBar(opts: MenuBarOptions): TuiMenuBar {
 
   const inBar = (pt: Pt): boolean => {
     const c = metrics.toCell(pt);
-    return c.row === getRow() && c.col >= 0 && c.col < getCols();
+    const row = getRow();
+    return c.row >= row && c.row < row + getRows() && c.col >= 0 && c.col < getCols();
   };
   const itemAt = (pt: Pt): MenuItem | null =>
     inBar(pt) ? itemAtCol(metrics.toCell(pt).col) : null;
@@ -163,7 +169,8 @@ export function createMenuBar(opts: MenuBarOptions): TuiMenuBar {
         : isPressed
           ? legibleOn(composite(bg, composite(theme.chromeBg, theme.bg)), theme.chromeFg, theme.frameActive)
           : theme.chromeFg;
-      if (s.item.active || isPressed) buf.fill(cellRect(r.row, s.col, 1, s.cols), ' ', fg, bg);
+      // Highlights cover the whole band, not just the text row.
+      if (s.item.active || isPressed) buf.fill(cellRect(r.row, s.col, r.rows, s.cols), ' ', fg, bg);
       buf.text(r.row, s.labelCol, s.label, fg, bg);
     });
     if (st) buf.text(r.row, st.col, st.text, theme.chromeFg, theme.chromeBg);
@@ -176,6 +183,9 @@ export function createMenuBar(opts: MenuBarOptions): TuiMenuBar {
     },
     get cols() {
       return getCols();
+    },
+    get rows() {
+      return getRows();
     },
     rect,
     layout,

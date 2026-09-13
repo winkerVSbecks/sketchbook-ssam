@@ -378,17 +378,24 @@ function makeDesktop(over: Partial<Parameters<typeof createDesktop>[0]> = {}) {
   return { ctx, desk, w1, w2, w3, changes: () => changes };
 }
 
-test('grid from width/height; bar on the bottom row; area is everything above', () => {
+test('grid from width/height; two-row bar at the bottom; area is everything above', () => {
   const { desk } = makeDesktop();
   assert.equal(desk.metrics.charW, 8);
   assert.equal(desk.buffer.rows, 30);
   assert.equal(desk.buffer.cols, 80);
-  assert.equal(desk.menuBar.row, 29);
-  assert.deepEqual(desk.area, cellRect(0, 0, 29, 80));
+  assert.equal(desk.menuBar.row, 28, 'band starts two rows from the bottom');
+  assert.equal(desk.menuBar.rows, 2);
+  assert.deepEqual(desk.menuBar.rect(), cellRect(28, 0, 2, 80));
+  assert.deepEqual(desk.area, cellRect(0, 0, 28, 80), 'area rows = rows − 2');
   assert.deepEqual(desk.windows[0].bounds, desk.area);
+  desk.render();
+  assert.equal(rowText(desk.buffer, 28).trimEnd(), ' ≡ settings', 'text on the upper row');
+  assert.equal(rowText(desk.buffer, 29).trim(), '', 'lower row is blank band');
+  assert.equal(desk.buffer.get(29, 40)?.bg, desk.theme.chromeBg, 'ground fills both rows');
+  assert.equal(desk.hitTest!(at(29, 3)), true, 'both rows hit-test');
   const top = createDesktop({ ctx: stubCtx(), width: 80 * D_CHAR, height: 30 * D_LINE, menuBar: 'top', onChange() {} });
   assert.equal(top.menuBar.row, 0);
-  assert.deepEqual(top.area, cellRect(1, 0, 29, 80));
+  assert.deepEqual(top.area, cellRect(2, 0, 28, 80));
 });
 
 test('addWindow ×3, minimize one: 2 visible, bar lists the minimized title, selecting it restores + fronts', () => {
@@ -407,9 +414,10 @@ test('addWindow ×3, minimize one: 2 visible, bar lists the minimized title, sel
   assert.deepEqual(desk.ui.windows.filter((w) => w.visible).length, 2);
 
   desk.render();
-  const bar = rowText(desk.buffer, 29);
+  const bar = rowText(desk.buffer, 28);
   assert.ok(bar.startsWith(' ≡ settings │ chart 02 '), bar);
 
+  // Clicking the lower band row selects the item too.
   const span = desk.menuBar.layout().spans.find((s) => s.label === 'chart 02')!;
   desk.pointerDown(at(29, span.labelCol));
   desk.pointerUp(at(29, span.labelCol));
@@ -417,7 +425,7 @@ test('addWindow ×3, minimize one: 2 visible, bar lists the minimized title, sel
   assert.equal(w2.visible, true);
   assert.equal(desk.ui.windows[desk.ui.windows.length - 1], w2, 'restored window is in front');
   desk.render();
-  assert.ok(!rowText(desk.buffer, 29).includes('chart 02'));
+  assert.ok(!rowText(desk.buffer, 28).includes('chart 02'));
   assert.equal(w2.active, true);
   assert.equal(w3.active, false);
 });
@@ -524,7 +532,7 @@ test('the bar swallows clicks over it, even where a window would otherwise be', 
   const { desk, w1 } = makeDesktop();
   // Move chart 01 flush against the bar, then click the bar's empty space right below its title row.
   w1.setRect(cellRect(desk.area.rows - 8, 40, 8, 24));
-  assert.equal(w1.rect.row + w1.rect.rows, 29);
+  assert.equal(w1.rect.row + w1.rect.rows, 28);
   const before = { ...w1.rect };
   const changed = desk.pointerDown(at(29, 50));
   assert.equal(changed, false);
@@ -549,7 +557,8 @@ test('render paints bg, windows back-to-front (front = double frame), bar last, 
   assert.equal(w2.active, false);
   const b = desk.buffer;
   assert.equal(b.get(0, 0)?.ch, '·', 'wallpaper shows on the desktop');
-  assert.equal(b.get(29, 0)?.ch, ' ', 'bar row is not wallpapered');
+  assert.equal(b.get(28, 0)?.ch, ' ', 'bar rows are not wallpapered');
+  assert.equal(b.get(29, 0)?.ch, ' ', 'bar rows are not wallpapered');
   assert.equal(b.get(29, 0)?.bg, desk.theme.chromeBg);
   assert.equal(b.get(w3.rect.row, w3.rect.col)?.ch, '╔', 'front window: double frame');
   assert.equal(b.get(w1.rect.row, w1.rect.col)?.ch, '┌', 'back window: single frame');
@@ -720,10 +729,12 @@ test('active menu item is inverted: chromeBg text on a chromeFg ground across it
   desk.render();
   span = desk.menuBar.layout().spans[0];
   assert.equal(span.item.active, true);
-  for (let c = span.col; c < span.col + span.cols; c++) {
-    const g = desk.buffer.get(row, c)!;
-    assert.equal(g.bg, t.chromeFg, `col ${c} ground`);
-    assert.equal(g.fg, t.chromeBg, `col ${c} text`);
+  for (let r = row; r < row + desk.menuBar.rows; r++) {
+    for (let c = span.col; c < span.col + span.cols; c++) {
+      const g = desk.buffer.get(r, c)!;
+      assert.equal(g.bg, t.chromeFg, `row ${r} col ${c} ground`);
+      assert.equal(g.fg, t.chromeBg, `row ${r} col ${c} text`);
+    }
   }
   assert.equal(span.col, 0, 'first item: its pad cell is the bar edge');
   assert.equal(desk.buffer.get(row, span.col + span.cols)?.bg, t.chromeBg, 'inversion stops at the span');

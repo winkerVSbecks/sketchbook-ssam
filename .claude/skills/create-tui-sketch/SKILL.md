@@ -21,7 +21,7 @@ Ask for anything missing, in a single message:
 1. **Name** — filename without `.ts` (kebab-case).
 2. **Directory** — subdirectory under `src/sketches/` (or `.` for none). Terminal pieces live in `terminal-ui`.
 3. **Controls** — the settings window, comma-separated, in order: `range:label:min:max:value[:step]`, `toggle:label[:on]`, `button:label`. Default `range:level:0:1:0.5:0.05,toggle:grid:on`. Consecutive toggles share one checkbox group.
-4. **Windows** — initial windows in cells: `title:row:col:rows:cols`, comma-separated. Default `main:2:2:14:40`. At 1080² with the 14:20 font the buffer is about 54 rows × 128 cols; the bar takes one row.
+4. **Windows** — initial windows in cells: `title:row:col:rows:cols`, comma-separated. Default `main:2:2:14:40`. At 1080² with the 14:20 font the buffer is about 54 rows × 128 cols; the bar band takes two rows.
 5. **Bar** (optional) — `bottom` (default, taskbar-style) or `top`. **Dimensions** default `1080x1080`. **Font** `size:lineH`, default `14:20`.
 
 If the user already stated these, don't re-ask.
@@ -49,7 +49,7 @@ The generated file has one function to replace, clearly marked: `drawWindow(buf,
 
 `desktop.addWindow` / `removeWindow`, `desktop.windows` (z-order, back → front), `desktop.area` (the desktop minus the bar), `desktop.activeFrame` and `desktop.toggleSettings()` are there for customisation; `window.__demo.desktop` exposes it in DEV.
 
-Built-in interaction (no code needed): drag the title row to move a window in whole cells; double-click the title row to maximize / restore (same as `[□]`); drag the bottom-right corner grip to resize (min size clamped); `[–]` minimizes into the bar, `[□]` maximizes to the desktop area / restores, `[×]` closes; the front window draws a double frame. The bar holds `≡ settings` (toggles the settings window, which is a normal window: closable, minimizable, draggable) followed by one item per minimized window (click restores and fronts it). Keyboard: `Esc` hides the settings window, `h` restores every minimized window.
+Built-in interaction (no code needed): drag the title row to move a window in whole cells; double-click the title row to maximize / restore (same as `[□]`); drag the bottom-right corner grip to resize (min size clamped); `[–]` minimizes into the bar, `[□]` maximizes to the desktop area / restores, `[×]` closes; the front window draws a double frame. The two-row bar (text on the upper row, the whole band hit-testable) holds `≡ settings` (toggles the settings window, which is a normal window: closable, minimizable, draggable) followed by one item per minimized window (click restores and fronts it). Keyboard: `Esc` hides the settings window, `h` restores every minimized window.
 
 ## Step 4: Verify
 
