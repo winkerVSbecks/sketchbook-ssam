@@ -25,7 +25,7 @@ export interface MenuBarOptions {
   cols: number | (() => number);
   /** First buffer row of the bar band — the bottom `rows` rows by default, but any edge works. */
   row: number | (() => number);
-  /** Height of the band in rows (default 2): the ground fills every row, the text sits on the upper one. */
+  /** Height of the band in rows (default 2): the ground fills every row; the text sits on the upper row with `dy` centring it on the band. */
   rows?: number;
   /** Current items, queried on every layout/draw/hit-test. */
   items: () => MenuItem[];
@@ -147,15 +147,19 @@ export function createMenuBar(opts: MenuBarOptions): TuiMenuBar {
   const itemAt = (pt: Pt): MenuItem | null =>
     inBar(pt) ? itemAtCol(metrics.toCell(pt).col) : null;
 
+  /** Text is written on the upper row, shifted down so its em box is centred on the band's midline (0 for a 1-row bar). */
+  const textDy = () => (getRows() - 1) / 2;
+
   const paint = (buf: GlyphBuffer) => {
     const r = rect();
     if (r.cols < 1) return;
+    const dy = textDy();
     buf.fill(r, ' ', theme.chromeFg, theme.chromeBg);
     const { spans, status: st } = layout();
     // Separators first: their padding spaces overlap the items' pad cells, and an
     // active item's inversion must win those cells.
     spans.forEach((s, i) => {
-      if (i > 0) buf.text(r.row, s.labelCol - MENU_SEPARATOR.length, MENU_SEPARATOR, theme.chromeFg, theme.chromeBg);
+      if (i > 0) buf.text(r.row, s.labelCol - MENU_SEPARATOR.length, MENU_SEPARATOR, theme.chromeFg, theme.chromeBg, undefined, dy);
     });
     spans.forEach((s) => {
       // Active: inverted over the whole span (label + one pad cell each side), so
@@ -171,9 +175,9 @@ export function createMenuBar(opts: MenuBarOptions): TuiMenuBar {
           : theme.chromeFg;
       // Highlights cover the whole band, not just the text row.
       if (s.item.active || isPressed) buf.fill(cellRect(r.row, s.col, r.rows, s.cols), ' ', fg, bg);
-      buf.text(r.row, s.labelCol, s.label, fg, bg);
+      buf.text(r.row, s.labelCol, s.label, fg, bg, undefined, dy);
     });
-    if (st) buf.text(r.row, st.col, st.text, theme.chromeFg, theme.chromeBg);
+    if (st) buf.text(r.row, st.col, st.text, theme.chromeFg, theme.chromeBg, undefined, dy);
   };
 
   return {

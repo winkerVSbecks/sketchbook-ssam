@@ -7,6 +7,12 @@ export interface Glyph {
   fg: string;
   /** Optional per-cell background painted as a rect under the glyph. */
   bg?: string;
+  /**
+   * Optional vertical offset of the glyph, as a fraction of the line height
+   * (0.5 = half a row down). The cell background is unaffected. Lets a glyph
+   * sit on the midline of a two-row band. Absent = 0.
+   */
+  dy?: number;
 }
 
 export type BoxStyle = 'single' | 'double' | 'heavy' | 'round';
@@ -48,11 +54,12 @@ export interface GlyphBuffer {
   /** Empty every cell (or fill with spaces on `bg` when given). Resets the clip stack. */
   clear(bg?: string): void;
   get(row: number, col: number): Glyph | null;
-  /** Write one glyph; silently ignored outside the buffer or the current clip. */
-  put(row: number, col: number, ch: string, fg: string, bg?: string): void;
+  /** Write one glyph; silently ignored outside the buffer or the current clip. `dy` = `Glyph.dy`. */
+  put(row: number, col: number, ch: string, fg: string, bg?: string, dy?: number): void;
   /**
    * Write `str` left-to-right from (row, col), one code point per cell,
    * truncated at `maxLen` and at the clip. Returns the number of cells written.
+   * `dy` = `Glyph.dy` for every glyph written.
    */
   text(
     row: number,
@@ -61,6 +68,7 @@ export interface GlyphBuffer {
     fg: string,
     bg?: string,
     maxLen?: number,
+    dy?: number,
   ): number;
   hline(row: number, col: number, len: number, fg: string, bg?: string, ch?: string): void;
   vline(row: number, col: number, len: number, fg: string, bg?: string, ch?: string): void;
@@ -71,7 +79,7 @@ export interface GlyphBuffer {
   clip(rect: CellRect, fn: () => void): void;
   /** The active clip (whole buffer when none is pushed). */
   clipRect(): CellRect;
-  /** Paint the buffer: bg runs first, then one `fillText` per glyph. */
+  /** Paint the buffer: bg runs first, then one `fillText` per glyph (at `y + dy · lineH` when `dy` is set). */
   blit(ctx: BlitContext, metrics: TuiMetrics, fallbackBg?: string): void;
 }
 
@@ -88,9 +96,16 @@ export function createGlyphBuffer(rows: number, cols: number): GlyphBuffer {
   const clips: CellRect[] = [];
   const clipRect = (): CellRect => clips[clips.length - 1] ?? bounds;
 
-  const put = (row: number, col: number, ch: string, fg: string, bg?: string) => {
+  /** Glyph record; `bg` / `dy` are only present when set, so plain cells keep their shape. */
+  const glyph = (ch: string, fg: string, bg?: string, dy?: number): Glyph => {
+    const g: Glyph = bg === undefined ? { ch, fg } : { ch, fg, bg };
+    if (dy) g.dy = dy;
+    return g;
+  };
+
+  const put = (row: number, col: number, ch: string, fg: string, bg?: string, dy?: number) => {
     if (!cellRectContains(clipRect(), row, col)) return;
-    cells[row][col] = bg === undefined ? { ch, fg } : { ch, fg, bg };
+    cells[row][col] = glyph(ch, fg, bg, dy);
   };
 
   const fill = (rect: CellRect, ch: string, fg: string, bg?: string) => {
@@ -130,7 +145,7 @@ export function createGlyphBuffer(rows: number, cols: number): GlyphBuffer {
 
     put,
 
-    text(row, col, str, fg, bg, maxLen) {
+    text(row, col, str, fg, bg, maxLen, dy) {
       const glyphs = chars(str);
       const n = maxLen === undefined ? glyphs.length : Math.min(glyphs.length, Math.max(0, maxLen));
       const clip = clipRect();
@@ -138,7 +153,7 @@ export function createGlyphBuffer(rows: number, cols: number): GlyphBuffer {
       for (let i = 0; i < n; i++) {
         const c = col + i;
         if (!cellRectContains(clip, row, c)) continue;
-        cells[row][c] = bg === undefined ? { ch: glyphs[i], fg } : { ch: glyphs[i], fg, bg };
+        cells[row][c] = glyph(glyphs[i], fg, bg, dy);
         written++;
       }
       return written;
@@ -221,7 +236,7 @@ export function createGlyphBuffer(rows: number, cols: number): GlyphBuffer {
           const g = line[col];
           if (!g || g.ch === ' ' || g.ch === '') continue;
           ctx.fillStyle = g.fg;
-          ctx.fillText(g.ch, col * charW, y);
+          ctx.fillText(g.ch, col * charW, g.dy ? y + g.dy * lineH : y);
         }
       }
     },

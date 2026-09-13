@@ -55,6 +55,11 @@ test('lists settings then minimized windows on the bottom row', () => {
   }
   assert.equal(bar.rows, 2);
   assert.deepEqual(bar.rect(), { row: ROW, col: 0, rows: 2, cols: COLS });
+  // Text glyphs carry dy 0.5 so they sit on the band's midline; the ground cells do not.
+  for (let c = 1; c < 11; c++) assert.equal(buf.get(ROW, c)?.dy, 0.5, `text col ${c}`);
+  assert.equal(buf.get(ROW, 12)?.dy, 0.5, 'separator glyph too');
+  assert.equal(buf.get(ROW, 40)?.dy, undefined, 'empty band cell');
+  assert.equal(buf.get(ROW + 1, 3)?.dy, undefined, 'lower row ground');
 });
 
 test('contains / cursor: pointer over items, default on empty bar, null off the bar', () => {
@@ -143,6 +148,7 @@ test('status text is right-aligned with one padding cell', () => {
   const buf = createGlyphBuffer(ROWS, COLS);
   bar.paint(buf);
   assert.equal(dump(buf)[ROW], ' ≡ settings │ chart 02 │ chart 05       seed 42 ');
+  assert.equal(buf.get(ROW, COLS - 2)?.dy, 0.5, 'status text is centred on the band too');
   assert.equal(bar.layout().status?.col, COLS - 1 - 'seed 42'.length);
 });
 
@@ -189,6 +195,10 @@ test('row and cols accept getters (top-edge bar, resize)', () => {
   const one = createMenuBar({ metrics, theme: fallbackTheme, cols: 30, row: 0, rows: 1, items });
   assert.deepEqual(one.rect(), { row: 0, col: 0, rows: 1, cols: 30 });
   assert.equal(one.contains(px(2, 1)), false);
+  const b1 = createGlyphBuffer(2, 30);
+  one.paint(b1);
+  assert.equal(b1.get(0, 3)?.ch, 's');
+  assert.equal(b1.get(0, 3)?.dy ?? 0, 0, 'a 1-row bar writes plain glyphs');
   cols = 12;
   assert.equal(top.cols, 12);
   assert.equal(top.contains(px(20, 0)), false);

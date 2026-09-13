@@ -318,6 +318,36 @@ test('blit paints merged bg runs then one fillText per glyph', () => {
   assert.equal(ctx.textAlign, 'left');
 });
 
+test('Glyph.dy shifts the fillText y by dy · lineH; bg and plain cells are untouched', () => {
+  const m = createMetrics(null, { charW: 8, lineH: 20 });
+  const buf = createGlyphBuffer(2, 3);
+  buf.put(0, 0, 'a', '#fff', '#222');
+  buf.put(0, 1, 'b', '#fff', '#222', 0.5);
+  buf.text(1, 0, 'cd', '#fff', undefined, undefined, 0.25);
+  assert.deepEqual(buf.get(0, 0), { ch: 'a', fg: '#fff', bg: '#222' }, 'no dy key when unset');
+  assert.deepEqual(buf.get(0, 1), { ch: 'b', fg: '#fff', bg: '#222', dy: 0.5 });
+  assert.equal(buf.get(1, 1)?.dy, 0.25);
+  const texts: [string, number, number][] = [];
+  const rects: [number, number, number, number][] = [];
+  const ctx: BlitContext = {
+    font: '',
+    fillStyle: '',
+    textBaseline: 'alphabetic',
+    textAlign: 'left',
+    fillRect: (x, y, w, h) => rects.push([x, y, w, h]),
+    fillText: (t, x, y) => texts.push([t, x, y]),
+  } as unknown as BlitContext;
+  buf.blit(ctx, m);
+  const y0 = m.baselineOffset;
+  assert.deepEqual(texts, [
+    ['a', 0, y0],
+    ['b', 8, y0 + 10],
+    ['c', 0, 20 + y0 + 5],
+    ['d', 8, 20 + y0 + 5],
+  ]);
+  assert.ok(rects.some(([x, y, w, h]) => x === 0 && y === 0 && w === 16 && h === 20), 'the bg run covers the whole cell regardless of dy');
+});
+
 console.log('cells');
 
 test('cell rect helpers', () => {
@@ -390,6 +420,7 @@ test('grid from width/height; two-row bar at the bottom; area is everything abov
   assert.deepEqual(desk.windows[0].bounds, desk.area);
   desk.render();
   assert.equal(rowText(desk.buffer, 28).trimEnd(), ' ≡ settings', 'text on the upper row');
+  assert.equal(desk.buffer.get(28, 2)?.dy, 0.5, 'centred on the band midline via dy');
   assert.equal(rowText(desk.buffer, 29).trim(), '', 'lower row is blank band');
   assert.equal(desk.buffer.get(29, 40)?.bg, desk.theme.chromeBg, 'ground fills both rows');
   assert.equal(desk.hitTest!(at(29, 3)), true, 'both rows hit-test');
