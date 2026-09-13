@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 
 import { createGlyphBuffer } from '../src/tui/grid';
 import { createMetrics } from '../src/tui/metrics';
-import { fallbackTheme } from '../src/tui/theme';
+import { AA_CONTRAST, composite, contrastRatio, fallbackTheme, legibleOn } from '../src/tui/theme';
 import { createMenuBar, layoutMenuBar } from '../src/tui/menubar';
 import type { MenuItem } from '../src/tui/menubar';
 
@@ -84,15 +84,24 @@ test('press on one item, release on another selects nothing', () => {
   assert.deepEqual(calls, []);
 });
 
-test('settings toggles active and is drawn in accent', () => {
-  const col = bar.layout().spans[0].labelCol;
+test('settings toggles active and is drawn inverted (chromeBg text on a chromeFg ground)', () => {
+  const span = bar.layout().spans[0];
+  const col = span.labelCol;
   bar.pointerDown(px(col));
   bar.pointerUp(px(col));
   assert.equal(settingsVisible, true);
   const buf = createGlyphBuffer(ROWS, COLS);
   bar.paint(buf);
-  assert.equal(buf.get(ROW, col)?.fg, fallbackTheme.accent);
-  assert.equal(buf.get(ROW, bar.layout().spans[1].labelCol)?.fg, fallbackTheme.chromeFg);
+  // The whole padded span is inverted; accent never reaches the bar.
+  for (let c = span.col; c < span.col + span.cols; c++) {
+    assert.equal(buf.get(ROW, c)?.bg, fallbackTheme.chromeFg, `col ${c} ground`);
+    assert.equal(buf.get(ROW, c)?.fg, fallbackTheme.chromeBg, `col ${c} text`);
+  }
+  assert.equal(buf.get(ROW, span.col + span.cols)?.bg, fallbackTheme.chromeBg, 'inversion stops at the span');
+  const other = bar.layout().spans[1];
+  assert.equal(buf.get(ROW, other.labelCol)?.fg, fallbackTheme.chromeFg);
+  assert.equal(buf.get(ROW, other.labelCol)?.bg, fallbackTheme.chromeBg);
+  assert.ok(!buf.cells[ROW].some((g) => g?.fg === fallbackTheme.accent || g?.bg === fallbackTheme.accent), 'accent stays off the bar');
   settingsVisible = false;
 });
 
@@ -103,6 +112,12 @@ test('pressed item is highlighted with selectionBg until release', () => {
   bar.paint(buf);
   assert.equal(buf.get(ROW, s.labelCol)?.bg, fallbackTheme.selectionBg);
   assert.equal(buf.get(ROW, s.col)?.bg, fallbackTheme.selectionBg);
+  // Text is chosen for AA on the real ground: bg ← chromeBg ← selectionBg, all flattened.
+  const ground = composite(fallbackTheme.selectionBg, composite(fallbackTheme.chromeBg, fallbackTheme.bg));
+  const fg = buf.get(ROW, s.labelCol)?.fg;
+  assert.equal(fg, legibleOn(ground, fallbackTheme.chromeFg, fallbackTheme.frameActive));
+  assert.equal(fg, fallbackTheme.chromeFg, 'the bar text already clears AA on the fallback highlight');
+  assert.ok(contrastRatio(fg!, ground) >= AA_CONTRAST);
   bar.pointerUp(px(s.labelCol));
   buf.clear();
   bar.paint(buf);

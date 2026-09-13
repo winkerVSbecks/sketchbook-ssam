@@ -4,7 +4,7 @@
  */
 import assert from 'node:assert/strict';
 
-import { createGlyphBuffer, createMetrics, cellRect } from '../src/tui';
+import { createGlyphBuffer, createMetrics, cellRect, composite, contrastRatio, AA_CONTRAST, fallbackTheme } from '../src/tui';
 import type { CellRect } from '../src/tui';
 import { createTuiWindow, type TuiContent } from '../src/tui/window';
 
@@ -60,7 +60,13 @@ test('drawn window renders ┌… title …[–][□][×]┐ in the top row', ()
   assert.equal(rows[5].slice(10, 30), '┌─ chart ─[–][□][×]┐');
   assert.equal(rows[12].slice(10, 30), '└──────────────────┘');
   assert.equal(rows[6].slice(10, 30), '│                  │');
-  assert.equal(buf.get(12, 29)?.fg, w.theme.accent, 'grip drawn in accent');
+  // Inactive chrome — box, title and grip — is theme.frame (solid, ≥ 4.5:1 on bg).
+  assert.equal(buf.get(12, 29)?.fg, w.theme.frame, 'grip drawn in frame');
+  assert.equal(buf.get(5, 10)?.fg, w.theme.frame, 'corner drawn in frame');
+  assert.equal(buf.get(5, 13)?.fg, w.theme.frame, 'title drawn in frame');
+  assert.equal(buf.get(5, 13)?.bg, w.theme.bg);
+  assert.notEqual(w.theme.frame, w.theme.dim, 'never the translucent dim');
+  assert.ok(contrastRatio(w.theme.frame, w.theme.bg) >= AA_CONTRAST);
 });
 
 test('active window uses the double frame; buttons hit-test', () => {
@@ -71,6 +77,15 @@ test('active window uses the double frame; buttons hit-test', () => {
   const rows = dump(buf);
   assert.equal(rows[5][10], '╔');
   assert.equal(rows[12][10], '╚');
+  // Active chrome is theme.frameActive; the title sits on chromeBg with AA text.
+  assert.equal(buf.get(5, 10)?.fg, w.theme.frameActive, 'corner drawn in frameActive');
+  assert.equal(buf.get(12, 29)?.fg, w.theme.frameActive, 'grip drawn in frameActive');
+  assert.equal(buf.get(5, 20)?.fg, w.theme.frameActive, 'buttons drawn in frameActive');
+  assert.notEqual(w.theme.frameActive, w.theme.frame);
+  const title = buf.get(5, 13)!;
+  assert.equal(title.bg, w.theme.chromeBg);
+  assert.equal(title.fg, fallbackTheme.chromeFg, 'chromeFg is legible on the flattened fallback chrome');
+  assert.ok(contrastRatio(title.fg, composite(title.bg, w.theme.bg)) >= AA_CONTRAST);
   assert.equal(w.buttonAt({ row: 5, col: 20 }), 'minimize');
   assert.equal(w.buttonAt({ row: 5, col: 24 }), 'maximize');
   assert.equal(w.buttonAt({ row: 5, col: 28 }), 'close');
