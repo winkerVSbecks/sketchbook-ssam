@@ -2,8 +2,8 @@
 name: create-tui-sketch
 description: >
   Scaffolds a new ssam sketch on the terminal desktop: a character-grid canvas
-  with box-drawing windows, a system menu bar and a glyph-drawn settings window
-  (src/tui). Use when the user wants a "terminal sketch", says "new terminal
+  with box-drawing windows, a system menu bar and a glyph-drawn settings popup
+  menu (src/tui). Use when the user wants a "terminal sketch", says "new terminal
   sketch", "tui sketch", "desktop sketch", "terminal desktop", "create a tui
   sketch called X", "sketch with terminal windows", or wants the
   layered-compositions desktop look on a new piece. Always use this skill —
@@ -20,7 +20,7 @@ Ask for anything missing, in a single message:
 
 1. **Name** — filename without `.ts` (kebab-case).
 2. **Directory** — subdirectory under `src/sketches/` (or `.` for none). Terminal pieces live in `terminal-ui`.
-3. **Controls** — the settings window, comma-separated, in order: `range:label:min:max:value[:step]`, `toggle:label[:on]`, `button:label`. Default `range:level:0:1:0.5:0.05,toggle:grid:on`. Consecutive toggles share one checkbox group.
+3. **Controls** — the settings popup, comma-separated, in order: `range:label:min:max:value[:step]`, `toggle:label[:on]`, `button:label`. Default `range:level:0:1:0.5:0.05,toggle:grid:on`. Consecutive toggles share one checkbox group.
 4. **Windows** — initial windows in cells: `title:row:col:rows:cols`, comma-separated. Default `main:2:2:14:40`. At 1080² with the 14:20 font the buffer is about 54 rows × 128 cols; the bar band takes two rows.
 5. **Bar** (optional) — `bottom` (default, taskbar-style) or `top`. **Dimensions** default `1080x1080`. **Font** `size:lineH`, default `14:20`.
 
@@ -47,9 +47,9 @@ The generated file has one function to replace, clearly marked: `drawWindow(buf,
 - `wallpaper(buf, area)` is optional and paints behind the windows; drop it (and the `wallpaper` option) for a plain ground.
 - Resizing a window simply calls `drawWindow` with a new `inner` — rebuild any cached content when `inner.rows`/`inner.cols` change (see `src/sketches/terminal-ui/layered-compositions.ts`, the full example).
 
-`desktop.addWindow` / `removeWindow`, `desktop.windows` (z-order, back → front), `desktop.area` (the desktop minus the bar), `desktop.activeFrame` and `desktop.toggleSettings()` are there for customisation; `window.__demo.desktop` exposes it in DEV.
+`desktop.addWindow` / `removeWindow`, `desktop.windows` (z-order, back → front), `desktop.area` (the desktop minus the bar), `desktop.activeFrame`, `desktop.toggleSettings()` / `desktop.settings` (the popup) and `desktop.resize(width, height)` are there for customisation; `window.__demo.desktop` exposes it in DEV. To fill the viewport instead of fixed `dimensions`, drop `dimensions` from the settings and add `wrap.resize = ({ width, height }) => desktop.resize(width, height);` — the grid, the bar and the windows follow (see `layered-compositions.ts`).
 
-Built-in interaction (no code needed): drag the title row to move a window in whole cells; double-click the title row to maximize / restore (same as `[□]`); drag the bottom-right corner grip to resize (min size clamped); `[–]` minimizes into the bar, `[□]` maximizes to the desktop area / restores, `[×]` closes; the front window draws a double frame. The two-row bar (text on the upper row, the whole band hit-testable) holds `+ new` (calls `onNewWindow`; the template's stub adds a cascaded 12×32 window drawn by `drawWindow`), then `≡ settings` (toggles the settings window — it opens bottom-left, directly above the bar, and is a normal window: closable, minimizable, draggable) followed by one item per minimized window (click restores and fronts it). Keyboard: `Tab` / `Shift+Tab` cycle focus through the visible windows (the fronted one gets the double frame; minimized ones are skipped), `Esc` hides the settings window, `h` restores every minimized window.
+Built-in interaction (no code needed): drag the title row to move a window in whole cells; double-click the title row to maximize / restore (same as `[□]`); drag the bottom-right corner grip to resize (min size clamped); `[–]` minimizes into the bar, `[□]` maximizes to the desktop area / restores, `[×]` closes; the front window draws a double frame. The two-row bar (text on the upper row, the whole band hit-testable) holds `+ new` (calls `onNewWindow`; the template's stub adds a cascaded 12×32 window drawn by `drawWindow`), then `≡ settings` (opens the settings popup: a chrome-less panel of controls hung off the item — flush with its left edge, sitting directly on the band, framed in the bar's colours; it stays in front of every window and is never a Tab stop; click anywhere outside, press `Esc`, or click the item again to dismiss it — `+ new` dismisses it first, then fires) followed by one item per minimized window (click restores and fronts it). The band runs flush to the canvas edges (the pixel remainder past the last row/column is part of it). Keyboard: `Tab` / `Shift+Tab` cycle focus through the visible windows (the fronted one gets the double frame; minimized ones are skipped), `Esc` closes the settings popup, `h` restores every minimized window.
 
 ## Step 4: Verify
 
@@ -62,4 +62,5 @@ Invoke the `verify-sketch` skill on the new file. Expected first render: the pal
 | `template.ts` | The sketch template with `__TOKENS__` |
 | `scaffold.js` | Parses args, substitutes tokens, writes the sketch |
 | `src/tui/desktop.ts` | `createDesktop` — the desktop and wiring the template relies on |
+| `src/tui/menu.ts` | `createPopupMenu` — the `≡ settings` popup the desktop hangs off its bar item |
 | `src/sketches/terminal-ui/layered-compositions.ts` | Full example: every chart panel is a window |

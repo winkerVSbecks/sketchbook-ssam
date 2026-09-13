@@ -4,5 +4,6 @@ export * from './theme';
 export * from './grid';
 export * from './window';
 export * from './menubar';
+export * from './menu';
 export * from './controls';
 export * from './desktop';

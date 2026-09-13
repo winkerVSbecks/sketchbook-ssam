@@ -2,7 +2,7 @@
 /**
  * layered-compositions on the terminal desktop: every chart rect of the
  * terminal-charts original is a `TuiWindow` (drag, resize, minimize, close),
- * and its Tweakpane is the desktop's `≡ settings` window. Patterns live in
+ * and its Tweakpane is the desktop's `≡ settings` popup menu. Patterns live in
  * local cell coordinates (see ./patterns), so moving a window is free and
  * resizing rebuilds the pattern for the new size. The sketch fills the
  * viewport (no fixed `dimensions`); `wrap.resize` hands the new size to the desktop.

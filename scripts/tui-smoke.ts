@@ -28,7 +28,7 @@ import {
   createButton,
   createRange,
   createToggleGroup,
-  settingsRect,
+  popupMenuRect,
 } from '../src/tui';
 import type { BlitContext, DesktopContext } from '../src/tui';
 
@@ -575,23 +575,39 @@ test('addWindow ×3, minimize one: 2 visible, bar lists the minimized title, sel
   assert.equal(w3.active, false);
 });
 
-test('addWindow keeps a visible settings window in front; hidden settings → new windows on top', () => {
+test('the settings popup lives outside the z-order: addWindow always appends, the popup draws over every window', () => {
   const { desk, w3 } = makeDesktop();
   const s = desk.settings!;
-  const a = desk.addWindow({ title: 'chart 04', rect: cellRect(1, 1, 6, 20) });
-  assert.equal(desk.ui.windows[desk.ui.windows.length - 1], a, 'settings hidden: plain append');
+  assert.equal(desk.ui.windows.includes(s as never), false, 'not a UI window');
   desk.toggleSettings();
-  assert.equal(desk.ui.windows[desk.ui.windows.length - 1], s);
   const b = desk.addWindow({ title: 'chart 05', rect: cellRect(3, 3, 6, 20) });
   const c = desk.addWindow({ title: 'chart 06', rect: cellRect(5, 5, 6, 20) });
   const z = desk.ui.windows;
-  assert.equal(z[z.length - 1], s, 'settings stays last');
-  assert.equal(z[z.length - 2], c, 'newest window just below it');
-  assert.equal(z[z.length - 3], b);
+  assert.equal(z[z.length - 1], c, 'newest window is front');
+  assert.equal(z[z.length - 2], b);
   assert.ok(z.indexOf(w3) < z.indexOf(b), 'older windows stay behind the new ones');
-  assert.deepEqual(desk.windows.slice(-2), [b, c], 'desktop.windows excludes settings');
-  desk.ui.bringToFront(c);
-  assert.equal(z[z.length - 1], c, 'a user click still brings a chart over settings');
+  assert.deepEqual(desk.windows, z, 'desktop.windows is the whole z-order');
+  assert.equal(s.visible, true, 'adding windows does not close it');
+  // A maximized window under the popup: the popup's frame still shows on top.
+  c.toggleMaximize();
+  desk.render();
+  const b0 = desk.buffer;
+  assert.equal(b0.get(s.rect.row, s.rect.col)?.ch, '┌', 'popup corner over the maximized window');
+  assert.equal(b0.get(s.rect.row, s.rect.col)?.fg, desk.theme.chromeFg);
+  assert.equal(b0.get(s.rect.row, s.rect.col)?.bg, desk.theme.chromeBg, 'frame in the bar colours');
+  assert.equal(b0.get(s.rect.row + s.rect.rows - 1, s.rect.col)?.ch, '└');
+  assert.equal(s.rect.row + s.rect.rows, desk.menuBar.row, 'sits directly on the band');
+  assert.equal(b0.get(s.rect.row + s.rect.rows, s.rect.col)?.bg, desk.theme.chromeFg, 'whose item is inverted underneath it');
+  assert.equal(b0.get(s.rect.row + s.rect.rows, 50)?.bg, desk.theme.chromeBg);
+  assert.equal(c.active, true, 'the front window keeps its active state');
+  assert.equal(b0.get(c.rect.row, c.rect.col)?.ch, '╔');
+  // Pointer inside the popup never reaches the window beneath.
+  const inner = s.inner;
+  desk.pointerDown(at(inner.row + 1, inner.col + 3));
+  assert.equal(desk.dragging, true, 'popup holds the pointer');
+  assert.equal(c.dragging, null);
+  desk.pointerUp(at(inner.row + 1, inner.col + 3));
+  assert.equal(s.visible, true, 'clicking inside keeps it open');
 });
 
 test('onNewWindow adds a `+ new` item left of ≡ settings; selecting it calls back once', () => {
@@ -626,8 +642,7 @@ test('toggleSettings shows/hides; ≡ settings item toggles it too and reads act
   assert.equal(s.visible, false);
   desk.toggleSettings();
   assert.equal(s.visible, true);
-  assert.equal(desk.ui.windows[desk.ui.windows.length - 1], s);
-  assert.equal(desk.menuBar.layout().spans[0].item.active, true);
+  assert.equal(desk.menuBar.layout().spans[0].item.active, true, 'item stays inverted while open');
   desk.toggleSettings();
   assert.equal(s.visible, false);
   const span = desk.menuBar.layout().spans[0];
@@ -636,24 +651,93 @@ test('toggleSettings shows/hides; ≡ settings item toggles it too and reads act
   desk.pointerDown(at(29, span.labelCol));
   desk.pointerUp(at(29, span.labelCol));
   assert.equal(s.visible, true);
-  // Escape-equivalent: closing via [×] then the bar item reopens it.
-  s.visible = false;
+  // Clicking the item again dismisses it (the press goes through, the release toggles).
+  desk.pointerDown(at(29, span.labelCol));
+  assert.equal(s.visible, true, 'still open on press');
+  desk.pointerUp(at(29, span.labelCol));
+  assert.equal(s.visible, false);
+  // Closed via Esc, the bar item reopens it.
+  desk.toggleSettings();
+  assert.equal(desk.keyDown('Escape'), true);
+  assert.equal(s.visible, false);
   desk.pointerDown(at(29, span.labelCol));
   desk.pointerUp(at(29, span.labelCol));
   assert.equal(s.visible, true);
 });
 
-test('settings window is sized to its controls + padding and sits bottom-left of the area, above the bar', () => {
+test('popup dismissal: a click outside closes it (desktop/window clicks are spent, bar clicks go through)', () => {
+  let news = 0;
+  const { desk, w1, w3 } = makeDesktop({ onNewWindow: () => news++ });
+  const s = desk.settings!;
+  desk.toggleSettings();
+  // Click on a window: the popup closes, the window is neither fronted nor dragged.
+  const before = [...desk.windows];
+  assert.equal(desk.pointerDown(at(w1.rect.row, w1.rect.col + 3)), true, 'reported as a change (the dismissal)');
+  assert.equal(s.visible, false);
+  assert.deepEqual(desk.windows, before, 'z-order untouched');
+  assert.equal(w1.dragging, null);
+  assert.equal(desk.dragging, false);
+  desk.pointerUp(at(w1.rect.row, w1.rect.col + 3));
+  assert.deepEqual(desk.windows, before);
+  // Click on empty desktop: closes too.
+  desk.toggleSettings();
+  desk.pointerDown(at(1, 70));
+  desk.pointerUp(at(1, 70));
+  assert.equal(s.visible, false);
+  // `+ new`: the popup closes first, then the item fires normally.
+  desk.toggleSettings();
+  const nw = desk.menuBar.layout().spans[0];
+  assert.equal(nw.item.id, 'new');
+  desk.pointerDown(at(28, nw.labelCol));
+  assert.equal(s.visible, false, 'closed on press');
+  assert.equal(news, 0);
+  desk.pointerUp(at(28, nw.labelCol));
+  assert.equal(news, 1, 'and the click still counts');
+  // Empty bar space: closes, nothing else.
+  desk.toggleSettings();
+  desk.pointerDown(at(29, 60));
+  desk.pointerUp(at(29, 60));
+  assert.equal(s.visible, false);
+  // Tab closes it first and still cycles.
+  desk.toggleSettings();
+  desk.keyDown('Tab');
+  assert.equal(s.visible, false);
+  assert.equal(desk.windows[desk.windows.length - 1], w1);
+  void w3;
+  // Cursor: control cursor inside the popup, and the popup wins over a window beneath.
+  desk.toggleSettings();
+  const inner = s.inner;
+  assert.equal(desk.cursorAt(at(inner.row + 1, inner.col + 3)), 'pointer', 'over [ Go ]');
+  assert.equal(desk.cursorAt(at(inner.row, inner.col)), 'default', 'padding row inside the popup');
+  assert.equal(desk.hitTest!(at(inner.row, inner.col)), true);
+});
+
+test('settings popup is sized to its controls + padding and hangs off the ≡ settings item, directly above the band', () => {
   const { desk } = makeDesktop();
   const s = desk.settings!;
   // button 1 + gap + toggles 2 + gap + range 2 = 7 rows, +2 padding rows, +2 frame;
   // 32 control cols + 2×2 padding cols + 2 frame. Area is 28 rows (two-row bar).
   assert.deepEqual(s.rect, cellRect(28 - 11, 0, 11, 38));
-  assert.equal(s.rect.col, desk.area.col, 'flush to the left edge');
+  assert.equal(s.rect.col, desk.menuBar.layout().spans[0].col, 'flush left with the item span');
   assert.equal(s.rect.row + s.rect.rows, desk.menuBar.row, 'bottom row directly above the bar band');
-  assert.deepEqual(settingsRect([], 32, cellRect(0, 0, 29, 80)), cellRect(27, 0, 2, 34), 'no padding by default');
-  assert.deepEqual(settingsRect([], 32, cellRect(0, 0, 29, 80), { rows: 1, cols: 2 }), cellRect(25, 0, 4, 38));
-  assert.deepEqual(settingsRect([], 32, cellRect(2, 0, 28, 80)), cellRect(28, 0, 2, 34), 'top bar: bottom of the area is the buffer bottom');
+  assert.deepEqual(s.inner, cellRect(18, 1, 9, 36));
+  // With `+ new` first, the popup follows the item to column 10.
+  const { desk: withNew } = makeDesktop({ onNewWindow() {} });
+  assert.equal(withNew.menuBar.layout().spans[1].col, 10);
+  assert.deepEqual(withNew.settings!.rect, cellRect(17, 10, 11, 38));
+  // Pure geometry.
+  const above = { col: 0, row: 29, side: 'above' as const };
+  assert.deepEqual(popupMenuRect([], 32, above, cellRect(0, 0, 29, 80)), cellRect(27, 0, 2, 34), 'no padding by default');
+  assert.deepEqual(popupMenuRect([], 32, above, cellRect(0, 0, 29, 80), { rows: 1, cols: 2 }), cellRect(25, 0, 4, 38));
+  assert.deepEqual(popupMenuRect([], 32, { col: 50, row: 29, side: 'above' }, cellRect(0, 0, 29, 80)), cellRect(27, 46, 2, 34), 'slides left to stay inside the bounds');
+  assert.deepEqual(popupMenuRect([], 32, { col: 0, row: 2, side: 'below' }, cellRect(2, 0, 28, 80)), cellRect(2, 0, 2, 34), 'top bar: hangs below the band');
+  assert.deepEqual(popupMenuRect([], 100, above, cellRect(0, 0, 29, 80)), cellRect(27, 0, 2, 80), 'never wider than the bounds');
+  const topBar = createDesktop({ ctx: stubCtx(), width: 80 * D_CHAR, height: 30 * D_LINE, menuBar: 'top', onChange() {}, settings: { controls: [createButton({ id: 'go', label: 'Go' })] } });
+  assert.deepEqual(topBar.settings!.rect, cellRect(2, 0, 5, 38), 'top bar: top row directly below the band');
+  // Resize re-anchors it (bottom bar moves up).
+  desk.resize(60 * D_CHAR, 20 * D_LINE);
+  assert.deepEqual(s.rect, cellRect(18 - 11, 0, 11, 38));
+  desk.resize(80 * D_CHAR, 30 * D_LINE);
   desk.toggleSettings();
   desk.render();
   const inner = s.inner;
@@ -673,10 +757,10 @@ test('settings window is sized to its controls + padding and sits bottom-left of
   assert.equal(rowText(desk.buffer, top + 3).slice(left, left + 5), '(●) b');
   // Opting out of the padding restores the tight layout.
   const one = [createButton({ id: 'go', label: 'Go' })];
-  assert.deepEqual(settingsRect(one, 32, cellRect(0, 0, 29, 80), { rows: 0, cols: 0 }), cellRect(26, 0, 3, 34));
+  assert.deepEqual(popupMenuRect(one, 32, above, cellRect(0, 0, 29, 80), { rows: 0, cols: 0 }), cellRect(26, 0, 3, 34));
   const { desk: tight } = makeDesktop({ settings: { controls: one, padding: { rows: 0, cols: 0 } } });
   const t = tight.settings!;
-  assert.equal(t.rect.cols, 34, 'no padding columns (the window may still enforce a minimum height)');
+  assert.deepEqual(t.rect, cellRect(25, 0, 3, 34), 'no padding: frame + one control row');
   tight.toggleSettings();
   tight.render();
   assert.equal(rowText(tight.buffer, t.inner.row).slice(t.inner.col, t.inner.col + 6), '[ Go ]');
@@ -733,7 +817,6 @@ test('keyDown: Tab / Shift+Tab cycle focus through the visible windows in z-orde
   // Settings open: Tab closes it first, then cycles; settings is never a stop.
   desk.toggleSettings();
   assert.equal(s.visible, true);
-  assert.equal(desk.ui.windows[desk.ui.windows.length - 1], s);
   desk.keyDown('Tab');
   assert.equal(s.visible, false, 'settings closed');
   assert.deepEqual(desk.windows, [w3, w1, w2], 'and the cycle went on');
@@ -832,8 +915,8 @@ test('activeFrame: option + runtime setter drop the double frame while `active` 
   desk.toggleSettings();
   desk.render();
   const s = desk.settings!;
-  assert.equal(s.active, true);
-  assert.equal(b.get(s.rect.row, s.rect.col)?.ch, '┌', 'the settings window follows the flag too');
+  assert.equal(b.get(s.rect.row, s.rect.col)?.ch, '┌', 'the popup is always single-framed, whatever the flag');
+  assert.equal(w3.active, true, 'and does not take the active state from the front window');
   // Default: on.
   const { desk: d2, w3: f2 } = makeDesktop();
   assert.equal(d2.activeFrame, true);

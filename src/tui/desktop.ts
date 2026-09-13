@@ -2,11 +2,12 @@
  * The terminal desktop: the one call a sketch makes. Wires the glyph buffer,
  * metrics and theme to `createUI` (z-order + capture, reused from `src/ui`),
  * hosts `TuiWindow`s inside the desktop area, draws the system menu bar on the
- * bottom (or top) row and, when configured, a floating Settings window built
- * from glyph controls.
+ * bottom (or top) rows and, when configured, the `≡ settings` popup menu — a
+ * chrome-less panel of glyph controls hung off its bar item (see ./menu).
  *
- * Pointer events go to the bar first, then to the window manager; the bar is
- * painted last so nothing can cover it. `render()` clears the buffer, paints
+ * Pointer events go to the open popup first (a click outside dismisses it),
+ * then to the bar, then to the window manager; the popup is painted over the
+ * windows and the bar last so nothing can cover it. `render()` clears the buffer, paints
  * wallpaper → windows (back-to-front) → bar, then blits once. Everything but
  * the blit is pure cell logic, so the desktop runs headless with a stub ctx.
  *
@@ -19,8 +20,9 @@ import { attachPointer, createUI } from '../ui';
 import type { Cursor, PointerMods, PointerTarget, Pt, UI } from '../ui';
 
 import { cellRect, type CellRect } from './cells';
-import { createControlHost, type LayoutPadding, type TuiControl } from './controls';
+import type { LayoutPadding, TuiControl } from './controls';
 import { createGlyphBuffer, type BlitContext, type GlyphBuffer } from './grid';
+import { createPopupMenu, type PopupAnchor, type TuiPopupMenu } from './menu';
 import { createMenuBar, type MenuItem, type TuiMenuBar } from './menubar';
 import { createMetrics, type TextMeasurer, type TuiMetrics } from './metrics';
 import { composite, fallbackTheme, themeFromPalette, type TuiTheme } from './theme';
@@ -34,20 +36,14 @@ export type DesktopWindowOptions = Omit<TuiWindowOptions, 'metrics' | 'bounds' |
   theme?: TuiTheme;
 };
 
+/** The `≡ settings` popup: sized to its controls, anchored to its bar item (see `createPopupMenu`). */
 export interface DesktopSettingsOptions {
-  /** Window title (default `settings`). */
-  title?: string;
   controls: TuiControl[];
-  /** Explicit geometry; by default the window is sized to its controls and placed bottom-left (above the bar). */
-  rect?: CellRect;
-  /** Start visible (default false). */
+  /** Start open (default false). */
   open?: boolean;
-  /** Width available to the controls, in cells, when sizing automatically (default 32); padding is added on top. */
+  /** Width available to the controls, in cells (default 32); padding and the frame are added on top. */
   cols?: number;
-  /**
-   * Breathing space between the frame and the controls (default 1 row / 2 cols).
-   * The automatic window size grows by it so nothing is clipped.
-   */
+  /** Breathing space between the frame and the controls (default 1 row / 2 cols). */
   padding?: LayoutPadding;
 }
 
@@ -92,10 +88,11 @@ export interface Desktop extends PointerTarget {
   readonly menuBar: TuiMenuBar;
   /** Desktop area in cells: the whole buffer minus the bar band (`BAR_ROWS` rows). Updated in place by `resize`. */
   readonly area: CellRect;
-  /** Sketch windows in z-order (back → front), excluding the settings window. */
+  /** Sketch windows in z-order (back → front). */
   readonly windows: TuiWindow[];
-  readonly settings: TuiWindow | null;
-  /** True while the bar or a window holds the pointer. */
+  /** The settings popup when configured: outside the z-order, drawn in front of every window, never a Tab stop. */
+  readonly settings: TuiPopupMenu | null;
+  /** True while the popup, the bar or a window holds the pointer. */
   readonly dragging: boolean;
   /** Whether the front window shows the double frame; `active` is still stamped on it. */
   activeFrame: boolean;
@@ -112,9 +109,9 @@ export interface Desktop extends PointerTarget {
   restoreAll(): void;
   /**
    * Keyboard entry point (the DOM listener calls it; tests call it directly):
-   * `Escape` hides settings, `h` restores every minimized window, `Tab` fronts
-   * the next visible window in z-order and `Shift+Tab` the previous one
-   * (wrapping, minimized and closed windows skipped, settings closed first).
+   * `Escape` closes the settings popup, `h` restores every minimized window,
+   * `Tab` fronts the next visible window in z-order and `Shift+Tab` the previous
+   * one (wrapping, minimized and closed windows skipped, the popup closed first).
    * Returns true when the key did something.
    */
   keyDown(key: string, mods?: { shiftKey?: boolean }): boolean;
@@ -133,8 +130,6 @@ const NEW_ID = 'new';
 const NEW_LABEL = '+ new';
 /** Height of the menu bar band in rows (text on the upper row). */
 export const BAR_ROWS = 2;
-const DEFAULT_SETTINGS_COLS = 32;
-const DEFAULT_SETTINGS_PADDING: Required<LayoutPadding> = { rows: 1, cols: 2 };
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
@@ -193,11 +188,7 @@ export function createDesktop(opts: DesktopOptions): Desktop {
       theme: o.theme ?? theme,
       activeFrame: o.activeFrame ?? showActiveFrame,
     });
-    // Windows created while the settings window is open (re-layouts, rebuilds
-    // triggered from it) slot in just below it, so it never gets buried.
-    const settingsIdx = settings?.visible ? ui.windows.indexOf(settings) : -1;
-    if (settingsIdx >= 0) ui.windows.splice(settingsIdx, 0, win);
-    else ui.add(win);
+    ui.add(win);
     return win;
   };
 
@@ -206,36 +197,30 @@ export function createDesktop(opts: DesktopOptions): Desktop {
     ui.bringToFront(win);
   };
 
-  // --- Settings window ---------------------------------------------------------
-  let settings: TuiWindow | null = null;
+  // --- Settings popup ----------------------------------------------------------
+  /** Hangs off the `≡ settings` span: flush left with it, on the band's desktop side. */
+  const settingsAnchor = (): PopupAnchor => {
+    const span = menuBar.layout().spans.find((sp) => sp.item.id === SETTINGS_ID);
+    return barSide === 'bottom'
+      ? { col: span?.col ?? 0, row: area.row + area.rows, side: 'above' }
+      : { col: span?.col ?? 0, row: area.row, side: 'below' };
+  };
+  let settings: TuiPopupMenu | null = null;
   if (opts.settings) {
     const s = opts.settings;
-    const padding: Required<LayoutPadding> = {
-      rows: s.padding?.rows ?? DEFAULT_SETTINGS_PADDING.rows,
-      cols: s.padding?.cols ?? DEFAULT_SETTINGS_PADDING.cols,
-    };
-    const host = createControlHost(s.controls, padding);
-    const rect = s.rect ?? settingsRect(s.controls, s.cols ?? DEFAULT_SETTINGS_COLS, area, padding);
-    settings = createTuiWindow({
+    settings = createPopupMenu({
       metrics,
       theme,
-      title: s.title ?? 'settings',
-      rect,
-      bounds: area,
-      minCols: Math.min(12, rect.cols),
-      activeFrame: showActiveFrame,
-      draw: (buf, inner) => host.draw(buf, inner, theme),
-      content: host,
+      controls: s.controls,
+      cols: s.cols,
+      padding: s.padding,
+      anchor: settingsAnchor,
+      bounds: () => area,
     });
     settings.visible = s.open ?? false;
-    ui.add(settings);
   }
 
-  const toggleSettings = () => {
-    if (!settings) return;
-    if (settings.visible) settings.visible = false;
-    else raise(settings);
-  };
+  const toggleSettings = () => settings?.toggle();
 
   const restoreAll = () => {
     for (const w of tuiWindows()) if (w.minimized) w.restore();
@@ -247,8 +232,8 @@ export function createDesktop(opts: DesktopOptions): Desktop {
    * (the window just under it becomes the front). Settings is not a stop.
    */
   const cycleFocus = (dir: 1 | -1) => {
-    if (settings?.visible) settings.visible = false;
-    const stops = tuiWindows().filter((w) => w.visible && !w.minimized && w !== settings);
+    settings?.close();
+    const stops = tuiWindows().filter((w) => w.visible && !w.minimized);
     if (stops.length < 2) return;
     if (dir === 1) {
       ui.bringToFront(stops[0]);
@@ -265,7 +250,7 @@ export function createDesktop(opts: DesktopOptions): Desktop {
       return true;
     }
     if (key === 'Escape' && settings?.visible) {
-      settings.visible = false;
+      settings.close();
       return true;
     }
     if (key === 'h') {
@@ -323,11 +308,30 @@ export function createDesktop(opts: DesktopOptions): Desktop {
     status: opts.status,
   });
 
-  // --- Composed pointer target: bar first, then the window manager -------------
+  // --- Composed pointer target: popup, then bar, then the window manager -------
   let barCaptured = false;
+  let popupCaptured = false;
+  /** The settings popup while it is open, else null. */
+  const openMenu = (): TuiPopupMenu | null => (settings?.visible ? settings : null);
   const target: PointerTarget = {
-    hitTest: (pt) => menuBar.contains(pt) || ui.hitTest(pt),
+    hitTest: (pt) => !!openMenu()?.contains(pt) || menuBar.contains(pt) || ui.hitTest(pt),
     pointerDown(pt, mods) {
+      const menu = openMenu();
+      if (menu) {
+        if (menu.contains(pt)) {
+          popupCaptured = true;
+          menu.pointerDown(pt, mods);
+          return true;
+        }
+        // A click outside dismisses the popup. Bar clicks still go through — the
+        // item itself toggles on release, `+ new` and minimized items act on a
+        // closed menu — while a click on the desktop or a window is spent on the dismissal.
+        if (!menuBar.contains(pt)) {
+          menu.close();
+          return true;
+        }
+        if (menuBar.itemAt(pt)?.id !== SETTINGS_ID) menu.close();
+      }
       if (menuBar.contains(pt)) {
         barCaptured = true;
         return menuBar.pointerDown(pt, mods);
@@ -335,10 +339,19 @@ export function createDesktop(opts: DesktopOptions): Desktop {
       return ui.pointerDown(pt, mods);
     },
     pointerMove(pt, mods) {
+      if (popupCaptured) return settings!.pointerMove(pt, mods);
       if (barCaptured) return menuBar.pointerMove(pt, mods);
-      return ui.pointerMove(pt, mods);
+      const menu = openMenu();
+      const hover = menu && !ui.dragging ? menu.pointerMove(pt, mods) : false;
+      return ui.pointerMove(pt, mods) || hover;
     },
     pointerUp(pt, mods) {
+      if (popupCaptured) {
+        popupCaptured = false;
+        const changed = settings!.pointerUp(pt, mods);
+        onDragEnd?.();
+        return changed;
+      }
       if (barCaptured) {
         barCaptured = false;
         const changed = menuBar.pointerUp(pt, mods);
@@ -348,6 +361,8 @@ export function createDesktop(opts: DesktopOptions): Desktop {
       return ui.pointerUp(pt, mods);
     },
     cursorAt(pt): Cursor | null {
+      const menu = openMenu();
+      if (popupCaptured || (menu && !ui.dragging && !barCaptured && menu.contains(pt))) return settings!.cursorAt(pt);
       if (barCaptured || (!ui.dragging && menuBar.contains(pt))) return menuBar.cursorAt(pt);
       return ui.cursorAt(pt);
     },
@@ -383,6 +398,8 @@ export function createDesktop(opts: DesktopOptions): Desktop {
         w.active = w === front;
         if (w.visible) w.draw(buffer);
       }
+      // The popup is not a window: it is painted over all of them, under the bar.
+      if (settings?.visible) settings.draw(buffer);
     });
     menuBar.paint(buffer);
 
@@ -419,13 +436,13 @@ export function createDesktop(opts: DesktopOptions): Desktop {
     menuBar,
     area,
     get windows() {
-      return tuiWindows().filter((w) => w !== settings);
+      return tuiWindows();
     },
     get settings() {
       return settings;
     },
     get dragging() {
-      return barCaptured || ui.dragging;
+      return popupCaptured || barCaptured || ui.dragging;
     },
     get activeFrame() {
       return activeFrame;
@@ -451,24 +468,4 @@ export function createDesktop(opts: DesktopOptions): Desktop {
       if (hasDom) window.removeEventListener('keydown', onKey);
     },
   };
-}
-
-/**
- * Size a settings window to its controls (stacked with one blank row between,
- * plus `padding` on every side and the 1-cell frame) and place it in the
- * bottom-left corner of `area`. `innerCols` is the width the controls get.
- */
-export function settingsRect(
-  controls: readonly TuiControl[],
-  innerCols: number,
-  area: CellRect,
-  padding: number | LayoutPadding = 0,
-): CellRect {
-  const padRows = typeof padding === 'number' ? padding : (padding.rows ?? 0);
-  const padCols = typeof padding === 'number' ? padding : (padding.cols ?? 0);
-  const innerRows = controls.reduce((sum, c, i) => sum + c.rows(innerCols) + (i > 0 ? 1 : 0), 0);
-  const cols = Math.min(area.cols, innerCols + 2 * padCols + 2);
-  const rows = Math.min(area.rows, innerRows + 2 * padRows + 2);
-  // Bottom-left: flush to the left edge, bottom row directly above the bar band.
-  return cellRect(area.row + area.rows - rows, area.col, rows, cols);
 }

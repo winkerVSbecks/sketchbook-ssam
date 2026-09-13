@@ -33,7 +33,7 @@
 - New sketch with the shell: use the `create-ui-sketch` skill (template + scaffold live in `.claude/skills/create-ui-sketch/`).
 
 ## Terminal UI (character-grid desktop)
-- `src/tui/` — a second dependency-free canvas UI system in the terminal-chart aesthetic: a ROWS×COLS glyph buffer (`createGlyphBuffer`, `createMetrics`, `themeFromPalette`), box-drawing windows with `[–][□][×]`, title drag and corner resize (`createTuiWindow`), a system menu bar (`createMenuBar`), glyph controls (`createButton`, `createToggleGroup`, `createRange`), and `createDesktop` which wires them so a sketch only supplies `draw(buf, inner, win)` per window. Reuses `attachPointer`/`createUI` from `src/ui`.
+- `src/tui/` — a second dependency-free canvas UI system in the terminal-chart aesthetic: a ROWS×COLS glyph buffer (`createGlyphBuffer`, `createMetrics`, `themeFromPalette`), box-drawing windows with `[–][□][×]`, title drag and corner resize (`createTuiWindow`), a system menu bar (`createMenuBar`), glyph controls (`createButton`, `createToggleGroup`, `createRange`), a settings popup menu hung off the bar (`createPopupMenu`), and `createDesktop` which wires them so a sketch only supplies `draw(buf, inner, win)` per window; `desktop.resize(width, height)` follows the viewport (wire to `wrap.resize`). Reuses `attachPointer`/`createUI` from `src/ui`.
 - Full example: `src/sketches/terminal-ui/layered-compositions.ts` (`VITE_SKETCH="sketches/terminal-ui/layered-compositions" npm run dev`). Node smoke tests: `npx tsx scripts/tui-smoke.ts`.
 - New sketch on the desktop: use the `create-tui-sketch` skill (template + scaffold live in `.claude/skills/create-tui-sketch/`).
 
