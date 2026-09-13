@@ -276,7 +276,8 @@ export function createTuiWindow(opts: TuiWindowOptions): TuiWindow {
         hoverGrip = grip;
         changed = true;
       }
-      if (win.content && win.visible && inInner(cell)) {
+      // Forward moves even outside inner so content can reset hover states.
+      if (win.content && win.visible) {
         changed = win.content.pointerMove(cell, win.inner, mods) || changed;
       }
       return changed;
