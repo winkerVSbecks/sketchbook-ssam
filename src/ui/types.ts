@@ -16,7 +16,8 @@ export type Cursor =
   | 'grab'
   | 'grabbing'
   | 'move'
-  | 'crosshair';
+  | 'crosshair'
+  | 'nwse-resize';
 
 /**
  * Anything that can live inside a window. All coordinates are logical sketch
