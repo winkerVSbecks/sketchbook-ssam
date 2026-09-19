@@ -35,6 +35,7 @@
 ## Terminal UI (character-grid desktop)
 - `src/tui/` — a second dependency-free canvas UI system in the terminal-chart aesthetic: a ROWS×COLS glyph buffer (`createGlyphBuffer`, `createMetrics`, `themeFromPalette`), box-drawing windows with `[–][□][×]`, title drag and corner resize (`createTuiWindow`), a system menu bar (`createMenuBar`), glyph controls (`createButton`, `createToggleGroup`, `createRange`), a settings popup menu hung off the bar (`createPopupMenu`), and `createDesktop` which wires them so a sketch only supplies `draw(buf, inner, win)` per window; `desktop.resize(width, height)` follows the viewport (wire to `wrap.resize`). Reuses `attachPointer`/`createUI` from `src/ui`.
 - Full example: `src/sketches/terminal-ui/layered-compositions.ts` (`VITE_SKETCH="sketches/terminal-ui/layered-compositions" npm run dev`). Node smoke tests: `npx tsx scripts/tui-smoke.ts`.
+- Palette picker: `src/sketches/terminal-ui/palette-picker.ts` (`VITE_SKETCH="sketches/terminal-ui/palette-picker" npm run dev`) browses every colour system in `src/colors` (clrs, auto-albers, mindful, found, uchu, riso, oklch, hsluv) as desktop windows — systems → library → swatches (hex · OKLCH · contrast · theme role) → derived `TuiTheme` → copyable code — and retints the desktop with the pick. The system registry lives in `palette-systems.ts` beside it; add a system there.
 - New sketch on the desktop: use the `create-tui-sketch` skill (template + scaffold live in `.claude/skills/create-tui-sketch/`).
 
 ## Code Style Guidelines
