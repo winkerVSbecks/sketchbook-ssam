@@ -47,7 +47,14 @@ interface Chart {
   cols: number;
 }
 
-export const sketch = ({ wrap, context, canvas, width, height, ...props }: SketchProps) => {
+export const sketch = ({
+  wrap,
+  context,
+  canvas,
+  width,
+  height,
+  ...props
+}: SketchProps) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => {
       desktop.dispose();
@@ -70,7 +77,8 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
 
   let rawPalette = randomPalette();
   /** Pattern colours: everything but the background, as in the original. */
-  let palette = rawPalette.length > 1 ? rawPalette.slice(1) : rawPalette.slice();
+  let palette =
+    rawPalette.length > 1 ? rawPalette.slice(1) : rawPalette.slice();
 
   const charts = new Map<TuiWindow, Chart>();
 
@@ -108,14 +116,25 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     charts.clear();
 
     Random.setSeed(seed);
-    const { name, rects } = layoutRects(layoutChoice, desktop.area.rows, desktop.area.cols, config);
+    const { name, rects } = layoutRects(
+      layoutChoice,
+      desktop.area.rows,
+      desktop.area.cols,
+      config,
+    );
     layoutName = name;
 
-    rects.forEach((rect, i) => addChart(`chart ${String(i + 1).padStart(2, '0')}`, rect, `${seed}/${i}`));
+    rects.forEach((rect, i) =>
+      addChart(`chart ${String(i + 1).padStart(2, '0')}`, rect, `${seed}/${i}`),
+    );
   };
 
   /** One chart window with its own seeded pattern (the same build path `rebuild` uses). */
-  const addChart = (title: string, rect: CellRect, chartSeed: string): TuiWindow => {
+  const addChart = (
+    title: string,
+    rect: CellRect,
+    chartSeed: string,
+  ): TuiWindow => {
     const win = desktop.addWindow({
       title,
       rect,
@@ -151,9 +170,18 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     const rows = Math.min(12, area.rows);
     const cols = Math.min(32, area.cols);
     const front = desktop.windows[desktop.windows.length - 1];
-    const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), Math.max(lo, hi));
-    const row = clamp(front ? front.rect.row + 1 : area.row, area.row, area.row + area.rows - rows);
-    const col = clamp(front ? front.rect.col + 2 : area.col, area.col, area.col + area.cols - cols);
+    const clamp = (v: number, lo: number, hi: number) =>
+      Math.min(Math.max(v, lo), Math.max(lo, hi));
+    const row = clamp(
+      front ? front.rect.row + 1 : area.row,
+      area.row,
+      area.row + area.rows - rows,
+    );
+    const col = clamp(
+      front ? front.rect.col + 2 : area.col,
+      area.col,
+      area.col + area.cols - cols,
+    );
     // addWindow already fronts it among the charts (just below a visible settings window).
     addChart(title, cellRect(row, col, rows, cols), `${seed}/${title}`);
     props.render();
@@ -272,7 +300,8 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     };
   }
 
-  wrap.resize = ({ width, height }: SketchProps) => desktop.resize(width, height);
+  wrap.resize = ({ width, height }: SketchProps) =>
+    desktop.resize(width, height);
 
   wrap.render = ({ playhead }: SketchProps) => {
     if (animate) offset = Math.floor(playhead * BUFFER_N) % BUFFER_N;
@@ -286,8 +315,8 @@ export const settings: SketchSettings = {
   pixelRatio: window.devicePixelRatio,
   animate: true,
   duration: 8_000,
-  playFps: 24,
-  exportFps: 24,
+  playFps: 60,
+  exportFps: 60,
   framesFormat: ['mp4'],
 };
 

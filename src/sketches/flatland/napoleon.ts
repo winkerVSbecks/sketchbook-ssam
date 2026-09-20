@@ -171,7 +171,10 @@ export const settings: SketchSettings = {
   mode: '2d',
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
-  animate: false,
+  animate: true,
+  playFps: 60,
+  exportFps: 60,
+  framesFormat: ['mp4'],
 };
 
 ssam(sketch as Sketch<'2d'>, settings);

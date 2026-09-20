@@ -27,7 +27,8 @@ interface FaceColors {
  * the paper so the edge still reads as a lit surface.
  */
 function faceColors(idx: number): FaceColors {
-  const palette = palettes[Math.min(Math.max(Math.round(idx), 0), palettes.length - 1)];
+  const palette =
+    palettes[Math.min(Math.max(Math.round(idx), 0), palettes.length - 1)];
   const at = (i: number) => palette[i % palette.length];
   return {
     front: at(0),
@@ -66,8 +67,13 @@ interface Edge {
 
 // --- Math helpers (canvas-sketch-util/math equivalents) -----------------------
 
-const mapRange = (v: number, inMin: number, inMax: number, outMin: number, outMax: number) =>
-  outMin + ((v - inMin) / (inMax - inMin)) * (outMax - outMin);
+const mapRange = (
+  v: number,
+  inMin: number,
+  inMax: number,
+  outMin: number,
+  outMax: number,
+) => outMin + ((v - inMin) / (inMax - inMin)) * (outMax - outMin);
 
 /** Piecewise-linear interpolation through `values` evenly spaced over t ∈ [0, 1]. */
 function lerpFrames(values: number[], t: number): number {
@@ -84,7 +90,12 @@ function lerpFrames(values: number[], t: number): number {
  * Calculate the X component for the bottom vertices: a point on a half circle
  * of radius width/2, sheared both ways by `thickness`.
  */
-function bottomVerticesX({ x, width, thickness: s, playhead: t }: Omit<BlockProps, 'y' | 'height'>): Pt2 {
+function bottomVerticesX({
+  x,
+  width,
+  thickness: s,
+  playhead: t,
+}: Omit<BlockProps, 'y' | 'height'>): Pt2 {
   const angle = Math.PI + Math.PI * t;
   const r = width / 2;
 
@@ -99,9 +110,16 @@ function bottomVerticesX({ x, width, thickness: s, playhead: t }: Omit<BlockProp
  * The bezier curve definition for the edge curve.
  * Returns the two control points and the end point.
  */
-function edgeCurve([x1, y1]: Pt2, [x2, y2]: Pt2, playhead: number, perspective = false): CurveTail {
+function edgeCurve(
+  [x1, y1]: Pt2,
+  [x2, y2]: Pt2,
+  playhead: number,
+  perspective = false,
+): CurveTail {
   const K1 = 0.37;
-  const K2 = perspective ? lerpFrames([0, 0, 0.6], playhead) : lerpFrames([0, 0, 0.37], playhead);
+  const K2 = perspective
+    ? lerpFrames([0, 0, 0.6], playhead)
+    : lerpFrames([0, 0, 0.37], playhead);
 
   const cp1: Pt2 = [x1, y1 + K1 * (y2 - y1)];
   const cp2: Pt2 = [x2, y2 - K2 * (y2 - y1)];
@@ -182,7 +200,15 @@ function drawBezierCurve(
 
 // --- Sketch -------------------------------------------------------------------
 
-export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...props }: SketchProps) => {
+export const sketch = ({
+  wrap,
+  context,
+  canvas,
+  width,
+  height,
+  pixelRatio,
+  ...props
+}: SketchProps) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => {
       shell.dispose();
@@ -202,10 +228,42 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
     pixelRatio,
     grid: { cols: 4, subdivisions: 6, xOrigin: 'right' },
     params: [
-      { id: 'twist', label: 'Twist', min: 0, max: 1, value: 0.35, step: 0.01, knobColor: '#8a5cf5' },
-      { id: 'stagger', label: 'Stagger', min: 0, max: 1, value: 1, step: 0.01, knobColor: '#e8541e' },
-      { id: 'weight', label: 'Weight', min: 0.5, max: 6, value: 2, step: 0.25, knobColor: '#111111' },
-      { id: 'palette', label: 'Palette', min: 0, max: palettes.length - 1, value: 0, step: 1, knobColor: '#111111' },
+      {
+        id: 'twist',
+        label: 'Twist',
+        min: 0,
+        max: 1,
+        value: 0.35,
+        step: 0.01,
+        knobColor: '#8a5cf5',
+      },
+      {
+        id: 'stagger',
+        label: 'Stagger',
+        min: 0,
+        max: 1,
+        value: 1,
+        step: 0.01,
+        knobColor: '#e8541e',
+      },
+      {
+        id: 'weight',
+        label: 'Weight',
+        min: 0.5,
+        max: 6,
+        value: 2,
+        step: 0.25,
+        knobColor: '#111111',
+      },
+      {
+        id: 'palette',
+        label: 'Palette',
+        min: 0,
+        max: palettes.length - 1,
+        value: 0,
+        step: 1,
+        knobColor: '#111111',
+      },
     ],
     // Four sliders are taller than the default panel slot — lift it clear of the bottom ruler
     panel: { y: height - 400 },
@@ -230,7 +288,11 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
    * mapped into world space under the camera, then restore so the caller can
    * fill/stroke in screen space.
    */
-  const inWorld = (ctx: CanvasRenderingContext2D, cam: Camera, build: () => void) => {
+  const inWorld = (
+    ctx: CanvasRenderingContext2D,
+    cam: Camera,
+    build: () => void,
+  ) => {
     ctx.save();
     cam.apply(ctx);
     ctx.translate(0, H);
@@ -277,13 +339,19 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
         ctx.lineTo(...V);
         ctx.lineTo(q.x, q.y);
         drawBezierCurve(ctx, curve2.split(tA[0]).left);
-        drawBezierCurve(ctx, curve1.split(tA[1]).left, { move: false, reverse: true });
+        drawBezierCurve(ctx, curve1.split(tA[1]).left, {
+          move: false,
+          reverse: true,
+        });
       });
       fill(clrs.front);
 
       inWorld(ctx, cam, () => {
         ctx.moveTo(s.x, s.y);
-        drawBezierCurve(ctx, curve3.split(tB[1]).right, { move: false, reverse: true });
+        drawBezierCurve(ctx, curve3.split(tB[1]).right, {
+          move: false,
+          reverse: true,
+        });
         drawBezierCurve(ctx, curve4.split(tB[0]).right, { move: false });
         ctx.closePath();
       });
@@ -338,11 +406,22 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
     const edge1 = edge(b1, block, false, true);
     const edge2 = edge(b2, block, true);
 
-    drawFaces(ctx, cam, view, intersections(edge1, edge2), { x, y, width }, clrs);
+    drawFaces(
+      ctx,
+      cam,
+      view,
+      intersections(edge1, edge2),
+      { x, y, width },
+      clrs,
+    );
     drawFrontEdge(ctx, cam, view, edge1, clrs);
   };
 
-  const drawScene = (ctx: CanvasRenderingContext2D, cam: Camera, view: SceneView) => {
+  const drawScene = (
+    ctx: CanvasRenderingContext2D,
+    cam: Camera,
+    view: SceneView,
+  ) => {
     const { twist, stagger, weight, palette } = view.params;
     const clrs = faceColors(palette);
 
@@ -355,17 +434,24 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
     const w = W / 11;
 
     // The original's ping-pong playhead, with the per-block phase scaled by `stagger`
-    const pingPong = (idx: number) => Math.abs(Math.sin(twist * Math.PI + (stagger * (Math.PI / 4) * idx) / 6));
+    const pingPong = (idx: number) =>
+      Math.abs(Math.sin(twist * Math.PI + (stagger * (Math.PI / 4) * idx) / 6));
 
     for (let idx = 0; idx < 7; idx++) {
-      drawBlock(ctx, cam, view, {
-        x: margin + (w + margin) * idx,
-        y: margin,
-        width: w,
-        height: H - w,
-        thickness: THICKNESS,
-        playhead: Math.min(pingPong(idx), 0.99),
-      }, clrs);
+      drawBlock(
+        ctx,
+        cam,
+        view,
+        {
+          x: margin + (w + margin) * idx,
+          y: margin,
+          width: w,
+          height: H - w,
+          thickness: THICKNESS,
+          playhead: Math.min(pingPong(idx), 0.99),
+        },
+        clrs,
+      );
     }
   };
 
@@ -376,7 +462,10 @@ export const settings: SketchSettings = {
   mode: '2d',
   dimensions: [1080, 810],
   pixelRatio: window.devicePixelRatio,
-  animate: false,
+  animate: true,
+  playFps: 60,
+  exportFps: 60,
+  framesFormat: ['mp4'],
 };
 
 ssam(sketch as Sketch<'2d'>, settings);

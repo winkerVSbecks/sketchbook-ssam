@@ -27,8 +27,16 @@ const M = 0.512286623256592433;
  * is scaled by `wl` (wavelength); `a` is the scaled amplitude.
  */
 const startCommands = (x0: number, y0: number, a: number, wl: number) => [
-  'M', x0, y0,
-  'c', A * M * wl, 0, -(1 - A) * M * wl, -a, A * wl, -a,
+  'M',
+  x0,
+  y0,
+  'c',
+  A * M * wl,
+  0,
+  -(1 - A) * M * wl,
+  -a,
+  A * wl,
+  -a,
 ];
 
 /** The full wave: a start segment plus `STEPS` smooth up/down pairs. */
@@ -37,19 +45,38 @@ const waveCommands = (x0: number, y0: number, a: number, wl: number) => [
   ...new Array(STEPS)
     .fill(0)
     .flatMap(() => [
-      's', -(1 - A) * M * wl, a, A * wl, a,
-      's', -(1 - A) * M * wl, -a, A * wl, -a,
+      's',
+      -(1 - A) * M * wl,
+      a,
+      A * wl,
+      a,
+      's',
+      -(1 - A) * M * wl,
+      -a,
+      A * wl,
+      -a,
     ]),
 ];
 
 /** Arc length of the start segment in original pixels, via an SVG path (as the original did). */
-const measureEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+const measureEl = document.createElementNS(
+  'http://www.w3.org/2000/svg',
+  'path',
+);
 const measureSegment = (a: number, wl: number): number => {
   measureEl.setAttribute('d', startCommands(0, 0, a, wl).join(' '));
   return measureEl.getTotalLength();
 };
 
-export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...props }: SketchProps) => {
+export const sketch = ({
+  wrap,
+  context,
+  canvas,
+  width,
+  height,
+  pixelRatio,
+  ...props
+}: SketchProps) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => {
       shell.dispose();
@@ -69,12 +96,52 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
     pixelRatio,
     grid: { cols: 4, subdivisions: 6, xOrigin: 'right' },
     params: [
-      { id: 'hue', label: 'hue', min: 0, max: 360, value: 260, step: 1, knobColor: '#8a5cf5' },
-      { id: 'saturation', label: 'saturation', min: 0, max: 100, value: 80, step: 1, knobColor: '#e8541e' },
-      { id: 'lightness', label: 'lightness', min: 0, max: 100, value: 60, step: 1, knobColor: '#111111' },
+      {
+        id: 'hue',
+        label: 'hue',
+        min: 0,
+        max: 360,
+        value: 260,
+        step: 1,
+        knobColor: '#8a5cf5',
+      },
+      {
+        id: 'saturation',
+        label: 'saturation',
+        min: 0,
+        max: 100,
+        value: 80,
+        step: 1,
+        knobColor: '#e8541e',
+      },
+      {
+        id: 'lightness',
+        label: 'lightness',
+        min: 0,
+        max: 100,
+        value: 60,
+        step: 1,
+        knobColor: '#111111',
+      },
       { id: 'weight', label: 'weight', min: 1, max: 40, value: 12, step: 0.5 },
-      { id: 'amplitude', label: 'Amplitude', min: 0.2, max: 2, value: 1, step: 0.05, knobColor: '#8a5cf5' },
-      { id: 'wavelength', label: 'wavelength', min: 0.5, max: 2, value: 1, step: 0.05, knobColor: '#e8541e' },
+      {
+        id: 'amplitude',
+        label: 'Amplitude',
+        min: 0.2,
+        max: 2,
+        value: 1,
+        step: 0.05,
+        knobColor: '#8a5cf5',
+      },
+      {
+        id: 'wavelength',
+        label: 'wavelength',
+        min: 0.5,
+        max: 2,
+        value: 1,
+        step: 0.05,
+        knobColor: '#e8541e',
+      },
     ],
     // Six sliders are taller than the default panel slot: lift it clear of the bottom
     // edge and park it in the toolbar's column, narrowed so it stays clear of the
@@ -104,7 +171,12 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
   });
 
   /** SVG path data in world units for the wave starting at local (x0, y0). */
-  const worldPathData = (x0: number, y0: number, a: number, wl: number): string => {
+  const worldPathData = (
+    x0: number,
+    y0: number,
+    a: number,
+    wl: number,
+  ): string => {
     const cmds = waveCommands(x0, y0, a, wl);
     const out: (string | number)[] = [];
     let i = 0;
@@ -118,7 +190,10 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
         // 'c' and 's' are relative: scale the deltas, flipping per axis
         const n = c === 'c' ? 6 : 4;
         for (let k = 0; k < n; k += 2) {
-          out.push((sx * (cmds[i++] as number)) / PX_PER_UNIT, (sy * (cmds[i++] as number)) / PX_PER_UNIT);
+          out.push(
+            (sx * (cmds[i++] as number)) / PX_PER_UNIT,
+            (sy * (cmds[i++] as number)) / PX_PER_UNIT,
+          );
         }
       }
     }
@@ -130,13 +205,25 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
     const o = cam.worldToScreen({ x: 0, y: 0 });
     const ex = cam.worldToScreen({ x: 1, y: 0 });
     const ey = cam.worldToScreen({ x: 0, y: 1 });
-    return new DOMMatrix([ex.x - o.x, ex.y - o.y, ey.x - o.x, ey.y - o.y, o.x, o.y]);
+    return new DOMMatrix([
+      ex.x - o.x,
+      ex.y - o.y,
+      ey.x - o.x,
+      ey.y - o.y,
+      o.x,
+      o.y,
+    ]);
   };
 
   let playhead = 0;
 
-  const drawScene = (ctx: CanvasRenderingContext2D, cam: Camera, view: SceneView) => {
-    const { hue, saturation, lightness, weight, amplitude, wavelength } = view.params;
+  const drawScene = (
+    ctx: CanvasRenderingContext2D,
+    cam: Camera,
+    view: SceneView,
+  ) => {
+    const { hue, saturation, lightness, weight, amplitude, wavelength } =
+      view.params;
     const k = view.magnification;
     const color = `hsl(${hue} ${saturation}% ${lightness}%)`;
     // Scaled amplitude (original a = h/4) and wavelength (×1 = the original period).
@@ -167,7 +254,8 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
   };
 
   wrap.render = (p: SketchProps) => {
-    playhead = p?.playhead ?? playhead;
+    // playhead = p?.playhead ?? playhead;
+    playhead = ((p?.playhead * p.duration) / 1000) % 1;
     shell.render(drawScene);
   };
 };
@@ -177,9 +265,10 @@ export const settings: SketchSettings = {
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
   animate: true,
-  duration: 1_000,
+  duration: 10_000,
   playFps: 60,
   exportFps: 60,
+  framesFormat: ['mp4'],
 };
 
 ssam(sketch as Sketch<'2d'>, settings);

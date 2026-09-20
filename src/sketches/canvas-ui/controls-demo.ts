@@ -44,7 +44,15 @@ function starPath(
   return pts;
 }
 
-export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...props }: SketchProps) => {
+export const sketch = ({
+  wrap,
+  context,
+  canvas,
+  width,
+  height,
+  pixelRatio,
+  ...props
+}: SketchProps) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => {
       shell.dispose();
@@ -69,9 +77,33 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
       { id: 'line', icon: 'line' },
     ],
     params: [
-      { id: 'weight', label: 'Weight', min: 1, max: 100, step: 0.5, value: 24, knobColor: KNOB.weight },
-      { id: 'outside', label: 'Outside corners', min: 0, max: 120, step: 1, value: 0, knobColor: KNOB.outside },
-      { id: 'inside', label: 'Inside corners', min: 0, max: 120, step: 1, value: 0, knobColor: KNOB.inside },
+      {
+        id: 'weight',
+        label: 'Weight',
+        min: 1,
+        max: 100,
+        step: 0.5,
+        value: 24,
+        knobColor: KNOB.weight,
+      },
+      {
+        id: 'outside',
+        label: 'Outside corners',
+        min: 0,
+        max: 120,
+        step: 1,
+        value: 0,
+        knobColor: KNOB.outside,
+      },
+      {
+        id: 'inside',
+        label: 'Inside corners',
+        min: 0,
+        max: 120,
+        step: 1,
+        value: 0,
+        knobColor: KNOB.inside,
+      },
     ],
     onChange: () => props.render(),
   });
@@ -87,7 +119,11 @@ export const sketch = ({ wrap, context, canvas, width, height, pixelRatio, ...pr
 
   // The subject lives in world space (1 unit = 1 base cell); pixel-valued params
   // are converted with `shell.px` so they read true at the fit view.
-  const drawScene = (ctx: CanvasRenderingContext2D, cam: Camera, view: SceneView) => {
+  const drawScene = (
+    ctx: CanvasRenderingContext2D,
+    cam: Camera,
+    view: SceneView,
+  ) => {
     const { weight, outside, inside } = view.params;
     const px = shell.px;
     const c = shell.camera.fitCenter;
@@ -138,7 +174,10 @@ export const settings: SketchSettings = {
   mode: '2d',
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
-  animate: false,
+  animate: true,
+  playFps: 60,
+  exportFps: 60,
+  framesFormat: ['mp4'],
 };
 
 ssam(sketch as Sketch<'2d'>, settings);
