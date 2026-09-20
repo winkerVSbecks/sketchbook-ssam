@@ -64,9 +64,26 @@ const WINDOWS: { title: string; rect: CellRect }[] = [
 const BLOCK = '██████';
 /** The ground's own block: its colour is the window, so a hatched outline stands in for it. */
 const GROUND = '▒▒▒▒▒▒';
-const ROLE_ORDER: (keyof TuiTheme)[] = ['bg', 'fg', 'dim', 'accent', 'chromeBg', 'chromeFg', 'frame', 'frameActive', 'selectionBg'];
+const ROLE_ORDER: (keyof TuiTheme)[] = [
+  'bg',
+  'fg',
+  'dim',
+  'accent',
+  'chromeBg',
+  'chromeFg',
+  'frame',
+  'frameActive',
+  'selectionBg',
+];
 
-export const sketch = ({ wrap, context, canvas, width, height, ...props }: SketchProps) => {
+export const sketch = ({
+  wrap,
+  context,
+  canvas,
+  width,
+  height,
+  ...props
+}: SketchProps) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => {
       desktop.dispose();
@@ -121,8 +138,13 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     applyTheme();
   };
 
-  const stepEntry = (dir: 1 | -1) => select(systemIndex, (entryIndex + dir + entries().length) % entries().length);
-  const stepSystem = (dir: 1 | -1) => select((systemIndex + dir + SYSTEMS.length) % SYSTEMS.length, 0);
+  const stepEntry = (dir: 1 | -1) =>
+    select(
+      systemIndex,
+      (entryIndex + dir + entries().length) % entries().length,
+    );
+  const stepSystem = (dir: 1 | -1) =>
+    select((systemIndex + dir + SYSTEMS.length) % SYSTEMS.length, 0);
 
   const random = () => {
     Random.setSeed(Random.getRandomSeed());
@@ -136,12 +158,19 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     select(systemIndex, entryIndex);
   };
 
-  const code = () => snippet({ system: system(), entry: entry(), colors: current(), hex: hexOutput });
+  const code = () =>
+    snippet({
+      system: system(),
+      entry: entry(),
+      colors: current(),
+      hex: hexOutput,
+    });
 
   const copy = () => {
     const text = code();
     logColors(current());
-    const clipboard = typeof navigator !== 'undefined' ? navigator.clipboard : undefined;
+    const clipboard =
+      typeof navigator !== 'undefined' ? navigator.clipboard : undefined;
     if (!clipboard) return;
     clipboard
       .writeText(text)
@@ -162,9 +191,23 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
       const on = i === systemIndex;
       const n = entriesOf(s).length;
       const fg = on ? t.accent : t.fg;
-      buf.text(row, inner.col + 1, `${on ? '(●)' : '( )'} ${s.id.padEnd(12)}`, fg, undefined, inner.cols - 1);
+      buf.text(
+        row,
+        inner.col + 1,
+        `${on ? '(●)' : '( )'} ${s.id.padEnd(12)}`,
+        fg,
+        undefined,
+        inner.cols - 1,
+      );
       buf.text(row, inner.col + 18, String(n).padStart(3), on ? t.fg : t.dim);
-      buf.text(row, inner.col + 23, s.generated ? 'generated' : 'static', t.dim, undefined, Math.max(0, inner.cols - 24));
+      buf.text(
+        row,
+        inner.col + 23,
+        s.generated ? 'generated' : 'static',
+        t.dim,
+        undefined,
+        Math.max(0, inner.cols - 24),
+      );
     });
   };
 
@@ -177,7 +220,8 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     },
     pointerMove: () => false,
     pointerUp: () => false,
-    cursorAt: (cell, inner) => (cell.row - inner.row < SYSTEMS.length ? 'pointer' : null),
+    cursorAt: (cell, inner) =>
+      cell.row - inner.row < SYSTEMS.length ? 'pointer' : null,
   };
 
   // ─── library window ─────────────────────────────────────────────────────
@@ -191,7 +235,8 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     scroll = Math.max(0, Math.min(scroll, n - visible));
     // Keep the selected palette in view.
     if (entryIndex < scroll) scroll = entryIndex;
-    else if (visible > 0 && entryIndex >= scroll + visible) scroll = entryIndex - visible + 1;
+    else if (visible > 0 && entryIndex >= scroll + visible)
+      scroll = entryIndex - visible + 1;
   };
 
   const drawLibrary = (buf: GlyphBuffer, inner: CellRect) => {
@@ -202,7 +247,13 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     const head = `${system().id} · ${list.length} palettes`;
     buf.text(inner.row, inner.col + 1, head, t.dim, undefined, inner.cols - 1);
     if (scroll > 0) buf.put(inner.row, inner.col + inner.cols - 1, '▴', t.fg);
-    if (scroll + visible < list.length) buf.put(inner.row + inner.rows - 1, inner.col + inner.cols - 1, '▾', t.fg);
+    if (scroll + visible < list.length)
+      buf.put(
+        inner.row + inner.rows - 1,
+        inner.col + inner.cols - 1,
+        '▾',
+        t.fg,
+      );
 
     const nameW = 14;
     const stripCol = inner.col + 3 + nameW;
@@ -212,7 +263,8 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
       if (!e) break;
       const row = inner.row + 1 + r;
       const on = i === entryIndex;
-      const label = e.name.length > nameW ? e.name.slice(0, nameW - 1) + '…' : e.name;
+      const label =
+        e.name.length > nameW ? e.name.slice(0, nameW - 1) + '…' : e.name;
       buf.text(row, inner.col + 1, on ? '▸' : ' ', t.accent);
       buf.text(row, inner.col + 3, label, on ? t.fg : t.dim, undefined, nameW);
       // Two cells per colour while they fit, one when the palette is long for the window.
@@ -222,7 +274,12 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
         if (k * w + w > room) return;
         buf.text(row, stripCol + k * w, '█'.repeat(w), c);
       });
-      buf.text(row, inner.col + inner.cols - 3, String(e.colors.length).padStart(2), on ? t.fg : t.dim);
+      buf.text(
+        row,
+        inner.col + inner.cols - 3,
+        String(e.colors.length).padStart(2),
+        on ? t.fg : t.dim,
+      );
     }
   };
 
@@ -237,7 +294,11 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
         scroll = Math.max(0, scroll - visible);
         return true;
       }
-      if (cell.row === lastRow && cell.col === hintCol && scroll + visible < list.length) {
+      if (
+        cell.row === lastRow &&
+        cell.col === hintCol &&
+        scroll + visible < list.length
+      ) {
         scroll = Math.min(list.length - visible, scroll + visible);
         return true;
       }
@@ -264,23 +325,49 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     const roles = rolesFor(colors);
     const head = `${entry().name}${bgIndex ? ' · reordered' : ''}`;
     buf.text(inner.row, inner.col + 1, head, t.dim, undefined, 24);
-    buf.text(inner.row, inner.col + 26, '    L     C   h    :1  role', t.dim, undefined, Math.max(0, inner.cols - 26));
+    buf.text(
+      inner.row,
+      inner.col + 26,
+      '    L     C   h    :1  role',
+      t.dim,
+      undefined,
+      Math.max(0, inner.cols - 26),
+    );
     colors.forEach((c, i) => {
       const row = inner.row + 1 + i;
       if (row >= inner.row + inner.rows) return;
       const r = readout(c);
       if (i === 0) buf.text(row, inner.col + 1, GROUND, t.frame);
       else buf.text(row, inner.col + 1, BLOCK, c);
-      buf.text(row, inner.col + 8, r ? r.hex : c, i === 0 ? t.fg : t.dim, undefined, 16);
+      buf.text(
+        row,
+        inner.col + 8,
+        r ? r.hex : c,
+        i === 0 ? t.fg : t.dim,
+        undefined,
+        16,
+      );
       if (r) {
         buf.text(row, inner.col + 26, r.l.toFixed(1).padStart(5), t.fg);
         buf.text(row, inner.col + 32, r.c.toFixed(3), t.fg);
-        buf.text(row, inner.col + 38, Math.round(r.h).toString().padStart(3), t.fg);
+        buf.text(
+          row,
+          inner.col + 38,
+          Math.round(r.h).toString().padStart(3),
+          t.fg,
+        );
       }
       const contrast = i === 0 ? '  bg' : ratio(c, bg);
       const ok = i === 0 || contrastRatio(c, bg) >= MIN_CONTRAST;
       buf.text(row, inner.col + 43, contrast, ok ? t.fg : t.dim);
-      buf.text(row, inner.col + 49, roles[i].join('+'), roles[i].length ? t.accent : t.dim, undefined, Math.max(0, inner.cols - 50));
+      buf.text(
+        row,
+        inner.col + 49,
+        roles[i].join('+'),
+        roles[i].length ? t.accent : t.dim,
+        undefined,
+        Math.max(0, inner.cols - 50),
+      );
     });
   };
 
@@ -307,7 +394,14 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
   const drawTheme = (buf: GlyphBuffer, inner: CellRect) => {
     const t = desktop.theme;
     const derived = themeFromPalette(current());
-    buf.text(inner.row, inner.col + 1, 'themeFromPalette(palette)', t.dim, undefined, Math.max(0, inner.cols - 24));
+    buf.text(
+      inner.row,
+      inner.col + 1,
+      'themeFromPalette(palette)',
+      t.dim,
+      undefined,
+      Math.max(0, inner.cols - 24),
+    );
     buf.text(inner.row, inner.col + inner.cols - 9, '  :1 min', t.dim);
     ROLE_ORDER.forEach((role, i) => {
       const row = inner.row + 1 + i;
@@ -317,14 +411,48 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
       // Blocks sit on their real ground: bg for most, the chrome band for chromeFg, so
       // translucent roles (dim, chromeBg, selectionBg) show what they composite to.
       if (role === 'bg') buf.text(row, inner.col + 13, GROUND, t.frame);
-      else buf.text(row, inner.col + 13, BLOCK, value, role === 'chromeFg' ? derived.chromeBg : derived.bg);
-      buf.text(row, inner.col + 20, value, t.dim, undefined, Math.max(0, inner.cols - 30));
+      else
+        buf.text(
+          row,
+          inner.col + 13,
+          BLOCK,
+          value,
+          role === 'chromeFg' ? derived.chromeBg : derived.bg,
+        );
+      buf.text(
+        row,
+        inner.col + 20,
+        value,
+        t.dim,
+        undefined,
+        Math.max(0, inner.cols - 30),
+      );
       if (role === 'bg') return;
-      const against = role === 'chromeFg' ? composite(derived.chromeBg, derived.bg) : derived.bg;
-      const min = role === 'frameActive' ? AA_CONTRAST : role === 'selectionBg' ? 0 : MIN_CONTRAST;
-      const ok = min === 0 || contrastRatio(composite(value, derived.bg), against) >= min;
-      buf.text(row, inner.col + inner.cols - 9, ratio(value, against), ok ? t.fg : t.accent);
-      buf.text(row, inner.col + inner.cols - 4, min ? min.toFixed(1) : '  –', t.dim);
+      const against =
+        role === 'chromeFg'
+          ? composite(derived.chromeBg, derived.bg)
+          : derived.bg;
+      const min =
+        role === 'frameActive'
+          ? AA_CONTRAST
+          : role === 'selectionBg'
+            ? 0
+            : MIN_CONTRAST;
+      const ok =
+        min === 0 ||
+        contrastRatio(composite(value, derived.bg), against) >= min;
+      buf.text(
+        row,
+        inner.col + inner.cols - 9,
+        ratio(value, against),
+        ok ? t.fg : t.accent,
+      );
+      buf.text(
+        row,
+        inner.col + inner.cols - 4,
+        min ? min.toFixed(1) : '  –',
+        t.dim,
+      );
     });
     // Specimen: the density ramp and text in each ink, on the derived ground.
     const last = inner.row + inner.rows - 1;
@@ -333,9 +461,22 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
       buf.text(last, inner.col + 6, 'fg', derived.fg);
       buf.text(last, inner.col + 9, 'dim', derived.dim);
       buf.text(last, inner.col + 13, 'accent', derived.accent);
-      buf.text(last, inner.col + 20, ' chrome ', derived.chromeFg, derived.chromeBg);
+      buf.text(
+        last,
+        inner.col + 20,
+        ' chrome ',
+        derived.chromeFg,
+        derived.chromeBg,
+      );
       buf.text(last, inner.col + 29, '┌─ frame ─┐', derived.frame);
-      buf.text(last, inner.col + 41, '╔═ active ═╗', derived.frameActive, undefined, Math.max(0, inner.cols - 42));
+      buf.text(
+        last,
+        inner.col + 41,
+        '╔═ active ═╗',
+        derived.frameActive,
+        undefined,
+        Math.max(0, inner.cols - 42),
+      );
     }
   };
 
@@ -344,30 +485,68 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
   const copyButton = createButton({ id: 'copy', label: 'copy', onPress: copy });
   /** Pointer over the copy button (the control host's `hot`, done by hand here). */
   let codeHot = false;
-  const buttonRect = (inner: CellRect) => cellRect(inner.row + inner.rows - 1, inner.col + 1, 1, Math.min(8, inner.cols - 1));
+  const buttonRect = (inner: CellRect) =>
+    cellRect(
+      inner.row + inner.rows - 1,
+      inner.col + 1,
+      1,
+      Math.min(8, inner.cols - 1),
+    );
 
   const drawCode = (buf: GlyphBuffer, inner: CellRect) => {
     const t = desktop.theme;
     const lines = code().split('\n');
     const room = Math.max(0, inner.rows - 2);
     // A palette longer than the window collapses its middle so `];` stays in view.
-    const shown = lines.length <= room ? lines : [...lines.slice(0, room - 2), `  // … ${lines.length - room + 1} more`, lines[lines.length - 1]];
+    const shown =
+      lines.length <= room
+        ? lines
+        : [
+            ...lines.slice(0, room - 2),
+            `  // … ${lines.length - room + 1} more`,
+            lines[lines.length - 1],
+          ];
     shown.forEach((line, i) => {
       const comment = line.trimStart().startsWith('//');
       const fg = comment ? t.dim : i === 1 || line === '];' ? t.fg : t.accent;
-      buf.text(inner.row + i, inner.col + 1, line, fg, undefined, inner.cols - 1);
+      buf.text(
+        inner.row + i,
+        inner.col + 1,
+        line,
+        fg,
+        undefined,
+        inner.cols - 1,
+      );
       const at = line.indexOf('// bg');
-      if (at >= 0 && !comment) buf.text(inner.row + i, inner.col + 1 + at, '// bg', t.dim, undefined, Math.max(0, inner.cols - 2 - at));
+      if (at >= 0 && !comment)
+        buf.text(
+          inner.row + i,
+          inner.col + 1 + at,
+          '// bg',
+          t.dim,
+          undefined,
+          Math.max(0, inner.cols - 2 - at),
+        );
     });
     if (inner.rows < 2) return;
     const br = buttonRect(inner);
     copyButton.draw(buf, br, t, codeHot);
-    const note = copied ? 'copied' : `${hexOutput ? 'hex' : 'as written'} · c copies`;
-    buf.text(br.row, br.col + 10, note, t.dim, undefined, Math.max(0, inner.cols - 11));
+    const note = copied
+      ? 'copied'
+      : `${hexOutput ? 'hex' : 'as written'} · c copies`;
+    buf.text(
+      br.row,
+      br.col + 10,
+      note,
+      t.dim,
+      undefined,
+      Math.max(0, inner.cols - 11),
+    );
   };
 
   const codeContent: TuiContent = {
-    pointerDown: (cell, inner) => copyButton.pointerDown(cell, buttonRect(inner)),
+    pointerDown: (cell, inner) =>
+      copyButton.pointerDown(cell, buttonRect(inner)),
     pointerMove(cell, inner) {
       const br = buttonRect(inner);
       const hot = cellRectContains(br, cell.row, cell.col);
@@ -381,11 +560,21 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
 
   // ─── Windows ────────────────────────────────────────────────────────────
 
-  const bodies: Record<string, { draw: (buf: GlyphBuffer, inner: CellRect) => void; content: TuiContent }> = {
+  const bodies: Record<
+    string,
+    { draw: (buf: GlyphBuffer, inner: CellRect) => void; content: TuiContent }
+  > = {
     systems: { draw: drawSystems, content: systemsContent },
     library: { draw: drawLibrary, content: libraryContent },
     swatches: { draw: drawSwatches, content: swatchesContent },
-    theme: { draw: drawTheme, content: { pointerDown: () => false, pointerMove: () => false, pointerUp: () => false } },
+    theme: {
+      draw: drawTheme,
+      content: {
+        pointerDown: () => false,
+        pointerMove: () => false,
+        pointerUp: () => false,
+      },
+    },
     code: { draw: drawCode, content: codeContent },
   };
 
@@ -504,7 +693,10 @@ export const settings: SketchSettings = {
   mode: '2d',
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
-  animate: false,
+  animate: true,
+  playFps: 60,
+  exportFps: 60,
+  framesFormat: ['mp4'],
 };
 
 ssam(sketch as Sketch<'2d'>, settings);
