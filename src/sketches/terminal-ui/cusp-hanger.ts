@@ -13,7 +13,8 @@
  * shell solid, the extra P3 reach hatched, the paper's ramp as dots and the
  * tier picks as H · M · L), `specimen` (the tiers in use as random blocks;
  * click to reshuffle) and `code` (the palette as a sketch declares it; click
- * to copy). The desktop is the specimen too: it is themed from the tiers.
+ * to copy). The chrome stays black and white so the palette is judged on its
+ * own ground: colour appears only in the specimen and wherever a swatch is shown.
  *
  * Keys: ←/→ hue ±5 · ↑/↓ mono ±0.05 · [ ] harmony · d ground · g gamut ·
  * r random hue · s reseed · x reshuffle specimen · c copy · Tab / Esc / h.
@@ -50,7 +51,6 @@ import {
   fallbackTheme,
   legibleOn,
   TUI_FONT_FAMILY,
-  withAlpha,
   type CellRect,
   type Desktop,
   type GlyphBuffer,
@@ -71,7 +71,20 @@ const WINDOWS: { title: string; rect: CellRect }[] = [
 ];
 
 const BLOCK = '██████';
-const GROUND = '▒▒▒▒▒▒';
+
+/** Paper-white chrome with black ink — the neutral ground the palettes are judged against. */
+const PAPER_THEME: TuiTheme = {
+  bg: '#f4f4f2',
+  fg: '#111111',
+  dim: 'rgba(0, 0, 0, 0.5)',
+  frame: '#7a7a7a',
+  frameActive: '#111111',
+  accent: '#111111',
+  chromeBg: '#111111',
+  chromeFg: '#f4f4f2',
+  selectionBg: 'rgba(0, 0, 0, 0.15)',
+  font: TUI_FONT_FAMILY,
+};
 const TIER_NOTE: Record<Tier, string> = { high: 'ink', mid: 'accent', low: 'wash' };
 const WORDS = ['CUSP', 'HANGER', 'ground', 'figure', 'shell', 'ramp', 'tension', 'paper', 'ink', 'wash', 'P3', 'oklch'];
 
@@ -106,7 +119,6 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
   /** Which of `palette.hues` the slice shows. */
   let focus = 0;
   let shuffle = 0;
-  let retint = true;
   let format: Format = 'oklch';
   let copied = false;
   let desktop: Desktop | null = null;
@@ -116,35 +128,11 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     return cuspPalette(params);
   }
 
-  /** The tiers as a desktop theme: high = ink and frames, mid = accent, the second hue's tiers as chrome. */
-  const themeFrom = (p: CuspPalette): TuiTheme => {
-    const bg = p.bg.css;
-    const other = p.hues.length > 1 ? 1 : 0;
-    const ink = legibleOn(bg, p.tiers.high[0].css);
-    return {
-      bg,
-      fg: ink,
-      dim: withAlpha(ink, 0.5),
-      frame: p.tiers.mid[0].css,
-      frameActive: ink,
-      accent: p.tiers.mid[other].css,
-      chromeBg: p.tiers.high[other].css,
-      chromeFg: bg,
-      selectionBg: withAlpha(p.tiers.mid[other].css, 0.3),
-      font: TUI_FONT_FAMILY,
-    };
-  };
-
-  const applyTheme = () => {
-    desktop?.setTheme(retint ? themeFrom(palette) : { ...fallbackTheme });
-  };
-
   /** Every parameter change funnels through here. */
   const regenerate = () => {
     palette = build();
     focus = Math.min(focus, palette.hues.length - 1);
     copied = false;
-    applyTheme();
   };
 
   // ─── Parameter controls ─────────────────────────────────────────────────
@@ -334,7 +322,7 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     paletteRows().forEach((r, i) => {
       const row = inner.row + 2 + i;
       if (row >= inner.row + inner.rows) return;
-      if (r.kind === 'ground') drawSwatchRow(buf, row, inner, palette.bg, GROUND, t.frame);
+      if (r.kind === 'ground') drawSwatchRow(buf, row, inner, palette.bg, BLOCK, palette.bg.css);
       else if (r.kind === 'tier') {
         buf.text(row, inner.col + 2, `${r.tier} · ${TIER_NOTE[r.tier]} · ≈${TIER_TARGETS[r.tier]}:1`, t.dim, undefined, inner.cols - 2);
       } else drawSwatchRow(buf, row, inner, r.swatch, BLOCK, r.swatch.css);
@@ -450,9 +438,10 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
   // ─── specimen window ────────────────────────────────────────────────────
 
   const drawSpecimen = (buf: GlyphBuffer, inner: CellRect) => {
-    const t = desktop!.theme;
     Random.setSeed(`${seed}/specimen/${shuffle}/${palette.colors.join()}`);
     const { high, mid, low } = palette.tiers;
+    // The specimen sits on the palette's own ground — the one place the chrome gives way to colour.
+    buf.fill(inner, ' ', high[0].css, palette.bg.css);
     const area = cellRect(inner.row + 1, inner.col, inner.rows - 1, inner.cols);
     if (area.rows < 3 || area.cols < 8) return;
     const rect = (minR: number, minC: number) => {
@@ -461,7 +450,7 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
       return cellRect(area.row + Random.rangeFloor(0, area.rows - rows + 1), area.col + Random.rangeFloor(0, area.cols - cols + 1), rows, cols);
     };
     // Washes: solid fields of the low tier.
-    for (let i = 0; i < Random.rangeFloor(3, 6); i++) buf.fill(rect(2, 6), ' ', t.fg, Random.pick(low).css);
+    for (let i = 0; i < Random.rangeFloor(3, 6); i++) buf.fill(rect(2, 6), ' ', high[0].css, Random.pick(low).css);
     // Textures: density glyphs in the mid tier.
     for (let i = 0; i < Random.rangeFloor(2, 5); i++) {
       const r = rect(1, 4);
@@ -479,7 +468,7 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     // A rule in the mid tier and the tiers' names as a key.
     const ruleRow = area.row + Random.rangeFloor(0, area.rows);
     buf.hline(ruleRow, area.col, area.cols, Random.pick(mid).css, undefined, '━');
-    buf.text(inner.row, inner.col, 'in use · click to reshuffle', t.dim, undefined, inner.cols);
+    buf.text(inner.row, inner.col, 'in use · click to reshuffle', high[0].css, palette.bg.css, inner.cols);
   };
 
   const specimenContent: TuiContent = {
@@ -550,11 +539,14 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
       },
     }),
     createToggleGroup({
-      items: [{ id: 'retint', label: 'retint desktop' }],
-      active: ['retint'],
-      onChange: (active) => {
-        retint = active.includes('retint');
-        applyTheme();
+      items: [
+        { id: 'paper', label: 'paper chrome' },
+        { id: 'slate', label: 'slate chrome' },
+      ],
+      exclusive: true,
+      active: 'paper',
+      onChange: ([id]) => {
+        desktop?.setTheme(id === 'slate' ? { ...fallbackTheme } : { ...PAPER_THEME });
       },
     }),
     createButton({ id: 'copy', label: 'copy palette', onPress: copy }),
@@ -567,7 +559,7 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     canvas,
     width,
     height,
-    theme: themeFrom(palette),
+    theme: { ...PAPER_THEME },
     font: { size: 14, lineH: 20 },
     menuBar: 'bottom',
     settings: { controls: settingsControls, cols: 30 },
