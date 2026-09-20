@@ -85,12 +85,36 @@ const PAPER_THEME: TuiTheme = {
   selectionBg: 'rgba(0, 0, 0, 0.15)',
   font: TUI_FONT_FAMILY,
 };
-const TIER_NOTE: Record<Tier, string> = { high: 'ink', mid: 'accent', low: 'wash' };
-const WORDS = ['CUSP', 'HANGER', 'ground', 'figure', 'shell', 'ramp', 'tension', 'paper', 'ink', 'wash', 'P3', 'oklch'];
+const TIER_NOTE: Record<Tier, string> = {
+  high: 'ink',
+  mid: 'accent',
+  low: 'wash',
+};
+const WORDS = [
+  'CUSP',
+  'HANGER',
+  'ground',
+  'figure',
+  'shell',
+  'ramp',
+  'tension',
+  'paper',
+  'ink',
+  'wash',
+  'P3',
+  'oklch',
+];
 
 type Format = 'oklch' | 'hex' | 'p3';
 
-export const sketch = ({ wrap, context, canvas, width, height, ...props }: SketchProps) => {
+export const sketch = ({
+  wrap,
+  context,
+  canvas,
+  width,
+  height,
+  ...props
+}: SketchProps) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => {
       desktop?.dispose();
@@ -106,7 +130,15 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
   // ─── State ──────────────────────────────────────────────────────────────
 
   let seed = Random.getRandomSeed();
-  const params: { hue: number; mono: number; saturation: number; coolWarm: number; harmony: Harmony; ground: Ground; gamut: Gamut } = {
+  const params: {
+    hue: number;
+    mono: number;
+    saturation: number;
+    coolWarm: number;
+    harmony: Harmony;
+    ground: Ground;
+    gamut: Gamut;
+  } = {
     hue: Random.rangeFloor(0, 360),
     mono: 0.5,
     saturation: 0.6,
@@ -253,7 +285,10 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     regenerate();
   };
   const nudgeMono = (d: number) => {
-    params.mono = Math.max(0, Math.min(1, Number((params.mono + d).toFixed(2))));
+    params.mono = Math.max(
+      0,
+      Math.min(1, Number((params.mono + d).toFixed(2))),
+    );
     monoRange.value = params.mono;
     regenerate();
   };
@@ -267,14 +302,22 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     groundToggle,
     gamutToggle,
     createButton({ id: 'random', label: 'random hue', onPress: randomHue }),
-    createButton({ id: 'reseed', label: 'reseed ground + jitter', onPress: reseed }),
+    createButton({
+      id: 'reseed',
+      label: 'reseed ground + jitter',
+      onPress: reseed,
+    }),
   ];
-  const parameterHost = createControlHost(parameterControls, { rows: 0, cols: 1 });
+  const parameterHost = createControlHost(parameterControls, {
+    rows: 0,
+    cols: 1,
+  });
 
   const copy = () => {
     const text = snippet(palette, format);
     logColors(palette.colors);
-    const clipboard = typeof navigator !== 'undefined' ? navigator.clipboard : undefined;
+    const clipboard =
+      typeof navigator !== 'undefined' ? navigator.clipboard : undefined;
     if (!clipboard) return;
     clipboard
       .writeText(text)
@@ -288,17 +331,28 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
   // ─── palette window ─────────────────────────────────────────────────────
 
   /** One row per line of the table: the ground, then each tier's header and swatches. */
-  type PaletteRow = { kind: 'ground' } | { kind: 'tier'; tier: Tier } | { kind: 'swatch'; swatch: CuspSwatch };
+  type PaletteRow =
+    | { kind: 'ground' }
+    | { kind: 'tier'; tier: Tier }
+    | { kind: 'swatch'; swatch: CuspSwatch };
   const paletteRows = (): PaletteRow[] => {
     const rows: PaletteRow[] = [{ kind: 'ground' }];
     for (const tier of TIERS) {
       rows.push({ kind: 'tier', tier });
-      for (const swatch of palette.tiers[tier]) rows.push({ kind: 'swatch', swatch });
+      for (const swatch of palette.tiers[tier])
+        rows.push({ kind: 'swatch', swatch });
     }
     return rows;
   };
 
-  const drawSwatchRow = (buf: GlyphBuffer, row: number, inner: CellRect, s: CuspSwatch, block: string, blockColor: string) => {
+  const drawSwatchRow = (
+    buf: GlyphBuffer,
+    row: number,
+    inner: CellRect,
+    s: CuspSwatch,
+    block: string,
+    blockColor: string,
+  ) => {
     const t = desktop!.theme;
     const focused = s.hueIndex === focus || (s.tier === 'bg' && focus === 0);
     const c = inner.col;
@@ -306,15 +360,51 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     buf.text(row, c + 2, block, blockColor);
     buf.text(row, c + 9, s.css, focused ? t.fg : t.dim, undefined, 30);
     buf.text(row, c + 40, s.hex, t.dim, undefined, 7);
-    buf.text(row, c + 48, s.tier === 'bg' ? '    ' : s.relC.toFixed(2), t.fg, undefined, 4);
-    buf.text(row, c + 54, s.tier === 'bg' ? '    bg' : `${s.contrast.toFixed(1)}:1`.padStart(6), t.fg, undefined, 6);
-    buf.text(row, c + 62, `h ${String(Math.round(s.color.h)).padStart(3)}`, t.dim, undefined, Math.max(0, inner.cols - 62));
-    if (s.tier === 'bg') buf.text(row, c + 69, `L ${s.color.l.toFixed(3)}`, t.dim, undefined, Math.max(0, inner.cols - 69));
+    buf.text(
+      row,
+      c + 48,
+      s.tier === 'bg' ? '    ' : s.relC.toFixed(2),
+      t.fg,
+      undefined,
+      4,
+    );
+    buf.text(
+      row,
+      c + 54,
+      s.tier === 'bg' ? '    bg' : `${s.contrast.toFixed(1)}:1`.padStart(6),
+      t.fg,
+      undefined,
+      6,
+    );
+    buf.text(
+      row,
+      c + 62,
+      `h ${String(Math.round(s.color.h)).padStart(3)}`,
+      t.dim,
+      undefined,
+      Math.max(0, inner.cols - 62),
+    );
+    if (s.tier === 'bg')
+      buf.text(
+        row,
+        c + 69,
+        `L ${s.color.l.toFixed(3)}`,
+        t.dim,
+        undefined,
+        Math.max(0, inner.cols - 69),
+      );
   };
 
   const drawPalette = (buf: GlyphBuffer, inner: CellRect) => {
     const t = desktop!.theme;
-    buf.text(inner.row, inner.col + 1, describe(palette), t.dim, undefined, inner.cols - 2);
+    buf.text(
+      inner.row,
+      inner.col + 1,
+      describe(palette),
+      t.dim,
+      undefined,
+      inner.cols - 2,
+    );
     buf.text(inner.row + 1, inner.col + 9, 'oklch', t.dim);
     buf.text(inner.row + 1, inner.col + 40, 'hex', t.dim);
     buf.text(inner.row + 1, inner.col + 48, 'relC', t.dim);
@@ -322,9 +412,17 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     paletteRows().forEach((r, i) => {
       const row = inner.row + 2 + i;
       if (row >= inner.row + inner.rows) return;
-      if (r.kind === 'ground') drawSwatchRow(buf, row, inner, palette.bg, BLOCK, palette.bg.css);
+      if (r.kind === 'ground')
+        drawSwatchRow(buf, row, inner, palette.bg, BLOCK, palette.bg.css);
       else if (r.kind === 'tier') {
-        buf.text(row, inner.col + 2, `${r.tier} · ${TIER_NOTE[r.tier]} · ≈${TIER_TARGETS[r.tier]}:1`, t.dim, undefined, inner.cols - 2);
+        buf.text(
+          row,
+          inner.col + 2,
+          `${r.tier} · ${TIER_NOTE[r.tier]} · ≈${TIER_TARGETS[r.tier]}:1`,
+          t.dim,
+          undefined,
+          inner.cols - 2,
+        );
       } else drawSwatchRow(buf, row, inner, r.swatch, BLOCK, r.swatch.css);
     });
   };
@@ -352,18 +450,39 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     const lut = palette.lut;
     for (let c = 0; c < cols; c++) {
       const h = ((c + 0.5) / cols) * 360;
-      buf.put(inner.row, inner.col + c, '█', toCss(relch({ lut, l: 0.72, relC: 0.9, h })));
+      buf.put(
+        inner.row,
+        inner.col + c,
+        '█',
+        toCss(relch({ lut, l: 0.72, relC: 0.9, h })),
+      );
     }
     if (inner.rows < 2) return;
     const marks = palette.hues
-      .map((h, i) => ({ i, col: inner.col + Math.min(cols - 1, Math.floor((h / 360) * cols)), label: `${Math.round(h)}°` }))
+      .map((h, i) => ({
+        i,
+        col: inner.col + Math.min(cols - 1, Math.floor((h / 360) * cols)),
+        label: `${Math.round(h)}°`,
+      }))
       .sort((a, b) => a.col - b.col);
-    for (const m of marks) buf.put(inner.row + 1, m.col, m.i === focus ? '▲' : '▴', palette.tiers.mid[m.i].css);
+    for (const m of marks)
+      buf.put(
+        inner.row + 1,
+        m.col,
+        m.i === focus ? '▲' : '▴',
+        palette.tiers.mid[m.i].css,
+      );
     if (inner.rows > 2) {
       // Labels are centred under their marks and nudged right when neighbours would overlap.
       let next = inner.col;
       for (const m of marks) {
-        const col = Math.max(next, Math.min(inner.col + cols - m.label.length, m.col - Math.floor(m.label.length / 2)));
+        const col = Math.max(
+          next,
+          Math.min(
+            inner.col + cols - m.label.length,
+            m.col - Math.floor(m.label.length / 2),
+          ),
+        );
         if (col + m.label.length > inner.col + cols) break;
         buf.text(inner.row + 2, col, m.label, m.i === focus ? t.fg : t.dim);
         next = col + m.label.length + 1;
@@ -371,14 +490,22 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     }
     if (inner.rows > 3) {
       const spread = Math.round(spreadFor(params.mono) * 100);
-      buf.text(inner.row + 3, inner.col, `${params.harmony} at ${spread}% spread · ground shares the base hue`, t.dim, undefined, cols);
+      buf.text(
+        inner.row + 3,
+        inner.col,
+        `${params.harmony} at ${spread}% spread · ground shares the base hue`,
+        t.dim,
+        undefined,
+        cols,
+      );
     }
   };
 
   const huesContent: TuiContent = {
     pointerDown(cell, inner) {
       if (cell.row !== inner.row) return false;
-      params.hue = Math.round(((cell.col - inner.col + 0.5) / inner.cols) * 360) % 360;
+      params.hue =
+        Math.round(((cell.col - inner.col + 0.5) / inner.cols) * 360) % 360;
       hueRange.value = params.hue;
       regenerate();
       return true;
@@ -396,15 +523,26 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     const hue = palette.hues[focus] ?? params.hue;
     const peak = cusp(hue, oklchP3);
     const cMax = peak.c * 1.08;
-    buf.text(inner.row, inner.col, `h ${Math.round(hue)} · cusp L ${peak.l.toFixed(2)} C ${peak.c.toFixed(3)}`, t.dim, undefined, inner.cols);
+    buf.text(
+      inner.row,
+      inner.col,
+      `h ${Math.round(hue)} · cusp L ${peak.l.toFixed(2)} C ${peak.c.toFixed(3)}`,
+      t.dim,
+      undefined,
+      inner.cols,
+    );
     const chartRows = inner.rows - 2;
     const axis = 4;
     const chartCols = inner.cols - axis;
     if (chartRows < 2 || chartCols < 4) return;
     const top = inner.row + 1;
     const left = inner.col + axis;
-    const rowOf = (l: number) => top + Math.min(chartRows - 1, Math.max(0, Math.floor((1 - l) * chartRows)));
-    const colOf = (c: number) => left + Math.min(chartCols - 1, Math.max(0, Math.floor((c / cMax) * chartCols)));
+    const rowOf = (l: number) =>
+      top +
+      Math.min(chartRows - 1, Math.max(0, Math.floor((1 - l) * chartRows)));
+    const colOf = (c: number) =>
+      left +
+      Math.min(chartCols - 1, Math.max(0, Math.floor((c / cMax) * chartCols)));
 
     for (let r = 0; r < chartRows; r++) {
       const l = 1 - (r + 0.5) / chartRows;
@@ -423,16 +561,28 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     buf.text(top + chartRows - 1, inner.col, '0.0', t.dim);
     // The paper's ramp for this hue, then the picks on top.
     const dotColor = (cell: string) => legibleOn(cell, palette.bg.css, t.fg);
-    for (const c of palette.ramps[focus] ?? []) buf.put(rowOf(c.l), colOf(c.c), '·', dotColor(toCss(c)));
+    for (const c of palette.ramps[focus] ?? [])
+      buf.put(rowOf(c.l), colOf(c.c), '·', dotColor(toCss(c)));
     for (const tier of TIERS) {
       const s = palette.tiers[tier][focus];
       if (!s) continue;
-      buf.put(rowOf(s.color.l), colOf(s.color.c), tier[0].toUpperCase(), legibleOn(s.css, palette.bg.css, t.fg), s.css);
+      buf.put(
+        rowOf(s.color.l),
+        colOf(s.color.c),
+        tier[0].toUpperCase(),
+        legibleOn(s.css, palette.bg.css, t.fg),
+        s.css,
+      );
     }
     buf.put(rowOf(palette.bg.color.l), colOf(palette.bg.color.c), '○', t.fg);
     buf.text(top + chartRows, inner.col, 'C 0', t.dim);
     const legend = `█ srgb ▒ p3 only · ${cMax.toFixed(2)}`;
-    buf.text(top + chartRows, inner.col + inner.cols - legend.length, legend, t.dim);
+    buf.text(
+      top + chartRows,
+      inner.col + inner.cols - legend.length,
+      legend,
+      t.dim,
+    );
   };
 
   // ─── specimen window ────────────────────────────────────────────────────
@@ -445,12 +595,24 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     const area = cellRect(inner.row + 1, inner.col, inner.rows - 1, inner.cols);
     if (area.rows < 3 || area.cols < 8) return;
     const rect = (minR: number, minC: number) => {
-      const rows = Random.rangeFloor(minR, Math.max(minR + 1, Math.floor(area.rows / 2)));
-      const cols = Random.rangeFloor(minC, Math.max(minC + 1, Math.floor(area.cols / 2)));
-      return cellRect(area.row + Random.rangeFloor(0, area.rows - rows + 1), area.col + Random.rangeFloor(0, area.cols - cols + 1), rows, cols);
+      const rows = Random.rangeFloor(
+        minR,
+        Math.max(minR + 1, Math.floor(area.rows / 2)),
+      );
+      const cols = Random.rangeFloor(
+        minC,
+        Math.max(minC + 1, Math.floor(area.cols / 2)),
+      );
+      return cellRect(
+        area.row + Random.rangeFloor(0, area.rows - rows + 1),
+        area.col + Random.rangeFloor(0, area.cols - cols + 1),
+        rows,
+        cols,
+      );
     };
     // Washes: solid fields of the low tier.
-    for (let i = 0; i < Random.rangeFloor(3, 6); i++) buf.fill(rect(2, 6), ' ', high[0].css, Random.pick(low).css);
+    for (let i = 0; i < Random.rangeFloor(3, 6); i++)
+      buf.fill(rect(2, 6), ' ', high[0].css, Random.pick(low).css);
     // Textures: density glyphs in the mid tier.
     for (let i = 0; i < Random.rangeFloor(2, 5); i++) {
       const r = rect(1, 4);
@@ -461,14 +623,35 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     for (let i = 0; i < Random.rangeFloor(3, 6); i++) {
       const word = Random.pick(WORDS);
       const row = area.row + Random.rangeFloor(0, area.rows);
-      const col = area.col + Random.rangeFloor(0, Math.max(1, area.cols - word.length));
+      const col =
+        area.col + Random.rangeFloor(0, Math.max(1, area.cols - word.length));
       const ink = Random.pick(high);
-      buf.text(row, col, word, ink.css, Random.chance(0.5) ? Random.pick(low).css : undefined);
+      buf.text(
+        row,
+        col,
+        word,
+        ink.css,
+        Random.chance(0.5) ? Random.pick(low).css : undefined,
+      );
     }
     // A rule in the mid tier and the tiers' names as a key.
     const ruleRow = area.row + Random.rangeFloor(0, area.rows);
-    buf.hline(ruleRow, area.col, area.cols, Random.pick(mid).css, undefined, '━');
-    buf.text(inner.row, inner.col, 'in use · click to reshuffle', high[0].css, palette.bg.css, inner.cols);
+    buf.hline(
+      ruleRow,
+      area.col,
+      area.cols,
+      Random.pick(mid).css,
+      undefined,
+      '━',
+    );
+    buf.text(
+      inner.row,
+      inner.col,
+      'in use · click to reshuffle',
+      high[0].css,
+      palette.bg.css,
+      inner.cols,
+    );
   };
 
   const specimenContent: TuiContent = {
@@ -486,13 +669,30 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
   const drawCode = (buf: GlyphBuffer, inner: CellRect) => {
     const t = desktop!.theme;
     const lines = snippet(palette, format).split('\n');
-    buf.text(inner.row, inner.col, copied ? '✓ copied' : `${format} · click to copy`, copied ? t.accent : t.dim, undefined, inner.cols);
+    buf.text(
+      inner.row,
+      inner.col,
+      copied ? '✓ copied' : `${format} · click to copy`,
+      copied ? t.accent : t.dim,
+      undefined,
+      inner.cols,
+    );
     lines.forEach((line, i) => {
       const row = inner.row + 1 + i;
       if (row >= inner.row + inner.rows) return;
-      const swatch = i >= 2 && i - 2 < palette.colors.length ? [palette.bg, ...palette.fg][i - 2] : null;
+      const swatch =
+        i >= 2 && i - 2 < palette.colors.length
+          ? [palette.bg, ...palette.fg][i - 2]
+          : null;
       if (swatch) buf.put(row, inner.col, '█', swatch.css);
-      buf.text(row, inner.col + (swatch ? 1 : 0), swatch ? line.slice(1) : line, i < 1 ? t.dim : t.fg, undefined, inner.cols - 1);
+      buf.text(
+        row,
+        inner.col + (swatch ? 1 : 0),
+        swatch ? line.slice(1) : line,
+        i < 1 ? t.dim : t.fg,
+        undefined,
+        inner.cols - 1,
+      );
     });
   };
 
@@ -508,9 +708,22 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
 
   // ─── Windows ────────────────────────────────────────────────────────────
 
-  const bodies: Record<string, { draw: (buf: GlyphBuffer, inner: CellRect) => void; content: TuiContent }> = {
-    parameters: { draw: (buf, inner) => parameterHost.draw(buf, inner, desktop!.theme), content: parameterHost },
-    slice: { draw: drawSlice, content: { pointerDown: () => false, pointerMove: () => false, pointerUp: () => false } },
+  const bodies: Record<
+    string,
+    { draw: (buf: GlyphBuffer, inner: CellRect) => void; content: TuiContent }
+  > = {
+    parameters: {
+      draw: (buf, inner) => parameterHost.draw(buf, inner, desktop!.theme),
+      content: parameterHost,
+    },
+    slice: {
+      draw: drawSlice,
+      content: {
+        pointerDown: () => false,
+        pointerMove: () => false,
+        pointerUp: () => false,
+      },
+    },
     palette: { draw: drawPalette, content: paletteContent },
     hues: { draw: drawHues, content: huesContent },
     specimen: { draw: drawSpecimen, content: specimenContent },
@@ -546,7 +759,9 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
       exclusive: true,
       active: 'paper',
       onChange: ([id]) => {
-        desktop?.setTheme(id === 'slate' ? { ...fallbackTheme } : { ...PAPER_THEME });
+        desktop?.setTheme(
+          id === 'slate' ? { ...fallbackTheme } : { ...PAPER_THEME },
+        );
       },
     }),
     createButton({ id: 'copy', label: 'copy palette', onPress: copy }),
@@ -583,7 +798,8 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
 
   const onKey = (e: KeyboardEvent) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
-    const step = (list: readonly Harmony[], dir: 1 | -1) => list[(list.indexOf(params.harmony) + dir + list.length) % list.length];
+    const step = (list: readonly Harmony[], dir: 1 | -1) =>
+      list[(list.indexOf(params.harmony) + dir + list.length) % list.length];
     switch (e.key) {
       case 'ArrowRight':
         nudgeHue(5);
@@ -649,9 +865,12 @@ export const settings: SketchSettings = {
   mode: '2d',
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
-  animate: false,
   // Display-P3 canvas: the oklch() strings render without clipping to sRGB.
   attributes: { colorSpace: 'display-p3' },
+  animate: true,
+  playFps: 24,
+  exportFps: 24,
+  framesFormat: ['mp4'],
 };
 
 ssam(sketch as Sketch<'2d'>, settings);
