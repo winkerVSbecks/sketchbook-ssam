@@ -38,6 +38,10 @@
 - Palette picker: `src/sketches/terminal-ui/palette-picker.ts` (`VITE_SKETCH="sketches/terminal-ui/palette-picker" npm run dev`) browses every colour system in `src/colors` (clrs, auto-albers, mindful, found, uchu, riso, oklch, hsluv) as desktop windows — systems → library → swatches (hex · OKLCH · contrast · theme role) → derived `TuiTheme` → copyable code — and retints the desktop with the pick. The system registry lives in `palette-systems.ts` beside it; add a system there.
 - New sketch on the desktop: use the `create-tui-sketch` skill (template + scaffold live in `.claude/skills/create-tui-sketch/`).
 
+## cusphanger colour system (P3 ground + contrast tiers)
+- `src/colors/cusphanger.ts` — `cuspPalette({ hue?, harmony?, mono?, saturation?, coolWarm?, ground?, gamut? })` builds a tinted ground plus foreground colours grouped by WCAG contrast into `high` (≈9:1 ink), `mid` (≈4.5:1 accent) and `low` (≈1.6:1 wash) tiers. Hues come from a harmony (analogous · complementary · split · triadic · tetradic) scaled down as `mono` rises toward the base hue (a small floor keeps them distinct); each hue's ramp is `cusphanger`'s Wijffelaars Bézier through the cusp, gamut-clamped by `nutelch` (`oklchP3` default). `colors` is the `[bg, ...fg]` array sketches expect, as `oklch()` strings — pair with `settings.attributes = { colorSpace: 'display-p3' }` for a P3 canvas. Smoke test: `npx tsx scripts/cusphanger-smoke.ts`.
+- Explorer: `src/sketches/terminal-ui/cusp-hanger.ts` (`VITE_SKETCH="sketches/terminal-ui/cusp-hanger" npm run dev`) — parameters, palette table, hue strip, the focused hue's chroma–lightness slice (sRGB shell solid, P3 reach hatched), a specimen and a copyable snippet, with the desktop themed from the tiers. Also listed in the palette picker.
+
 ## Code Style Guidelines
 - **TypeScript**: Use strict typing with interfaces/types for complex objects
 - **Imports**: Group by external libraries first, then project modules

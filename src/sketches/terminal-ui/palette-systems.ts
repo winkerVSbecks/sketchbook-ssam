@@ -14,6 +14,7 @@ import paperColors from 'paper-colors';
 
 import { palettes as albersPalettes } from '../../colors/auto-albers';
 import { clrs } from '../../colors/clrs';
+import { cuspPalette, HARMONIES, type Ground } from '../../colors/cusphanger';
 import * as found from '../../colors/found';
 import * as hsluv from '../../colors/hsluv';
 import { palettes as mindfulPalettes } from '../../colors/mindful-palettes';
@@ -92,6 +93,21 @@ const schemeEntries =
       return { name: words(name), colors: make() };
     });
 
+/** cusphanger: every harmony on both grounds at three monochromaticness levels, dealt from the seed (P3 shell). */
+const cuspEntries = (seed: string): PaletteEntry[] => {
+  const entries: PaletteEntry[] = [];
+  for (const ground of ['light', 'dark'] as Ground[]) {
+    for (const harmony of HARMONIES) {
+      for (const mono of [0, 0.5, 0.85]) {
+        const name = `${harmony} ${mono.toFixed(2)} ${ground}`;
+        Random.setSeed(`${seed}/cusphanger/${name}`);
+        entries.push({ name, colors: cuspPalette({ harmony, mono, ground }).colors });
+      }
+    }
+  }
+  return entries;
+};
+
 export const SYSTEMS: readonly PaletteSystem[] = [
   { id: 'clrs', source: 'src/colors/clrs.ts', generated: false, entries: () => numbered('clrs', clrs) },
   { id: 'auto-albers', source: 'src/colors/auto-albers.ts', generated: false, entries: () => numbered('albers', albersPalettes) },
@@ -99,6 +115,7 @@ export const SYSTEMS: readonly PaletteSystem[] = [
   { id: 'found', source: 'src/colors/found.ts', generated: false, entries: foundEntries },
   { id: 'uchu', source: 'src/colors/uchu.ts', generated: false, entries: uchuEntries },
   { id: 'riso', source: 'src/colors/riso.ts', generated: true, entries: risoEntries },
+  { id: 'cusphanger', source: 'src/colors/cusphanger.ts', generated: true, entries: cuspEntries },
   {
     id: 'oklch',
     source: 'src/colors/oklch.ts',
