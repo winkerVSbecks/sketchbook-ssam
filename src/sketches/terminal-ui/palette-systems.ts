@@ -14,7 +14,7 @@ import paperColors from 'paper-colors';
 
 import { palettes as albersPalettes } from '../../colors/auto-albers';
 import { clrs } from '../../colors/clrs';
-import { cuspPalette, HARMONIES, type Ground } from '../../colors/cusphanger';
+import { cuspPalette, type Ground } from '../../colors/cusphanger';
 import * as found from '../../colors/found';
 import * as hsluv from '../../colors/hsluv';
 import { palettes as mindfulPalettes } from '../../colors/mindful-palettes';
@@ -93,15 +93,15 @@ const schemeEntries =
       return { name: words(name), colors: make() };
     });
 
-/** cusphanger: every harmony on both grounds at three monochromaticness levels, dealt from the seed (P3 shell). */
+/** cusphanger: three hues shuffled off rings of several angles on both grounds, dealt from the seed (P3 shell). */
 const cuspEntries = (seed: string): PaletteEntry[] => {
   const entries: PaletteEntry[] = [];
   for (const ground of ['light', 'dark'] as Ground[]) {
-    for (const harmony of HARMONIES) {
-      for (const mono of [0, 0.5, 0.85]) {
-        const name = `${harmony} ${mono.toFixed(2)} ${ground}`;
+    for (const angle of [24, 36, 48, 72, 120]) {
+      for (const deal of [1, 2, 3]) {
+        const name = `ring ${angle}° · ${deal} ${ground}`;
         Random.setSeed(`${seed}/cusphanger/${name}`);
-        entries.push({ name, colors: cuspPalette({ harmony, mono, ground }).colors });
+        entries.push({ name, colors: cuspPalette({ angle, ground }).colors });
       }
     }
   }

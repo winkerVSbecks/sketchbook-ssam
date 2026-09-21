@@ -2,13 +2,13 @@
  * cusp-hanger on the terminal desktop: an explorer for the `cusphanger`
  * colour system (`src/colors/cusphanger.ts`) — a tinted ground plus
  * foreground colours grouped by contrast into high (ink), mid (accent) and
- * low (wash) tiers, hues chosen by harmony and pulled together by a
- * monochromaticness knob, everything clamped to the Display-P3 shell.
+ * low (wash) tiers, hues shuffled off a ring stepped every `angle` degrees
+ * from the base, everything clamped to the Display-P3 shell.
  *
- * Windows: `parameters` (hue · monochromatic · saturation · cool/warm;
- * harmony · ground · gamut; random / reseed), `palette` (the ground and the
+ * Windows: `parameters` (hue · ring angle · hues · saturation · cool/warm;
+ * shuffled / in sequence · ground · gamut; random / reseed), `palette` (the ground and the
  * three tiers — block · oklch · hex · relC · contrast; click a row to focus
- * its hue), `hues` (a 360° strip with the chosen hues marked), `slice` (the
+ * its hue), `hues` (a 360° strip with the ring marked and the picks raised), `slice` (the
  * focused hue's chroma–lightness triangle in its real colours: the sRGB
  * shell solid, the extra P3 reach hatched, the paper's ramp as dots and the
  * tier picks as H · M · L), `specimen` (the tiers in use as random blocks;
@@ -16,7 +16,7 @@
  * to copy). The chrome stays black and white so the palette is judged on its
  * own ground: colour appears only in the specimen and wherever a swatch is shown.
  *
- * Keys: ←/→ hue ±5 · ↑/↓ mono ±0.05 · [ ] harmony · d ground · g gamut ·
+ * Keys: ←/→ hue ±5 · ↑/↓ angle ±6 · [ ] hues −/+ · p shuffled/sequence · d ground · g gamut ·
  * r random hue · s reseed · x reshuffle specimen · c copy · Tab / Esc / h.
  */
 import { ssam } from 'ssam';
@@ -29,16 +29,13 @@ import { logColors } from '../../colors';
 import {
   cuspPalette,
   describe,
-  HARMONIES,
   snippet,
-  spreadFor,
   TIER_TARGETS,
   TIERS,
   type CuspPalette,
   type CuspSwatch,
   type Gamut,
   type Ground,
-  type Harmony,
   type Tier,
 } from '../../colors/cusphanger';
 import {
@@ -132,18 +129,20 @@ export const sketch = ({
   let seed = Random.getRandomSeed();
   const params: {
     hue: number;
-    mono: number;
+    angle: number;
+    count: number;
+    shuffle: boolean;
     saturation: number;
     coolWarm: number;
-    harmony: Harmony;
     ground: Ground;
     gamut: Gamut;
   } = {
     hue: Random.rangeFloor(0, 360),
-    mono: 0.5,
+    angle: 48,
+    count: 3,
+    shuffle: true,
     saturation: 0.6,
     coolWarm: 0,
-    harmony: 'triadic',
     ground: 'light',
     gamut: 'p3',
   };
@@ -184,15 +183,29 @@ export const sketch = ({
       regenerate();
     },
   });
-  const monoRange = createRange({
-    id: 'mono',
-    label: 'monochromatic',
-    min: 0,
-    max: 1,
-    value: params.mono,
-    step: 0.01,
+  const angleRange = createRange({
+    id: 'angle',
+    label: 'ring angle',
+    min: 6,
+    max: 180,
+    value: params.angle,
+    step: 1,
+    format: degrees,
     onChange: (v) => {
-      params.mono = v;
+      params.angle = v;
+      regenerate();
+    },
+  });
+  const countRange = createRange({
+    id: 'count',
+    label: 'hues',
+    min: 1,
+    max: 6,
+    value: params.count,
+    step: 1,
+    format: (v) => `${Math.round(v)}`.padStart(4),
+    onChange: (v) => {
+      params.count = Math.round(v);
       regenerate();
     },
   });
@@ -220,12 +233,15 @@ export const sketch = ({
       regenerate();
     },
   });
-  const harmonyToggle = createToggleGroup({
-    items: HARMONIES.map((h) => ({ id: h, label: h })),
+  const pickToggle = createToggleGroup({
+    items: [
+      { id: 'shuffled', label: 'shuffled ring' },
+      { id: 'sequence', label: 'in sequence' },
+    ],
     exclusive: true,
-    active: params.harmony,
+    active: params.shuffle ? 'shuffled' : 'sequence',
     onChange: ([id]) => {
-      params.harmony = id as Harmony;
+      params.shuffle = id === 'shuffled';
       regenerate();
     },
   });
@@ -264,9 +280,9 @@ export const sketch = ({
     seed = Random.getRandomSeed();
     regenerate();
   };
-  const setHarmony = (h: Harmony) => {
-    params.harmony = h;
-    harmonyToggle.setActive(h);
+  const setShuffle = (on: boolean) => {
+    params.shuffle = on;
+    pickToggle.setActive(on ? 'shuffled' : 'sequence');
     regenerate();
   };
   const setGround = (g: Ground) => {
@@ -284,21 +300,24 @@ export const sketch = ({
     hueRange.value = params.hue;
     regenerate();
   };
-  const nudgeMono = (d: number) => {
-    params.mono = Math.max(
-      0,
-      Math.min(1, Number((params.mono + d).toFixed(2))),
-    );
-    monoRange.value = params.mono;
+  const nudgeAngle = (d: number) => {
+    params.angle = Math.max(6, Math.min(180, params.angle + d));
+    angleRange.value = params.angle;
+    regenerate();
+  };
+  const nudgeCount = (d: number) => {
+    params.count = Math.max(1, Math.min(6, params.count + d));
+    countRange.value = params.count;
     regenerate();
   };
 
   const parameterControls: TuiControl[] = [
     hueRange,
-    monoRange,
+    angleRange,
+    countRange,
     saturationRange,
     warmRange,
-    harmonyToggle,
+    pickToggle,
     groundToggle,
     gamutToggle,
     createButton({ id: 'random', label: 'random hue', onPress: randomHue }),
@@ -354,7 +373,8 @@ export const sketch = ({
     blockColor: string,
   ) => {
     const t = desktop!.theme;
-    const focused = s.hueIndex === focus || (s.tier === 'bg' && focus === 0);
+    const focused =
+      s.hueIndex === focus || (s.tier === 'bg' && focus === palette.baseIndex);
     const c = inner.col;
     buf.text(row, c, focused ? '▸' : ' ', t.accent);
     buf.text(row, c + 2, block, blockColor);
@@ -431,7 +451,7 @@ export const sketch = ({
     pointerDown(cell, inner) {
       const r = paletteRows()[cell.row - inner.row - 2];
       if (!r || r.kind === 'tier') return false;
-      focus = r.kind === 'ground' ? 0 : r.swatch.hueIndex;
+      focus = r.kind === 'ground' ? palette.baseIndex : r.swatch.hueIndex;
       return true;
     },
     pointerMove: () => false,
@@ -458,12 +478,14 @@ export const sketch = ({
       );
     }
     if (inner.rows < 2) return;
+    const colOf = (h: number) =>
+      inner.col + Math.min(cols - 1, Math.floor((h / 360) * cols));
+    // The ring's unpicked hues sit as hollow points under the strip…
+    for (const h of palette.ring)
+      if (!palette.hues.includes(h)) buf.put(inner.row + 1, colOf(h), '◦', t.dim);
+    // …and the picks are raised in their own colour.
     const marks = palette.hues
-      .map((h, i) => ({
-        i,
-        col: inner.col + Math.min(cols - 1, Math.floor((h / 360) * cols)),
-        label: `${Math.round(h)}°`,
-      }))
+      .map((h, i) => ({ i, col: colOf(h), label: `${Math.round(h)}°` }))
       .sort((a, b) => a.col - b.col);
     for (const m of marks)
       buf.put(
@@ -489,11 +511,11 @@ export const sketch = ({
       }
     }
     if (inner.rows > 3) {
-      const spread = Math.round(spreadFor(params.mono) * 100);
+      const pick = params.shuffle ? 'shuffled' : 'in sequence';
       buf.text(
         inner.row + 3,
         inner.col,
-        `${params.harmony} at ${spread}% spread · ground shares the base hue`,
+        `${palette.ring.length} on the ring every ${Math.round(params.angle)}° · ${params.count} ${pick} · ground takes the ring's start`,
         t.dim,
         undefined,
         cols,
@@ -798,8 +820,6 @@ export const sketch = ({
 
   const onKey = (e: KeyboardEvent) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
-    const step = (list: readonly Harmony[], dir: 1 | -1) =>
-      list[(list.indexOf(params.harmony) + dir + list.length) % list.length];
     switch (e.key) {
       case 'ArrowRight':
         nudgeHue(5);
@@ -808,16 +828,19 @@ export const sketch = ({
         nudgeHue(-5);
         break;
       case 'ArrowUp':
-        nudgeMono(0.05);
+        nudgeAngle(6);
         break;
       case 'ArrowDown':
-        nudgeMono(-0.05);
+        nudgeAngle(-6);
         break;
       case ']':
-        setHarmony(step(HARMONIES, 1));
+        nudgeCount(1);
         break;
       case '[':
-        setHarmony(step(HARMONIES, -1));
+        nudgeCount(-1);
+        break;
+      case 'p':
+        setShuffle(!params.shuffle);
         break;
       case 'd':
         setGround(params.ground === 'light' ? 'dark' : 'light');

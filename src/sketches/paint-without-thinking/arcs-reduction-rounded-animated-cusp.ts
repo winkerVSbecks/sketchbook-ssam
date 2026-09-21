@@ -6,12 +6,10 @@ import { logColors } from '../../colors';
 import {
   cuspPalette,
   describe,
-  HARMONIES,
   TIERS,
   type CuspPalette,
   type Gamut,
   type Ground,
-  type Harmony,
   type Tier,
 } from '../../colors/cusphanger';
 
@@ -47,10 +45,12 @@ const config = {
   shapeCount: 8, // number of distinct shapes (first and last are the same)
   transitionDuration: 0.1, // fraction of each segment spent animating (0–1)
   // color — cusphanger
-  harmony: 'random' as Harmony | 'random',
+  /** Degrees between neighbouring hues on cusphanger's ring. */
+  angle: 48,
+  /** Hues taken off the ring. */
+  hueCount: 3,
   ground: 'random' as Ground | 'random',
   gamut: 'p3' as Gamut,
-  mono: 0.5,
   saturation: 0.6,
   coolWarm: 0,
   inkTier: 'high' as Tier,
@@ -84,18 +84,14 @@ shapeFolder.addBinding(config, 'debug', { min: 0, max: 3, step: 1 });
 shapeFolder.addBinding(config, 'edgeAwareReduction');
 
 const colorFolder = pane.addFolder({ title: 'Color' });
-colorFolder.addBinding(config, 'harmony', {
-  options: HARMONIES.reduce((o, h) => ((o[h] = h), o), {
-    random: 'random',
-  } as Record<string, string>),
-});
+colorFolder.addBinding(config, 'angle', { min: 10, max: 180, step: 1 });
+colorFolder.addBinding(config, 'hueCount', { min: 1, max: 6, step: 1 });
 colorFolder.addBinding(config, 'ground', {
   options: { random: 'random', light: 'light', dark: 'dark' },
 });
 colorFolder.addBinding(config, 'gamut', {
   options: { p3: 'p3', srgb: 'srgb' },
 });
-colorFolder.addBinding(config, 'mono', { min: 0, max: 1, step: 0.05 });
 colorFolder.addBinding(config, 'saturation', { min: 0, max: 1, step: 0.05 });
 colorFolder.addBinding(config, 'coolWarm', { min: -1, max: 1, step: 0.05 });
 colorFolder.addBinding(config, 'inkTier', {
@@ -116,13 +112,13 @@ colorFolder.addBinding(config, 'inkMode', {
 const regenBtn = pane.addButton({ title: 'Regenerate' });
 
 // Single color engine: cusphanger — a tinted ground plus contrast-tiered
-// foregrounds along one harmony's hues, clamped to the chosen gamut shell.
+// foregrounds on hues shuffled off a ring, clamped to the chosen gamut shell.
 function generatePalette(): CuspPalette {
   return cuspPalette({
-    harmony: config.harmony === 'random' ? undefined : config.harmony,
+    angle: config.angle,
+    count: config.hueCount,
     ground: config.ground === 'random' ? undefined : config.ground,
     gamut: config.gamut,
-    mono: config.mono,
     saturation: config.saturation,
     coolWarm: config.coolWarm,
   });

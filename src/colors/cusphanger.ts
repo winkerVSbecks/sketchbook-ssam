@@ -6,10 +6,13 @@
  * The recipe:
  *   1. pick a **base hue** and a **ground** — a light paper or a dark slate,
  *      tinted with the base hue a little way toward the shell (`relch`);
- *   2. choose the foreground **hues by colour theory**: a harmony's offsets
- *      (analogous · complementary · split · triadic · tetradic) scaled down as
- *      `mono` rises, so `mono = 0` is the full harmony and `mono = 1` pulls
- *      every hue into the base's family (a small floor keeps them distinct);
+ *   2. choose the foreground **hues off a ring**: from the base, step round
+ *      the wheel every `angle` degrees until it closes (`ringHues`), shuffle
+ *      the ring and take `count` hues, sorted. Harmony is a dial, not a rule —
+ *      a small angle gives analogous neighbours, 120° a triad, 180° a
+ *      complement — and shuffling draws gaps instead of an arc, so the hues
+ *      stop reading like every generator's sequence (`shuffle: false` takes
+ *      the first `count` in order). `baseIndex` says where the base landed;
  *   3. for every foreground hue run the paper's **sequential ramp** through the
  *      cusp (`saturation` is its tension, `coolWarm` its multi-hue drift), then
  *      pick three samples by WCAG contrast against the ground — the **high**
@@ -29,42 +32,22 @@ import { oklchP3, oklchSrgb, relch, toCss, type Lut } from 'nutelch';
 export type Tier = 'high' | 'mid' | 'low';
 export const TIERS: readonly Tier[] = ['high', 'mid', 'low'];
 
-export type Harmony = 'analogous' | 'complementary' | 'split' | 'triadic' | 'tetradic';
-export const HARMONIES: readonly Harmony[] = ['analogous', 'complementary', 'split', 'triadic', 'tetradic'];
-
 export type Ground = 'light' | 'dark';
 export type Gamut = 'p3' | 'srgb';
 
-/**
- * Hue offsets from the base, in OKLCH degrees. The base is always first so
- * it anchors the palette (and shares its hue with the ground).
- */
-export const HARMONY_OFFSETS: Record<Harmony, readonly number[]> = {
-  analogous: [0, 30, -30],
-  complementary: [0, 180],
-  split: [0, 150, 210],
-  triadic: [0, 120, 240],
-  // The rectangle tetrad (two complementary pairs 60° apart) rather than the square.
-  tetradic: [0, 60, 180, 240],
-};
-
-/**
- * How much of a harmony's spread survives at `mono = 1`: enough that the
- * foregrounds stay distinct swatches of one hue family instead of collapsing
- * onto identical colours (complementary at `mono = 1` sits ~14° apart).
- */
-export const MONO_FLOOR = 0.08;
+/** `angle` is drawn from this range when omitted: analogous neighbours up to a triad. */
+export const ANGLE_RANGE: [number, number] = [30, 120];
 
 /** WCAG ratios the tiers aim for against the ground. */
 export const TIER_TARGETS: Record<Tier, number> = { high: 9, mid: 4.5, low: 1.6 };
 
 export interface CuspOptions {
-  /** Base hue 0–360; random when omitted. */
+  /** Base hue 0–360 — where the ring starts and what tints the ground; random when omitted. */
   hue?: number;
-  /** Which harmony supplies the foreground hues; random when omitted. */
-  harmony?: Harmony;
-  /** 0 = the harmony's full spread, 1 = every foreground hugs the base hue (see `MONO_FLOOR`). Default 0.5. */
-  mono?: number;
+  /** Degrees between neighbouring hues on the ring, 1–180; random in `ANGLE_RANGE` when omitted. */
+  angle?: number;
+  /** How many hues are taken off the ring. Default 3. */
+  count?: number;
   /** The paper's `s` — tension of the Bézier toward the cusp. Default 0.6. */
   saturation?: number;
   /** The paper's `w` — pulls the light end of every ramp toward yellow. Default 0. */
@@ -73,8 +56,14 @@ export interface CuspOptions {
   ground?: Ground;
   /** Gamut shell the colours are clamped to. Default `p3`. */
   gamut?: Gamut;
-  /** ± degrees of seeded hue jitter (scaled by `1 − mono`), so harmonies don't sit on exact multiples. Default 4. */
+  /** ± degrees of seeded jitter on every ring hue but the base, so they don't sit on exact multiples. Default 4. */
   jitter?: number;
+  /**
+   * Shuffle the ring before taking `count` hues (seeded), so the picks are
+   * spread round the wheel with gaps between them; `false` takes the first
+   * `count` in sequence — an arc from the base. Default true.
+   */
+  shuffle?: boolean;
   /** Override the WCAG targets per tier. */
   targets?: Partial<Record<Tier, number>>;
 }
@@ -103,8 +92,12 @@ export interface CuspPalette {
   fg: CuspSwatch[];
   /** `[bg, ...fg]` as `oklch()` strings — the shape every sketch palette takes. */
   colors: string[];
-  /** The foreground hues actually used (base first). */
+  /** The foreground hues actually used, ascending; the tiers follow this order. */
   hues: number[];
+  /** Every hue on the ring the picks were drawn from, base first. */
+  ring: number[];
+  /** Where the base hue — the ground's — sits in `hues`; −1 when the shuffle left it out. */
+  baseIndex: number;
   /** The paper's ramp per hue (dense, dark → light), for plotting. */
   ramps: OklchColor[][];
   options: Required<CuspOptions>;
@@ -147,19 +140,26 @@ const RAMP_STEPS = 48;
 /** The ramp's lightness span; short of pure black/white so the ends keep a little hue. */
 const RAMP_RANGE: [number, number] = [0.06, 0.98];
 
-/** The fraction of a harmony's offsets kept at a monochromaticness: 1 at `mono = 0`, `MONO_FLOOR` at `mono = 1`. */
-export const spreadFor = (mono: number): number => 1 - (1 - MONO_FLOOR) * Math.min(1, Math.max(0, mono));
-
 /**
- * The foreground hues for a harmony at a monochromaticness: the offsets shrink
- * toward the base as `mono` rises (never quite onto it); the jitter shrinks with them.
+ * The hue ring: from `base`, a hue every `angle` degrees until the wheel
+ * closes — `floor(360 / angle)` points, but never fewer than `count`, so a wide
+ * angle with many hues wanted falls back to spacing them evenly. Every point
+ * but the base is jittered.
  */
-export function harmonyHues(base: number, harmony: Harmony, mono: number, jitter = 0): number[] {
-  const spread = spreadFor(mono);
-  return HARMONY_OFFSETS[harmony].map((offset, i) => {
+export function ringHues(base: number, angle: number, count = 1, jitter = 0): number[] {
+  const step = Math.min(180, Math.max(1, angle));
+  const n = Math.max(count, Math.floor(360 / step));
+  const spacing = n * step > 360 ? 360 / n : step;
+  return Array.from({ length: n }, (_, i) => {
     const j = i === 0 || jitter <= 0 ? 0 : Random.range(-jitter, jitter);
-    return wrapHue(base + (offset + j) * spread);
+    return wrapHue(base + i * spacing + j);
   });
+}
+
+/** `count` hues off the ring — shuffled for gaps, or the first `count` for an arc — ascending. */
+export function pickHues(ring: number[], count: number, shuffle = true): number[] {
+  const pool = shuffle ? (Random.shuffle(ring) as number[]) : ring;
+  return pool.slice(0, Math.max(1, Math.min(count, ring.length))).sort((a, b) => a - b);
 }
 
 /** The tinted ground: a near-white paper or a near-black slate, a little way toward the shell. */
@@ -178,13 +178,14 @@ const pickByContrast = (ramp: OklchColor[], bg: OklchColor, target: number): Okl
 export function cuspPalette(opts: CuspOptions = {}): CuspPalette {
   const options: Required<CuspOptions> = {
     hue: opts.hue ?? Random.range(0, 360),
-    harmony: opts.harmony ?? Random.pick([...HARMONIES]),
-    mono: opts.mono ?? 0.5,
+    angle: opts.angle ?? Random.range(...ANGLE_RANGE),
+    count: opts.count ?? 3,
     saturation: opts.saturation ?? 0.6,
     coolWarm: opts.coolWarm ?? 0,
     ground: opts.ground ?? Random.pick(['light', 'dark'] as Ground[]),
     gamut: opts.gamut ?? 'p3',
     jitter: opts.jitter ?? 4,
+    shuffle: opts.shuffle ?? true,
     targets: { ...TIER_TARGETS, ...opts.targets },
   };
   const targets = options.targets as Record<Tier, number>;
@@ -192,7 +193,9 @@ export function cuspPalette(opts: CuspOptions = {}): CuspPalette {
   const base = wrapHue(options.hue);
 
   const bg = groundColor(base, options.ground, lut);
-  const hues = harmonyHues(base, options.harmony, options.mono, options.jitter);
+  const ring = ringHues(base, options.angle, options.count, options.jitter);
+  const hues = pickHues(ring, options.count, options.shuffle);
+  const baseIndex = hues.indexOf(ring[0]);
 
   const ramps = hues.map((h) =>
     sequential({
@@ -218,19 +221,22 @@ export function cuspPalette(opts: CuspOptions = {}): CuspPalette {
     fg,
     colors: [bgSwatch.css, ...fg.map((s) => s.css)],
     hues,
+    ring,
+    baseIndex,
     ramps,
     options,
     lut,
   };
 }
 
-/** A random ground + harmony at the default monochromaticness — the `randomPalette()`-shaped entry point. */
+/** A random ground, base and ring angle, three hues — the `randomPalette()`-shaped entry point. */
 export const randomCuspPalette = (): string[] => cuspPalette().colors;
 
 /** One line of the palette's provenance, for headers and code comments. */
 export function describe(p: CuspPalette): string {
   const o = p.options;
-  return `${o.harmony} · h ${Math.round(wrapHue(o.hue))} · mono ${o.mono.toFixed(2)} · s ${o.saturation.toFixed(2)} · ${o.ground} · ${o.gamut}`;
+  const pick = `${o.count} of ${p.ring.length}${o.shuffle ? ' shuffled' : ' in sequence'}`;
+  return `ring ${Math.round(o.angle)}° · h ${Math.round(wrapHue(o.hue))} · ${pick} · s ${o.saturation.toFixed(2)} · ${o.ground} · ${o.gamut}`;
 }
 
 /** The palette as a sketch declares one, ready to paste. */
