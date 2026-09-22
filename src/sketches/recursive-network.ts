@@ -128,6 +128,8 @@ const config = {
 
   // ── the ground ───────────────────────────────────────────────────────────
   showGrid: true,
+  /** Fill the union of every arc's segment and the seed disc beneath the strokes. */
+  showSilhouette: true,
   /** Grid squares across the sheet. */
   gridDivisions: 74,
   gridAlpha: 0.45,
@@ -277,6 +279,7 @@ notation.addBinding(config, "strokeWeightMax", { min: 0, max: 6, step: 0.1 });
 
 const groundFolder = pane.addFolder({ title: "ground", expanded: false });
 groundFolder.addBinding(config, "showGrid");
+groundFolder.addBinding(config, "showSilhouette");
 groundFolder.addBinding(config, "gridDivisions", { min: 4, max: 200, step: 1 });
 groundFolder.addBinding(config, "gridAlpha", { min: 0, max: 1, step: 0.05 });
 groundFolder.addBinding(config, "gridWeight", { min: 0, max: 3, step: 0.1 });
@@ -751,6 +754,31 @@ export const sketch = ({
     context.restore();
   };
 
+  /**
+   * The figure's silhouette: every arc closed by its chord (the seed circle
+   * closes on itself, so it contributes its whole disc), all as one path so
+   * the nonzero fill is a true union — overlaps don't double up. Each subpath
+   * is traced anticlockwise so no two can cancel. Inked in the ruling's colour
+   * at the ruling's strength, so it reads as a shadow of the same ground.
+   */
+  const drawSilhouette = () => {
+    context.save();
+    context.globalAlpha = config.gridAlpha;
+    context.fillStyle = rule;
+    context.beginPath();
+    for (const arc of scene.arcs) {
+      const [a0, a1] = arc.a1 < arc.a0 ? [arc.a1, arc.a0] : [arc.a0, arc.a1];
+      context.moveTo(
+        arc.cx + Math.cos(a0) * arc.r,
+        arc.cy + Math.sin(a0) * arc.r,
+      );
+      context.arc(arc.cx, arc.cy, arc.r, a0, a1, false);
+      context.closePath();
+    }
+    context.fill("nonzero");
+    context.restore();
+  };
+
   const drawCircle = (
     x: number,
     y: number,
@@ -797,6 +825,7 @@ export const sketch = ({
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
     if (config.showGrid) drawGrid();
+    if (config.showSilhouette) drawSilhouette();
 
     context.lineCap = "round";
     for (const arc of scene.arcs) {
