@@ -60,7 +60,7 @@ const config = {
   lineWidth: 0.6,
   /** Segment caps: round turnarounds, or square for mitred corners and ends. */
   caps: 'round' as 'round' | 'square',
-  /** Turn radius as a fraction of half the node spacing: 1 rounds inner and outer edges fully, 0 leaves inner corners sharp. */
+  /** Inner-corner fillet as a fraction of the largest that fits, (spacing − line) / 2; 1 makes a U-turn's eye a semicircle, 0 leaves inner corners sharp. The outer edge is the caps'. */
   corner: 1,
   /** Walker size and gap in px — derived from spacing and lineWidth by applyGeometry(), not set directly. */
   size: 12,
@@ -90,7 +90,7 @@ pathFolder.addBinding(config, 'gridRes', { min: 4, max: 120, step: 1, label: 'gr
 pathFolder.addBinding(config, 'padding', { min: 0, max: 0.4, step: 0.005, label: 'margin' });
 pathFolder.addBinding(config, 'lineWidth', { min: 0.05, max: 1, step: 0.01, label: 'line (× spacing)' });
 pathFolder.addBinding(config, 'caps', { options: { round: 'round', square: 'square' } });
-pathFolder.addBinding(config, 'corner', { min: 0, max: 1, step: 0.05, label: 'corner radius' });
+pathFolder.addBinding(config, 'corner', { min: 0, max: 1, step: 0.05, label: 'inner radius' });
 pathFolder.addBinding(stats, 'spacing', { readonly: true, format: (v: number) => v.toFixed(1) });
 pathFolder.addBinding(stats, 'linePx', { readonly: true, label: 'line px', format: (v: number) => v.toFixed(1) });
 
@@ -528,7 +528,7 @@ export const sketch = ({
     myGradientStyle = createGradientStyle(gradientColor, {
       lineCap: config.caps,
       lineJoin: config.caps === 'round' ? 'round' : 'miter',
-      cornerRadius: (spacing / 2) * config.corner,
+      innerRadius: ((spacing - spacing * config.lineWidth) / 2) * config.corner,
     });
   }
 

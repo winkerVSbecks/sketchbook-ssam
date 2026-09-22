@@ -411,11 +411,12 @@ export interface GradientStyleOptions {
   /** Join used where a segment is drawn as a polyline. Default `'round'`. */
   lineJoin?: CanvasLineJoin;
   /**
-   * Round every turn of the path with an arc of this radius (px) so the
-   * inner corner curves as well as the outer one. Clamped to half the
-   * shorter adjacent segment. Default 0: sharp inner corners.
+   * Fillet radius (px) for the inner corner of every perpendicular turn. The
+   * outer edge is whatever the caps draw; only the inner notch is filled to
+   * a quarter-circle. Clamped so the two fillets of a U-turn never overlap.
+   * Default 0: sharp inner corners.
    */
-  cornerRadius?: number;
+  innerRadius?: number;
 }
 
 export function createGradientStyle(
@@ -423,7 +424,7 @@ export function createGradientStyle(
   {
     lineCap = 'round',
     lineJoin = 'round',
-    cornerRadius = 0,
+    innerRadius = 0,
   }: GradientStyleOptions = {}
 ) {
   return function gradientStyle(
@@ -438,50 +439,6 @@ export function createGradientStyle(
     context.lineWidth = walker.size - walker.stepSize;
 
     const total = pts.length - 1;
-
-    if (cornerRadius > 0 && pts.length > 2) {
-      // One piece per node, from the midpoint of the edge in to the midpoint
-      // of the edge out, turning on an arc at the node so both sides of the
-      // stroke curve. Straight runs make arcTo degenerate to a line.
-      for (let i = 0; i <= total; i++) {
-        const point = pts[i];
-        const nextPoint = pts[Math.min(i + 1, total)];
-        const color = colorFn({
-          index: i,
-          total,
-          t: total > 0 ? i / total : 0,
-          point,
-          nextPoint,
-          walker,
-          playhead,
-        });
-        context.strokeStyle = color;
-        context.beginPath();
-        if (i === 0) {
-          const out = midpoint(point, pts[1]);
-          context.moveTo(point[0], point[1]);
-          context.lineTo(out[0], out[1]);
-        } else if (i === total) {
-          const inn = midpoint(pts[i - 1], point);
-          context.moveTo(inn[0], inn[1]);
-          context.lineTo(point[0], point[1]);
-        } else {
-          const inn = midpoint(pts[i - 1], point);
-          const out = midpoint(point, pts[i + 1]);
-          const r = Math.min(
-            cornerRadius,
-            distance(pts[i - 1], point) / 2,
-            distance(point, pts[i + 1]) / 2
-          );
-          context.moveTo(inn[0], inn[1]);
-          context.arcTo(point[0], point[1], out[0], out[1], r);
-          context.lineTo(out[0], out[1]);
-        }
-        context.stroke();
-      }
-      context.restore();
-      return;
-    }
 
     for (let i = 0; i < total; i++) {
       const point = pts[i];
@@ -505,12 +462,87 @@ export function createGradientStyle(
       context.stroke();
     }
 
+    if (innerRadius > 0) {
+      const half = context.lineWidth / 2;
+      for (let i = 1; i < total; i++) {
+        const color = colorFn({
+          index: i,
+          total,
+          t: total > 0 ? i / total : 0,
+          point: pts[i],
+          nextPoint: pts[i + 1],
+          walker,
+          playhead,
+        });
+        fillInnerCorner(context, pts[i - 1], pts[i], pts[i + 1], half, innerRadius, color);
+      }
+    }
+
     context.restore();
   };
 }
 
-function midpoint(a: Point, b: Point): Point {
-  return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+/**
+ * Round the inner corner of a perpendicular turn at `node` by filling the
+ * notch between the two strokes' inner edges and a quarter-circle of radius
+ * `radius` tangent to both. The outer edge is untouched. The fillet's two
+ * straight sides are pushed half a pixel into the ink so only its arc meets
+ * the ground — two anti-aliased edges abutting would leave a hairline.
+ */
+function fillInnerCorner(
+  context: CanvasRenderingContext2D,
+  prev: Point,
+  node: Point,
+  next: Point,
+  half: number,
+  radius: number,
+  color: string
+) {
+  const lenIn = distance(prev, node);
+  const lenOut = distance(node, next);
+  if (lenIn < 1e-6 || lenOut < 1e-6) return;
+  const d1: Point = [(node[0] - prev[0]) / lenIn, (node[1] - prev[1]) / lenIn];
+  const d2: Point = [(next[0] - node[0]) / lenOut, (next[1] - node[1]) / lenOut];
+  // Only right-angle turns have an inner notch to fill.
+  if (Math.abs(d1[0] * d2[0] + d1[1] * d2[1]) > 0.01) return;
+  // Two fillets on a shared inner edge (a U-turn) must not overlap.
+  const r = Math.min(radius, (Math.min(lenIn, lenOut) - 2 * half) / 2);
+  if (r <= 0) return;
+
+  // Inner vertex of the L, and the fillet circle's centre.
+  const c: Point = [
+    node[0] - half * d1[0] + half * d2[0],
+    node[1] - half * d1[1] + half * d2[1],
+  ];
+  const p: Point = [c[0] - r * d1[0] + r * d2[0], c[1] - r * d1[1] + r * d2[1]];
+  const bleed = 0.5;
+
+  // Arc from the point on the incoming inner edge to the one on the outgoing
+  // edge, the short way round (both are 90° apart on the circle).
+  const a0 = Math.atan2(-d2[1], -d2[0]);
+  const a1 = Math.atan2(d1[1], d1[0]);
+  let delta = a1 - a0;
+  while (delta <= -Math.PI) delta += Math.PI * 2;
+  while (delta > Math.PI) delta -= Math.PI * 2;
+
+  context.fillStyle = color;
+  context.beginPath();
+  context.moveTo(
+    c[0] + bleed * d1[0] - bleed * d2[0],
+    c[1] + bleed * d1[1] - bleed * d2[1]
+  );
+  context.lineTo(
+    c[0] - r * d1[0] - bleed * d2[0],
+    c[1] - r * d1[1] - bleed * d2[1]
+  );
+  context.lineTo(c[0] - r * d1[0], c[1] - r * d1[1]);
+  context.arc(p[0], p[1], r, a0, a1, delta < 0);
+  context.lineTo(
+    c[0] + r * d2[0] + bleed * d1[0],
+    c[1] + r * d2[1] + bleed * d1[1]
+  );
+  context.closePath();
+  context.fill();
 }
 
 function distance(a: Point, b: Point): number {
