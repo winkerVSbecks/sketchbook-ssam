@@ -12,6 +12,8 @@
     "gallery": "vite --open=/gallery.html",
     "build": "vite build",
     "preview": "vite preview",
+    "test": "tsx scripts/run-smoke-suites.ts",
+    "typecheck": "tsc --noEmit",
     "cloud:install": "npx --yes playwright@1 install chromium-headless-shell",
     "cloud:render": "tsx scripts/cloud-render.ts",
     "cloud:stop": "tsx scripts/cloud-render.ts stop",
