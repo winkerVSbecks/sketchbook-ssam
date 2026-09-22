@@ -15,18 +15,14 @@ export interface CellRect {
   cols: number;
 }
 
-export const cellRect = (
-  row: number,
-  col: number,
-  rows: number,
-  cols: number,
-): CellRect => ({ row, col, rows, cols });
+export const cellRect = (row: number, col: number, rows: number, cols: number): CellRect => ({
+  row,
+  col,
+  rows,
+  cols,
+});
 
-export const cellRectContains = (
-  r: CellRect,
-  row: number,
-  col: number,
-): boolean =>
+export const cellRectContains = (r: CellRect, row: number, col: number): boolean =>
   row >= r.row && row < r.row + r.rows && col >= r.col && col < r.col + r.cols;
 
 /** Intersection of two cell rects; empty rects come back with `rows`/`cols` of 0. */
@@ -53,5 +49,4 @@ export function insetCellRect(r: CellRect, n: number): CellRect {
   };
 }
 
-export const isEmptyCellRect = (r: CellRect): boolean =>
-  r.rows <= 0 || r.cols <= 0;
+export const isEmptyCellRect = (r: CellRect): boolean => r.rows <= 0 || r.cols <= 0;

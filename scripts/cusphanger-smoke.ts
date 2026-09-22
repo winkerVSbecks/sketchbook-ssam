@@ -7,7 +7,15 @@ import assert from 'node:assert/strict';
 import Random from 'canvas-sketch-util/random';
 import { inGamut } from 'culori';
 
-import { contrastOf, cuspPalette, pickHues, ringHues, snippet, TIER_TARGETS, TIERS } from '../src/colors/cusphanger';
+import {
+  contrastOf,
+  cuspPalette,
+  pickHues,
+  ringHues,
+  snippet,
+  TIER_TARGETS,
+  TIERS,
+} from '../src/colors/cusphanger';
 import { parseColor, themeFromPalette } from '../src/tui';
 
 let passed = 0;
@@ -18,7 +26,7 @@ function test(name: string, fn: () => void) {
 }
 
 const hueDelta = (a: number, b: number) => {
-  const d = Math.abs(((a - b) % 360 + 540) % 360 - 180);
+  const d = Math.abs(((((a - b) % 360) + 540) % 360) - 180);
   return d;
 };
 
@@ -59,7 +67,10 @@ test('in sequence takes an arc from the base; shuffled draws gaps from the whole
     const p = cuspPalette({ hue: 40, angle: 60, jitter: 0 });
     assert.equal(p.hues.length, 3);
     assert.deepEqual(p.ring, ring);
-    assert.deepEqual(p.hues, [...p.hues].sort((a, b) => a - b));
+    assert.deepEqual(
+      p.hues,
+      [...p.hues].sort((a, b) => a - b),
+    );
     assert.equal(new Set(p.hues).size, 3);
     for (const h of p.hues) assert.ok(ring.includes(h), `${h} is not on the ring`);
     if (p.hues.some((h) => h > 160)) beyondArc++;
@@ -80,8 +91,10 @@ console.log('palette');
 const inP3 = inGamut('p3');
 const inSrgb = inGamut('rgb');
 /** The shell LUTs are an inner approximation; allow culori a hair of slack. */
-const nearlyIn = (check: (c: unknown) => boolean, c: { mode: 'oklch'; l: number; c: number; h: number }) =>
-  check(c) || check({ ...c, c: c.c * 0.985 });
+const nearlyIn = (
+  check: (c: unknown) => boolean,
+  c: { mode: 'oklch'; l: number; c: number; h: number },
+) => check(c) || check({ ...c, c: c.c * 0.985 });
 
 for (const ground of ['light', 'dark'] as const) {
   for (const gamut of ['p3', 'srgb'] as const) {
@@ -98,7 +111,10 @@ for (const ground of ['light', 'dark'] as const) {
         for (const s of p.tiers[tier]) {
           assert.ok(nearlyIn(check, s.color), `${tier} ${s.css} out of ${gamut}`);
           const target = TIER_TARGETS[tier];
-          assert.ok(Math.abs(s.contrast - target) / target < 0.25, `${tier} ${s.css} contrast ${s.contrast.toFixed(2)} vs ${target}`);
+          assert.ok(
+            Math.abs(s.contrast - target) / target < 0.25,
+            `${tier} ${s.css} contrast ${s.contrast.toFixed(2)} vs ${target}`,
+          );
           assert.ok(Math.abs(contrastOf(s.color, p.bg.color) - s.contrast) < 1e-9);
         }
       }
@@ -125,9 +141,25 @@ test('saturation 0 is a grey ramp', () => {
 
 test('P3 reaches further than sRGB at the same hue', () => {
   Random.setSeed('smoke/reach');
-  const p3 = cuspPalette({ hue: 145, ground: 'light', gamut: 'p3', angle: 120, jitter: 0, shuffle: false, saturation: 1 });
+  const p3 = cuspPalette({
+    hue: 145,
+    ground: 'light',
+    gamut: 'p3',
+    angle: 120,
+    jitter: 0,
+    shuffle: false,
+    saturation: 1,
+  });
   Random.setSeed('smoke/reach');
-  const srgb = cuspPalette({ hue: 145, ground: 'light', gamut: 'srgb', angle: 120, jitter: 0, shuffle: false, saturation: 1 });
+  const srgb = cuspPalette({
+    hue: 145,
+    ground: 'light',
+    gamut: 'srgb',
+    angle: 120,
+    jitter: 0,
+    shuffle: false,
+    saturation: 1,
+  });
   const maxC = (colors: { c: number }[]) => Math.max(...colors.map((c) => c.c));
   assert.ok(maxC(p3.ramps[0]) > maxC(srgb.ramps[0]));
 });

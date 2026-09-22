@@ -2,7 +2,7 @@ export function dither(imagedata: ImageData): ImageData {
   let clone = new ImageData(
     new Uint8ClampedArray(imagedata.data),
     imagedata.width,
-    imagedata.height
+    imagedata.height,
   );
 
   function px(x: number, y: number) {
@@ -13,10 +13,7 @@ export function dither(imagedata: ImageData): ImageData {
     for (let x = 0; x < imagedata.width; x++) {
       let oldPixel = clone.data[px(x, y)];
       let newPixel = oldPixel > 125 ? 255 : 0;
-      clone.data[px(x, y)] =
-        clone.data[px(x, y) + 1] =
-        clone.data[px(x, y) + 2] =
-          newPixel;
+      clone.data[px(x, y)] = clone.data[px(x, y) + 1] = clone.data[px(x, y) + 2] = newPixel;
       let quantError = oldPixel - newPixel;
       clone.data[px(x + 1, y)] =
         clone.data[px(x + 1, y) + 1] =

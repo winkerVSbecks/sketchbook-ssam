@@ -174,8 +174,7 @@ export function createGlyphBuffer(rows: number, cols: number): GlyphBuffer {
       }
     },
 
-    get: (row, col) =>
-      cellRectContains(bounds, row, col) ? cells[row][col] : null,
+    get: (row, col) => (cellRectContains(bounds, row, col) ? cells[row][col] : null),
 
     put,
 
@@ -278,7 +277,12 @@ export function createGlyphBuffer(rows: number, cols: number): GlyphBuffer {
             end++;
           }
           ctx.fillStyle = box.fill;
-          ctx.fillRect(col * charW, row * lineH + box.dy * lineH, (end - col) * charW, box.h * lineH);
+          ctx.fillRect(
+            col * charW,
+            row * lineH + box.dy * lineH,
+            (end - col) * charW,
+            box.h * lineH,
+          );
           col = end;
         }
       }

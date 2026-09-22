@@ -11,13 +11,7 @@ export interface Rect {
 }
 
 export type Cursor =
-  | 'default'
-  | 'pointer'
-  | 'grab'
-  | 'grabbing'
-  | 'move'
-  | 'crosshair'
-  | 'nwse-resize';
+  'default' | 'pointer' | 'grab' | 'grabbing' | 'move' | 'crosshair' | 'nwse-resize';
 
 /**
  * Anything that can live inside a window. All coordinates are logical sketch
@@ -59,8 +53,7 @@ export const theme: Theme = {
   pencil: '#767676',
   hairline: 'rgba(0, 0, 0, 0.35)',
   fill: '#e6e6e6',
-  fontFamily:
-    "-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif",
+  fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif",
   labelSize: 13,
   border: 2,
   borderActive: 2.5,
@@ -71,15 +64,10 @@ export const theme: Theme = {
 export const contains = (r: Rect, p: Pt): boolean =>
   p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
 
-export const clamp = (v: number, lo: number, hi: number): number =>
-  Math.min(hi, Math.max(lo, v));
+export const clamp = (v: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, v));
 
 /** Rounded-rect path helper (does not fill or stroke). */
-export function roundRectPath(
-  ctx: CanvasRenderingContext2D,
-  { x, y, w, h }: Rect,
-  r: number,
-) {
+export function roundRectPath(ctx: CanvasRenderingContext2D, { x, y, w, h }: Rect, r: number) {
   const rr = Math.min(r, w / 2, h / 2);
   ctx.beginPath();
   ctx.moveTo(x + rr, y);

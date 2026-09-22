@@ -12,9 +12,7 @@ import Random from 'canvas-sketch-util/random';
 const newOptions = () => ({
   total: 6,
   hStart: Random.range(0, 360),
-  hCycles: Random.chance()
-    ? Random.range(-1.25, -0.25)
-    : Random.range(1.25, 2.25),
+  hCycles: Random.chance() ? Random.range(-1.25, -0.25) : Random.range(1.25, 2.25),
   sRange: Random.chance(0.7)
     ? [Random.range(0.2, 1.2), Random.range(0.25, 1.3)]
     : [1, Random.value()],
@@ -119,12 +117,8 @@ export function generateColors(
   const colorHSL = generateColorRamp(options as any);
   const colors =
     format === 'srgb'
-      ? (colorHSL.map((hsl) =>
-          formatCss(hsl2farbrad(...hsl) as any)
-        ) as unknown as string[])
-      : (colorHSL.map((hsl) =>
-          formatHex(hsl2farbrad(...hsl) as any)
-        ) as unknown as string[]);
+      ? (colorHSL.map((hsl) => formatCss(hsl2farbrad(...hsl) as any)) as unknown as string[])
+      : (colorHSL.map((hsl) => formatHex(hsl2farbrad(...hsl) as any)) as unknown as string[]);
 
   return colors;
 }

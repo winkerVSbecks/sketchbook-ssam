@@ -227,16 +227,12 @@ export function spawnVite(sketchPath: string): VitePidRecord {
   const logFd = openSync(VITE_LOG_FILE, 'w');
   // `--strictPort`: bind exactly VITE_PORT or fail loudly (see the log),
   // never drift to a neighbouring port behind the pid record's back.
-  const child = spawn(
-    'npm',
-    ['run', 'dev', '--', '--port', String(VITE_PORT), '--strictPort'],
-    {
-      cwd: PROJECT_ROOT,
-      env: { ...process.env, VITE_SKETCH: sketchPath },
-      stdio: ['ignore', logFd, logFd],
-      detached: true,
-    },
-  );
+  const child = spawn('npm', ['run', 'dev', '--', '--port', String(VITE_PORT), '--strictPort'], {
+    cwd: PROJECT_ROOT,
+    env: { ...process.env, VITE_SKETCH: sketchPath },
+    stdio: ['ignore', logFd, logFd],
+    detached: true,
+  });
   if (typeof child.pid !== 'number') {
     throw new Error('Failed to spawn Vite — no PID returned by child_process.spawn');
   }

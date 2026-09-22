@@ -12,10 +12,7 @@ interface processingOptions {
   replaceColourMap?: { black: RGB; white: RGB };
 }
 
-export function dither(
-  image: ImageData,
-  options: processingOptions
-): ImageData {
+export function dither(image: ImageData, options: processingOptions): ImageData {
   if (options.greyscaleMethod == 'luminance') {
     greyscale_luminance(image);
   } else if (options.greyscaleMethod == 'average') {
@@ -29,11 +26,7 @@ export function dither(
   }
 
   if (options.replaceColourMap !== undefined) {
-    replace_colours(
-      image,
-      options.replaceColourMap.black,
-      options.replaceColourMap.white
-    );
+    replace_colours(image, options.replaceColourMap.black, options.replaceColourMap.white);
   }
 
   return image;
@@ -46,10 +39,7 @@ function greyscale_luminance(image: ImageData) {
       image.data[i + 1] =
       image.data[i + 2] =
         parseInt(
-          (image.data[i] * 0.21 +
-            image.data[i + 1] * 0.71 +
-            image.data[i + 2] * 0.07,
-          10) as any
+          (image.data[i] * 0.21 + image.data[i + 1] * 0.71 + image.data[i + 2] * 0.07, 10) as any,
         );
   }
 
@@ -62,10 +52,7 @@ function greyscale_average(image: ImageData) {
     image.data[i] =
       image.data[i + 1] =
       image.data[i + 2] =
-        parseInt(
-          ((image.data[i] + image.data[i + 1] + image.data[i + 2]) / 3) as any,
-          10
-        );
+        parseInt(((image.data[i] + image.data[i + 1] + image.data[i + 2]) / 3) as any, 10);
   }
 
   return image;
@@ -81,17 +68,10 @@ function dither_atkinson(image: ImageData, drawColour?: boolean) {
 
   let imageLength = image.data.length;
 
-  for (
-    let currentPixel = 0;
-    currentPixel <= imageLength;
-    currentPixel += skipPixels
-  ) {
+  for (let currentPixel = 0; currentPixel <= imageLength; currentPixel += skipPixels) {
     const newPixelColour = image.data[currentPixel] <= 128 ? 0 : 255;
 
-    const err = parseInt(
-      ((image.data[currentPixel] - newPixelColour) / 8) as any,
-      10
-    );
+    const err = parseInt(((image.data[currentPixel] - newPixelColour) / 8) as any, 10);
     image.data[currentPixel] = newPixelColour;
 
     image.data[currentPixel + 4] += err;
@@ -102,8 +82,7 @@ function dither_atkinson(image: ImageData, drawColour?: boolean) {
     image.data[currentPixel + 8 * image.width] += err;
 
     if (drawColour == false)
-      image.data[currentPixel + 1] = image.data[currentPixel + 2] =
-        image.data[currentPixel];
+      image.data[currentPixel + 1] = image.data[currentPixel + 2] = image.data[currentPixel];
   }
 
   return image.data;
@@ -123,8 +102,6 @@ function replace_colours(image: ImageData, black: RGB, white: RGB) {
     image.data[i + 1] = image.data[i + 1] < 127 ? black.g : white.g;
     image.data[i + 2] = image.data[i + 2] < 127 ? black.b : white.b;
     image.data[i + 3] =
-      (image.data[i] + image.data[i + 1] + image.data[i + 2]) / 3 < 127
-        ? black.a
-        : white.a;
+      (image.data[i] + image.data[i + 1] + image.data[i + 2]) / 3 < 127 ? black.a : white.a;
   }
 }

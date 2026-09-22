@@ -7,20 +7,26 @@ import type { Rect } from './types';
  */
 export type FeatherPath = (ctx: CanvasRenderingContext2D) => void;
 
-const line = (x1: number, y1: number, x2: number, y2: number): FeatherPath => (ctx) => {
-  ctx.moveTo(x1, y1);
-  ctx.lineTo(x2, y2);
-};
+const line =
+  (x1: number, y1: number, x2: number, y2: number): FeatherPath =>
+  (ctx) => {
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+  };
 
-const polyline = (...pts: number[]): FeatherPath => (ctx) => {
-  ctx.moveTo(pts[0], pts[1]);
-  for (let i = 2; i < pts.length; i += 2) ctx.lineTo(pts[i], pts[i + 1]);
-};
+const polyline =
+  (...pts: number[]): FeatherPath =>
+  (ctx) => {
+    ctx.moveTo(pts[0], pts[1]);
+    for (let i = 2; i < pts.length; i += 2) ctx.lineTo(pts[i], pts[i + 1]);
+  };
 
-const circle = (cx: number, cy: number, r: number): FeatherPath => (ctx) => {
-  ctx.moveTo(cx + r, cy);
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
-};
+const circle =
+  (cx: number, cy: number, r: number): FeatherPath =>
+  (ctx) => {
+    ctx.moveTo(cx + r, cy);
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  };
 
 export const feather = {
   /** feather-x */

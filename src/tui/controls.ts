@@ -41,8 +41,7 @@ const clamp = (v: number, lo: number, hi: number): number => Math.min(hi, Math.m
 /** Cells of a string (code points, so box/block glyphs count once). */
 const width = (s: string): number => Array.from(s).length;
 
-const inRect = (cell: Cell, rect: CellRect): boolean =>
-  cellRectContains(rect, cell.row, cell.col);
+const inRect = (cell: Cell, rect: CellRect): boolean => cellRectContains(rect, cell.row, cell.col);
 
 // ─── Button ─────────────────────────────────────────────────────────────────
 
@@ -320,7 +319,14 @@ export function createRange({
         if (label) buf.text(rect.row, rect.col, label, theme.fg, undefined, rect.cols);
         buf.text(rect.row, rect.col + rect.cols - width(text), text, theme.dim);
       } else {
-        buf.text(rect.row, rect.col, label, theme.fg, undefined, Math.max(0, rect.cols - width(text) - 1));
+        buf.text(
+          rect.row,
+          rect.col,
+          label,
+          theme.fg,
+          undefined,
+          Math.max(0, rect.cols - width(text) - 1),
+        );
         buf.text(rect.row, rect.col + rect.cols - width(text), text, theme.dim);
       }
       const len = t.col1 - t.col0 + 1;

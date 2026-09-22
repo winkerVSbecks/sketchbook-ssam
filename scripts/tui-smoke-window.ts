@@ -4,7 +4,16 @@
  */
 import assert from 'node:assert/strict';
 
-import { createGlyphBuffer, createMetrics, cellRect, composite, contrastRatio, AA_CONTRAST, MIN_CONTRAST, fallbackTheme } from '../src/tui';
+import {
+  createGlyphBuffer,
+  createMetrics,
+  cellRect,
+  composite,
+  contrastRatio,
+  AA_CONTRAST,
+  MIN_CONTRAST,
+  fallbackTheme,
+} from '../src/tui';
 import type { CellRect } from '../src/tui';
 import { createTuiWindow, type TuiContent } from '../src/tui/window';
 
@@ -66,8 +75,14 @@ test('drawn window renders ┌… title …[–][□][×]┐ in the top row', ()
   assert.equal(buf.get(5, 13)?.fg, w.theme.frame, 'title drawn in frame');
   assert.equal(buf.get(5, 13)?.bg, w.theme.bg);
   assert.notEqual(w.theme.frame, w.theme.dim, 'never the translucent dim');
-  assert.ok(contrastRatio(w.theme.frame, w.theme.bg) >= MIN_CONTRAST, 'inactive frame at graphics-level AA');
-  assert.ok(contrastRatio(w.theme.frameActive, w.theme.bg) >= AA_CONTRAST, 'active frame at text-level AA');
+  assert.ok(
+    contrastRatio(w.theme.frame, w.theme.bg) >= MIN_CONTRAST,
+    'inactive frame at graphics-level AA',
+  );
+  assert.ok(
+    contrastRatio(w.theme.frameActive, w.theme.bg) >= AA_CONTRAST,
+    'active frame at text-level AA',
+  );
 });
 
 test('active window uses the double frame; buttons hit-test', () => {
@@ -85,7 +100,11 @@ test('active window uses the double frame; buttons hit-test', () => {
   assert.notEqual(w.theme.frameActive, w.theme.frame);
   const title = buf.get(5, 13)!;
   assert.equal(title.bg, w.theme.chromeBg);
-  assert.equal(title.fg, fallbackTheme.chromeFg, 'chromeFg is legible on the flattened fallback chrome');
+  assert.equal(
+    title.fg,
+    fallbackTheme.chromeFg,
+    'chromeFg is legible on the flattened fallback chrome',
+  );
   assert.ok(contrastRatio(title.fg, composite(title.bg, w.theme.bg)) >= AA_CONTRAST);
   assert.equal(w.buttonAt({ row: 5, col: 20 }), 'minimize');
   assert.equal(w.buttonAt({ row: 5, col: 24 }), 'maximize');
@@ -138,7 +157,11 @@ test('slow, far-apart, button and non-maximizable presses do not maximize', () =
   far.pointerUp(px(5, 13));
   t += 200;
   far.pointerDown(px(5, 16));
-  assert.equal(far.maximized, false, 'a second press more than one cell away is not a double-click');
+  assert.equal(
+    far.maximized,
+    false,
+    'a second press more than one cell away is not a double-click',
+  );
   assert.equal(far.dragging, 'move');
   far.pointerUp(px(5, 16));
   // …but a neighbouring cell counts.
@@ -196,7 +219,11 @@ test('drag title by 25 px at charW 8 moves 3 cols', () => {
   assert.equal(w.cursorAt({ x: 0, y: 0 }), 'move');
   assert.equal(w.pointerMove({ x: 12 * CHAR_W + 25, y: 5 * LINE_H + 3 }), true);
   assert.deepEqual(rectOf(w), cellRect(5, 13, 8, 20));
-  assert.equal(w.pointerMove({ x: 12 * CHAR_W + 25, y: 5 * LINE_H + 3 }), false, 'no change → false');
+  assert.equal(
+    w.pointerMove({ x: 12 * CHAR_W + 25, y: 5 * LINE_H + 3 }),
+    false,
+    'no change → false',
+  );
   assert.equal(w.pointerUp({ x: 12 * CHAR_W + 25, y: 5 * LINE_H + 3 }), true);
   assert.equal(w.dragging, null);
 });

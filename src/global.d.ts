@@ -26,14 +26,7 @@ declare module 'joy-joy' {
   /** Whatever `navigator.getGamepads()` returns on the current tick. */
   export type GamepadState = ReturnType<Navigator['getGamepads']>;
   export type JoystickDirection =
-    | 'UP'
-    | 'UP_RIGHT'
-    | 'RIGHT'
-    | 'DOWN_RIGHT'
-    | 'DOWN'
-    | 'DOWN_LEFT'
-    | 'LEFT'
-    | 'UP_LEFT';
+    'UP' | 'UP_RIGHT' | 'RIGHT' | 'DOWN_RIGHT' | 'DOWN' | 'DOWN_LEFT' | 'LEFT' | 'UP_LEFT';
   export type ButtonName =
     | 'DOWN'
     | 'RIGHT'
@@ -175,9 +168,7 @@ interface StyleObject {
   [key: string]: string | number | HatchOptions | undefined;
 }
 
-type StyleParam =
-  | StyleObject
-  | ((x: number, y: number, z: number) => StyleObject);
+type StyleParam = StyleObject | ((x: number, y: number, z: number) => StyleObject);
 
 type BooleanMode = 'union' | 'subtract' | 'intersect' | 'exclude';
 

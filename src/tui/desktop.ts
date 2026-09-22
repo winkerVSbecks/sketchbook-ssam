@@ -137,7 +137,8 @@ export function createDesktop(opts: DesktopOptions): Desktop {
   const { ctx, onChange, onDragEnd } = opts;
   let width = opts.width;
   let height = opts.height;
-  const theme: TuiTheme = opts.theme ?? (opts.palette ? themeFromPalette(opts.palette) : { ...fallbackTheme });
+  const theme: TuiTheme =
+    opts.theme ?? (opts.palette ? themeFromPalette(opts.palette) : { ...fallbackTheme });
   const metrics = createMetrics(ctx, {
     fontSize: opts.font?.size,
     lineH: opts.font?.lineH,
@@ -149,12 +150,20 @@ export function createDesktop(opts: DesktopOptions): Desktop {
   const barSide = opts.menuBar ?? 'bottom';
   const barRow = () => (barSide === 'bottom' ? Math.max(0, buffer.rows - BAR_ROWS) : 0);
   /** A bottom band reaches the canvas edge: its pixel height includes the remainder below the last row. */
-  const bandPx = () => (barSide === 'bottom' ? Math.max(0, height - barRow() * metrics.lineH) : BAR_ROWS * metrics.lineH);
+  const bandPx = () =>
+    barSide === 'bottom'
+      ? Math.max(0, height - barRow() * metrics.lineH)
+      : BAR_ROWS * metrics.lineH;
   /** One stable object (windows and sketches hold references); `layoutArea` updates it in place. */
   const area: CellRect = cellRect(0, 0, 0, 0);
   const layoutArea = () => {
     const areaRows = Math.max(0, buffer.rows - BAR_ROWS);
-    Object.assign(area, barSide === 'bottom' ? cellRect(0, 0, areaRows, buffer.cols) : cellRect(BAR_ROWS, 0, areaRows, buffer.cols));
+    Object.assign(
+      area,
+      barSide === 'bottom'
+        ? cellRect(0, 0, areaRows, buffer.cols)
+        : cellRect(BAR_ROWS, 0, areaRows, buffer.cols),
+    );
   };
   layoutArea();
 
@@ -164,7 +173,9 @@ export function createDesktop(opts: DesktopOptions): Desktop {
   const showActiveFrame = () => activeFrame;
 
   const setTheme = (next: TuiTheme | readonly string[]): TuiTheme => {
-    const resolved = Array.isArray(next) ? themeFromPalette(next as readonly string[]) : (next as TuiTheme);
+    const resolved = Array.isArray(next)
+      ? themeFromPalette(next as readonly string[])
+      : (next as TuiTheme);
     Object.assign(theme, resolved);
     return theme;
   };
@@ -267,7 +278,8 @@ export function createDesktop(opts: DesktopOptions): Desktop {
     const cols = Math.min(r.cols, Math.max(1, area.cols));
     const row = clamp(r.row, area.row, Math.max(area.row, area.row + area.rows - rows));
     const col = clamp(r.col, area.col, Math.max(area.col, area.col + area.cols - cols));
-    if (row !== r.row || col !== r.col || rows !== r.rows || cols !== r.cols) w.setRect(cellRect(row, col, rows, cols));
+    if (row !== r.row || col !== r.col || rows !== r.rows || cols !== r.cols)
+      w.setRect(cellRect(row, col, rows, cols));
   };
 
   const resize = (w: number, h: number) => {
@@ -288,12 +300,18 @@ export function createDesktop(opts: DesktopOptions): Desktop {
     const list: MenuItem[] = [];
     if (opts.onNewWindow) list.push({ id: NEW_ID, label: NEW_LABEL, onSelect: opts.onNewWindow });
     if (settings) {
-      list.push({ id: SETTINGS_ID, label: SETTINGS_ID, active: settings.visible, onSelect: toggleSettings });
+      list.push({
+        id: SETTINGS_ID,
+        label: SETTINGS_ID,
+        active: settings.visible,
+        onSelect: toggleSettings,
+      });
     }
     for (const w of tuiWindows()) {
       // `parked` brackets the label — `[ chart 03 ]` — so a stowed window reads
       // as one at a glance, unlike the `+ new` / `≡ settings` commands.
-      if (w.minimized) list.push({ id: idOf(w), label: w.title, parked: true, onSelect: () => raise(w) });
+      if (w.minimized)
+        list.push({ id: idOf(w), label: w.title, parked: true, onSelect: () => raise(w) });
     }
     return list;
   };
@@ -364,14 +382,17 @@ export function createDesktop(opts: DesktopOptions): Desktop {
     },
     cursorAt(pt): Cursor | null {
       const menu = openMenu();
-      if (popupCaptured || (menu && !ui.dragging && !barCaptured && menu.contains(pt))) return settings!.cursorAt(pt);
+      if (popupCaptured || (menu && !ui.dragging && !barCaptured && menu.contains(pt)))
+        return settings!.cursorAt(pt);
       if (barCaptured || (!ui.dragging && menuBar.contains(pt))) return menuBar.cursorAt(pt);
       return ui.cursorAt(pt);
     },
   };
 
   // --- Input (browser only) ----------------------------------------------------
-  const disposePointer = opts.canvas ? attachPointer(opts.canvas, target, size, { onChange }) : () => {};
+  const disposePointer = opts.canvas
+    ? attachPointer(opts.canvas, target, size, { onChange })
+    : () => {};
 
   const onKey = (e: KeyboardEvent) => {
     if (!keyDown(e.key, e)) return;

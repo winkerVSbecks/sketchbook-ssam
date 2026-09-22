@@ -1,16 +1,7 @@
 import Random from 'canvas-sketch-util/random';
 
 // Common file extensions in web projects
-const extensions = [
-  '.js',
-  '.jsx',
-  '.ts',
-  '.tsx',
-  '.css',
-  '.scss',
-  '.vue',
-  '.svelte',
-];
+const extensions = ['.js', '.jsx', '.ts', '.tsx', '.css', '.scss', '.vue', '.svelte'];
 
 // Common NPM packages
 const packages = [
@@ -74,10 +65,7 @@ export function generateMockBuildLogs({
   showWarnings?: boolean;
 } = {}): string[] {
   // Choose a random tool if 'random' is specified
-  const buildTool =
-    tool === 'random'
-      ? Random.pick(['webpack', 'rollup', 'vite', 'npm'])
-      : tool;
+  const buildTool = tool === 'random' ? Random.pick(['webpack', 'rollup', 'vite', 'npm']) : tool;
 
   // Generate random file paths
   const generateFilePath = (): string => {
@@ -125,15 +113,7 @@ export function generateMockBuildLogs({
 
   // Generate random chunk names
   const generateChunkName = (): string => {
-    const prefixes = [
-      'main',
-      'vendor',
-      'chunk',
-      'bundle',
-      'app',
-      'common',
-      'shared',
-    ];
+    const prefixes = ['main', 'vendor', 'chunk', 'bundle', 'app', 'common', 'shared'];
     const prefix = Random.pick(prefixes);
     const hash = Random.value().toString(36).substring(2, 8); // 6 character random string
 
@@ -192,7 +172,7 @@ export function generateMockBuildLogs({
       'Critical dependency: require function is used in a way in which dependencies cannot be statically extracted',
       `Chunk ${generateChunkName()} [${generateFileSize(
         100,
-        5000
+        5000,
       )}] exceeds the recommended limit of 244 KB`,
       'Multiple chunks emit assets to the same filename',
       'Circular dependency detected',
@@ -223,9 +203,7 @@ export function generateMockBuildLogs({
       for (let i = 0; i < entryCount; i++) {
         const filePath = generateFilePath();
         const fileSize = generateFileSize();
-        logs.push(
-          `[built] ${filePath} [${fileSize}] [${Random.rangeFloor(1, 101)}ms]`
-        );
+        logs.push(`[built] ${filePath} [${fileSize}] [${Random.rangeFloor(1, 101)}ms]`);
       }
 
       // Chunks
@@ -295,9 +273,7 @@ export function generateMockBuildLogs({
 
       for (let i = 0; i < fileCount; i++) {
         const fileName =
-          i === 0
-            ? 'main.js'
-            : `chunk-${Random.value().toString(36).substring(2, 10)}.js`;
+          i === 0 ? 'main.js' : `chunk-${Random.value().toString(36).substring(2, 10)}.js`;
         const fileSize = generateFileSize(10, 1000);
         logs.push(`dist/${fileName} [${fileSize}]`);
       }
@@ -306,10 +282,7 @@ export function generateMockBuildLogs({
       if (showErrors && Random.value() > 0.7) {
         logs.push(`Error: ${generateError()}`);
         logs.push(
-          `    at ${generateFilePath()}:${Random.rangeFloor(
-            1,
-            1001
-          )}:${Random.rangeFloor(1, 101)}`
+          `    at ${generateFilePath()}:${Random.rangeFloor(1, 1001)}:${Random.rangeFloor(1, 101)}`,
         );
       }
 
@@ -333,18 +306,14 @@ export function generateMockBuildLogs({
       const logs: string[] = [];
 
       // Start log
-      logs.push(
-        `VITE v${generateVersion()} ready in ${Random.rangeFloor(50, 1001)}ms`
-      );
+      logs.push(`VITE v${generateVersion()} ready in ${Random.rangeFloor(50, 1001)}ms`);
 
       // Development server info
       if (Random.chance()) {
         // Dev server mode
         const port = 3000 + Random.rangeFloor(0, 2001);
         logs.push(`  ➜  Local:   http://localhost:${port}/`);
-        logs.push(
-          `  ➜  Network: http://192.168.1.${Random.rangeFloor(1, 256)}:${port}/`
-        );
+        logs.push(`  ➜  Network: http://192.168.1.${Random.rangeFloor(1, 256)}:${port}/`);
 
         // Hot module replacement
         logs.push(`[vite] hot module replacement enabled`);
@@ -376,24 +345,22 @@ export function generateMockBuildLogs({
         logs.push(`optimizing dependencies...`);
 
         // Generated files
-        logs.push(
-          `Build completed. The dist directory is ready to be deployed.`
-        );
+        logs.push(`Build completed. The dist directory is ready to be deployed.`);
 
         logs.push(
           `dist/assets/${Random.value()
             .toString(36)
-            .substring(2, 10)}.js          ${generateFileSize(20, 200)}`
+            .substring(2, 10)}.js          ${generateFileSize(20, 200)}`,
         );
         logs.push(
           `dist/assets/${Random.value()
             .toString(36)
-            .substring(2, 10)}.css         ${generateFileSize(5, 50)}`
+            .substring(2, 10)}.css         ${generateFileSize(5, 50)}`,
         );
         logs.push(
           `dist/assets/vendor-${Random.value()
             .toString(36)
-            .substring(2, 10)}.js    ${generateFileSize(500, 1500)}`
+            .substring(2, 10)}.js    ${generateFileSize(500, 1500)}`,
         );
 
         // Build time
@@ -405,10 +372,7 @@ export function generateMockBuildLogs({
       if (showErrors && Random.value() > 0.7) {
         logs.push(`[vite] Internal server error: ${generateError()}`);
         logs.push(
-          `  at ${generateFilePath()}:${Random.rangeFloor(
-            1,
-            501
-          )}:${Random.rangeFloor(1, 101)}`
+          `  at ${generateFilePath()}:${Random.rangeFloor(1, 501)}:${Random.rangeFloor(1, 101)}`,
         );
       }
 
@@ -433,13 +397,13 @@ export function generateMockBuildLogs({
           npmScript === 'build'
             ? 'webpack --mode production'
             : npmScript === 'start'
-            ? 'node server.js'
-            : npmScript === 'test'
-            ? 'jest'
-            : npmScript === 'lint'
-            ? 'eslint src/**/*.js'
-            : 'vite'
-        }`
+              ? 'node server.js'
+              : npmScript === 'test'
+                ? 'jest'
+                : npmScript === 'lint'
+                  ? 'eslint src/**/*.js'
+                  : 'vite'
+        }`,
       );
 
       // Add specific output based on the npm script
@@ -469,22 +433,21 @@ export function generateMockBuildLogs({
           logs.push(`    Received: ${Random.rangeFloor(0, 100)}`);
         }
 
-        const passedTests =
-          testFileCount - (showErrors && Random.value() > 0.7 ? 1 : 0);
+        const passedTests = testFileCount - (showErrors && Random.value() > 0.7 ? 1 : 0);
         logs.push(
           `Test Suites: ${
             showErrors && Random.value() > 0.7 ? `1 failed, ` : ''
-          }${passedTests} passed, ${testFileCount} total`
+          }${passedTests} passed, ${testFileCount} total`,
         );
         logs.push(
           `Tests:       ${
             showErrors && Random.value() > 0.7 ? `1 failed, ` : ''
-          }${passedTests * 3} passed, ${testFileCount * 3} total`
+          }${passedTests * 3} passed, ${testFileCount * 3} total`,
         );
         logs.push(
           `Snapshots:   ${Math.floor(testFileCount / 2)} passed, ${Math.floor(
-            testFileCount / 2
-          )} total`
+            testFileCount / 2,
+          )} total`,
         );
         logs.push(`Time:        ${generateBuildTime()}`);
       } else if (npmScript === 'lint') {
@@ -506,16 +469,13 @@ export function generateMockBuildLogs({
           }
         }
 
-        const errorCount =
-          showErrors && Random.value() > 0.7 ? Random.rangeFloor(1, 4) : 0;
-        const warningCount =
-          showWarnings && Random.chance() ? Random.rangeFloor(1, 6) : 0;
+        const errorCount = showErrors && Random.value() > 0.7 ? Random.rangeFloor(1, 4) : 0;
+        const warningCount = showWarnings && Random.chance() ? Random.rangeFloor(1, 6) : 0;
 
         logs.push(`${fileCount} files checked`);
         if (errorCount > 0) logs.push(`✖ ${errorCount} errors`);
         if (warningCount > 0) logs.push(`⚠ ${warningCount} warnings`);
-        if (errorCount === 0 && warningCount === 0)
-          logs.push(`✔ No issues found`);
+        if (errorCount === 0 && warningCount === 0) logs.push(`✔ No issues found`);
       } else {
         // Default to build tool-like output (simplified webpack/vite-like)
         logs.push('');
@@ -523,11 +483,7 @@ export function generateMockBuildLogs({
           const filePath = generateFilePath();
           const fileSize = generateFileSize();
 
-          logs.push(
-            `${Math.floor(
-              (i / entryCount) * 100
-            )}% building ${filePath} ${fileSize}`
-          );
+          logs.push(`${Math.floor((i / entryCount) * 100)}% building ${filePath} ${fileSize}`);
         }
 
         // Output files
@@ -537,9 +493,7 @@ export function generateMockBuildLogs({
         const outputFiles = Math.floor(entryCount / 5) + 1;
         for (let i = 0; i < outputFiles; i++) {
           const fileName =
-            i === 0
-              ? 'main'
-              : `chunk-${Random.value().toString(36).substring(2, 10)}`;
+            i === 0 ? 'main' : `chunk-${Random.value().toString(36).substring(2, 10)}`;
           const fileSize = generateFileSize(20, 1500);
           logs.push(`${fileName}.js ${fileSize}`);
         }

@@ -210,7 +210,11 @@ test('createMetrics centres the measured cap height; explicit baselineOffset win
   assert.equal(centredBaseline(16, 8.6, 0), 12);
   assert.equal(centredBaseline(20, 13.617, 4.225), 15, '│ in Menlo lands on the same baseline');
   assert.equal(createMetrics(ctx, { lineH: 20, baselineOffset: 2 }).baselineOffset, 2);
-  assert.equal(createMetrics(null, { charW: 8, fontSize: 12, lineH: 16 }).baselineOffset, 12, 'heuristic: round(8 + 0.36 × 12)');
+  assert.equal(
+    createMetrics(null, { charW: 8, fontSize: 12, lineH: 16 }).baselineOffset,
+    12,
+    'heuristic: round(8 + 0.36 × 12)',
+  );
 });
 
 console.log('theme');
@@ -234,7 +238,11 @@ test('themeFromPalette picks fg / chromeBg by contrast, accent by saturation', (
   assert.equal(pale.bg, '#FCFAFA');
   assert.equal(pale.fg, '#3A3A3A', 'darkest entry is the ink');
   assert.ok(contrastRatio(pale.fg, pale.bg) >= MIN_CONTRAST);
-  assert.equal(pale.accent, '#3A3A3A', 'the most saturated remaining entry (#F7D7D7) is illegible → accent uses the ink');
+  assert.equal(
+    pale.accent,
+    '#3A3A3A',
+    'the most saturated remaining entry (#F7D7D7) is illegible → accent uses the ink',
+  );
   const paleVivid = themeFromPalette(['#FCFAFA', '#FEEEEE', '#C0392B', '#3A3A3A']);
   assert.equal(paleVivid.fg, '#3A3A3A');
   assert.equal(paleVivid.accent, '#C0392B', 'a legible saturated entry is the accent');
@@ -255,14 +263,30 @@ test('themeFromPalette picks fg / chromeBg by contrast, accent by saturation', (
   assert.equal(themeFromPalette(['#ffffff', '#fefefe', '#f0f0f0']).fg, fallbackTheme.bg);
   assert.equal(themeFromPalette(['#000000', '#101010']).fg, fallbackTheme.fg);
   // auto-albers (oklab) and clrs (rgb()) palettes are read too: the pale entry becomes the ink.
-  const ok = themeFromPalette(['oklab(0.44 -0.07 -0.08)', 'oklab(0.61 -0.06 -0.11)', 'oklab(0.78 -0.05 -0.14)', 'oklab(0.94 -0.04 -0.17)']);
+  const ok = themeFromPalette([
+    'oklab(0.44 -0.07 -0.08)',
+    'oklab(0.61 -0.06 -0.11)',
+    'oklab(0.78 -0.05 -0.14)',
+    'oklab(0.94 -0.04 -0.17)',
+  ]);
   assert.equal(ok.fg, 'oklab(0.94 -0.04 -0.17)');
-  assert.ok(contrastRatio(ok.fg, ok.bg) >= MIN_CONTRAST, `oklab contrast ${contrastRatio(ok.fg, ok.bg)}`);
+  assert.ok(
+    contrastRatio(ok.fg, ok.bg) >= MIN_CONTRAST,
+    `oklab contrast ${contrastRatio(ok.fg, ok.bg)}`,
+  );
   assert.match(ok.dim, /^rgba\(\d+, \d+, \d+, 0\.45\)$/, 'dim is derived from the parsed ink');
   const rgb = themeFromPalette(['rgb(247, 245, 238)', 'rgb(162, 168, 255)', 'rgb(34, 44, 50)']);
   assert.equal(rgb.fg, 'rgb(34, 44, 50)');
-  assert.equal(rgb.accent, 'rgb(34, 44, 50)', 'lavender on near-white is ~1.9:1 → accent uses the ink');
-  assert.deepEqual(parseColor('oklch(50% 0 0)')!.map((v) => Math.abs(v - 99) <= 1), [true, true, true], 'oklch L 50 % is the grey #636363');
+  assert.equal(
+    rgb.accent,
+    'rgb(34, 44, 50)',
+    'lavender on near-white is ~1.9:1 → accent uses the ink',
+  );
+  assert.deepEqual(
+    parseColor('oklch(50% 0 0)')!.map((v) => Math.abs(v - 99) <= 1),
+    [true, true, true],
+    'oklch L 50 % is the grey #636363',
+  );
   assert.deepEqual(parseColor('oklab(1 0 0)'), [255, 255, 255]);
   assert.deepEqual(parseColor('oklab(0 0 0)'), [0, 0, 0]);
   assert.equal(parseColor('rebeccapurple'), null);
@@ -346,13 +370,19 @@ test('Glyph.dy shifts the fillText y by dy · lineH; bg and plain cells are unto
     ['c', 0, 20 + y0 + 5],
     ['d', 8, 20 + y0 + 5],
   ]);
-  assert.ok(rects.some(([x, y, w, h]) => x === 0 && y === 0 && w === 16 && h === 20), 'the bg run covers the whole cell regardless of dy');
+  assert.ok(
+    rects.some(([x, y, w, h]) => x === 0 && y === 0 && w === 16 && h === 20),
+    'the bg run covers the whole cell regardless of dy',
+  );
 });
 
 console.log('cells');
 
 test('cell rect helpers', () => {
-  assert.deepEqual(intersectCellRect(cellRect(0, 0, 5, 5), cellRect(3, 3, 5, 5)), cellRect(3, 3, 2, 2));
+  assert.deepEqual(
+    intersectCellRect(cellRect(0, 0, 5, 5), cellRect(3, 3, 5, 5)),
+    cellRect(3, 3, 2, 2),
+  );
   assert.deepEqual(intersectCellRect(cellRect(0, 0, 2, 2), cellRect(5, 5, 2, 2)).rows, 0);
   assert.deepEqual(insetCellRect(cellRect(1, 1, 5, 7), 1), cellRect(2, 2, 3, 5));
   assert.deepEqual(insetCellRect(cellRect(0, 0, 1, 1), 1), cellRect(1, 1, 0, 0));
@@ -400,7 +430,13 @@ function makeDesktop(over: Partial<Parameters<typeof createDesktop>[0]> = {}) {
     settings: {
       controls: [
         createButton({ id: 'go', label: 'Go' }),
-        createToggleGroup({ items: [{ id: 'a', label: 'a' }, { id: 'b', label: 'b' }], exclusive: true }),
+        createToggleGroup({
+          items: [
+            { id: 'a', label: 'a' },
+            { id: 'b', label: 'b' },
+          ],
+          exclusive: true,
+        }),
         createRange({ id: 'n', label: 'n', min: 0, max: 10, value: 5 }),
       ],
     },
@@ -423,12 +459,22 @@ test('grid from width/height; two-row bar at the bottom; area is everything abov
   assert.deepEqual(desk.area, cellRect(0, 0, 28, 80), 'area rows = rows − 2');
   assert.deepEqual(desk.windows[0].bounds, desk.area);
   desk.render();
-  assert.equal(rowText(desk.buffer, 28).trimEnd(), '  ≡ settings', 'text on the upper row, two pad cells in');
+  assert.equal(
+    rowText(desk.buffer, 28).trimEnd(),
+    '  ≡ settings',
+    'text on the upper row, two pad cells in',
+  );
   assert.equal(desk.buffer.get(28, 2)?.dy, 0.5, 'centred on the band midline via dy');
   assert.equal(rowText(desk.buffer, 29).trim(), '', 'lower row is blank band');
   assert.equal(desk.buffer.get(29, 40)?.bg, desk.theme.chromeBg, 'ground fills both rows');
   assert.equal(desk.hitTest!(at(29, 3)), true, 'both rows hit-test');
-  const top = createDesktop({ ctx: stubCtx(), width: 80 * D_CHAR, height: 30 * D_LINE, menuBar: 'top', onChange() {} });
+  const top = createDesktop({
+    ctx: stubCtx(),
+    width: 80 * D_CHAR,
+    height: 30 * D_LINE,
+    menuBar: 'top',
+    onChange() {},
+  });
   assert.equal(top.menuBar.row, 0);
   assert.deepEqual(top.area, cellRect(2, 0, 28, 80));
 });
@@ -436,13 +482,31 @@ test('grid from width/height; two-row bar at the bottom; area is everything abov
 test('bottom band absorbs the canvas remainder: ground to the bottom edge, hit-test and text centred on the real height', () => {
   // 30 rows of 20 px plus a 7 px remainder: the band is rows 28–29 and the strip below.
   const ctx = stubCtx();
-  const desk = createDesktop({ ctx, width: 80 * D_CHAR, height: 30 * D_LINE + 7, onNewWindow() {}, onChange() {} });
+  const desk = createDesktop({
+    ctx,
+    width: 80 * D_CHAR,
+    height: 30 * D_LINE + 7,
+    onNewWindow() {},
+    onChange() {},
+  });
   assert.equal(desk.buffer.rows, 30);
   assert.equal(desk.height, 607);
   assert.deepEqual(desk.menuBar.rect(), cellRect(28, 0, 2, 80));
-  assert.deepEqual(desk.menuBar.pxRect(), { x: 0, y: 560, w: 640, h: 47 }, 'band top px 560, 47 px tall');
-  assert.equal(desk.hitTest!({ x: 10, y: 605 }), true, 'the strip below the last row is part of the band');
-  assert.equal(desk.menuBar.cursorAt({ x: 10, y: 605 }), 'pointer', 'items are reachable from the strip too');
+  assert.deepEqual(
+    desk.menuBar.pxRect(),
+    { x: 0, y: 560, w: 640, h: 47 },
+    'band top px 560, 47 px tall',
+  );
+  assert.equal(
+    desk.hitTest!({ x: 10, y: 605 }),
+    true,
+    'the strip below the last row is part of the band',
+  );
+  assert.equal(
+    desk.menuBar.cursorAt({ x: 10, y: 605 }),
+    'pointer',
+    'items are reachable from the strip too',
+  );
   assert.equal(desk.menuBar.cursorAt({ x: 400, y: 605 }), 'default');
   assert.equal(desk.hitTest!({ x: 10, y: 559 }), false);
   desk.render();
@@ -450,18 +514,34 @@ test('bottom band absorbs the canvas remainder: ground to the bottom edge, hit-t
   assert.equal(desk.buffer.get(28, 2)?.ch, '+');
   assert.equal(desk.buffer.get(28, 2)?.dy, dy, 'text centred on the 47 px band, not on two rows');
   const strip = ctx.fills.find((f) => f.y === 600);
-  assert.deepEqual(strip, { x: 0, y: 600, w: 640, h: 7, style: composite(desk.theme.chromeBg, desk.theme.bg) }, 'remainder strip painted in the flattened chrome');
+  assert.deepEqual(
+    strip,
+    { x: 0, y: 600, w: 640, h: 7, style: composite(desk.theme.chromeBg, desk.theme.bg) },
+    'remainder strip painted in the flattened chrome',
+  );
   assert.equal(ctx.fills[0].h, 607, 'bg fill covers the whole canvas first');
   // An exact number of rows: nothing extra to paint, dy is the plain half row.
   const exact = stubCtx();
-  const even = createDesktop({ ctx: exact, width: 80 * D_CHAR, height: 30 * D_LINE, onNewWindow() {}, onChange() {} });
+  const even = createDesktop({
+    ctx: exact,
+    width: 80 * D_CHAR,
+    height: 30 * D_LINE,
+    onNewWindow() {},
+    onChange() {},
+  });
   even.render();
   assert.deepEqual(even.menuBar.pxRect(), { x: 0, y: 560, w: 640, h: 40 });
   assert.equal(even.buffer.get(28, 2)?.dy, 0.5);
   assert.equal(exact.fills.filter((f) => f.y === 600).length, 0);
   // A top bar leaves the remainder to the desktop ground.
   const topCtx = stubCtx();
-  const top = createDesktop({ ctx: topCtx, width: 80 * D_CHAR, height: 30 * D_LINE + 7, menuBar: 'top', onChange() {} });
+  const top = createDesktop({
+    ctx: topCtx,
+    width: 80 * D_CHAR,
+    height: 30 * D_LINE + 7,
+    menuBar: 'top',
+    onChange() {},
+  });
   top.render();
   assert.deepEqual(top.menuBar.pxRect(), { x: 0, y: 0, w: 640, h: 40 });
   assert.equal(topCtx.fills.filter((f) => f.y === 600).length, 0);
@@ -470,7 +550,13 @@ test('bottom band absorbs the canvas remainder: ground to the bottom edge, hit-t
 test('band spans the full canvas width: the strip past the last column is painted and hit-testable', () => {
   // 80 columns of 8 px plus a 5 px remainder on the right, 7 px below.
   const ctx = stubCtx();
-  const desk = createDesktop({ ctx, width: 80 * D_CHAR + 5, height: 30 * D_LINE + 7, onNewWindow() {}, onChange() {} });
+  const desk = createDesktop({
+    ctx,
+    width: 80 * D_CHAR + 5,
+    height: 30 * D_LINE + 7,
+    onNewWindow() {},
+    onChange() {},
+  });
   assert.equal(desk.buffer.cols, 80);
   assert.deepEqual(desk.menuBar.pxRect(), { x: 0, y: 560, w: 645, h: 47 });
   assert.equal(desk.hitTest!({ x: 643, y: 570 }), true, 'right remainder is part of the band');
@@ -479,16 +565,33 @@ test('band spans the full canvas width: the strip past the last column is painte
   desk.render();
   const ground = composite(desk.theme.chromeBg, desk.theme.bg);
   const right = ctx.fills.find((f) => f.x === 640 && f.y === 560);
-  assert.deepEqual(right, { x: 640, y: 560, w: 5, h: 47, style: ground }, 'right strip: band height, to the canvas edge');
+  assert.deepEqual(
+    right,
+    { x: 640, y: 560, w: 5, h: 47, style: ground },
+    'right strip: band height, to the canvas edge',
+  );
   const below = ctx.fills.find((f) => f.y === 600);
-  assert.deepEqual(below, { x: 0, y: 600, w: 640, h: 7, style: ground }, 'bottom strip: up to the right strip');
+  assert.deepEqual(
+    below,
+    { x: 0, y: 600, w: 640, h: 7, style: ground },
+    'bottom strip: up to the right strip',
+  );
   assert.equal(ctx.fills[0].w, 645, 'bg fill covers the whole canvas first');
   // Top bar: the right strip is painted at the top, nothing at the bottom.
   const topCtx = stubCtx();
-  const top = createDesktop({ ctx: topCtx, width: 80 * D_CHAR + 5, height: 30 * D_LINE + 7, menuBar: 'top', onChange() {} });
+  const top = createDesktop({
+    ctx: topCtx,
+    width: 80 * D_CHAR + 5,
+    height: 30 * D_LINE + 7,
+    menuBar: 'top',
+    onChange() {},
+  });
   top.render();
   assert.deepEqual(top.menuBar.pxRect(), { x: 0, y: 0, w: 645, h: 40 });
-  assert.deepEqual(topCtx.fills.find((f) => f.x === 640), { x: 640, y: 0, w: 5, h: 40, style: ground });
+  assert.deepEqual(
+    topCtx.fills.find((f) => f.x === 640),
+    { x: 640, y: 0, w: 5, h: 40, style: ground },
+  );
   assert.equal(topCtx.fills.filter((f) => f.y === 600).length, 0);
   assert.equal(top.hitTest!({ x: 643, y: 30 }), true);
   // Item padding: two cells each side; the inverted active item covers the padded span.
@@ -505,19 +608,30 @@ test('band spans the full canvas width: the strip past the last column is painte
   d.render();
   // The inversion is an inset box over the band ground, centred on the band's
   // real pixel height (`pxRect().h`, which a bottom band stretches past its rows).
-  for (let c = st.col; c < st.col + st.cols; c++) assert.equal(d.buffer.get(29, c)?.box?.fill, d.theme.chromeFg, `inverted pad/label col ${c}`);
+  for (let c = st.col; c < st.col + st.cols; c++)
+    assert.equal(d.buffer.get(29, c)?.box?.fill, d.theme.chromeFg, `inverted pad/label col ${c}`);
   assert.equal(d.buffer.get(29, st.col - 1)?.box, undefined, 'separator cell stays plain');
   assert.equal(d.buffer.get(29, st.col + st.cols)?.box, undefined);
   const band = d.menuBar.pxRect();
   const boxTop = (28 + d.buffer.get(28, st.col)!.box!.dy) * D_LINE;
   const lower = d.buffer.get(29, st.col)!.box!;
   const boxBottom = (29 + lower.dy + lower.h) * D_LINE;
-  assert.equal(Math.round((boxTop - band.y) * 1e6) / 1e6, Math.round((band.y + band.h - boxBottom) * 1e6) / 1e6, 'highlight is centred in the band');
+  assert.equal(
+    Math.round((boxTop - band.y) * 1e6) / 1e6,
+    Math.round((band.y + band.h - boxBottom) * 1e6) / 1e6,
+    'highlight is centred in the band',
+  );
 });
 
-test('a minimized window\'s bar item: bracketed at rest, the same centred block when pressed', () => {
+test("a minimized window's bar item: bracketed at rest, the same centred block when pressed", () => {
   // 7 px of remainder, so a ground pinned to the cell rows would be visibly off-centre.
-  const d = createDesktop({ ctx: stubCtx(), width: 80 * D_CHAR, height: 30 * D_LINE + 7, onNewWindow: () => {}, onChange() {} });
+  const d = createDesktop({
+    ctx: stubCtx(),
+    width: 80 * D_CHAR,
+    height: 30 * D_LINE + 7,
+    onNewWindow: () => {},
+    onChange() {},
+  });
   const w = d.addWindow({ title: 'chart 01', rect: cellRect(2, 2, 8, 24) });
   w.minimized = true;
   d.render();
@@ -527,7 +641,10 @@ test('a minimized window\'s bar item: bracketed at rest, the same centred block 
   // At rest: brackets around the label and nothing else — no ground of its own.
   const row = d.buffer.cells[d.menuBar.row].map((g) => g?.ch ?? ' ').join('');
   assert.ok(row.includes('[ chart 01 ]'), `bracketed label on the bar: ${row.trim()}`);
-  assert.ok(!row.includes('[ + new ]') && !row.includes('[ ≡ settings ]'), 'the bar commands stay unbracketed');
+  assert.ok(
+    !row.includes('[ + new ]') && !row.includes('[ ≡ settings ]'),
+    'the bar commands stay unbracketed',
+  );
   for (let i = 0; i < d.menuBar.rows; i++) {
     for (let c = span.col; c < span.col + span.cols; c++) {
       const g = d.buffer.get(d.menuBar.row + i, c)!;
@@ -539,7 +656,12 @@ test('a minimized window\'s bar item: bracketed at rest, the same centred block 
   // with what is drawn.
   assert.equal(d.buffer.get(d.menuBar.row, span.labelCol - 2)?.ch, '[');
   assert.equal(d.buffer.get(d.menuBar.row, span.labelCol + 'chart 01'.length + 1)?.ch, ']');
-  for (const c of [span.col, span.labelCol - 2, span.labelCol + 'chart 01'.length + 1, span.col + span.cols - 1]) {
+  for (const c of [
+    span.col,
+    span.labelCol - 2,
+    span.labelCol + 'chart 01'.length + 1,
+    span.col + span.cols - 1,
+  ]) {
     assert.equal(d.menuBar.itemAtCol(c)?.id, span.item.id, `col ${c} hits the parked item`);
   }
   assert.equal(d.menuBar.itemAtCol(span.col + span.cols), null, 'and the span stops there');
@@ -550,20 +672,41 @@ test('a minimized window\'s bar item: bracketed at rest, the same centred block 
   const boxes = highlightBoxes(d.menuBar.rows, band.h, d.metrics.lineH);
   for (let i = 0; i < d.menuBar.rows; i++) {
     for (let c = span.col; c < span.col + span.cols; c++) {
-      assert.deepEqual(d.buffer.get(d.menuBar.row + i, c)?.box, { fill: d.theme.selectionBg, ...boxes[i] }, `pressed box row ${i} col ${c}`);
+      assert.deepEqual(
+        d.buffer.get(d.menuBar.row + i, c)?.box,
+        { fill: d.theme.selectionBg, ...boxes[i] },
+        `pressed box row ${i} col ${c}`,
+      );
     }
   }
-  assert.equal(d.buffer.get(d.menuBar.row, span.labelCol - 2)?.ch, '[', 'brackets survive the press');
+  assert.equal(
+    d.buffer.get(d.menuBar.row, span.labelCol - 2)?.ch,
+    '[',
+    'brackets survive the press',
+  );
   const top = (d.menuBar.row + boxes[0].dy) * D_LINE;
   const last = boxes[boxes.length - 1];
   const bottom = (d.menuBar.row + d.menuBar.rows - 1 + last.dy + last.h) * D_LINE;
-  assert.ok(Math.abs((top - band.y) - (band.y + band.h - bottom)) < 1e-9, 'equal margin above and below');
-  assert.ok(Math.abs((top - band.y) - D_LINE / 3) < 1e-9, 'a third of a row of margin');
+  assert.ok(
+    Math.abs(top - band.y - (band.y + band.h - bottom)) < 1e-9,
+    'equal margin above and below',
+  );
+  assert.ok(Math.abs(top - band.y - D_LINE / 3) < 1e-9, 'a third of a row of margin');
   d.pointerUp(at(d.menuBar.row, span.labelCol));
   d.render();
   assert.equal(w.minimized, false, 'released over the item: the window is restored');
-  assert.equal(d.buffer.get(d.menuBar.row, span.col)?.box, undefined, 'released: back to plain band ground');
-  assert.ok(!d.buffer.cells[d.menuBar.row].map((g) => g?.ch ?? ' ').join('').includes('[ chart 01 ]'), 'and its bar item leaves with it');
+  assert.equal(
+    d.buffer.get(d.menuBar.row, span.col)?.box,
+    undefined,
+    'released: back to plain band ground',
+  );
+  assert.ok(
+    !d.buffer.cells[d.menuBar.row]
+      .map((g) => g?.ch ?? ' ')
+      .join('')
+      .includes('[ chart 01 ]'),
+    'and its bar item leaves with it',
+  );
 });
 
 test('resize: rows/cols/area follow the canvas; the bar moves; windows re-clamp and a maximized one re-fits', () => {
@@ -599,7 +742,11 @@ test('resize: rows/cols/area follow the canvas; the bar moves; windows re-clamp 
   const buf = desk.buffer;
   desk.resize(20 * D_CHAR + 3, 8 * D_LINE + 5);
   assert.equal(desk.buffer, buf);
-  assert.deepEqual(desk.menuBar.pxRect(), { x: 0, y: 120, w: 163, h: 45 }, 'band spans the full canvas width');
+  assert.deepEqual(
+    desk.menuBar.pxRect(),
+    { x: 0, y: 120, w: 163, h: 45 },
+    'band spans the full canvas width',
+  );
 });
 
 test('addWindow ×3, minimize one: 2 visible, bar lists the minimized title, selecting it restores + fronts', () => {
@@ -656,7 +803,11 @@ test('the settings popup lives outside the z-order: addWindow always appends, th
   assert.equal(b0.get(s.rect.row, s.rect.col)?.bg, desk.theme.chromeBg, 'frame in the bar colours');
   assert.equal(b0.get(s.rect.row + s.rect.rows - 1, s.rect.col)?.ch, '└');
   assert.equal(s.rect.row + s.rect.rows, desk.menuBar.row, 'sits directly on the band');
-  assert.equal(b0.get(s.rect.row + s.rect.rows, s.rect.col)?.box?.fill, desk.theme.chromeFg, 'whose item is inverted underneath it');
+  assert.equal(
+    b0.get(s.rect.row + s.rect.rows, s.rect.col)?.box?.fill,
+    desk.theme.chromeFg,
+    'whose item is inverted underneath it',
+  );
   assert.equal(b0.get(s.rect.row + s.rect.rows, 50)?.box, undefined);
   assert.equal(c.active, true, 'the front window keeps its active state');
   assert.equal(b0.get(c.rect.row, c.rect.col)?.ch, '╔');
@@ -689,10 +840,22 @@ test('onNewWindow adds a `+ new` item left of ≡ settings; selecting it calls b
   assert.equal(calls, 1);
   // Without the option the bar starts with settings.
   const { desk: plain } = makeDesktop();
-  assert.deepEqual(plain.menuBar.layout().spans.map((s) => s.label), ['≡ settings']);
+  assert.deepEqual(
+    plain.menuBar.layout().spans.map((s) => s.label),
+    ['≡ settings'],
+  );
   // With the option but no settings window: `+ new` alone.
-  const bare = createDesktop({ ctx: stubCtx(), width: 80 * D_CHAR, height: 30 * D_LINE, onNewWindow: () => calls++, onChange() {} });
-  assert.deepEqual(bare.menuBar.layout().spans.map((s) => s.label), ['+ new']);
+  const bare = createDesktop({
+    ctx: stubCtx(),
+    width: 80 * D_CHAR,
+    height: 30 * D_LINE,
+    onNewWindow: () => calls++,
+    onChange() {},
+  });
+  assert.deepEqual(
+    bare.menuBar.layout().spans.map((s) => s.label),
+    ['+ new'],
+  );
 });
 
 test('toggleSettings shows/hides; ≡ settings item toggles it too and reads active', () => {
@@ -731,7 +894,11 @@ test('popup dismissal: a click outside closes it (desktop/window clicks are spen
   desk.toggleSettings();
   // Click on a window: the popup closes, the window is neither fronted nor dragged.
   const before = [...desk.windows];
-  assert.equal(desk.pointerDown(at(w1.rect.row, w1.rect.col + 3)), true, 'reported as a change (the dismissal)');
+  assert.equal(
+    desk.pointerDown(at(w1.rect.row, w1.rect.col + 3)),
+    true,
+    'reported as a change (the dismissal)',
+  );
   assert.equal(s.visible, false);
   assert.deepEqual(desk.windows, before, 'z-order untouched');
   assert.equal(w1.dragging, null);
@@ -778,7 +945,11 @@ test('settings popup is sized to its controls + padding and hangs off the ≡ se
   // 32 control cols + 2×2 padding cols + 2 frame. Area is 28 rows (two-row bar).
   assert.deepEqual(s.rect, cellRect(28 - 11, 0, 11, 38));
   assert.equal(s.rect.col, desk.menuBar.layout().spans[0].col, 'flush left with the item span');
-  assert.equal(s.rect.row + s.rect.rows, desk.menuBar.row, 'bottom row directly above the bar band');
+  assert.equal(
+    s.rect.row + s.rect.rows,
+    desk.menuBar.row,
+    'bottom row directly above the bar band',
+  );
   assert.deepEqual(s.inner, cellRect(18, 1, 9, 36));
   // With `+ new` first, the popup follows the item to column 10.
   const { desk: withNew } = makeDesktop({ onNewWindow() {} });
@@ -786,13 +957,43 @@ test('settings popup is sized to its controls + padding and hangs off the ≡ se
   assert.deepEqual(withNew.settings!.rect, cellRect(17, 10, 11, 38));
   // Pure geometry.
   const above = { col: 0, row: 29, side: 'above' as const };
-  assert.deepEqual(popupMenuRect([], 32, above, cellRect(0, 0, 29, 80)), cellRect(27, 0, 2, 34), 'no padding by default');
-  assert.deepEqual(popupMenuRect([], 32, above, cellRect(0, 0, 29, 80), { rows: 1, cols: 2 }), cellRect(25, 0, 4, 38));
-  assert.deepEqual(popupMenuRect([], 32, { col: 50, row: 29, side: 'above' }, cellRect(0, 0, 29, 80)), cellRect(27, 46, 2, 34), 'slides left to stay inside the bounds');
-  assert.deepEqual(popupMenuRect([], 32, { col: 0, row: 2, side: 'below' }, cellRect(2, 0, 28, 80)), cellRect(2, 0, 2, 34), 'top bar: hangs below the band');
-  assert.deepEqual(popupMenuRect([], 100, above, cellRect(0, 0, 29, 80)), cellRect(27, 0, 2, 80), 'never wider than the bounds');
-  const topBar = createDesktop({ ctx: stubCtx(), width: 80 * D_CHAR, height: 30 * D_LINE, menuBar: 'top', onChange() {}, settings: { controls: [createButton({ id: 'go', label: 'Go' })] } });
-  assert.deepEqual(topBar.settings!.rect, cellRect(2, 0, 5, 38), 'top bar: top row directly below the band');
+  assert.deepEqual(
+    popupMenuRect([], 32, above, cellRect(0, 0, 29, 80)),
+    cellRect(27, 0, 2, 34),
+    'no padding by default',
+  );
+  assert.deepEqual(
+    popupMenuRect([], 32, above, cellRect(0, 0, 29, 80), { rows: 1, cols: 2 }),
+    cellRect(25, 0, 4, 38),
+  );
+  assert.deepEqual(
+    popupMenuRect([], 32, { col: 50, row: 29, side: 'above' }, cellRect(0, 0, 29, 80)),
+    cellRect(27, 46, 2, 34),
+    'slides left to stay inside the bounds',
+  );
+  assert.deepEqual(
+    popupMenuRect([], 32, { col: 0, row: 2, side: 'below' }, cellRect(2, 0, 28, 80)),
+    cellRect(2, 0, 2, 34),
+    'top bar: hangs below the band',
+  );
+  assert.deepEqual(
+    popupMenuRect([], 100, above, cellRect(0, 0, 29, 80)),
+    cellRect(27, 0, 2, 80),
+    'never wider than the bounds',
+  );
+  const topBar = createDesktop({
+    ctx: stubCtx(),
+    width: 80 * D_CHAR,
+    height: 30 * D_LINE,
+    menuBar: 'top',
+    onChange() {},
+    settings: { controls: [createButton({ id: 'go', label: 'Go' })] },
+  });
+  assert.deepEqual(
+    topBar.settings!.rect,
+    cellRect(2, 0, 5, 38),
+    'top bar: top row directly below the band',
+  );
   // Resize re-anchors it (bottom bar moves up).
   desk.resize(60 * D_CHAR, 20 * D_LINE);
   assert.deepEqual(s.rect, cellRect(18 - 11, 0, 11, 38));
@@ -802,12 +1003,23 @@ test('settings popup is sized to its controls + padding and hangs off the ≡ se
   const inner = s.inner;
   const top = inner.row + 1;
   const left = inner.col + 2;
-  const innerText = (row: number) => rowText(desk.buffer, row).slice(inner.col, inner.col + inner.cols).trim();
+  const innerText = (row: number) =>
+    rowText(desk.buffer, row)
+      .slice(inner.col, inner.col + inner.cols)
+      .trim();
   assert.equal(innerText(inner.row), '', 'padding row above the controls is blank');
-  assert.equal(rowText(desk.buffer, top).slice(inner.col, inner.col + 2), '  ', 'padding cols left of the controls are blank');
+  assert.equal(
+    rowText(desk.buffer, top).slice(inner.col, inner.col + 2),
+    '  ',
+    'padding cols left of the controls are blank',
+  );
   assert.equal(rowText(desk.buffer, top).slice(left, left + 6), '[ Go ]');
   assert.equal(rowText(desk.buffer, top + 2).slice(left, left + 5), '(●) a');
-  assert.equal(innerText(inner.row + inner.rows - 1), '', 'padding row below the controls is blank');
+  assert.equal(
+    innerText(inner.row + inner.rows - 1),
+    '',
+    'padding row below the controls is blank',
+  );
   // Click the second radio through the composed target → exclusive switch.
   desk.pointerDown(at(top + 3, left + 1));
   desk.pointerUp(at(top + 3, left + 1));
@@ -816,8 +1028,13 @@ test('settings popup is sized to its controls + padding and hangs off the ≡ se
   assert.equal(rowText(desk.buffer, top + 3).slice(left, left + 5), '(●) b');
   // Opting out of the padding restores the tight layout.
   const one = [createButton({ id: 'go', label: 'Go' })];
-  assert.deepEqual(popupMenuRect(one, 32, above, cellRect(0, 0, 29, 80), { rows: 0, cols: 0 }), cellRect(26, 0, 3, 34));
-  const { desk: tight } = makeDesktop({ settings: { controls: one, padding: { rows: 0, cols: 0 } } });
+  assert.deepEqual(
+    popupMenuRect(one, 32, above, cellRect(0, 0, 29, 80), { rows: 0, cols: 0 }),
+    cellRect(26, 0, 3, 34),
+  );
+  const { desk: tight } = makeDesktop({
+    settings: { controls: one, padding: { rows: 0, cols: 0 } },
+  });
   const t = tight.settings!;
   assert.deepEqual(t.rect, cellRect(25, 0, 3, 34), 'no padding: frame + one control row');
   tight.toggleSettings();
@@ -858,7 +1075,11 @@ test('keyDown: Tab / Shift+Tab cycle focus through the visible windows in z-orde
   desk.keyDown('Tab');
   assert.deepEqual(desk.windows, [w1, w2, w3], 'wraps after every window');
   assert.equal(desk.keyDown('Tab', { shiftKey: true }), true);
-  assert.deepEqual(desk.windows, [w3, w1, w2], 'Shift+Tab: the front goes to the back, the one under it is front');
+  assert.deepEqual(
+    desk.windows,
+    [w3, w1, w2],
+    'Shift+Tab: the front goes to the back, the one under it is front',
+  );
   desk.keyDown('Tab', { shiftKey: true });
   assert.deepEqual(desk.windows, [w2, w3, w1]);
   desk.keyDown('Tab', { shiftKey: false });
@@ -892,7 +1113,12 @@ test('keyDown: Tab / Shift+Tab cycle focus through the visible windows in z-orde
   assert.equal(desk.keyDown('x'), false);
   assert.equal(changes(), 0, 'headless: no DOM listener, keyDown itself never calls onChange');
   // Tab is always handled (so the DOM listener can preventDefault), even with nothing to cycle.
-  const bare = createDesktop({ ctx: stubCtx(), width: 80 * D_CHAR, height: 30 * D_LINE, onChange() {} });
+  const bare = createDesktop({
+    ctx: stubCtx(),
+    width: 80 * D_CHAR,
+    height: 30 * D_LINE,
+    onChange() {},
+  });
   assert.equal(bare.keyDown('Tab'), true);
 });
 
@@ -910,7 +1136,11 @@ test('the bar swallows clicks over it, even where a window would otherwise be', 
   assert.deepEqual(w1.rect, before, 'window did not move');
   desk.pointerUp(at(20, 50));
   assert.equal(desk.dragging, false);
-  assert.notEqual(desk.ui.windows[desk.ui.windows.length - 1], w1, 'bar click does not front the window');
+  assert.notEqual(
+    desk.ui.windows[desk.ui.windows.length - 1],
+    w1,
+    'bar click does not front the window',
+  );
   assert.equal(desk.cursorAt(at(29, 50)), 'default');
   assert.equal(desk.cursorAt(at(29, 2)), 'pointer');
 });
@@ -969,12 +1199,20 @@ test('activeFrame: option + runtime setter drop the double frame while `active` 
   desk.activeFrame = true;
   desk.render();
   assert.equal(b.get(w3.rect.row, w3.rect.col)?.ch, '╔', 'setter restores the double frame');
-  assert.equal(b.get(w3.rect.row, w3.rect.col + 3)?.bg, desk.theme.chromeBg, 'and the highlighted title');
+  assert.equal(
+    b.get(w3.rect.row, w3.rect.col + 3)?.bg,
+    desk.theme.chromeBg,
+    'and the highlighted title',
+  );
   desk.activeFrame = false;
   desk.toggleSettings();
   desk.render();
   const s = desk.settings!;
-  assert.equal(b.get(s.rect.row, s.rect.col)?.ch, '┌', 'the popup is always single-framed, whatever the flag');
+  assert.equal(
+    b.get(s.rect.row, s.rect.col)?.ch,
+    '┌',
+    'the popup is always single-framed, whatever the flag',
+  );
   assert.equal(w3.active, true, 'and does not take the active state from the front window');
   // Default: on.
   const { desk: d2, w3: f2 } = makeDesktop();
@@ -986,7 +1224,11 @@ test('activeFrame: option + runtime setter drop the double frame while `active` 
 test('setTheme retints the shared theme in place: windows, bar and render pick it up', () => {
   const { desk, w1, w3 } = makeDesktop({ palette: ['#101010', '#eeeeee', '#ff8800'] });
   const before = desk.theme;
-  const own = desk.addWindow({ title: 'own', rect: cellRect(14, 2, 6, 20), theme: { ...fallbackTheme } });
+  const own = desk.addWindow({
+    title: 'own',
+    rect: cellRect(14, 2, 6, 20),
+    theme: { ...fallbackTheme },
+  });
   const returned = desk.setTheme(['#202020', '#dddddd', '#00ff88']);
   assert.equal(returned, before, 'returns the same theme object');
   assert.equal(desk.theme, before, 'desktop.theme identity is stable');
@@ -997,7 +1239,11 @@ test('setTheme retints the shared theme in place: windows, bar and render pick i
   desk.render();
   const b = desk.buffer;
   assert.equal(b.get(29, 0)?.bg, desk.theme.chromeBg, 'bar uses the new chrome');
-  assert.equal(b.get(w1.rect.row + 1, w1.rect.col + 1)?.bg, '#202020', 'window body uses the new bg');
+  assert.equal(
+    b.get(w1.rect.row + 1, w1.rect.col + 1)?.bg,
+    '#202020',
+    'window body uses the new bg',
+  );
   // A full TuiTheme object works too.
   const custom = { ...fallbackTheme, bg: '#333333', accent: '#123456' };
   desk.setTheme(custom);
@@ -1022,14 +1268,23 @@ test('frame ≥ 3:1 and frameActive ≥ 4.5:1 against bg, differing, across seed
     const fr = contrastRatio(t.frame, t.bg);
     const ar = contrastRatio(t.frameActive, t.bg);
     assert.ok(fr >= MIN_CONTRAST, `${name}: frame ${t.frame} on ${t.bg} is ${fr.toFixed(2)}:1`);
-    assert.ok(ar >= AA_CONTRAST, `${name}: frameActive ${t.frameActive} on ${t.bg} is ${ar.toFixed(2)}:1`);
+    assert.ok(
+      ar >= AA_CONTRAST,
+      `${name}: frameActive ${t.frameActive} on ${t.bg} is ${ar.toFixed(2)}:1`,
+    );
     assert.notEqual(t.frame, t.frameActive, `${name}: frames must differ`);
     assert.ok(ar > fr, `${name}: the active frame is the stronger one`);
     assert.match(t.frame, /^#[0-9a-f]{6}$/, `${name}: frame is opaque hex, not a translucent dim`);
     // Highlighted text keeps AA on its own ground: pressed buttons and the front title.
     const pressedBg = composite(t.selectionBg, t.bg);
-    assert.ok(contrastRatio(legibleOn(pressedBg, t.frame, t.frameActive), pressedBg) >= AA_CONTRAST, `${name}: pressed button text`);
-    assert.ok(contrastRatio(legibleOn(t.chromeBg, t.chromeFg, t.frameActive), t.chromeBg) >= AA_CONTRAST, `${name}: title text`);
+    assert.ok(
+      contrastRatio(legibleOn(pressedBg, t.frame, t.frameActive), pressedBg) >= AA_CONTRAST,
+      `${name}: pressed button text`,
+    );
+    assert.ok(
+      contrastRatio(legibleOn(t.chromeBg, t.chromeFg, t.frameActive), t.chromeBg) >= AA_CONTRAST,
+      `${name}: title text`,
+    );
   }
   // Known values: the ink is the active frame; the quiet frame fades toward bg to just ≥ 3:1.
   const pale = themeFromPalette(palettes[0][1]);
@@ -1046,7 +1301,10 @@ test('frame ≥ 3:1 and frameActive ≥ 4.5:1 against bg, differing, across seed
   assert.ok(contrastRatio(blue.frame, blue.bg) >= MIN_CONTRAST);
   // The fallback theme's explicit values meet the same bars.
   assert.ok(contrastRatio(fallbackTheme.frame, fallbackTheme.bg) >= MIN_CONTRAST);
-  assert.ok(contrastRatio(fallbackTheme.frame, fallbackTheme.bg) < 3.2, `fallback frame is just over 3:1: ${contrastRatio(fallbackTheme.frame, fallbackTheme.bg)}`);
+  assert.ok(
+    contrastRatio(fallbackTheme.frame, fallbackTheme.bg) < 3.2,
+    `fallback frame is just over 3:1: ${contrastRatio(fallbackTheme.frame, fallbackTheme.bg)}`,
+  );
   assert.ok(contrastRatio(fallbackTheme.frameActive, fallbackTheme.bg) >= AA_CONTRAST);
   // Unreadable backgrounds cannot be measured: both frames are the ink.
   assert.equal(themeFromPalette(['hsl(0 0% 5%)', 'white']).frame, 'white');
@@ -1056,7 +1314,11 @@ test('composite flattens translucent colours; legibleOn falls back to black / wh
   assert.equal(composite('rgba(255, 255, 255, 0.5)', '#000000'), '#808080');
   assert.equal(composite('#ff000080', '#ffffff'), '#ff7f7f', '0x80 / 255 rounds down');
   assert.equal(composite('#ff0000', '#ffffff'), '#ff0000', 'opaque colours pass through');
-  assert.equal(composite('hsl(0 0% 5%)', '#fff'), 'hsl(0 0% 5%)', 'unreadable colours pass through');
+  assert.equal(
+    composite('hsl(0 0% 5%)', '#fff'),
+    'hsl(0 0% 5%)',
+    'unreadable colours pass through',
+  );
   assert.equal(legibleOn('#ffffff', '#777777', '#000000'), '#000000', 'skips a 4.48:1 grey');
   assert.equal(legibleOn('#ffffff', '#767676'), '#767676', '4.54:1 passes');
   assert.equal(legibleOn('#7b7b7b', '#888888'), '#000000');
@@ -1064,7 +1326,13 @@ test('composite flattens translucent colours; legibleOn falls back to black / wh
 });
 
 test('window chrome is drawn with frameActive in front and frame behind', () => {
-  const desk = createDesktop({ ctx: stubCtx(), width: 80 * D_CHAR, height: 30 * D_LINE, menuBar: 'top', onChange() {} });
+  const desk = createDesktop({
+    ctx: stubCtx(),
+    width: 80 * D_CHAR,
+    height: 30 * D_LINE,
+    menuBar: 'top',
+    onChange() {},
+  });
   const back = desk.addWindow({ title: 'back', rect: cellRect(2, 2, 8, 24) });
   const front = desk.addWindow({ title: 'front', rect: cellRect(12, 30, 8, 24) });
   desk.render();
@@ -1075,13 +1343,27 @@ test('window chrome is drawn with frameActive in front and frame behind', () => 
   assert.equal(b.get(back.rect.row, back.rect.col)?.ch, '┌');
   assert.equal(b.get(back.rect.row, back.rect.col)?.fg, t.frame, 'back corner');
   assert.equal(b.get(back.rect.row, back.rect.col + 3)?.fg, t.frame, 'back title text');
-  assert.equal(b.get(back.rect.row + back.rect.rows - 1, back.rect.col + back.rect.cols - 1)?.fg, t.frame, 'back grip');
-  assert.equal(b.get(front.rect.row + front.rect.rows - 1, front.rect.col + front.rect.cols - 1)?.fg, t.frameActive, 'front grip');
+  assert.equal(
+    b.get(back.rect.row + back.rect.rows - 1, back.rect.col + back.rect.cols - 1)?.fg,
+    t.frame,
+    'back grip',
+  );
+  assert.equal(
+    b.get(front.rect.row + front.rect.rows - 1, front.rect.col + front.rect.cols - 1)?.fg,
+    t.frameActive,
+    'front grip',
+  );
   const title = b.get(front.rect.row, front.rect.col + 3)!;
   assert.equal(title.bg, t.chromeBg);
   assert.equal(title.fg, t.chromeFg, 'chromeFg clears AA on the flattened fallback chrome');
-  assert.ok(contrastRatio(title.fg, composite(title.bg, t.bg)) >= AA_CONTRAST, 'front title text is AA on the chrome flattened over bg');
-  assert.ok(!Object.values(b.cells.flat()).some((g) => g?.fg === t.dim), 'no frame glyph uses the translucent dim');
+  assert.ok(
+    contrastRatio(title.fg, composite(title.bg, t.bg)) >= AA_CONTRAST,
+    'front title text is AA on the chrome flattened over bg',
+  );
+  assert.ok(
+    !Object.values(b.cells.flat()).some((g) => g?.fg === t.dim),
+    'no frame glyph uses the translucent dim',
+  );
 });
 
 test('active menu item is inverted: chromeBg text on a chromeFg ground across its padded span', () => {
@@ -1091,7 +1373,11 @@ test('active menu item is inverted: chromeBg text on a chromeFg ground across it
   desk.render();
   let span = desk.menuBar.layout().spans[0];
   assert.equal(span.item.active, false);
-  assert.equal(desk.buffer.get(row, span.labelCol)?.fg, t.chromeFg, 'inactive item is plain bar text');
+  assert.equal(
+    desk.buffer.get(row, span.labelCol)?.fg,
+    t.chromeFg,
+    'inactive item is plain bar text',
+  );
   assert.equal(desk.buffer.get(row, span.labelCol)?.bg, t.chromeBg);
   desk.toggleSettings();
   desk.render();
@@ -1106,7 +1392,11 @@ test('active menu item is inverted: chromeBg text on a chromeFg ground across it
     }
   }
   assert.equal(span.col, 0, 'first item: its pad cell is the bar edge');
-  assert.equal(desk.buffer.get(row, span.col + span.cols)?.box, undefined, 'inversion stops at the span');
+  assert.equal(
+    desk.buffer.get(row, span.col + span.cols)?.box,
+    undefined,
+    'inversion stops at the span',
+  );
   // A palette theme: the inverted pair is the bar's own (opaque) pair, and accent stays off the bar.
   desk.setTheme(['#101010', '#ff3300', '#f0f0f0', '#9a9a9a']);
   desk.render();
@@ -1114,7 +1404,10 @@ test('active menu item is inverted: chromeBg text on a chromeFg ground across it
   assert.deepEqual([g.box?.fill, g.fg], ['#101010', '#9a9a9a'], 'chromeFg ground, chromeBg text');
   assert.ok(contrastRatio(g.fg, g.box!.fill) >= MIN_CONTRAST, 'the pair is the bar pair');
   const bar = desk.buffer.cells[row];
-  assert.ok(!bar.some((c) => c?.fg === '#ff3300' || c?.bg === '#ff3300'), 'accent stays off the bar');
+  assert.ok(
+    !bar.some((c) => c?.fg === '#ff3300' || c?.bg === '#ff3300'),
+    'accent stays off the bar',
+  );
 });
 
 console.log(`\n${passed} tests passed`);

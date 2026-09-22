@@ -2,16 +2,7 @@
 // https://x.com/search?q=%23MindfulPalettes&src=hashtag_click
 
 export const palettes = [
-  [
-    '#FC8AAA',
-    '#FF9966',
-    '#F7CF00',
-    '#69D84F',
-    '#00CCEE',
-    '#CEA2FD',
-    '#F4EDE4',
-    '#0F0707',
-  ],
+  ['#FC8AAA', '#FF9966', '#F7CF00', '#69D84F', '#00CCEE', '#CEA2FD', '#F4EDE4', '#0F0707'],
   ['#FFDE73', '#EE7744', '#F9BC4F', '#2C7C79', '#4C4D78', '#FFF5E0', '#101019'],
   ['#FFFFFF', '#F1D96E', '#E3DCCA', '#00AAC1', '#011C39', '#010203'],
   ['#FF9932', '#FFC801', '#D9E8E3', '#172B36'],
@@ -108,15 +99,6 @@ export const palettes = [
     '#232323',
     '#171717',
   ],
-  [
-    '#F8F2F5',
-    '#EECEE6',
-    '#D7AED7',
-    '#BC8FCA',
-    '#9D6EBD',
-    '#7451A1',
-    '#453771',
-    '#1A161D',
-  ],
+  ['#F8F2F5', '#EECEE6', '#D7AED7', '#BC8FCA', '#9D6EBD', '#7451A1', '#453771', '#1A161D'],
   ['#F4EFEE', '#1A1110', '#792445', '#BFBDC1', '#E4DB55', '#DE5346'],
 ];

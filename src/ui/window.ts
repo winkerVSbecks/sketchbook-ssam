@@ -280,7 +280,7 @@ export function createWindow({
     if (collapsible && contains(collapseRect(), pt)) return 'pointer';
     if (contains(titleRect(), pt)) return draggable ? 'grab' : 'default';
     const hit = childAt(pt);
-    return hit ? children[hit.index].cursorAt(pt, hit.rect) ?? 'default' : 'default';
+    return hit ? (children[hit.index].cursorAt(pt, hit.rect) ?? 'default') : 'default';
   }
 
   return win;

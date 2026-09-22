@@ -40,9 +40,7 @@ const gamuts = [
 const gamut = cubes.get(Random.pick(gamuts))!;
 
 const formatCSS = (rgb: ColorCoords): string => {
-  return `rgb(${Math.round(rgb[0] * 255)} ${Math.round(
-    rgb[1] * 255
-  )} ${Math.round(rgb[2] * 255)})`;
+  return `rgb(${Math.round(rgb[0] * 255)} ${Math.round(rgb[1] * 255)} ${Math.round(rgb[2] * 255)})`;
 };
 
 export function rybHslToCSS([h, s, l]: ColorCoords): string {

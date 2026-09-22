@@ -159,10 +159,7 @@ function cssToRgb01(css: string): [number, number, number] {
 }
 
 // Boost saturation of an RGB 0-1 color via HSL
-function saturate(
-  rgb: [number, number, number],
-  amount: number,
-): [number, number, number] {
+function saturate(rgb: [number, number, number], amount: number): [number, number, number] {
   const [r, g, b] = rgb;
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
@@ -194,13 +191,7 @@ function saturate(
 // Sketch
 // -------------------------------------------------------------------------
 
-const sketch: Sketch<'webgl2'> = ({
-  wrap,
-  canvas,
-  width,
-  height,
-  pixelRatio,
-}) => {
+const sketch: Sketch<'webgl2'> = ({ wrap, canvas, width, height, pixelRatio }) => {
   let pane: Pane;
 
   if (import.meta.hot) {
@@ -257,9 +248,7 @@ const sketch: Sketch<'webgl2'> = ({
     };
   }
 
-  const particles: Particle[] = palette.map((c) =>
-    makeParticle(Random.pick([1, -1]) as 1 | -1, c),
-  );
+  const particles: Particle[] = palette.map((c) => makeParticle(Random.pick([1, -1]) as 1 | -1, c));
 
   // -----------------------------------------------------------------------
   // Build uniform arrays (flat Float32Array for arrays of structs)
@@ -463,8 +452,7 @@ const sketch: Sketch<'webgl2'> = ({
     const { x: mx, y: my } = getCanvasPos(e);
     let anyCursor = false;
     for (const p of particles) {
-      p.rollover =
-        Math.abs(mx - p.x) < HIT_RADIUS && Math.abs(my - p.y) < HIT_RADIUS;
+      p.rollover = Math.abs(mx - p.x) < HIT_RADIUS && Math.abs(my - p.y) < HIT_RADIUS;
       if (p.dragging) {
         p.x = mx + p.offsetX;
         p.y = my + p.offsetY;
@@ -509,11 +497,8 @@ const sketch: Sketch<'webgl2'> = ({
         const angle = playhead * Math.PI * 2 + p.phase;
         const nx = Math.cos(angle) * params.noiseRadius;
         const ny = Math.sin(angle) * params.noiseRadius;
-        p.x =
-          p.baseX + Random.noise2D(nx + p.phase, ny) * params.noiseAmplitude;
-        p.y =
-          p.baseY +
-          Random.noise2D(nx, ny + p.phase + 10) * params.noiseAmplitude;
+        p.x = p.baseX + Random.noise2D(nx + p.phase, ny) * params.noiseAmplitude;
+        p.y = p.baseY + Random.noise2D(nx, ny + p.phase + 10) * params.noiseAmplitude;
       }
     }
     pushUniforms();

@@ -3,7 +3,7 @@ export function scaleCanvasAndApplyDither(
   height: number,
   scaleFactor: number = 0.25,
   canvas: HTMLCanvasElement,
-  dither: (data: ImageData) => ImageData
+  dither: (data: ImageData) => ImageData,
 ): HTMLCanvasElement {
   const smallCanvas = document.createElement('canvas');
   const smallCtx = smallCanvas.getContext('2d')!;

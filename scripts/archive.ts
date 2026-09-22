@@ -13,14 +13,7 @@
  */
 
 import { spawnSync, execFileSync } from 'node:child_process';
-import {
-  mkdirSync,
-  readFileSync,
-  writeFileSync,
-  existsSync,
-  readdirSync,
-  statSync,
-} from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import 'dotenv/config';
 import { v2 as cloudinary } from 'cloudinary';
@@ -43,7 +36,13 @@ type Flags = {
 };
 
 function parseFlags(argv: string[]): Flags {
-  const flags: Flags = { force: false, siteOnly: false, dryRun: false, only: null, animated: false };
+  const flags: Flags = {
+    force: false,
+    siteOnly: false,
+    dryRun: false,
+    only: null,
+    animated: false,
+  };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === '--force') flags.force = true;
@@ -105,11 +104,10 @@ function gitFirstCommitDate(relPath: string): string | null {
 
 function gitLastCommitSha(relPath: string): string | null {
   try {
-    const sha = execFileSync(
-      'git',
-      ['log', '-1', '--follow', '--format=%H', '--', relPath],
-      { encoding: 'utf8', cwd: PROJECT_ROOT },
-    ).trim();
+    const sha = execFileSync('git', ['log', '-1', '--follow', '--format=%H', '--', relPath], {
+      encoding: 'utf8',
+      cwd: PROJECT_ROOT,
+    }).trim();
     return sha || null;
   } catch {
     return null;
@@ -162,15 +160,13 @@ function renderSketch(sketchId: string): string {
   const direct = filename.startsWith('/')
     ? filename
     : filename.startsWith('output/')
-    ? join(PROJECT_ROOT, filename)
-    : join(OUTPUT_DIR, filename);
+      ? join(PROJECT_ROOT, filename)
+      : join(OUTPUT_DIR, filename);
   if (existsSync(direct)) return direct;
 
   const newest = findNewestMatchingPng(beforeMs);
   if (!newest) {
-    throw new Error(
-      `cloud-render reported ${filename} but no PNG was found in ${OUTPUT_DIR}`,
-    );
+    throw new Error(`cloud-render reported ${filename} but no PNG was found in ${OUTPUT_DIR}`);
   }
   return newest;
 }
@@ -259,7 +255,7 @@ async function main(): Promise<void> {
   const discovered = discoverSketches();
   log(`discovered ${discovered.length} sketch entry points`);
 
-  const plan: { entry: typeof discovered[number]; reason: string }[] = [];
+  const plan: { entry: (typeof discovered)[number]; reason: string }[] = [];
   for (const entry of discovered) {
     if (flags.only && !matchOnly(entry.id, flags.only)) continue;
     if (flags.animated && !isAnimatedSketch(entry.absPath)) continue;
@@ -270,7 +266,10 @@ async function main(): Promise<void> {
     } else if (!existing || !existing.cloudinary) {
       plan.push({ entry, reason: existing ? 'no cloudinary url' : 'new' });
     } else if (currentSha && existing.lastCommitSha !== currentSha) {
-      plan.push({ entry, reason: `sha changed ${existing.lastCommitSha.slice(0, 7)} → ${currentSha.slice(0, 7)}` });
+      plan.push({
+        entry,
+        reason: `sha changed ${existing.lastCommitSha.slice(0, 7)} → ${currentSha.slice(0, 7)}`,
+      });
     } else if (!currentSha) {
       plan.push({ entry, reason: 'untracked / no git sha' });
     }
@@ -346,8 +345,6 @@ function matchOnly(id: string, pattern: string): boolean {
 }
 
 main().catch((err: unknown) => {
-  process.stderr.write(
-    `[archive] ${err instanceof Error ? err.message : String(err)}\n`,
-  );
+  process.stderr.write(`[archive] ${err instanceof Error ? err.message : String(err)}\n`);
   process.exit(1);
 });

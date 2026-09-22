@@ -23,14 +23,7 @@ export interface GridOptions {
   gapY?: number;
 }
 
-function cellDimensions({
-  width,
-  height,
-  cols,
-  rows,
-  gapX = 0,
-  gapY = 0,
-}: GridOptions) {
+function cellDimensions({ width, height, cols, rows, gapX = 0, gapY = 0 }: GridOptions) {
   // Calculate total gap space
   const totalGapX = gapX * 2 + gapX * (cols - 1);
   const totalGapY = gapY * 2 + gapY * (rows - 1);
@@ -94,8 +87,7 @@ export function getRectInGap(
 
   return {
     x: gapX + x * (cellWidth + gapX) + (type === 'vertical' ? cellWidth : 0),
-    y:
-      gapY + y * (cellHeight + gapY) + (type === 'horizontal' ? cellHeight : 0),
+    y: gapY + y * (cellHeight + gapY) + (type === 'horizontal' ? cellHeight : 0),
     w: type === 'horizontal' ? w * cellWidth + (w - 1) * gapX : gapX,
     h: type === 'vertical' ? h * cellHeight + (h - 1) * gapY : gapY,
   };

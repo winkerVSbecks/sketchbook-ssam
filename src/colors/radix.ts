@@ -56,7 +56,7 @@ export function getRamp(colName: ColorType, variant: ColorMode = 'light'): any {
 export function color(
   colName: ColorType,
   level: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12,
-  variant: ColorMode = 'light'
+  variant: ColorMode = 'light',
 ) {
   const key = getKey(variant, colName);
   const shade = `${colName}${level}`;

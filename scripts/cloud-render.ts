@@ -11,13 +11,7 @@
  */
 
 import { spawnSync, execSync } from 'node:child_process';
-import {
-  mkdirSync,
-  readdirSync,
-  existsSync,
-  openSync,
-  appendFileSync,
-} from 'node:fs';
+import { mkdirSync, readdirSync, existsSync, openSync, appendFileSync } from 'node:fs';
 import { join } from 'node:path';
 import * as lockfile from 'proper-lockfile';
 import { chromium } from 'playwright-core';
@@ -76,9 +70,7 @@ function findHeadlessShellPath(): string | null {
   if (!existsSync(BROWSERS_PATH)) return null;
   let dirs: string[];
   try {
-    dirs = readdirSync(BROWSERS_PATH).filter((e) =>
-      e.startsWith('chromium_headless_shell-'),
-    );
+    dirs = readdirSync(BROWSERS_PATH).filter((e) => e.startsWith('chromium_headless_shell-'));
   } catch {
     return null;
   }
@@ -118,9 +110,7 @@ function runInstall(): void {
       INSTALL_LOG_FILE,
       `\n[cloud-render] cloud:install exited with status ${result.status}, error: ${result.error?.message ?? 'none'}\n`,
     );
-    throw new Error(
-      `chromium-headless-shell install failed — see ${INSTALL_LOG_FILE} for details`,
-    );
+    throw new Error(`chromium-headless-shell install failed — see ${INSTALL_LOG_FILE} for details`);
   }
 }
 
@@ -221,9 +211,7 @@ async function main(): Promise<void> {
   }
   const sketchPath = args[0];
   if (!sketchPath) {
-    throw new Error(
-      'Usage: cloud-render <sketchPath>   (e.g. sketches/siep-van-den-berg/no-250)',
-    );
+    throw new Error('Usage: cloud-render <sketchPath>   (e.g. sketches/siep-van-den-berg/no-250)');
   }
   await renderOnce(sketchPath);
 }
@@ -265,8 +253,6 @@ async function withLock<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 withLock(main).catch((err: unknown) => {
-  process.stderr.write(
-    `[cloud-render] ${err instanceof Error ? err.message : String(err)}\n`,
-  );
+  process.stderr.write(`[cloud-render] ${err instanceof Error ? err.message : String(err)}\n`);
   process.exit(1);
 });

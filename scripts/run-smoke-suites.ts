@@ -85,7 +85,9 @@ function main(): void {
     const tests = r.passed === null ? '?' : String(r.passed);
     const time = `${(r.ms / 1000).toFixed(1)}s`;
     const verdict = r.ok ? 'pass' : `FAIL (${r.exit})`;
-    process.stdout.write(`${r.file.padEnd(width)}  ${tests.padStart(5)}  ${time.padEnd(7)}  ${verdict}\n`);
+    process.stdout.write(
+      `${r.file.padEnd(width)}  ${tests.padStart(5)}  ${time.padEnd(7)}  ${verdict}\n`,
+    );
   }
 
   const failed = results.filter((r) => !r.ok);

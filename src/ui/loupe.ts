@@ -48,7 +48,11 @@ export interface Loupe extends UIWindow {
   /** A camera looking at the lens centre with `magnification × camera.scale`. */
   lensCamera(): Camera;
   /** ctrl+wheel over the lens adjusts magnification. Returns dispose. */
-  attachWheel(canvas: HTMLCanvasElement, getSize: () => [number, number], onChange?: () => void): () => void;
+  attachWheel(
+    canvas: HTMLCanvasElement,
+    getSize: () => [number, number],
+    onChange?: () => void,
+  ): () => void;
 }
 
 export function createLoupe({
@@ -76,11 +80,24 @@ export function createLoupe({
 
   let k = clamp(magnification, kMin, kMax);
   let centerWorld: Pt | null = null;
-  let drag: { start: Pt; origin: Pt; moved: boolean; resize: boolean; r0: number; d0: number } | null = null;
+  let drag: {
+    start: Pt;
+    origin: Pt;
+    moved: boolean;
+    resize: boolean;
+    r0: number;
+    d0: number;
+  } | null = null;
 
   const clampScreen = (p: Pt): Pt => ({
-    x: area.w <= radius * 2 ? area.x + area.w / 2 : clamp(p.x, area.x + radius, area.x + area.w - radius),
-    y: area.h <= radius * 2 ? area.y + area.h / 2 : clamp(p.y, area.y + radius, area.y + area.h - radius),
+    x:
+      area.w <= radius * 2
+        ? area.x + area.w / 2
+        : clamp(p.x, area.x + radius, area.x + area.w - radius),
+    y:
+      area.h <= radius * 2
+        ? area.y + area.h / 2
+        : clamp(p.y, area.y + radius, area.y + area.h - radius),
   });
 
   const screenCenter = (): Pt | null => (centerWorld ? camera.worldToScreen(centerWorld) : null);
@@ -189,7 +206,10 @@ export function createLoupe({
         const d = Math.hypot(pt.x - drag.origin.x, pt.y - drag.origin.y);
         return setRadius(drag.r0 + (d - drag.d0));
       }
-      return setCenterScreen({ x: drag.origin.x + (pt.x - drag.start.x), y: drag.origin.y + (pt.y - drag.start.y) });
+      return setCenterScreen({
+        x: drag.origin.x + (pt.x - drag.start.x),
+        y: drag.origin.y + (pt.y - drag.start.y),
+      });
     },
     pointerUp: (_pt, mods?: PointerMods) => {
       const d = drag;

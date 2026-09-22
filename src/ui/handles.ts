@@ -25,7 +25,13 @@ export interface Handles extends UIWindow {
  * Draggable world-space points. Lives in the UI manager below windows and the
  * loupe (`stayBehind`), so dragging a vertex never fights the chrome.
  */
-export function createHandles({ camera, points, onDrag, radius = 14, draw }: HandlesOptions): Handles {
+export function createHandles({
+  camera,
+  points,
+  onDrag,
+  radius = 14,
+  draw,
+}: HandlesOptions): Handles {
   let active: number | null = null;
 
   const screenPoints = () => points().map((p) => camera.worldToScreen(p));

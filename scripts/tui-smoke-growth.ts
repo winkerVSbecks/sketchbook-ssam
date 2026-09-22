@@ -23,8 +23,7 @@ const advance = (g: { step(dt?: number): GrowthState }, n: number) => {
 };
 
 /** Positions as a comparable string, at full double precision. */
-const fingerprint = (s: GrowthState): string =>
-  s.nodes.map((p) => `${p.x},${p.y}`).join(';');
+const fingerprint = (s: GrowthState): string => s.nodes.map((p) => `${p.x},${p.y}`).join(';');
 
 /** Every edge length, wrapping only when the curve is closed. */
 function edgeLengths(s: GrowthState): number[] {
@@ -184,7 +183,7 @@ test('bounds: matches a brute-force box and contains every node', () => {
     assert.ok(p.x >= b.x && p.x <= b.x + b.w + eps, 'x inside the box');
     assert.ok(p.y >= b.y && p.y <= b.y + b.h + eps, 'y inside the box');
   }
-  assert.ok(Math.abs((b.x + b.w / 2) - -3.5) < 2, 'still centred near the origin');
+  assert.ok(Math.abs(b.x + b.w / 2 - -3.5) < 2, 'still centred near the origin');
 });
 
 test('open strand: endpoints are free, edges are n − 1', () => {

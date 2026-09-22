@@ -3,7 +3,7 @@ export function applyNoise(
   width: number,
   height: number,
   intensity = 50,
-  type: 'white' | 'grayscale' | 'salt-pepper' | 'perlin' = 'white'
+  type: 'white' | 'grayscale' | 'salt-pepper' | 'perlin' = 'white',
 ): ImageData {
   const imageData = context.getImageData(0, 0, width, height);
   const data = imageData.data;

@@ -11,9 +11,7 @@ import Random from 'canvas-sketch-util/random';
 
 const baseOptions = {
   total: 6,
-  hCycles: Random.chance()
-    ? Random.range(-1.25, -0.25)
-    : Random.range(1.25, 2.25),
+  hCycles: Random.chance() ? Random.range(-1.25, -0.25) : Random.range(1.25, 2.25),
   sRange: Random.chance(0.7)
     ? [Random.range(0.2, 1.2), Random.range(0.25, 1.3)]
     : [1, Random.value()],
@@ -90,21 +88,15 @@ function hsl2farbrad(h: number, s: number, l: number) {
   return ryb2rgb([rgbColor.r, rgbColor.g, rgbColor.b]);
 }
 
-export function generateColorSystem(
-  format: 'srgb' | 'hex' = 'srgb'
-): () => string[] {
+export function generateColorSystem(format: 'srgb' | 'hex' = 'srgb'): () => string[] {
   let hStart = Random.range(0, 360);
 
   return () => {
     const colorHSL = generateColorRamp({ ...baseOptions, hStart } as any);
     const colors =
       format === 'srgb'
-        ? (colorHSL.map((hsl) =>
-            formatCss(hsl2farbrad(...hsl) as any)
-          ) as unknown as string[])
-        : (colorHSL.map((hsl) =>
-            formatHex(hsl2farbrad(...hsl) as any)
-          ) as unknown as string[]);
+        ? (colorHSL.map((hsl) => formatCss(hsl2farbrad(...hsl) as any)) as unknown as string[])
+        : (colorHSL.map((hsl) => formatHex(hsl2farbrad(...hsl) as any)) as unknown as string[]);
 
     hStart++;
 

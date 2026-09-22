@@ -17,11 +17,8 @@ export function renderOffscreen(
     pixelRatio?: number | undefined;
     pixelated?: boolean | undefined;
     scaleContext?: boolean | undefined;
-    attributes?:
-      | CanvasRenderingContext2DSettings
-      | WebGLContextAttributes
-      | undefined;
-  }
+    attributes?: CanvasRenderingContext2DSettings | WebGLContextAttributes | undefined;
+  },
 ) {
   const created = createOffscreenCanvas(props);
   const { canvas } = created;

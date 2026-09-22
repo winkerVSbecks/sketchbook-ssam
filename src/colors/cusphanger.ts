@@ -121,7 +121,13 @@ export function contrastOf(a: OklchColor, b: OklchColor): number {
 
 export const lutFor = (gamut: Gamut): Lut => (gamut === 'p3' ? oklchP3 : oklchSrgb);
 
-const swatch = (color: OklchColor, bg: OklchColor, lut: Lut, hueIndex: number, tier: Tier | 'bg'): CuspSwatch => {
+const swatch = (
+  color: OklchColor,
+  bg: OklchColor,
+  lut: Lut,
+  hueIndex: number,
+  tier: Tier | 'bg',
+): CuspSwatch => {
   const shell = maxChromaAt(color.h, color.l, lut);
   return {
     color,
@@ -173,7 +179,9 @@ export function groundColor(hue: number, ground: Ground, lut: Lut): OklchColor {
 
 /** The ramp sample whose contrast against `bg` is nearest `target`. */
 const pickByContrast = (ramp: OklchColor[], bg: OklchColor, target: number): OklchColor =>
-  ramp.reduce((best, c) => (Math.abs(contrastOf(c, bg) - target) < Math.abs(contrastOf(best, bg) - target) ? c : best));
+  ramp.reduce((best, c) =>
+    Math.abs(contrastOf(c, bg) - target) < Math.abs(contrastOf(best, bg) - target) ? c : best,
+  );
 
 export function cuspPalette(opts: CuspOptions = {}): CuspPalette {
   const options: Required<CuspOptions> = {
@@ -210,7 +218,9 @@ export function cuspPalette(opts: CuspOptions = {}): CuspPalette {
 
   const tiers: Record<Tier, CuspSwatch[]> = { high: [], mid: [], low: [] };
   for (const tier of TIERS) {
-    ramps.forEach((ramp, i) => tiers[tier].push(swatch(pickByContrast(ramp, bg, targets[tier]), bg, lut, i, tier)));
+    ramps.forEach((ramp, i) =>
+      tiers[tier].push(swatch(pickByContrast(ramp, bg, targets[tier]), bg, lut, i, tier)),
+    );
   }
   const fg = TIERS.flatMap((t) => tiers[t]);
   const bgSwatch = swatch(bg, bg, lut, -1, 'bg');
