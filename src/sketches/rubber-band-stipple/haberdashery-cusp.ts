@@ -71,6 +71,8 @@ interface BandSegment {
  */
 const SEAM_OVERLAP = 0.5;
 
+const strokeWidth = Random.rangeFloor(40, 80);
+
 const config = {
   count: 16,
   dentCount: 4,
@@ -78,9 +80,9 @@ const config = {
   maxR: 160,
   spread: 0.75,
   /** Overall width of the band: the outer lines sit at ±strokeWidth/2. */
-  strokeWidth: 40,
+  strokeWidth,
   /** Number of parallel lines the band is drawn with. */
-  bandLines: 8,
+  bandLines: Math.floor(mapRange(strokeWidth, 40, 80, 6, 12)),
   /** Width of each band line. */
   lineWidth: 2,
   dotRadius: 7,
@@ -117,7 +119,7 @@ pane.addBinding(config, 'dentCount', { min: 0, max: 60, step: 1 });
 pane.addBinding(config, 'minR', { min: 4, max: 200, step: 1 });
 pane.addBinding(config, 'maxR', { min: 20, max: 300, step: 1 });
 pane.addBinding(config, 'spread', { min: 0.3, max: 1.0, step: 0.01 });
-pane.addBinding(config, 'strokeWidth', { min: 0, max: 100, step: 0.1 });
+pane.addBinding(config, 'strokeWidth', { min: 0, max: 80, step: 1 });
 pane.addBinding(config, 'bandLines', { min: 1, max: 12, step: 1 });
 pane.addBinding(config, 'lineWidth', { min: 0.5, max: 4, step: 0.25 });
 pane.addBinding(config, 'dotRadius', { min: 0, max: 30, step: 0.5 });
@@ -127,7 +129,7 @@ pane.addBinding(config, 'hullFill');
 pane.addBinding(config, 'showPegs');
 pane.addBinding(config, 'onlyContacts');
 pane.addBinding(config, 'dashLength', { min: 1, max: 200, step: 1 });
-pane.addBinding(config, 'gapLength', { min: 1, max: 200, step: 1 });
+pane.addBinding(config, 'gapLength', { min: 0, max: 200, step: 1 });
 pane.addBinding(config, 'loops', { min: 1, max: 20, step: 1 });
 
 const colorFolder = pane.addFolder({ title: 'Color' });
