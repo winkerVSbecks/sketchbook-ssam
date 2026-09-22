@@ -405,7 +405,27 @@ export type GradientColorFn = (info: {
   playhead: number;
 }) => string;
 
-export function createGradientStyle(colorFn: GradientColorFn) {
+export interface GradientStyleOptions {
+  /** Cap on every segment; `'square'` gives square turnarounds and ends. Default `'round'`. */
+  lineCap?: CanvasLineCap;
+  /** Join used where a segment is drawn as a polyline. Default `'round'`. */
+  lineJoin?: CanvasLineJoin;
+  /**
+   * Round every turn of the path with an arc of this radius (px) so the
+   * inner corner curves as well as the outer one. Clamped to half the
+   * shorter adjacent segment. Default 0: sharp inner corners.
+   */
+  cornerRadius?: number;
+}
+
+export function createGradientStyle(
+  colorFn: GradientColorFn,
+  {
+    lineCap = 'round',
+    lineJoin = 'round',
+    cornerRadius = 0,
+  }: GradientStyleOptions = {}
+) {
   return function gradientStyle(
     context: CanvasRenderingContext2D,
     walker: Walker,
@@ -413,11 +433,55 @@ export function createGradientStyle(colorFn: GradientColorFn) {
     playhead: number
   ) {
     context.save();
-    context.lineCap = 'round';
-    context.lineJoin = 'round';
+    context.lineCap = lineCap;
+    context.lineJoin = lineJoin;
     context.lineWidth = walker.size - walker.stepSize;
 
     const total = pts.length - 1;
+
+    if (cornerRadius > 0 && pts.length > 2) {
+      // One piece per node, from the midpoint of the edge in to the midpoint
+      // of the edge out, turning on an arc at the node so both sides of the
+      // stroke curve. Straight runs make arcTo degenerate to a line.
+      for (let i = 0; i <= total; i++) {
+        const point = pts[i];
+        const nextPoint = pts[Math.min(i + 1, total)];
+        const color = colorFn({
+          index: i,
+          total,
+          t: total > 0 ? i / total : 0,
+          point,
+          nextPoint,
+          walker,
+          playhead,
+        });
+        context.strokeStyle = color;
+        context.beginPath();
+        if (i === 0) {
+          const out = midpoint(point, pts[1]);
+          context.moveTo(point[0], point[1]);
+          context.lineTo(out[0], out[1]);
+        } else if (i === total) {
+          const inn = midpoint(pts[i - 1], point);
+          context.moveTo(inn[0], inn[1]);
+          context.lineTo(point[0], point[1]);
+        } else {
+          const inn = midpoint(pts[i - 1], point);
+          const out = midpoint(point, pts[i + 1]);
+          const r = Math.min(
+            cornerRadius,
+            distance(pts[i - 1], point) / 2,
+            distance(point, pts[i + 1]) / 2
+          );
+          context.moveTo(inn[0], inn[1]);
+          context.arcTo(point[0], point[1], out[0], out[1], r);
+          context.lineTo(out[0], out[1]);
+        }
+        context.stroke();
+      }
+      context.restore();
+      return;
+    }
 
     for (let i = 0; i < total; i++) {
       const point = pts[i];
@@ -443,6 +507,14 @@ export function createGradientStyle(colorFn: GradientColorFn) {
 
     context.restore();
   };
+}
+
+function midpoint(a: Point, b: Point): Point {
+  return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+}
+
+function distance(a: Point, b: Point): number {
+  return Math.hypot(b[0] - a[0], b[1] - a[1]);
 }
 
 export function drawShape(

@@ -58,6 +58,10 @@ const config = {
   padding: 0.125,
   /** Drawn line width as a fraction of node spacing, so grid and margin changes keep the proportions. */
   lineWidth: 0.6,
+  /** Segment caps: round turnarounds, or square for mitred corners and ends. */
+  caps: 'round' as 'round' | 'square',
+  /** Turn radius as a fraction of half the node spacing: 1 rounds inner and outer edges fully, 0 leaves inner corners sharp. */
+  corner: 1,
   /** Walker size and gap in px — derived from spacing and lineWidth by applyGeometry(), not set directly. */
   size: 12,
   stepSize: 4,
@@ -85,6 +89,8 @@ const pathFolder = pane.addFolder({ title: 'Path' });
 pathFolder.addBinding(config, 'gridRes', { min: 4, max: 120, step: 1, label: 'grid' });
 pathFolder.addBinding(config, 'padding', { min: 0, max: 0.4, step: 0.005, label: 'margin' });
 pathFolder.addBinding(config, 'lineWidth', { min: 0.05, max: 1, step: 0.01, label: 'line (× spacing)' });
+pathFolder.addBinding(config, 'caps', { options: { round: 'round', square: 'square' } });
+pathFolder.addBinding(config, 'corner', { min: 0, max: 1, step: 0.05, label: 'corner radius' });
 pathFolder.addBinding(stats, 'spacing', { readonly: true, format: (v: number) => v.toFixed(1) });
 pathFolder.addBinding(stats, 'linePx', { readonly: true, label: 'line px', format: (v: number) => v.toFixed(1) });
 
@@ -116,8 +122,10 @@ let onPaletteChange: () => void = () => {};
 let onPathChange: () => void = () => {};
 
 // The gradient reads the current `colorFn`, so a new palette recolours the
-// line without rebuilding the style.
-const myGradientStyle = createGradientStyle(({ t }) => formatCss(colorFn(t)));
+// line without rebuilding the style; the caps are baked in, so
+// applyGeometry() rebuilds the style before each spawn.
+const gradientColor = ({ t }: { t: number }) => formatCss(colorFn(t));
+let myGradientStyle = createGradientStyle(gradientColor);
 
 /**
  * The swatches of `tier` in arc order, base hue first. `palette.hues` is
@@ -514,6 +522,14 @@ export const sketch = ({
     stats.linePx = spacing * config.lineWidth;
     config.size = spacing;
     config.stepSize = spacing * (1 - config.lineWidth);
+    // Each segment is stroked on its own, so square caps extend every
+    // segment by half its width and two meeting at a turn make a square
+    // corner — a miter, without needing a joined polyline.
+    myGradientStyle = createGradientStyle(gradientColor, {
+      lineCap: config.caps,
+      lineJoin: config.caps === 'round' ? 'round' : 'miter',
+      cornerRadius: (spacing / 2) * config.corner,
+    });
   }
 
   applyGeometry();
