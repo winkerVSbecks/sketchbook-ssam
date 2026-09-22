@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-22T17:37:26.151Z",
+  "generatedAt": "2026-09-22T19:54:39.560Z",
   "sketches": [
     {
       "id": "sketches/42-loc",
@@ -546,6 +546,22 @@
       }
     },
     {
+      "id": "sketches/blinds/collapse-cusp",
+      "name": "collapse-cusp",
+      "path": "src/sketches/blinds/collapse-cusp.ts",
+      "firstCommitDate": "2026-07-03T20:31:56-04:00",
+      "year": 2026,
+      "lastCommitSha": "8397d068aeef05a82b927b1fea9e6864bc4dc8c2",
+      "archivedAt": "2026-09-22T19:51:30.049Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/blinds-collapse-cusp",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1790106689/sketchbook/2026/blinds-collapse-cusp.png",
+        "version": 1790106689,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
       "id": "sketches/boids/cohesion-color",
       "name": "cohesion-color",
       "path": "src/sketches/boids/cohesion-color.ts",
@@ -647,14 +663,14 @@
       "path": "src/sketches/canvas-ui/chill-wave.ts",
       "firstCommitDate": "2026-09-12T15:28:49-04:00",
       "year": 2026,
-      "lastCommitSha": "e9290d49410d9d740ef588d82b25543067b36b10",
-      "archivedAt": "2026-09-13T14:39:07.584Z",
+      "lastCommitSha": "84935048656239ea2fd775ff3d361475367b3cdb",
+      "archivedAt": "2026-09-22T19:51:32.483Z",
       "cloudinary": {
         "publicId": "sketchbook/2026/canvas-ui-chill-wave",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1789310347/sketchbook/2026/canvas-ui-chill-wave.png",
-        "version": 1789310347,
-        "width": 2160,
-        "height": 2160
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1790106691/sketchbook/2026/canvas-ui-chill-wave.png",
+        "version": 1790106691,
+        "width": 1080,
+        "height": 1080
       }
     },
     {
@@ -663,8 +679,8 @@
       "path": "src/sketches/canvas-ui/controls-demo.ts",
       "firstCommitDate": "2026-09-11T14:06:48-04:00",
       "year": 2026,
-      "lastCommitSha": "07f277f51fb508a8a9616a0f03eddea572fd69c5",
-      "archivedAt": "2026-09-12T20:07:53.430Z",
+      "lastCommitSha": "84935048656239ea2fd775ff3d361475367b3cdb",
+      "archivedAt": "2026-09-22T19:51:34.248Z",
       "cloudinary": {
         "publicId": "sketchbook/2026/canvas-ui-controls-demo",
         "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1789243673/sketchbook/2026/canvas-ui-controls-demo.png",
@@ -695,14 +711,14 @@
       "path": "src/sketches/canvas-ui/torsions.ts",
       "firstCommitDate": "2026-09-12T15:27:26-04:00",
       "year": 2026,
-      "lastCommitSha": "a633c58f457ed0ae395154e05dd9cdda07dbed8b",
-      "archivedAt": "2026-09-13T14:39:12.544Z",
+      "lastCommitSha": "84935048656239ea2fd775ff3d361475367b3cdb",
+      "archivedAt": "2026-09-22T19:51:37.022Z",
       "cloudinary": {
         "publicId": "sketchbook/2026/canvas-ui-torsions",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1789310351/sketchbook/2026/canvas-ui-torsions.png",
-        "version": 1789310351,
-        "width": 2160,
-        "height": 1620
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1790106696/sketchbook/2026/canvas-ui-torsions.png",
+        "version": 1790106696,
+        "width": 1080,
+        "height": 810
       }
     },
     {
@@ -2103,8 +2119,8 @@
       "path": "src/sketches/flatland/napoleon.ts",
       "firstCommitDate": "2026-09-11T21:53:18-04:00",
       "year": 2026,
-      "lastCommitSha": "7ded91db1d94005fa0ceba3c098a950fb34d5361",
-      "archivedAt": "2026-09-12T20:08:04.417Z",
+      "lastCommitSha": "84935048656239ea2fd775ff3d361475367b3cdb",
+      "archivedAt": "2026-09-22T19:51:38.854Z",
       "cloudinary": {
         "publicId": "sketchbook/2026/flatland-napoleon",
         "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1789243684/sketchbook/2026/flatland-napoleon.png",
@@ -3575,12 +3591,28 @@
       "path": "src/sketches/nalee-one-line/basic-gradient.ts",
       "firstCommitDate": "2026-01-17T12:57:54-05:00",
       "year": 2026,
-      "lastCommitSha": "351956647ae261569adf10a33a2adcceed0ca610",
-      "archivedAt": "2026-05-17T23:54:38.993Z",
+      "lastCommitSha": "a2e4014c864755a2b5df1ec6ddd27b38e0b2e90b",
+      "archivedAt": "2026-09-22T19:51:41.386Z",
       "cloudinary": {
         "publicId": "sketchbook/2026/nalee-one-line-basic-gradient",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779062078/sketchbook/2026/nalee-one-line-basic-gradient.png",
-        "version": 1779062078,
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1790106700/sketchbook/2026/nalee-one-line-basic-gradient.png",
+        "version": 1790106700,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/nalee-one-line/basic-gradient-cusp",
+      "name": "basic-gradient-cusp",
+      "path": "src/sketches/nalee-one-line/basic-gradient-cusp.ts",
+      "firstCommitDate": "2026-01-17T12:57:54-05:00",
+      "year": 2026,
+      "lastCommitSha": "a2e4014c864755a2b5df1ec6ddd27b38e0b2e90b",
+      "archivedAt": "2026-09-22T19:51:45.027Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/nalee-one-line-basic-gradient-cusp",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1790106704/sketchbook/2026/nalee-one-line-basic-gradient-cusp.png",
+        "version": 1790106704,
         "width": 1080,
         "height": 1080
       }
@@ -3591,12 +3623,12 @@
       "path": "src/sketches/nalee-one-line/circle.ts",
       "firstCommitDate": "2026-01-17T12:57:54-05:00",
       "year": 2026,
-      "lastCommitSha": "351956647ae261569adf10a33a2adcceed0ca610",
-      "archivedAt": "2026-05-17T23:54:43.409Z",
+      "lastCommitSha": "a2e4014c864755a2b5df1ec6ddd27b38e0b2e90b",
+      "archivedAt": "2026-09-22T19:51:47.878Z",
       "cloudinary": {
         "publicId": "sketchbook/2026/nalee-one-line-circle",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779062083/sketchbook/2026/nalee-one-line-circle.png",
-        "version": 1779062083,
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1790106706/sketchbook/2026/nalee-one-line-circle.png",
+        "version": 1790106706,
         "width": 1080,
         "height": 1080
       }
@@ -3607,12 +3639,12 @@
       "path": "src/sketches/nalee-one-line/circle-chromotome.ts",
       "firstCommitDate": "2026-01-17T12:57:54-05:00",
       "year": 2026,
-      "lastCommitSha": "351956647ae261569adf10a33a2adcceed0ca610",
-      "archivedAt": "2026-05-17T23:54:47.914Z",
+      "lastCommitSha": "a2e4014c864755a2b5df1ec6ddd27b38e0b2e90b",
+      "archivedAt": "2026-09-22T19:51:51.311Z",
       "cloudinary": {
         "publicId": "sketchbook/2026/nalee-one-line-circle-chromotome",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779062087/sketchbook/2026/nalee-one-line-circle-chromotome.png",
-        "version": 1779062087,
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1790106709/sketchbook/2026/nalee-one-line-circle-chromotome.png",
+        "version": 1790106709,
         "width": 1080,
         "height": 1080
       }
@@ -4242,6 +4274,22 @@
       }
     },
     {
+      "id": "sketches/paint-without-thinking/arcs-reduction-rounded-animated-cusp",
+      "name": "arcs-reduction-rounded-animated-cusp",
+      "path": "src/sketches/paint-without-thinking/arcs-reduction-rounded-animated-cusp.ts",
+      "firstCommitDate": "2025-09-26T23:02:32-04:00",
+      "year": 2025,
+      "lastCommitSha": "62ef96c8673c0b6bebacc336218047fa0a59a09d",
+      "archivedAt": "2026-09-22T19:51:53.169Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2025/paint-without-thinking-arcs-reduction-rounded-animated-cusp",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1790106712/sketchbook/2025/paint-without-thinking-arcs-reduction-rounded-animated-cusp.png",
+        "version": 1790106712,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
       "id": "sketches/paint-without-thinking/everything",
       "name": "everything",
       "path": "src/sketches/paint-without-thinking/everything.ts",
@@ -4685,6 +4733,22 @@
         "publicId": "sketchbook/2024/raycasting-solid",
         "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779062377/sketchbook/2024/raycasting-solid.png",
         "version": 1779062377,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/recursive-network",
+      "name": "recursive-network",
+      "path": "src/sketches/recursive-network.ts",
+      "firstCommitDate": "2026-09-21T11:03:46-04:00",
+      "year": 2026,
+      "lastCommitSha": "f1cb830f94727be5be93f8135c4b1f760e6a0d9c",
+      "archivedAt": "2026-09-22T19:51:54.831Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/recursive-network",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1790106714/sketchbook/2026/recursive-network.png",
+        "version": 1790106714,
         "width": 1080,
         "height": 1080
       }
@@ -5634,19 +5698,67 @@
       }
     },
     {
+      "id": "sketches/terminal-ui/cusp-hanger",
+      "name": "cusp-hanger",
+      "path": "src/sketches/terminal-ui/cusp-hanger.ts",
+      "firstCommitDate": "2026-09-20T16:32:45-04:00",
+      "year": 2026,
+      "lastCommitSha": "62ef96c8673c0b6bebacc336218047fa0a59a09d",
+      "archivedAt": "2026-09-22T19:51:56.848Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/terminal-ui-cusp-hanger",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1790106716/sketchbook/2026/terminal-ui-cusp-hanger.png",
+        "version": 1790106716,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/terminal-ui/differential-growth",
+      "name": "differential-growth",
+      "path": "src/sketches/terminal-ui/differential-growth.ts",
+      "firstCommitDate": "2026-09-20T17:12:46-04:00",
+      "year": 2026,
+      "lastCommitSha": "07b5d01e9e8deb1f8785b7b8a2fcc14d8b4934e1",
+      "archivedAt": "2026-09-22T19:51:58.841Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/terminal-ui-differential-growth",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1790106718/sketchbook/2026/terminal-ui-differential-growth.png",
+        "version": 1790106718,
+        "width": 1600,
+        "height": 1000
+      }
+    },
+    {
       "id": "sketches/terminal-ui/layered-compositions",
       "name": "layered-compositions",
       "path": "src/sketches/terminal-ui/layered-compositions.ts",
       "firstCommitDate": "2026-09-13T12:12:44-04:00",
       "year": 2026,
-      "lastCommitSha": "3b5e3bcc8df1bf8350f567e93559e63a86e50ecd",
-      "archivedAt": "2026-09-13T22:37:36.550Z",
+      "lastCommitSha": "84935048656239ea2fd775ff3d361475367b3cdb",
+      "archivedAt": "2026-09-22T19:52:01.691Z",
       "cloudinary": {
         "publicId": "sketchbook/2026/terminal-ui-layered-compositions",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1789339056/sketchbook/2026/terminal-ui-layered-compositions.png",
-        "version": 1789339056,
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1790106720/sketchbook/2026/terminal-ui-layered-compositions.png",
+        "version": 1790106720,
         "width": 1600,
         "height": 1000
+      }
+    },
+    {
+      "id": "sketches/terminal-ui/palette-picker",
+      "name": "palette-picker",
+      "path": "src/sketches/terminal-ui/palette-picker.ts",
+      "firstCommitDate": "2026-09-19T21:35:08Z",
+      "year": 2026,
+      "lastCommitSha": "07b5d01e9e8deb1f8785b7b8a2fcc14d8b4934e1",
+      "archivedAt": "2026-09-22T19:52:03.798Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/terminal-ui-palette-picker",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1790106723/sketchbook/2026/terminal-ui-palette-picker.png",
+        "version": 1790106723,
+        "width": 1080,
+        "height": 1080
       }
     },
     {
@@ -5751,14 +5863,30 @@
       "path": "src/sketches/trochoidal-wave/dither.ts",
       "firstCommitDate": "2024-10-15T11:27:22-04:00",
       "year": 2024,
-      "lastCommitSha": "ef2b167a76e1600d8b3c2c28fe8a77dc4d414f2e",
-      "archivedAt": "2026-05-18T00:02:55.288Z",
+      "lastCommitSha": "2a0c9228bf1392d213eaf9a74c762eb55437631f",
+      "archivedAt": "2026-09-22T19:52:08.529Z",
       "cloudinary": {
         "publicId": "sketchbook/2024/trochoidal-wave-dither",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779062574/sketchbook/2024/trochoidal-wave-dither.png",
-        "version": 1779062574,
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1790106727/sketchbook/2024/trochoidal-wave-dither.png",
+        "version": 1790106727,
         "width": 1080,
         "height": 1080
+      }
+    },
+    {
+      "id": "sketches/trochoidal-wave/rani",
+      "name": "rani",
+      "path": "src/sketches/trochoidal-wave/rani.ts",
+      "firstCommitDate": "2024-10-15T11:27:22-04:00",
+      "year": 2024,
+      "lastCommitSha": "2a0c9228bf1392d213eaf9a74c762eb55437631f",
+      "archivedAt": "2026-09-22T19:52:12.391Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2024/trochoidal-wave-rani",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1790106732/sketchbook/2024/trochoidal-wave-rani.png",
+        "version": 1790106732,
+        "width": 1600,
+        "height": 1000
       }
     },
     {
