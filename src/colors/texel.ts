@@ -24,7 +24,7 @@ const K3 = (1.0 + K1) / (1.0 + K2);
 //   0.5 *
 //   (K3 * x - K1 + Math.sqrt((K3 * x - K1) * (K3 * x - K1) + 4 * K2 * K3 * x));
 
-const LrToL = (x) => (x ** 2 + K1 * x) / (K3 * (x + K2));
+const LrToL = (x: number) => (x ** 2 + K1 * x) / (K3 * (x + K2));
 
 const MAX_CHROMA = 0.225; // max chroma for all colors across all spaces
 

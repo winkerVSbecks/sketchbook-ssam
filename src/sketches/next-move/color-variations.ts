@@ -91,7 +91,7 @@ function mixColors(color1: string, color2: string, ratio: number): string {
     r: rgb1.r * (1 - ratio) + rgb2.r * ratio,
     g: rgb1.g * (1 - ratio) + rgb2.g * ratio,
     b: rgb1.b * (1 - ratio) + rgb2.b * ratio,
-    mode: 'rgb',
+    mode: 'rgb' as const,
   };
 
   return formatHex(mixed);

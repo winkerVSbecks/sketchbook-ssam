@@ -30,13 +30,13 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
   let bounds = new Rect(0, 0, width, height);
   physics.setWorldBounds(bounds);
 
-  const circles = pack({
+  const circles: { position: Point; r: number }[] = pack({
     dimensions: 2,
     padding: 0,
     minRadius: 0.0625,
     maxRadius: 0.125,
   })
-    .filter(({ radius }) => radius > 0.12)
+    .filter(({ radius }: { radius: number }) => radius > 0.12)
     .map((s: any) => ({
       position: [
         mapRange(s.position[0], -1, 1, 0, width),

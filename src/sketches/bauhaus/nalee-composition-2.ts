@@ -64,21 +64,21 @@ function findContrastPair(
   ratio: number = 4.5,
   c1?: string,
 ): [string, string] {
-  c1 = c1 ?? (Random.pick(palette) as string);
+  const first: string = c1 ?? (Random.pick(palette) as string);
   const c2: string = Random.pick(
-    palette.filter((c) => c !== c1 && wcagContrast(c1, c) >= ratio),
+    palette.filter((c) => c !== first && wcagContrast(first, c) >= ratio),
   );
 
-  if (!c2) return findContrastPair(palette, ratio - 1, c1);
+  if (!c2) return findContrastPair(palette, ratio - 1, first);
 
   // Remove chosen colors from palette
-  const c1Index = palette.indexOf(c1);
+  const c1Index = palette.indexOf(first);
   if (c1Index > -1) palette.splice(c1Index, 1);
 
   const c2Index = palette.indexOf(c2);
   if (c2Index > -1) palette.splice(c2Index, 1);
 
-  return [c1, c2];
+  return [first, c2];
 }
 
 const bg = Random.pick(palette);

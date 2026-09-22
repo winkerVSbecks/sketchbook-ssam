@@ -58,8 +58,8 @@ function colorPalette(): ColorScheme {
     );
   })[1];
 
-  const gradient1 = formatHex(rgb(primary));
-  const gradient2 = formatHex(rgb(secondary));
+  const gradient1 = formatHex(rgb(primary)) ?? primary;
+  const gradient2 = formatHex(rgb(secondary)) ?? secondary;
 
   return { primary, secondary, accent, gradient1, gradient2 };
 }
@@ -87,7 +87,7 @@ function mixColors(color1: string, color2: string, ratio: number): string {
     r: rgb1.r * (1 - ratio) + rgb2.r * ratio,
     g: rgb1.g * (1 - ratio) + rgb2.g * ratio,
     b: rgb1.b * (1 - ratio) + rgb2.b * ratio,
-    mode: 'rgb',
+    mode: 'rgb' as const,
   };
 
   return formatHex(mixed);

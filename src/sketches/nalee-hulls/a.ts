@@ -14,7 +14,7 @@ const colors: [string[], string][] = [
   [['#2A42FF'], '#CEFF00'],
   [['#EB562F'], '#ECE5F0'],
   [['#002500'], '#ECE5F0'],
-] as const;
+];
 
 export const sketch = async ({ wrap, context, width, height }: SketchProps) => {
   if (import.meta.hot) {

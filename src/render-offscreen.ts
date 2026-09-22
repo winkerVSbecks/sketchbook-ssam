@@ -23,7 +23,10 @@ export function renderOffscreen(
       | undefined;
   }
 ) {
-  const { canvas, context, gl } = createOffscreenCanvas(props);
+  const created = createOffscreenCanvas(props);
+  const { canvas } = created;
+  const context = 'context' in created ? created.context : undefined;
+  const gl = 'gl' in created ? created.gl : undefined;
 
   return (finalProps: SketchProps) =>
     draw({

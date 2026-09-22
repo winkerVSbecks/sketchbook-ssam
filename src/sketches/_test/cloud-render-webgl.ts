@@ -1,5 +1,5 @@
 import { ssam } from 'ssam';
-import type { Sketch, SketchProps, SketchSettings } from 'ssam';
+import type { Sketch, SketchSettings } from 'ssam';
 
 const VERT = `#version 300 es
 in vec2 a_position;
@@ -47,7 +47,7 @@ function linkProgram(gl: WebGL2RenderingContext, vs: WebGLShader, fs: WebGLShade
   return program;
 }
 
-export const sketch: Sketch<'webgl2'> = ({ wrap, gl, ...props }: SketchProps) => {
+export const sketch: Sketch<'webgl2'> = ({ wrap, gl, ...props }) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => wrap.dispose());
     import.meta.hot.accept(() => wrap.hotReload());
@@ -71,7 +71,7 @@ export const sketch: Sketch<'webgl2'> = ({ wrap, gl, ...props }: SketchProps) =>
 
   const posLoc = gl.getAttribLocation(program, 'a_position');
 
-  wrap.render = ({ width, height }: SketchProps) => {
+  wrap.render = ({ width, height }) => {
     gl.viewport(0, 0, width, height);
     gl.clearColor(0, 0, 0, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
