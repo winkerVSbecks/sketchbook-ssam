@@ -1,7 +1,7 @@
 /**
  * Assemble archive-app/atlas.json — the data behind `npm run atlas`.
  *
- * Inputs come from a corpus-analysis pass (agent-generated, see CLAUDE.md):
+ * Inputs come from a corpus-analysis pass (agent-generated, see AGENTS.md):
  *   --records   dir with code-*.json and vision-*.json record arrays
  *   --metrics   visual-metrics.json (per-id color metrics from thumbnails)
  *   --synthesis dir with taxonomy.json, clusters.json, insights.json (optional files)
