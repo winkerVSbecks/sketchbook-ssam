@@ -20,9 +20,11 @@ import {
  * contrast tier of the ring hues (noise picks where on the hue sweep each
  * peg lands) and the band takes another, so pegs and band sit at different
  * contrast distances from the ground. No bevel: pegs are flat discs and the
- * band is drawn as thin parallel lines — true offset curves of the band
- * (convex pegs grow, concave pegs shrink, tangents stay parallel), not a
- * fat stroke — so the tiers alone carry the depth.
+ * band is a solid stripe in one tier with thin parallel lines in another
+ * running along it — true offset curves of the band (convex pegs grow,
+ * concave pegs shrink, tangents stay parallel), not a fat stroke — so the
+ * tiers alone carry the depth. Where the band crosses itself the later
+ * segment's stripe covers the earlier one.
  */
 
 interface Vec2 {
@@ -57,9 +59,9 @@ const config = {
   maxR: 160,
   spread: 0.75,
   /** Overall width of the band: the outer lines sit at ±strokeWidth/2. */
-  strokeWidth: 12,
+  strokeWidth: 40,
   /** Number of parallel lines the band is drawn with. */
-  bandLines: 4,
+  bandLines: 8,
   /** Width of each band line. */
   lineWidth: 2,
   dotRadius: 7,
@@ -83,8 +85,10 @@ const config = {
   coolWarm: 0,
   /** Contrast tier the pegs are shaded across. */
   pegTier: 'mid' as Tier,
-  /** Contrast tier the band (and hull fill) take. */
-  bandTier: 'high' as Tier,
+  /** Contrast tier the band's solid stripe takes. */
+  stripeTier: 'high' as Tier,
+  /** Contrast tier the lines along the band (and hull fill) take. */
+  bandTier: 'low' as Tier,
 };
 
 const pane = new Pane() as any;
@@ -94,8 +98,8 @@ pane.addBinding(config, 'dentCount', { min: 0, max: 60, step: 1 });
 pane.addBinding(config, 'minR', { min: 4, max: 200, step: 1 });
 pane.addBinding(config, 'maxR', { min: 20, max: 300, step: 1 });
 pane.addBinding(config, 'spread', { min: 0.3, max: 1.0, step: 0.01 });
-pane.addBinding(config, 'strokeWidth', { min: 0, max: 24, step: 0.1 });
-pane.addBinding(config, 'bandLines', { min: 1, max: 7, step: 1 });
+pane.addBinding(config, 'strokeWidth', { min: 0, max: 100, step: 0.1 });
+pane.addBinding(config, 'bandLines', { min: 1, max: 12, step: 1 });
 pane.addBinding(config, 'lineWidth', { min: 0.5, max: 4, step: 0.25 });
 pane.addBinding(config, 'dotRadius', { min: 0, max: 30, step: 0.5 });
 pane.addBinding(config, 'ringGap', { min: 2, max: 40, step: 0.5 });
@@ -120,6 +124,7 @@ colorFolder.addBinding(config, 'saturation', { min: 0, max: 1, step: 0.05 });
 colorFolder.addBinding(config, 'coolWarm', { min: -1, max: 1, step: 0.05 });
 const tierOptions = { high: 'high', mid: 'mid', low: 'low' };
 colorFolder.addBinding(config, 'pegTier', { options: tierOptions });
+colorFolder.addBinding(config, 'stripeTier', { options: tierOptions });
 colorFolder.addBinding(config, 'bandTier', { options: tierOptions });
 const regenBtn = colorFolder.addButton({ title: 'Regenerate palette' });
 
@@ -178,6 +183,7 @@ export const sketch = ({
     );
   const colorMap = (t: number) => formatCss(tierScale(config.pegTier)(t));
   const bandColor = () => formatCss(tierScale(config.bandTier)(0.5));
+  const stripeColor = () => formatCss(tierScale(config.stripeTier)(0.5));
 
   const noise = (x: number, y: number, t: number): number => {
     const angle = Math.PI * 2 * t * 2;
@@ -199,7 +205,7 @@ export const sketch = ({
 
   let renderCircles: RenderCircle[] = [];
   // The band, split per peg so it can be drawn segment by segment with a
-  // flat ground-coloured knockout under each: where the band crosses itself
+  // solid stripe under each: where the band crosses itself
   // the later segment covers the earlier one instead of hatching over it.
   let fillPath: Path2D = new Path2D();
   let centreSegs: BandSegment[] = [];
@@ -599,16 +605,17 @@ export const sketch = ({
     const dashPeriod = config.dashLength + config.gapLength;
     const dashOffset = -playhead * config.loops * dashPeriod;
     const band = bandColor();
+    const stripe = stripeColor();
     // Wide enough to cover every line plus a little breathing room.
-    const knockoutWidth = config.strokeWidth + config.lineWidth * 2 + 2;
+    const stripeWidth = config.strokeWidth + config.lineWidth * 2 + 2;
 
     for (let i = 0; i < centreSegs.length; i++) {
-      // Flat ground under this segment: hides whatever earlier segments
-      // drew where the band overlaps itself.
+      // Solid stripe under this segment's lines. Also hides whatever earlier
+      // segments drew where the band overlaps itself.
       context.setLineDash([]);
       context.lineDashOffset = 0;
-      context.lineWidth = knockoutWidth;
-      context.strokeStyle = bg;
+      context.lineWidth = stripeWidth;
+      context.strokeStyle = stripe;
       context.stroke(centreSegs[i].path);
 
       // Thin parallel lines: one offset curve per line, all in the band tier.
