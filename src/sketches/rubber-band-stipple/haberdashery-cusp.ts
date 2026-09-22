@@ -23,8 +23,13 @@ import {
  * band is a solid stripe in one tier with thin parallel lines in another
  * running along it — true offset curves of the band (convex pegs grow,
  * concave pegs shrink, tangents stay parallel), not a fat stroke — so the
- * tiers alone carry the depth. Where the band crosses itself the later
- * segment's stripe covers the earlier one.
+ * tiers alone carry the depth. The band is stroked as one segment per arc
+ * and one per tangent, each a solid stripe under its lines, so wherever it
+ * crosses itself — including a near-full wrap of a single peg, where the
+ * inner lines' departing tangent cuts across the outer lines' arc — the later
+ * segment's stripe covers the earlier one. The order starts and ends half-way
+ * along a tangent nothing else comes near, so the loop's one z-order break
+ * never lands on a contact.
  */
 
 interface Vec2 {
@@ -45,12 +50,26 @@ interface RenderCircle {
   circle: Circle;
   color: string;
 }
-/** One peg's share of the band: its arc plus the tangent to the next peg. */
+/**
+ * One stroke of the band: either a peg's arc or the tangent on to the next peg.
+ * Arcs and tangents are separate strokes so that where the band wraps a peg
+ * almost fully the departing tangent's stripe covers the arc's outer lines it
+ * has to cut through, instead of hatching over them.
+ */
 interface BandSegment {
   path: Path2D;
   /** Path length from the band's start to this segment's start, for dash continuity. */
   start: number;
 }
+
+/**
+ * How far (px) each band stroke is extended past both ends so neighbours
+ * overlap instead of abutting: two butt caps sharing an anti-aliased edge let
+ * a hairline of ground through. Extensions run along the stroke's own
+ * direction, which is also the neighbour's direction at a C1 join, so they
+ * stay inside the neighbour's footprint.
+ */
+const SEAM_OVERLAP = 0.5;
 
 const config = {
   count: 16,
@@ -204,8 +223,8 @@ export const sketch = ({
   let cacheKey = '';
 
   let renderCircles: RenderCircle[] = [];
-  // The band, split per peg so it can be drawn segment by segment with a
-  // solid stripe under each: where the band crosses itself
+  // The band, split into arc and tangent strokes so it can be drawn segment
+  // by segment with a solid stripe under each: where the band crosses itself
   // the later segment covers the earlier one instead of hatching over it.
   let fillPath: Path2D = new Path2D();
   let centreSegs: BandSegment[] = [];
@@ -559,12 +578,17 @@ export const sketch = ({
       const expanded = expandWithFloaters(contacts, floaters);
       touching = new Set(expanded.map((cp) => haloCircles.indexOf(cp.circle)));
       rubberBandPath(fillPath, expanded, 0);
-      centreSegs = rubberBandSegments(expanded, 0);
+      // Cut the stroke order mid-way along one clear tangent (see
+      // chooseSeamTangent); chosen once, from the centreline, so every
+      // offset line is cut at the same place.
+      const seam = chooseSeamTangent(expanded);
+      centreSegs = rubberBandSegments(expanded, 0, seam);
       const n = config.bandLines;
       lineSegs = Array.from({ length: n }, (_, k) =>
         rubberBandSegments(
           expanded,
           n === 1 ? 0 : mapRange(k, 0, n - 1, -halfCS, halfCS),
+          seam,
         ),
       );
     }
@@ -611,7 +635,8 @@ export const sketch = ({
 
     for (let i = 0; i < centreSegs.length; i++) {
       // Solid stripe under this segment's lines. Also hides whatever earlier
-      // segments drew where the band overlaps itself.
+      // segments drew where the band overlaps itself — including the arc a
+      // tangent departs from when the band has wrapped that peg nearly 360°.
       context.setLineDash([]);
       context.lineDashOffset = 0;
       context.lineWidth = stripeWidth;
@@ -871,29 +896,124 @@ function arcAt(
   return { aAngle, dAngle, anticlockwise, sweep };
 }
 
-// The band as one open sub-path per contact — its arc, then the tangent on
-// to the next contact — with each segment's start distance along the band.
+// The band as open sub-paths in drawing order — each contact's arc, then the
+// tangent on to the next contact — with each segment's start distance along
+// the band (measured from contact 0's arrival, for the dash pattern).
+//
+// Arc and tangent are separate strokes on purpose: when the band wraps a peg
+// nearly all the way round, the inner lines' departing tangent has to cross
+// the outer lines' arc, and only a stripe drawn between the two hides that.
+//
+// The closed loop's "later stroke covers earlier" has to break somewhere.
+// Breaking it at a contact puts that contact's arc at the bottom of the
+// z-order and its arriving tangent at the top, so anything crossing there is
+// sandwiched between them and the arrival's butt end shows. Instead the
+// tangent `seam` is split at its midpoint and the order rotated to begin
+// with its second half and end with its first: the two halves are collinear
+// and cannot overlap, and every contact gets arrival → arc → departure. All
+// seams are C1 and every stroke overlaps its neighbours by SEAM_OVERLAP.
 function rubberBandSegments(
   expandedBase: ContactPeg[],
   offset = 0,
+  seam = 0,
 ): BandSegment[] {
   const expanded = offsetContacts(expandedBase, offset);
   const n = expanded.length;
   if (n < 2) return [];
   const edges = tangentEdges(expanded);
+  const seamIndex = Math.min(Math.max(seam, 0), n - 1);
+  const e = SEAM_OVERLAP;
 
-  const segments: BandSegment[] = [];
+  // A straight stroke from a to b, extended `e` px past both ends. Its
+  // `start` is pulled back by `e` so the dash pattern is unmoved.
+  const line = (a: Vec2, b: Vec2, at: number): BandSegment => {
+    const d = sub(b, a);
+    const len = vlen(d);
+    const u = len > 1e-9 ? scale(d, e / len) : { x: 0, y: 0 };
+    const path = new Path2D();
+    path.moveTo(a.x - u.x, a.y - u.y);
+    path.lineTo(b.x + u.x, b.y + u.y);
+    return { path, start: at - e };
+  };
+
+  // Path order first, with the seam tangent as two halves.
+  const inOrder: BandSegment[] = [];
+  let cut = 0;
   let start = 0;
   for (let i = 0; i < n; i++) {
     const c = expanded[i].circle;
     const { aAngle, dAngle, anticlockwise, sweep } = arcAt(expanded, edges, i);
-    const path = new Path2D();
-    path.arc(c.x, c.y, c.r, aAngle, dAngle, anticlockwise);
-    path.lineTo(edges[i].t2.x, edges[i].t2.y);
-    segments.push({ path, start });
-    start += c.r * sweep + vlen(sub(edges[i].t2, edges[i].t1));
+    // Extend the arc by `e` px of arc length at each end, in its own sweep
+    // direction, so it overlaps the tangents it joins.
+    const dir = anticlockwise ? -1 : 1;
+    const ext = (dir * e) / c.r;
+    const arc = new Path2D();
+    arc.arc(c.x, c.y, c.r, aAngle - ext, dAngle + ext, anticlockwise);
+    inOrder.push({ path: arc, start: start - e });
+    start += c.r * sweep;
+
+    const { t1, t2 } = edges[i];
+    const len = vlen(sub(t2, t1));
+    if (i === seamIndex) {
+      const mid = scale(add(t1, t2), 0.5);
+      inOrder.push(line(t1, mid, start));
+      cut = inOrder.length - 1;
+      inOrder.push(line(mid, t2, start + len / 2));
+    } else {
+      inOrder.push(line(t1, t2, start));
+    }
+    start += len;
   }
-  return segments;
+
+  // Rotate: second half of the seam tangent first, first half last.
+  return inOrder.slice(cut + 1).concat(inOrder.slice(0, cut + 1));
+}
+
+// Which tangent to cut the stroke order in. The cut is invisible only if no
+// other part of the band lies over it, so take the tangent whose midpoint is
+// farthest from every other tangent chord and from every contact's halo
+// circle (the arc is approximated by its full circle, which is conservative
+// and also right for near-full wraps); ties go to the longer tangent.
+function chooseSeamTangent(expanded: ContactPeg[]): number {
+  const n = expanded.length;
+  if (n < 2) return 0;
+  const edges = tangentEdges(expanded);
+  let best = 0;
+  let bestClearance = -Infinity;
+  let bestLen = -Infinity;
+  for (let j = 0; j < n; j++) {
+    const { t1, t2 } = edges[j];
+    const len = vlen(sub(t2, t1));
+    const mid = scale(add(t1, t2), 0.5);
+    let clearance = Infinity;
+    for (let k = 0; k < n; k++) {
+      if (k !== j) {
+        clearance = Math.min(
+          clearance,
+          pointSegmentDistance(mid, edges[k].t1, edges[k].t2),
+        );
+      }
+      const c = expanded[k].circle;
+      clearance = Math.min(clearance, Math.abs(vlen(sub(mid, c)) - c.r));
+    }
+    if (
+      clearance > bestClearance ||
+      (clearance === bestClearance && len > bestLen)
+    ) {
+      best = j;
+      bestClearance = clearance;
+      bestLen = len;
+    }
+  }
+  return best;
+}
+
+function pointSegmentDistance(p: Vec2, a: Vec2, b: Vec2): number {
+  const ab = sub(b, a);
+  const lenSq = dot(ab, ab);
+  if (lenSq < 1e-12) return vlen(sub(p, a));
+  const t = Math.max(0, Math.min(1, dot(sub(p, a), ab) / lenSq));
+  return vlen(sub(p, add(a, scale(ab, t))));
 }
 
 function rubberBandPath(
