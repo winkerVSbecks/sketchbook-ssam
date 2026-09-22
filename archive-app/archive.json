@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-13T22:37:37.115Z",
+  "generatedAt": "2026-09-22T17:37:26.151Z",
   "sketches": [
     {
       "id": "sketches/42-loc",
@@ -4751,6 +4751,22 @@
         "version": 1779723740,
         "width": 1080,
         "height": 1080
+      }
+    },
+    {
+      "id": "sketches/rubber-band-stipple/haberdashery-cusp",
+      "name": "haberdashery-cusp",
+      "path": "src/sketches/rubber-band-stipple/haberdashery-cusp.ts",
+      "firstCommitDate": "2026-05-19T10:30:18-04:00",
+      "year": 2026,
+      "lastCommitSha": "2842f122ab50f3a3ac54e179f0ca33c548aced4f",
+      "archivedAt": "2026-09-22T17:37:25.577Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/rubber-band-stipple-haberdashery-cusp",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1790098645/sketchbook/2026/rubber-band-stipple-haberdashery-cusp.png",
+        "version": 1790098645,
+        "width": 2160,
+        "height": 2160
       }
     },
     {
