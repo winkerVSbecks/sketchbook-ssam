@@ -199,11 +199,15 @@ function sceneBounds(faces: Face[]) {
   return { minX, minY, maxX, maxY };
 }
 
-export const sketch = ({ wrap, context }: SketchProps) => {
+export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => wrap.dispose());
     import.meta.hot.accept(() => wrap.hotReload());
   }
+
+  import.meta.hot?.on('mcp:export', () => {
+    props.exportFrame();
+  });
 
   wrap.render = ({ width, height }: SketchProps) => {
     context.fillStyle = bg;
