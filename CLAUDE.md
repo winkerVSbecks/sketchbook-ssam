@@ -4,6 +4,14 @@
 - Run a sketch: `VITE_SKETCH="sketches/<sketch_path>" npm run dev`
 - Build: `npm run build`
 - Preview: `npm run preview`
+- Verify: `npm run test && npm run typecheck`
+- Format: `npm run format -- <files you changed>`
+
+## Verifying before commit
+- `npm run test && npm run typecheck` is the whole ritual — run it before every commit and commit each logical unit as soon as it passes. See [AGENTS.md](./AGENTS.md) for the contract.
+- `npm run test` (`scripts/run-smoke-suites.ts`) runs every Node smoke suite in `scripts/` — discovered as `scripts/*smoke*.ts`, so a new suite needs no registration — and prints a per-suite table. Never hand-roll a suite list.
+- `npm run typecheck` is `tsc --noEmit` on the whole tree; it is expected to be green, so do not grep its output for "your" files.
+- `npm run cloud:smoke` (`scripts/cloud-render-smoke.ts`) is the one suite kept out of `test`: it needs Playwright + Chromium and spawns the detached Vite on :6173. Run it when touching cloud-render, vite-runner or the archive renderer.
 
 ## Verifying sketch changes
 - After any code change to a sketch, use the `verify-sketch` skill (LSP diagnostics + render a frame via `/export`) — not Playwright, not a manually invented curl/browser flow. It's proactive: invoke it after `implement-sketch`, `clrs`, `fork-sketch`, `create-sketch`, or any other edit that changes visual output, without waiting to be asked.
@@ -35,12 +43,12 @@
 
 ## Terminal UI (character-grid desktop)
 - `src/tui/` — a second dependency-free canvas UI system in the terminal-chart aesthetic: a ROWS×COLS glyph buffer (`createGlyphBuffer`, `createMetrics`, `themeFromPalette`), box-drawing windows with `[–][□][×]`, title drag and corner resize (`createTuiWindow`), a system menu bar (`createMenuBar`), glyph controls (`createButton`, `createToggleGroup`, `createRange`), a settings popup menu hung off the bar (`createPopupMenu`), and `createDesktop` which wires them so a sketch only supplies `draw(buf, inner, win)` per window; `desktop.resize(width, height)` follows the viewport (wire to `wrap.resize`). Reuses `attachPointer`/`createUI` from `src/ui`.
-- Full example: `src/sketches/terminal-ui/layered-compositions.ts` (`VITE_SKETCH="sketches/terminal-ui/layered-compositions" npm run dev`). Node smoke tests: `npx tsx scripts/tui-smoke.ts`.
+- Full example: `src/sketches/terminal-ui/layered-compositions.ts` (`VITE_SKETCH="sketches/terminal-ui/layered-compositions" npm run dev`). Node smoke tests (`scripts/tui-smoke*.ts`, `scripts/growth-viewport-smoke.ts`) run under `npm run test`.
 - Palette picker: `src/sketches/terminal-ui/palette-picker.ts` (`VITE_SKETCH="sketches/terminal-ui/palette-picker" npm run dev`) browses every colour system in `src/colors` (clrs, auto-albers, mindful, found, uchu, riso, oklch, hsluv) as desktop windows — systems → library → swatches (hex · OKLCH · contrast · theme role) → derived `TuiTheme` → copyable code — and retints the desktop with the pick. The system registry lives in `palette-systems.ts` beside it; add a system there.
 - New sketch on the desktop: use the `create-tui-sketch` skill (template + scaffold live in `.claude/skills/create-tui-sketch/`).
 
 ## cusphanger colour system (P3 ground + contrast tiers)
-- `src/colors/cusphanger.ts` — `cuspPalette({ hue?, angle?, count?, shuffle?, saturation?, coolWarm?, ground?, gamut? })` builds a tinted ground plus foreground colours grouped by WCAG contrast into `high` (≈9:1 ink), `mid` (≈4.5:1 accent) and `low` (≈1.6:1 wash) tiers. Hues come off a ring: from the base hue (which tints the ground) a hue every `angle` degrees round the wheel, shuffled, `count` taken and sorted — harmony is a dial (small angle ≈ analogous, 120 ≈ triad, 180 ≈ complement) and the shuffle leaves gaps instead of an arc (`shuffle: false` takes the first `count` in sequence); each hue's ramp is `cusphanger`'s Wijffelaars Bézier through the cusp, gamut-clamped by `nutelch` (`oklchP3` default). `colors` is the `[bg, ...fg]` array sketches expect, as `oklch()` strings — pair with `settings.attributes = { colorSpace: 'display-p3' }` for a P3 canvas. Smoke test: `npx tsx scripts/cusphanger-smoke.ts`.
+- `src/colors/cusphanger.ts` — `cuspPalette({ hue?, angle?, count?, shuffle?, saturation?, coolWarm?, ground?, gamut? })` builds a tinted ground plus foreground colours grouped by WCAG contrast into `high` (≈9:1 ink), `mid` (≈4.5:1 accent) and `low` (≈1.6:1 wash) tiers. Hues come off a ring: from the base hue (which tints the ground) a hue every `angle` degrees round the wheel, shuffled, `count` taken and sorted — harmony is a dial (small angle ≈ analogous, 120 ≈ triad, 180 ≈ complement) and the shuffle leaves gaps instead of an arc (`shuffle: false` takes the first `count` in sequence); each hue's ramp is `cusphanger`'s Wijffelaars Bézier through the cusp, gamut-clamped by `nutelch` (`oklchP3` default). `colors` is the `[bg, ...fg]` array sketches expect, as `oklch()` strings — pair with `settings.attributes = { colorSpace: 'display-p3' }` for a P3 canvas. Smoke test (`scripts/cusphanger-smoke.ts`) runs under `npm run test`.
 - Explorer: `src/sketches/terminal-ui/cusp-hanger.ts` (`VITE_SKETCH="sketches/terminal-ui/cusp-hanger" npm run dev`) — parameters, palette table, hue strip, the focused hue's chroma–lightness slice (sRGB shell solid, P3 reach hatched), a specimen on the palette's own ground and a copyable snippet; the chrome stays black and white so only the swatches carry colour. Also listed in the palette picker.
 
 ## Code Style Guidelines
