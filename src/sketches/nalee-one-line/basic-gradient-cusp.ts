@@ -528,7 +528,7 @@ export const sketch = ({
     myGradientStyle = createGradientStyle(gradientColor, {
       lineCap: config.caps,
       lineJoin: config.caps === 'round' ? 'round' : 'miter',
-      innerRadius: ((spacing - spacing * config.lineWidth) / 2) * config.corner,
+      innerRadiusFraction: config.corner,
     });
   }
 

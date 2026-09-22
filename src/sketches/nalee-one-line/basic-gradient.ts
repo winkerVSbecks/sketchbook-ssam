@@ -5,6 +5,7 @@ import { mapRange } from 'canvas-sketch-util/math';
 import { ColorPaletteGenerator } from 'pro-color-harmonies';
 import * as tome from 'chromotome';
 import { formatCss, interpolate } from 'culori';
+import { Pane } from 'tweakpane';
 import { makeWalker, walkerToPaths } from '../nalee/walker';
 import { drawPath, createGradientStyle } from '../nalee/paths';
 import { xyToId } from '../nalee/utils';
@@ -22,7 +23,12 @@ const { colors, background: bg, stroke } = tome.get();
 logColors([...colors, bg]);
 
 let colorFn = interpolate(colors);
-const myGradientStyle = createGradientStyle(({ t }) => formatCss(colorFn(t)));
+const gradientColor = ({ t }: { t: number }) => formatCss(colorFn(t));
+let myGradientStyle = createGradientStyle(gradientColor);
+// Passed to the walker in place of the style itself so a pane change can
+// swap the style under a running walk.
+const pathStyle: ReturnType<typeof createGradientStyle> = (...args) =>
+  myGradientStyle(...args);
 
 const color = colors[0];
 
@@ -46,9 +52,29 @@ const config = {
   padding: 0.125,
   size: 12,
   stepSize: 4,
+  /** Segment caps: round turnarounds, or square for mitred corners and ends. */
+  caps: 'round' as 'round' | 'square',
+  /** Inner-corner fillet as a fraction of the largest that fits at each turn; 0 keeps sharp inner corners. */
+  corner: 0,
   stepsPerFrame: 10, // More steps per frame for faster visualization
   startOnCorners: false,
 };
+
+const pane = new Pane() as any;
+pane.containerElem_.style.zIndex = 1;
+const pathFolder = pane.addFolder({ title: 'Path' });
+pathFolder.addBinding(config, 'caps', { options: { round: 'round', square: 'square' } });
+pathFolder.addBinding(config, 'corner', { min: 0, max: 1, step: 0.05, label: 'inner radius' });
+const buildStyle = () =>
+  createGradientStyle(gradientColor, {
+    lineCap: config.caps,
+    lineJoin: config.caps === 'round' ? 'round' : 'miter',
+    innerRadiusFraction: config.corner,
+  });
+myGradientStyle = buildStyle();
+pathFolder.on('change', () => {
+  myGradientStyle = buildStyle();
+});
 
 interface GridCell {
   domain: Domain;
@@ -316,7 +342,22 @@ class HamiltonianPathState {
   }
 }
 
-export const sketch = ({ wrap, context, width, height }: SketchProps) => {
+export const sketch = ({
+  wrap,
+  context,
+  width,
+  height,
+  ...props
+}: SketchProps) => {
+  if (import.meta.hot) {
+    import.meta.hot.dispose(() => wrap.dispose());
+    import.meta.hot.accept(() => wrap.hotReload());
+  }
+
+  import.meta.hot?.on('mcp:export', () => {
+    props.exportFrame();
+  });
+
   // Create domain to world coordinate transformation for walker
   const domainToWorld: DomainToWorld = (x, y) => {
     const padding = width * config.padding;
@@ -343,7 +384,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
       start,
       color,
       color,
-      myGradientStyle,
+      pathStyle,
       config.flat,
       config.size,
       config.stepSize,

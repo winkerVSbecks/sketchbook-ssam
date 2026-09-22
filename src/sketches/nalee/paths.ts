@@ -417,6 +417,13 @@ export interface GradientStyleOptions {
    * Default 0: sharp inner corners.
    */
   innerRadius?: number;
+  /**
+   * Fillet radius as a fraction (0–1) of the largest fillet that fits at
+   * each turn, (shorter adjacent segment − line width) / 2 — so it follows
+   * the local node spacing on grids where that varies (polar walks). The
+   * larger of this and `innerRadius` applies. Default 0.
+   */
+  innerRadiusFraction?: number;
 }
 
 export function createGradientStyle(
@@ -425,6 +432,7 @@ export function createGradientStyle(
     lineCap = 'round',
     lineJoin = 'round',
     innerRadius = 0,
+    innerRadiusFraction = 0,
   }: GradientStyleOptions = {}
 ) {
   return function gradientStyle(
@@ -462,7 +470,7 @@ export function createGradientStyle(
       context.stroke();
     }
 
-    if (innerRadius > 0) {
+    if (innerRadius > 0 || innerRadiusFraction > 0) {
       const half = context.lineWidth / 2;
       for (let i = 1; i < total; i++) {
         const color = colorFn({
@@ -474,7 +482,16 @@ export function createGradientStyle(
           walker,
           playhead,
         });
-        fillInnerCorner(context, pts[i - 1], pts[i], pts[i + 1], half, innerRadius, color);
+        fillInnerCorner(
+          context,
+          pts[i - 1],
+          pts[i],
+          pts[i + 1],
+          half,
+          innerRadius,
+          innerRadiusFraction,
+          color
+        );
       }
     }
 
@@ -483,11 +500,13 @@ export function createGradientStyle(
 }
 
 /**
- * Round the inner corner of a perpendicular turn at `node` by filling the
- * notch between the two strokes' inner edges and a quarter-circle of radius
- * `radius` tangent to both. The outer edge is untouched. The fillet's two
- * straight sides are pushed half a pixel into the ink so only its arc meets
- * the ground — two anti-aliased edges abutting would leave a hairline.
+ * Round the inner corner of the turn at `node` by filling the notch between
+ * the two strokes' inner edges and a circle of radius `radius` tangent to
+ * both. Works for any turn angle (polar grids turn by 90° ± a few degrees;
+ * a shallow kink gets a long, flat sliver). The outer edge is untouched.
+ * The fillet's two straight sides are pushed half a pixel into the ink so
+ * only its arc meets the ground — two anti-aliased edges abutting would
+ * leave a hairline.
  */
 function fillInnerCorner(
   context: CanvasRenderingContext2D,
@@ -496,6 +515,7 @@ function fillInnerCorner(
   next: Point,
   half: number,
   radius: number,
+  fraction: number,
   color: string
 ) {
   const lenIn = distance(prev, node);
@@ -503,24 +523,58 @@ function fillInnerCorner(
   if (lenIn < 1e-6 || lenOut < 1e-6) return;
   const d1: Point = [(node[0] - prev[0]) / lenIn, (node[1] - prev[1]) / lenIn];
   const d2: Point = [(next[0] - node[0]) / lenOut, (next[1] - node[1]) / lenOut];
-  // Only right-angle turns have an inner notch to fill.
-  if (Math.abs(d1[0] * d2[0] + d1[1] * d2[1]) > 0.01) return;
-  // Two fillets on a shared inner edge (a U-turn) must not overlap.
-  const r = Math.min(radius, (Math.min(lenIn, lenOut) - 2 * half) / 2);
-  if (r <= 0) return;
+  const cosTurn = d1[0] * d2[0] + d1[1] * d2[1];
+  // Straight on (no notch) or a full reversal (no room): nothing to fill.
+  if (cosTurn > 0.9999 || cosTurn < -0.9999) return;
 
-  // Inner vertex of the L, and the fillet circle's centre.
+  // Inward normals: the side each segment turns toward.
+  const n1 = normalize([d2[0] - cosTurn * d1[0], d2[1] - cosTurn * d1[1]]);
+  const n2 = normalize([-d1[0] + cosTurn * d2[0], -d1[1] + cosTurn * d2[1]]);
+
+  // Inner vertex: where the two inner edge lines (offset `half` inward) meet.
+  // Solve node + half·n1 + s·d1 = node + half·n2 + t·d2 for s.
+  const rx = half * (n2[0] - n1[0]);
+  const ry = half * (n2[1] - n1[1]);
+  const det = -d1[0] * d2[1] + d1[1] * d2[0];
+  if (Math.abs(det) < 1e-9) return;
+  const sParam = (-rx * d2[1] + ry * d2[0]) / det;
   const c: Point = [
-    node[0] - half * d1[0] + half * d2[0],
-    node[1] - half * d1[1] + half * d2[1],
+    node[0] + half * n1[0] + sParam * d1[0],
+    node[1] + half * n1[1] + sParam * d1[1],
   ];
-  const p: Point = [c[0] - r * d1[0] + r * d2[0], c[1] - r * d1[1] + r * d2[1]];
+
+  // The notch is the wedge at `c` between u (back along the incoming inner
+  // edge) and v (along the outgoing one), interior angle φ.
+  const u: Point = [-d1[0], -d1[1]];
+  const v: Point = d2;
+  const cosPhi = u[0] * v[0] + u[1] * v[1];
+  const phi = Math.acos(Math.max(-1, Math.min(1, cosPhi)));
+  const tanHalf = Math.tan(phi / 2);
+  const sinHalf = Math.sin(phi / 2);
+  if (tanHalf < 1e-6 || sinHalf < 1e-6) return;
+
+  // Tangent length along each edge is r / tan(φ/2); two fillets sharing an
+  // inner edge (a U-turn) must fit in it, so bound that length by half the
+  // shorter inner edge.
+  const maxTangent = (Math.min(lenIn, lenOut) - 2 * half) / 2;
+  if (maxTangent <= 0) return;
+  const maxFit = maxTangent * tanHalf;
+  const r = Math.min(maxFit, Math.max(radius, fraction * maxFit));
+  if (r <= 0) return;
+  const tangent = r / tanHalf;
+
+  const bis = normalize([u[0] + v[0], u[1] + v[1]]);
+  const p: Point = [
+    c[0] + (r / sinHalf) * bis[0],
+    c[1] + (r / sinHalf) * bis[1],
+  ];
+  const t1: Point = [c[0] + tangent * u[0], c[1] + tangent * u[1]];
+  const t2: Point = [c[0] + tangent * v[0], c[1] + tangent * v[1]];
   const bleed = 0.5;
 
-  // Arc from the point on the incoming inner edge to the one on the outgoing
-  // edge, the short way round (both are 90° apart on the circle).
-  const a0 = Math.atan2(-d2[1], -d2[0]);
-  const a1 = Math.atan2(d1[1], d1[0]);
+  // Arc from t1 to t2 the short way round (the side facing the vertex).
+  const a0 = Math.atan2(t1[1] - p[1], t1[0] - p[0]);
+  const a1 = Math.atan2(t2[1] - p[1], t2[0] - p[0]);
   let delta = a1 - a0;
   while (delta <= -Math.PI) delta += Math.PI * 2;
   while (delta > Math.PI) delta -= Math.PI * 2;
@@ -528,21 +582,20 @@ function fillInnerCorner(
   context.fillStyle = color;
   context.beginPath();
   context.moveTo(
-    c[0] + bleed * d1[0] - bleed * d2[0],
-    c[1] + bleed * d1[1] - bleed * d2[1]
+    c[0] - bleed * (n1[0] + n2[0]),
+    c[1] - bleed * (n1[1] + n2[1])
   );
-  context.lineTo(
-    c[0] - r * d1[0] - bleed * d2[0],
-    c[1] - r * d1[1] - bleed * d2[1]
-  );
-  context.lineTo(c[0] - r * d1[0], c[1] - r * d1[1]);
+  context.lineTo(t1[0] - bleed * n1[0], t1[1] - bleed * n1[1]);
+  context.lineTo(t1[0], t1[1]);
   context.arc(p[0], p[1], r, a0, a1, delta < 0);
-  context.lineTo(
-    c[0] + r * d2[0] + bleed * d1[0],
-    c[1] + r * d2[1] + bleed * d1[1]
-  );
+  context.lineTo(t2[0] - bleed * n2[0], t2[1] - bleed * n2[1]);
   context.closePath();
   context.fill();
+}
+
+function normalize([x, y]: Point): Point {
+  const len = Math.hypot(x, y);
+  return len > 1e-12 ? [x / len, y / len] : [0, 0];
 }
 
 function distance(a: Point, b: Point): number {
