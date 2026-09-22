@@ -16,6 +16,7 @@
 - `npm run archive -- --only <pattern>` — restrict to sketches whose id contains the pattern or starts with it as a folder prefix (`--only sketches/canvas-ui`, `--only canvas-ui`).
 - `npm run archive -- --dry-run` — print the plan without rendering.
 - Requires `.env` at repo root with `CLOUDINARY_URL=cloudinary://<api_key>:<api_secret>@<cloud_name>`.
+- Rendering (`archive`, `cloud:render`, the archive site's play button) runs its own detached Vite on **:6173** (`scripts/vite-runner.ts`, pid in `.cloud-render/vite.pid`), so a hand-started `npm run dev` on :5173 is left alone. `npm run cloud:stop` stops it.
 
 ## Light Table (output review)
 - `npm run review` — local-only, keyboard-first review of everything in `output/`, grouped by day (port 5180; `?` shows shortcuts). Loupe + `g` contact sheet; `s` stars keepers, `S` filters to them.

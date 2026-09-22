@@ -10,7 +10,8 @@
  *   POST /api/runner/stop   — stop the server we started
  *
  * The process lifecycle lives in scripts/vite-runner.ts, shared with
- * cloud:render so the two cooperate over port 5173 instead of fighting for it.
+ * cloud:render so the two cooperate over the runner's port (:6173, not the
+ * user's :5173) instead of fighting for it.
  *
  * None of this ships: configurePreviewServer is inert during `vite build`, and
  * the client half (../islands/runner.ts) only loads on localhost.

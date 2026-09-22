@@ -1,5 +1,7 @@
 /**
- * Shared lifecycle for the sketch dev server on :5173.
+ * Shared lifecycle for the runner's sketch dev server on :6173 — its own
+ * port, so it never evicts or gets mistaken for a hand-started `npm run dev`
+ * on Vite's default :5173.
  *
  * Two callers want the same thing — a Vite dev server up on a known port,
  * running a known sketch, rotatable on demand:
@@ -31,7 +33,8 @@ export const RUNNER_DIR = join(PROJECT_ROOT, '.cloud-render');
 export const VITE_PID_FILE = join(RUNNER_DIR, 'vite.pid');
 export const VITE_LOG_FILE = join(RUNNER_DIR, 'vite.log');
 
-export const VITE_PORT = 5173;
+/** The runner's port. Deliberately not Vite's default (5173): that one is the user's. */
+export const VITE_PORT = 6173;
 export const VITE_READY_TIMEOUT_MS = 30_000;
 export const PORT_FREE_TIMEOUT_MS = 5_000;
 
@@ -222,12 +225,18 @@ export async function pollViteReady(): Promise<void> {
 export function spawnVite(sketchPath: string): VitePidRecord {
   ensureRunnerDir();
   const logFd = openSync(VITE_LOG_FILE, 'w');
-  const child = spawn('npm', ['run', 'dev'], {
-    cwd: PROJECT_ROOT,
-    env: { ...process.env, VITE_SKETCH: sketchPath },
-    stdio: ['ignore', logFd, logFd],
-    detached: true,
-  });
+  // `--strictPort`: bind exactly VITE_PORT or fail loudly (see the log),
+  // never drift to a neighbouring port behind the pid record's back.
+  const child = spawn(
+    'npm',
+    ['run', 'dev', '--', '--port', String(VITE_PORT), '--strictPort'],
+    {
+      cwd: PROJECT_ROOT,
+      env: { ...process.env, VITE_SKETCH: sketchPath },
+      stdio: ['ignore', logFd, logFd],
+      detached: true,
+    },
+  );
   if (typeof child.pid !== 'number') {
     throw new Error('Failed to spawn Vite — no PID returned by child_process.spawn');
   }
@@ -265,9 +274,10 @@ export async function runnerStatus(): Promise<RunnerStatus> {
  * Get a dev server up on VITE_PORT serving `sketchPath`.
  *
  * A live server is replaced rather than shared when it can't give the caller
- * what it asked for — Vite would otherwise fall through to 5174 and we'd
- * quietly serve someone else's sketch from 5173. `anySketch` opts out of that,
- * for callers who steer by URL instead.
+ * what it asked for — with `--strictPort` Vite refuses the port instead of
+ * falling through to the next one, so anything already on VITE_PORT has to
+ * go first. `anySketch` opts out of that, for callers who steer by URL
+ * instead.
  */
 export async function ensureVite(
   sketchPath: string,

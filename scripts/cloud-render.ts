@@ -141,7 +141,7 @@ async function fetchExport(): Promise<{
 async function renderOnce(sketchPath: string): Promise<string> {
   ensureDirs();
   // Not `adoptForeign` — a render must be of the sketch that was asked for, so
-  // an unrecorded server on 5173 gets replaced rather than reused.
+  // an unrecorded server on the runner's port gets replaced rather than reused.
   await ensureVite(sketchPath, {
     log: (message) => process.stderr.write(`[cloud-render] ${message}\n`),
   });
