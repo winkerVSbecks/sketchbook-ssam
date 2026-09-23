@@ -60,7 +60,7 @@ const config = {
    * of 1 matter: they are the only openings whose long way round clears the
    * seed circle without flying off the sheet.
    */
-  openings: [0.25, 0.5, 0.625, 0.75, 0.875, 1 /* 1.125, 1.25, 1.5, 2, 3 */],
+  openings: [0.125, 0.25, 0.5, 0.625, 0.75, /* 0.875, 1, 1.125, 1.25, 1.5, 2, 3 */],
   /** How often the compass takes the long way round, throwing a lobe out. */
   majorChance: 0.35,
   /** Chance of the first of the two compass crossings; 0.5 is even-handed. */
@@ -111,14 +111,14 @@ const config = {
    */
   weight: 1,
   /** px — every arrowhead is the same length, whatever its segment. */
-  arrowSize: 9,
+  arrowSize: 6,
   /** Half-width of an arrowhead, as a share of its length. */
   arrowWing: 0.42,
   arrowWeight: 1,
   /** px — every division circle is the same radius. */
-  circleSize: 3.6,
+  circleSize: 2,
   circleWeight: 1.1,
-  seedNodeSize: 4.4,
+  seedNodeSize: 2,
   seedNodeWeight: 1.3,
   /** Arc length mapped across this range gives the stroke its weight. */
   strokeLengthMin: 200,
@@ -130,6 +130,12 @@ const config = {
   showGrid: true,
   /** Fill the union of every arc's segment and the seed disc beneath the strokes. */
   showSilhouette: true,
+  /**
+   * Fill each grown arc against the stretch of the curve it springs from, so
+   * every fill is a lune bounded by two arcs rather than an arc and its chord.
+   */
+  showFills: true,
+  fillAlpha: 0.5,
   /** Grid squares across the sheet. */
   gridDivisions: 74,
   gridAlpha: 0.45,
@@ -157,18 +163,6 @@ interface Family {
   wash: string; // ~1.6:1 — also the ruled ground
 }
 
-/**
- * Contrast falls off with depth: the seed generation is drawn in ink, the arcs
- * grown straight off it in accent, and anything deeper in wash — so the eye
- * lands on the origin and the figure fades toward its newest growth.
- */
-const swatch = (family: Family, generation: number) =>
-  generation === 0
-    ? family.ink
-    : generation === 1
-      ? family.accent
-      : family.wash;
-
 /** Rolled fresh by Regenerate; `config.seed` overrides it when set. */
 let rollingSeed = Random.getRandomSeed();
 
@@ -180,8 +174,8 @@ let rule = "#ffffff";
 // swatches graded by contrast against it. Each hue is a *family* — an arc and
 // everything drawn on it (its subdivision circles, its arrowheads) is coloured
 // from one family, so a family reads as one drawing event rather than a colour.
-// Which of the family's three swatches is used is decided by the arc's
-// generation, see `swatch`.
+// Every line is drawn in the family's ink and every fill in its wash, so a
+// stroke always stands clear of the area it bounds.
 const buildPalette = () => {
   const palette = cuspPalette({
     angle: config.angle,
@@ -226,6 +220,12 @@ const weightKnob = pane.addBinding(config, "weight", {
   max: 4,
   step: 0.05,
 });
+const fillKnob = pane.addBinding(config, "fillAlpha", {
+  label: "fill alpha",
+  min: 0,
+  max: 1,
+  step: 0.01,
+});
 
 const sheet = pane.addFolder({ title: "sheet", expanded: false });
 sheet.addBinding(config, "seed");
@@ -264,6 +264,7 @@ const notation = pane.addFolder({ title: "notation", expanded: false });
 // Sizes are read at draw time, so like the weight they need no regrowth.
 const liveKnobs = new Set([
   weightKnob,
+  fillKnob,
   notation.addBinding(config, "arrowSize", { min: 1, max: 30, step: 0.5 }),
   notation.addBinding(config, "arrowWing", { min: 0.1, max: 1, step: 0.02 }),
   notation.addBinding(config, "arrowWeight", { min: 0, max: 4, step: 0.1 }),
@@ -280,6 +281,7 @@ notation.addBinding(config, "strokeWeightMax", { min: 0, max: 6, step: 0.1 });
 const groundFolder = pane.addFolder({ title: "ground", expanded: false });
 groundFolder.addBinding(config, "showGrid");
 groundFolder.addBinding(config, "showSilhouette");
+groundFolder.addBinding(config, "showFills");
 groundFolder.addBinding(config, "gridDivisions", { min: 4, max: 200, step: 1 });
 groundFolder.addBinding(config, "gridAlpha", { min: 0, max: 1, step: 0.05 });
 groundFolder.addBinding(config, "gridWeight", { min: 0, max: 3, step: 0.1 });
@@ -328,17 +330,26 @@ interface Node {
   curves: number[];
 }
 
-interface Arc {
-  family: number;
-  /** 0 = the seed circle, 1 = grown off it, 2 = grown off one of those… */
-  generation: number;
-  /** The circle this arc is part of. The seed's two semicircles share one. */
-  curve: number;
+/** A stretch of a circle, swept from a0 to a1 in whichever direction. */
+interface Sweep {
   cx: number;
   cy: number;
   r: number;
   a0: number;
   a1: number;
+}
+
+interface Arc extends Sweep {
+  family: number;
+  /** 0 = the seed circle, 1 = grown off it, 2 = grown off one of those… */
+  generation: number;
+  /** The circle this arc is part of. The seed's two semicircles share one. */
+  curve: number;
+  /**
+   * The stretch of the parent curve between this arc's endpoints, travelled
+   * from its end back to its start — with the arc itself it closes a lune.
+   */
+  lune?: Sweep;
 }
 
 interface Mark {
@@ -420,7 +431,7 @@ const compassArc = (
 
 const arcLength = (arc: Arc) => Math.abs(arc.a1 - arc.a0) * arc.r;
 
-const pointOnArc = (arc: Arc, t: number): Pt => {
+const pointOnArc = (arc: Sweep, t: number): Pt => {
   const a = lerp(arc.a0, arc.a1, t);
   return [arc.cx + Math.cos(a) * arc.r, arc.cy + Math.sin(a) * arc.r];
 };
@@ -466,6 +477,40 @@ const isOnArc = (arc: Arc, x: number, y: number, tolerance: number) => {
   const along =
     Math.sign(sweep) * (Math.atan2(y - arc.cy, x - arc.cx) - arc.a0);
   return ((along % TAU) + TAU) % TAU <= Math.abs(sweep) + 1e-6;
+};
+
+/** How far along an arc's sweep a point on its circle sits, in radians. */
+const sweepParam = (arc: Sweep, x: number, y: number) => {
+  const span = Math.abs(arc.a1 - arc.a0);
+  const dir = Math.sign(arc.a1 - arc.a0);
+  const u = (((dir * (Math.atan2(y - arc.cy, x - arc.cx) - arc.a0)) % TAU) + TAU) % TAU;
+  // An endpoint can land a hair past either end and wrap; snap it to the
+  // nearer end. A full circle has no gap to wrap across.
+  if (span < TAU - 1e-6 && u > span) return TAU - u < u - span ? 0 : span;
+  return u;
+};
+
+/**
+ * The stretch of `parent` that runs from b back to a. On an open arc there is
+ * only one; on a closed circle there are two, and the one kept is the one that
+ * hugs `arc` — its midpoint nearer the arc's — so the pair bound a lune rather
+ * than the rest of the disc.
+ */
+const luneSection = (arc: Arc, parent: Arc, a: Pt, b: Pt): Sweep => {
+  const dir = Math.sign(parent.a1 - parent.a0);
+  const ua = sweepParam(parent, a[0], a[1]);
+  const ub = sweepParam(parent, b[0], b[1]);
+  const at = (u: number) => parent.a0 + dir * u;
+  const direct: Sweep = { ...parent, a0: at(ub), a1: at(ua) };
+  if (Math.abs(parent.a1 - parent.a0) < TAU - 1e-6) return direct;
+
+  const around: Sweep = { ...parent, a0: at(ub), a1: at(ua < ub ? ua + TAU : ua - TAU) };
+  const mid = pointOnArc(arc, 0.5);
+  const gap = (s: Sweep) => {
+    const [x, y] = pointOnArc(s, 0.5);
+    return Math.hypot(x - mid[0], y - mid[1]);
+  };
+  return gap(direct) <= gap(around) ? direct : around;
 };
 
 /** Everything has to stay inside one circle — that is the whole composition. */
@@ -717,6 +762,7 @@ export const sketch = ({
         )
           continue;
 
+        if (parent) arc.lune = luneSection(arc, parent, [a.x, a.y], [b.x, b.y]);
         attach(arc, a, b, newCurve());
         break;
       }
@@ -763,7 +809,7 @@ export const sketch = ({
    */
   const drawSilhouette = () => {
     context.save();
-    context.globalAlpha = config.gridAlpha;
+    context.globalAlpha = config.gridAlpha / 4;
     context.fillStyle = rule;
     context.beginPath();
     for (const arc of scene.arcs) {
@@ -776,6 +822,27 @@ export const sketch = ({
       context.closePath();
     }
     context.fill("nonzero");
+    context.restore();
+  };
+
+  /**
+   * The seed disc, then each grown arc filled against the stretch of its
+   * parent it spans: out along the arc, back along the parent. Filled one by one in the family's
+   * wash, so nested lunes deepen where they stack.
+   */
+  const drawFills = () => {
+    context.save();
+    context.globalAlpha = config.fillAlpha;
+    for (const arc of scene.arcs) {
+      const lune = arc.lune;
+      context.fillStyle = families[arc.family].wash;
+      context.beginPath();
+      context.arc(arc.cx, arc.cy, arc.r, arc.a0, arc.a1, arc.a1 < arc.a0);
+      // The seed circle closes on itself, so its fill is the whole disc.
+      if (lune) context.arc(lune.cx, lune.cy, lune.r, lune.a0, lune.a1, lune.a1 < lune.a0);
+      context.closePath();
+      context.fill();
+    }
     context.restore();
   };
 
@@ -826,10 +893,11 @@ export const sketch = ({
     context.fillRect(0, 0, width, height);
     if (config.showGrid) drawGrid();
     if (config.showSilhouette) drawSilhouette();
+    if (config.showFills) drawFills();
 
     context.lineCap = "round";
     for (const arc of scene.arcs) {
-      context.strokeStyle = swatch(families[arc.family], arc.generation);
+      context.strokeStyle = families[arc.family].ink;
       // Longer arcs are the more structural ones — give them weight. The seed
       // circle takes the same rule; only its ink marks it as the origin.
       context.lineWidth =
@@ -848,7 +916,7 @@ export const sketch = ({
     }
 
     for (const m of scene.markers) {
-      const ink = swatch(families[m.family], m.generation);
+      const ink = families[m.family].ink;
       if (m.kind === "circle")
         drawCircle(
           m.x,
