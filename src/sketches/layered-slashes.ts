@@ -134,9 +134,9 @@ function generatePolygons(
 
     // k-means cluster our data
     const scan = new clustering.KMEANS();
-    const clusters = scan
+    const clusters: number[][] = scan
       .run(points, clusterCount)
-      .filter((c) => c.length >= 3);
+      .filter((c: number[]) => c.length >= 3);
 
     // Ensure we resulted in some clusters
     if (clusters.length === 0) return false;
@@ -149,7 +149,7 @@ function generatePolygons(
     const positions = cluster.map((i) => points[i]);
 
     // Find the hull of the cluster
-    const edges = convexHull(positions);
+    const edges: number[][] = convexHull(positions);
 
     // Ensure the hull is large enough
     if (edges.length <= 2) return false;

@@ -13,7 +13,9 @@
     // "noUnusedLocals": true,
     // "noUnusedParameters": true,
     "noImplicitReturns": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    // vite 8 ships its types only via "exports", which node10 resolution ignores
+    "paths": { "vite": ["./node_modules/vite/dist/node/index.d.ts"] }
   },
   "include": ["src"]
 }

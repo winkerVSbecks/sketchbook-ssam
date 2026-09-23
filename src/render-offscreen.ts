@@ -17,13 +17,13 @@ export function renderOffscreen(
     pixelRatio?: number | undefined;
     pixelated?: boolean | undefined;
     scaleContext?: boolean | undefined;
-    attributes?:
-      | CanvasRenderingContext2DSettings
-      | WebGLContextAttributes
-      | undefined;
-  }
+    attributes?: CanvasRenderingContext2DSettings | WebGLContextAttributes | undefined;
+  },
 ) {
-  const { canvas, context, gl } = createOffscreenCanvas(props);
+  const created = createOffscreenCanvas(props);
+  const { canvas } = created;
+  const context = 'context' in created ? created.context : undefined;
+  const gl = 'gl' in created ? created.gl : undefined;
 
   return (finalProps: SketchProps) =>
     draw({

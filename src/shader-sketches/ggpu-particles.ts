@@ -112,13 +112,7 @@ const fragment = /* glsl */ `
   }
 `;
 
-const sketch: Sketch<'webgl2'> = ({
-  wrap,
-  canvas,
-  width,
-  height,
-  pixelRatio,
-}) => {
+const sketch: Sketch<'webgl2'> = ({ wrap, canvas, width, height, pixelRatio }) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => wrap.dispose());
     import.meta.hot.accept(() => wrap.hotReload());
@@ -161,13 +155,10 @@ const sketch: Sketch<'webgl2'> = ({
         0, // the Green and Alpha channels go unused in this example, however I set
         1, // unused Alpha to 1 so that texture is visible in WebGL debuggers
       ],
-      i * 4
+      i * 4,
     );
     initialVelocityData.set([0, 0, 0, 1], i * 4);
-    random.set(
-      [Math.random(), Math.random(), Math.random(), Math.random()],
-      i * 4
-    );
+    random.set([Math.random(), Math.random(), Math.random(), Math.random()], i * 4);
   }
 
   // Initialise the GPGPU classes, creating the FBOs and corresponding texture coordinates
@@ -232,10 +223,7 @@ const sketch: Sketch<'webgl2'> = ({
     }
 
     // Get mouse value in -1 to 1 range, with y flipped
-    mouse.value.set(
-      (e.x / gl.renderer.width) * 2 - 1,
-      (1.0 - e.y / gl.renderer.height) * 2 - 1
-    );
+    mouse.value.set((e.x / gl.renderer.width) * 2 - 1, (1.0 - e.y / gl.renderer.height) * 2 - 1);
   }
 
   wrap.render = ({ time: t, playhead }) => {

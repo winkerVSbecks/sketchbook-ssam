@@ -11,6 +11,7 @@ interface Extent {
 
 interface Polygon {
   location: Vector;
+  color?: string;
   vertices: Vector[];
   edges: Vector[];
   normals: Vector[];

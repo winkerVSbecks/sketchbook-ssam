@@ -32,7 +32,7 @@ const makeCube = (type: 'red' | 'green' | 'blue'): ColorCube => {
     [r[5] / 255, g[5] / 255, b[5] / 255],
     // Black
     [29 / 255, 28 / 255, 28 / 255],
-  ];
+  ] as ColorCube;
 };
 
 const formatCSS = (rgb: ColorCoords): string => {

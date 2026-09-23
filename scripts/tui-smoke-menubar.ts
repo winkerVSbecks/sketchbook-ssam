@@ -6,8 +6,22 @@ import assert from 'node:assert/strict';
 
 import { createGlyphBuffer } from '../src/tui/grid';
 import { createMetrics } from '../src/tui/metrics';
-import { AA_CONTRAST, composite, contrastRatio, fallbackTheme, legibleOn, withAlpha } from '../src/tui/theme';
-import { BRACKET_ALPHA, BRACKET_PAD, ITEM_PAD, createMenuBar, highlightBoxes, layoutMenuBar } from '../src/tui/menubar';
+import {
+  AA_CONTRAST,
+  composite,
+  contrastRatio,
+  fallbackTheme,
+  legibleOn,
+  withAlpha,
+} from '../src/tui/theme';
+import {
+  BRACKET_ALPHA,
+  BRACKET_PAD,
+  ITEM_PAD,
+  createMenuBar,
+  highlightBoxes,
+  layoutMenuBar,
+} from '../src/tui/menubar';
 import type { MenuItem } from '../src/tui/menubar';
 
 let passed = 0;
@@ -28,7 +42,10 @@ const ROWS = 6;
 const ROW = ROWS - 2;
 
 /** Pixel centre of a cell on the bar row. */
-const px = (col: number, row = ROW) => ({ x: (col + 0.5) * metrics.charW, y: (row + 0.5) * metrics.lineH });
+const px = (col: number, row = ROW) => ({
+  x: (col + 0.5) * metrics.charW,
+  y: (row + 0.5) * metrics.lineH,
+});
 
 const EPS = 1e-9;
 const near = (a: number, b: number, msg: string) =>
@@ -64,18 +81,37 @@ console.log('menubar');
 const calls: string[] = [];
 let settingsVisible = false;
 const items = (): MenuItem[] => [
-  { id: 'settings', label: '≡ settings', active: settingsVisible, onSelect: () => { settingsVisible = !settingsVisible; calls.push('settings'); } },
+  {
+    id: 'settings',
+    label: '≡ settings',
+    active: settingsVisible,
+    onSelect: () => {
+      settingsVisible = !settingsVisible;
+      calls.push('settings');
+    },
+  },
   { id: 'w2', label: 'chart 02', onSelect: () => calls.push('chart 02') },
   { id: 'w5', label: 'chart 05', onSelect: () => calls.push('chart 05') },
 ];
 let statusText = '';
-const bar = createMenuBar({ metrics, theme: fallbackTheme, cols: COLS, row: ROW, items, status: () => statusText });
+const bar = createMenuBar({
+  metrics,
+  theme: fallbackTheme,
+  cols: COLS,
+  row: ROW,
+  items,
+  status: () => statusText,
+});
 
 test('lists settings then minimized windows on the bottom row', () => {
   const buf = createGlyphBuffer(ROWS, COLS);
   bar.paint(buf);
   const lines = dump(buf);
-  assert.equal(lines[ROW], '  ≡ settings  │  chart 02  │  chart 05'.padEnd(COLS), 'two padding cells around each item');
+  assert.equal(
+    lines[ROW],
+    '  ≡ settings  │  chart 02  │  chart 05'.padEnd(COLS),
+    'two padding cells around each item',
+  );
   assert.equal(lines[ROW + 1], ' '.repeat(COLS), 'lower band row is blank ground');
   for (let r = 0; r < ROW; r++) assert.equal(lines[r], '.'.repeat(COLS));
   for (let c = 0; c < COLS; c++) {
@@ -91,8 +127,20 @@ test('lists settings then minimized windows on the bottom row', () => {
   assert.equal(buf.get(ROW, 45)?.dy, undefined, 'empty band cell');
   // Spans: label + 2 pad cells each side; the first starts at the bar edge; the `│` sits between two pads.
   const spans = bar.layout().spans;
-  assert.deepEqual(spans.map((s) => [s.col, s.cols, s.labelCol]), [[0, 14, 2], [15, 12, 17], [28, 12, 30]]);
-  assert.deepEqual(bar.pxRect(), { x: 0, y: ROW * metrics.lineH, w: COLS * metrics.charW, h: 2 * metrics.lineH });
+  assert.deepEqual(
+    spans.map((s) => [s.col, s.cols, s.labelCol]),
+    [
+      [0, 14, 2],
+      [15, 12, 17],
+      [28, 12, 30],
+    ],
+  );
+  assert.deepEqual(bar.pxRect(), {
+    x: 0,
+    y: ROW * metrics.lineH,
+    w: COLS * metrics.charW,
+    h: 2 * metrics.lineH,
+  });
   assert.equal(buf.get(ROW + 1, 3)?.dy, undefined, 'lower row ground');
 });
 
@@ -162,7 +210,10 @@ test('settings toggles active and is drawn inverted (chromeBg text on a chromeFg
   const other = bar.layout().spans[1];
   assert.equal(buf.get(ROW, other.labelCol)?.fg, fallbackTheme.chromeFg);
   assert.equal(buf.get(ROW, other.labelCol)?.bg, fallbackTheme.chromeBg);
-  assert.ok(!buf.cells[ROW].some((g) => g?.fg === fallbackTheme.accent || g?.bg === fallbackTheme.accent), 'accent stays off the bar');
+  assert.ok(
+    !buf.cells[ROW].some((g) => g?.fg === fallbackTheme.accent || g?.bg === fallbackTheme.accent),
+    'accent stays off the bar',
+  );
   settingsVisible = false;
 });
 
@@ -173,13 +224,28 @@ test('pressed item is highlighted with selectionBg until release', () => {
   bar.paint(buf);
   assert.equal(buf.get(ROW, s.labelCol)?.box?.fill, fallbackTheme.selectionBg);
   assert.equal(buf.get(ROW, s.col)?.box?.fill, fallbackTheme.selectionBg);
-  assert.equal(buf.get(ROW + 1, s.col)?.box?.fill, fallbackTheme.selectionBg, 'pressed highlight spans the band');
-  assert.equal(buf.get(ROW, s.col)?.bg, fallbackTheme.chromeBg, 'over the band ground, not instead of it');
+  assert.equal(
+    buf.get(ROW + 1, s.col)?.box?.fill,
+    fallbackTheme.selectionBg,
+    'pressed highlight spans the band',
+  );
+  assert.equal(
+    buf.get(ROW, s.col)?.bg,
+    fallbackTheme.chromeBg,
+    'over the band ground, not instead of it',
+  );
   // Text is chosen for AA on the real ground: bg ← chromeBg ← selectionBg, all flattened.
-  const ground = composite(fallbackTheme.selectionBg, composite(fallbackTheme.chromeBg, fallbackTheme.bg));
+  const ground = composite(
+    fallbackTheme.selectionBg,
+    composite(fallbackTheme.chromeBg, fallbackTheme.bg),
+  );
   const fg = buf.get(ROW, s.labelCol)?.fg;
   assert.equal(fg, legibleOn(ground, fallbackTheme.chromeFg, fallbackTheme.frameActive));
-  assert.equal(fg, fallbackTheme.chromeFg, 'the bar text already clears AA on the fallback highlight');
+  assert.equal(
+    fg,
+    fallbackTheme.chromeFg,
+    'the bar text already clears AA on the fallback highlight',
+  );
   assert.ok(contrastRatio(fg!, ground) >= AA_CONTRAST);
   bar.pointerUp(px(s.labelCol));
   buf.clear();
@@ -227,13 +293,23 @@ test('items that do not fit are truncated / dropped', () => {
   const tiny = layoutMenuBar(items(), 5);
   assert.equal(tiny.spans.length, 1);
   assert.equal(tiny.spans[0].label, '≡');
-  assert.deepEqual(layoutMenuBar(items(), 4), { spans: [], status: null }, 'no room for a label between the pads');
+  assert.deepEqual(
+    layoutMenuBar(items(), 4),
+    { spans: [], status: null },
+    'no room for a label between the pads',
+  );
   assert.deepEqual(layoutMenuBar(items(), 0), { spans: [], status: null });
 });
 
 test('row and cols accept getters (top-edge bar, resize)', () => {
   let cols = 30;
-  const top = createMenuBar({ metrics, theme: fallbackTheme, cols: () => cols, row: () => 0, items });
+  const top = createMenuBar({
+    metrics,
+    theme: fallbackTheme,
+    cols: () => cols,
+    row: () => 0,
+    items,
+  });
   assert.equal(top.row, 0);
   assert.equal(top.contains(px(2, 0)), true);
   assert.equal(top.contains(px(2, 1)), true, 'second band row');
@@ -251,13 +327,27 @@ test('row and cols accept getters (top-edge bar, resize)', () => {
   assert.equal(top.cols, 12);
   assert.equal(top.contains(px(20, 0)), false);
   // widthPx stretches the band (ground + hit-test) past the last whole cell.
-  const wide = createMenuBar({ metrics, theme: fallbackTheme, cols: 12, row: 0, widthPx: 130, items });
+  const wide = createMenuBar({
+    metrics,
+    theme: fallbackTheme,
+    cols: 12,
+    row: 0,
+    widthPx: 130,
+    items,
+  });
   assert.deepEqual(wide.pxRect(), { x: 0, y: 0, w: 130, h: 40 });
   assert.equal(wide.contains({ x: 129, y: 5 }), true);
   assert.equal(wide.contains({ x: 130, y: 5 }), false);
   assert.equal(wide.cursorAt({ x: 129, y: 5 }), 'default');
   assert.equal(wide.itemAt({ x: 129, y: 5 }), null);
-  const narrow = createMenuBar({ metrics, theme: fallbackTheme, cols: 12, row: 0, widthPx: 50, items });
+  const narrow = createMenuBar({
+    metrics,
+    theme: fallbackTheme,
+    cols: 12,
+    row: 0,
+    widthPx: 50,
+    items,
+  });
   assert.equal(narrow.pxRect().w, 12 * metrics.charW, 'never narrower than the cells');
 });
 
@@ -271,12 +361,21 @@ test('spans are hit-testable through metrics.toCell at fractional charW', () => 
   }
 });
 
-test('the highlight is centred on the band\'s pixel midline, remainder included', () => {
+test("the highlight is centred on the band's pixel midline, remainder included", () => {
   // A bottom band absorbs `height - rows * lineH` below its last row, so the
   // block has to centre on the real pixels, not on the two cell rows.
-  const active = (): MenuItem[] => [{ id: 'settings', label: '≡ settings', active: true, onSelect: () => {} }];
+  const active = (): MenuItem[] => [
+    { id: 'settings', label: '≡ settings', active: true, onSelect: () => {} },
+  ];
   for (const bandPx of [40, 45, 47, 2 * metrics.lineH + 19]) {
-    const b = createMenuBar({ metrics, theme: fallbackTheme, cols: COLS, row: ROW, bandPx, items: active });
+    const b = createMenuBar({
+      metrics,
+      theme: fallbackTheme,
+      cols: COLS,
+      row: ROW,
+      bandPx,
+      items: active,
+    });
     const buf = createGlyphBuffer(ROWS, COLS);
     b.paint(buf);
     const span = b.layout().spans[0];
@@ -300,16 +399,30 @@ test('a parked item is bracketed; commands are not, and the brackets never bring
     { id: 'settings', label: '≡ settings', onSelect: () => {} },
     { id: 'w2', label: 'chart 02', parked: true, onSelect: () => {} },
   ];
-  const b = createMenuBar({ metrics, theme: fallbackTheme, cols: COLS, row: ROW, items: parkedItems });
+  const b = createMenuBar({
+    metrics,
+    theme: fallbackTheme,
+    cols: COLS,
+    row: ROW,
+    items: parkedItems,
+  });
   const buf = createGlyphBuffer(ROWS, COLS);
   b.paint(buf);
-  assert.equal(dump(buf)[ROW], '  + new  │  ≡ settings  │  [ chart 02 ]'.padEnd(COLS), 'brackets sit inside the two-cell item padding');
+  assert.equal(
+    dump(buf)[ROW],
+    '  + new  │  ≡ settings  │  [ chart 02 ]'.padEnd(COLS),
+    'brackets sit inside the two-cell item padding',
+  );
   const [cmd, settings, parked] = b.layout().spans;
   // No ground at rest, for any of them — the brackets are the only difference.
   for (const s of [cmd, settings, parked]) {
     for (let i = 0; i < 2; i++) {
       for (let c = s.col; c < s.col + s.cols; c++) {
-        assert.equal(buf.get(ROW + i, c)?.box, undefined, `${s.label} has no ground at rest, col ${c}`);
+        assert.equal(
+          buf.get(ROW + i, c)?.box,
+          undefined,
+          `${s.label} has no ground at rest, col ${c}`,
+        );
         assert.equal(buf.get(ROW + i, c)?.bg, fallbackTheme.chromeBg, 'plain band ground');
       }
     }
@@ -318,8 +431,14 @@ test('a parked item is bracketed; commands are not, and the brackets never bring
   assert.equal(buf.get(ROW, parked.labelCol)?.fg, fallbackTheme.chromeFg);
   assert.equal(buf.get(ROW, parked.labelCol - 2)?.ch, '[');
   assert.equal(buf.get(ROW, parked.labelCol + 8 + 1)?.ch, ']');
-  assert.equal(buf.get(ROW, parked.labelCol - 2)?.fg, withAlpha(fallbackTheme.chromeFg, BRACKET_ALPHA));
-  assert.equal(buf.get(ROW, parked.labelCol + 8 + 1)?.fg, withAlpha(fallbackTheme.chromeFg, BRACKET_ALPHA));
+  assert.equal(
+    buf.get(ROW, parked.labelCol - 2)?.fg,
+    withAlpha(fallbackTheme.chromeFg, BRACKET_ALPHA),
+  );
+  assert.equal(
+    buf.get(ROW, parked.labelCol + 8 + 1)?.fg,
+    withAlpha(fallbackTheme.chromeFg, BRACKET_ALPHA),
+  );
   // The span (and so the hit-test) covers the brackets and their padding.
   assert.equal(parked.cols, 'chart 02'.length + 2 * BRACKET_PAD + 2 * ITEM_PAD);
   assert.equal(parked.col, parked.labelCol - BRACKET_PAD - ITEM_PAD);
@@ -351,15 +470,33 @@ test('pressing a parked item shows the pressed ground with the brackets intact, 
   b.paint(buf);
   for (let i = 0; i < 2; i++) {
     for (let c = span.col; c < span.col + span.cols; c++) {
-      assert.deepEqual(buf.get(ROW + i, c)?.box, { fill: fallbackTheme.selectionBg, ...boxes[i] }, `pressed ground row ${i} col ${c}`);
+      assert.deepEqual(
+        buf.get(ROW + i, c)?.box,
+        { fill: fallbackTheme.selectionBg, ...boxes[i] },
+        `pressed ground row ${i} col ${c}`,
+      );
     }
   }
-  const ground = composite(fallbackTheme.selectionBg, composite(fallbackTheme.chromeBg, fallbackTheme.bg));
+  const ground = composite(
+    fallbackTheme.selectionBg,
+    composite(fallbackTheme.chromeBg, fallbackTheme.bg),
+  );
   const fg = buf.get(ROW, span.labelCol)!.fg!;
-  assert.equal(fg, legibleOn(ground, fallbackTheme.chromeFg, fallbackTheme.frameActive), 'label picked with the contrast helper');
-  assert.ok(contrastRatio(fg, ground) >= AA_CONTRAST, `${contrastRatio(fg, ground).toFixed(2)}:1 on the pressed ground`);
+  assert.equal(
+    fg,
+    legibleOn(ground, fallbackTheme.chromeFg, fallbackTheme.frameActive),
+    'label picked with the contrast helper',
+  );
+  assert.ok(
+    contrastRatio(fg, ground) >= AA_CONTRAST,
+    `${contrastRatio(fg, ground).toFixed(2)}:1 on the pressed ground`,
+  );
   assert.equal(buf.get(ROW, span.labelCol - 2)?.ch, '[', 'brackets survive the press');
-  assert.equal(buf.get(ROW, span.labelCol - 2)?.fg, withAlpha(fg, BRACKET_ALPHA), 'and follow the pressed text colour');
+  assert.equal(
+    buf.get(ROW, span.labelCol - 2)?.fg,
+    withAlpha(fg, BRACKET_ALPHA),
+    'and follow the pressed text colour',
+  );
   // Releasing over a bracket restores the window and drops the ground.
   assert.equal(b.pointerUp(px(span.labelCol + 'chart 02'.length + 1)), true);
   assert.deepEqual(calls, ['chart 02']);
@@ -371,12 +508,17 @@ test('pressing a parked item shows the pressed ground with the brackets intact, 
 
 test('a parked label truncates inside its brackets and the item drops when they do not fit', () => {
   const long = (cols: number) =>
-    layoutMenuBar([{ id: 'w', label: 'chart 02 extended', parked: true, onSelect: () => {} }], cols).spans;
+    layoutMenuBar([{ id: 'w', label: 'chart 02 extended', parked: true, onSelect: () => {} }], cols)
+      .spans;
   const [s] = long(18);
   // limit = cols - ITEM_PAD; the label gets what is left after `[ ` and ` ]`.
   assert.equal(s.label, 'chart 02 ex'.slice(0, 18 - ITEM_PAD - ITEM_PAD - 2 * BRACKET_PAD));
   assert.equal(s.col + s.cols, 18, 'the span, trailing padding included, ends at the bar edge');
-  assert.equal(long(ITEM_PAD + 2 * BRACKET_PAD).length, 0, 'no room for even one label cell → the item is dropped');
+  assert.equal(
+    long(ITEM_PAD + 2 * BRACKET_PAD).length,
+    0,
+    'no room for even one label cell → the item is dropped',
+  );
 });
 
 console.log(`\n${passed} tests passed`);

@@ -10,7 +10,7 @@ import { drawClixo, drawClixoOutline } from './draw-clixo';
 // const bg = colors.pop();
 
 const colors = ['#fff', '#000', '#fff'];
-const bg = colors.pop();
+const bg = colors.pop() ?? '#fff';
 const [ring, inner, ...bases] = Random.shuffle(colors);
 
 const config = {

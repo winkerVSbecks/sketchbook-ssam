@@ -75,13 +75,7 @@ void main() {
 }
 `);
 
-const sketch: Sketch<'webgl2'> = ({
-  wrap,
-  canvas,
-  width,
-  height,
-  pixelRatio,
-}) => {
+const sketch: Sketch<'webgl2'> = ({ wrap, canvas, width, height, pixelRatio }) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => wrap.dispose());
     import.meta.hot.accept(() => wrap.hotReload());

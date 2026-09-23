@@ -194,9 +194,6 @@ export function createRangeGroup({ ranges, onChange }: RangeGroupOptions) {
     get: (id: string) => byId.get(id),
     value: (id: string) => byId.get(id)?.value ?? NaN,
     values: () =>
-      Object.fromEntries(controls.map((c) => [c.id, c.value])) as Record<
-        string,
-        number
-      >,
+      Object.fromEntries(controls.map((c) => [c.id, c.value])) as Record<string, number>,
   };
 }

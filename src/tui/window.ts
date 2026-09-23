@@ -115,7 +115,8 @@ export function createTuiWindow(opts: TuiWindowOptions): TuiWindow {
   /** Last press on the title row (not a button), for double-click detection. */
   let lastTitlePress: { at: number; cell: Cell } | null = null;
   const doubleClickMs = opts.doubleClickMs ?? 350;
-  const now = opts.now ?? (() => (typeof performance !== 'undefined' ? performance.now() : Date.now()));
+  const now =
+    opts.now ?? (() => (typeof performance !== 'undefined' ? performance.now() : Date.now()));
   const maximizable = opts.maximizable ?? true;
   let contentCaptured = false;
 
@@ -137,8 +138,7 @@ export function createTuiWindow(opts: TuiWindowOptions): TuiWindow {
   const right = () => rect.col + rect.cols - 1;
 
   /** Buttons pack against the right end of the title row, just inside the corner. */
-  const buttonCol = (i: number): number =>
-    right() - BUTTON_W * (buttons.length - i);
+  const buttonCol = (i: number): number => right() - BUTTON_W * (buttons.length - i);
 
   const buttonAt = (cell: Cell): TuiWindowButton | null => {
     if (cell.row !== top()) return null;
@@ -245,7 +245,10 @@ export function createTuiWindow(opts: TuiWindowOptions): TuiWindow {
         // the first toggles maximize (like [□]) instead of starting a move drag.
         const at = now();
         const prev = lastTitlePress;
-        const near = prev && Math.abs(cell.row - prev.cell.row) <= 1 && Math.abs(cell.col - prev.cell.col) <= 1;
+        const near =
+          prev &&
+          Math.abs(cell.row - prev.cell.row) <= 1 &&
+          Math.abs(cell.col - prev.cell.col) <= 1;
         if (prev && near && at - prev.at <= doubleClickMs) {
           lastTitlePress = null;
           drag = null;
@@ -273,8 +276,16 @@ export function createTuiWindow(opts: TuiWindowOptions): TuiWindow {
           const { from } = drag;
           next = {
             ...from,
-            row: clamp(from.row + dr, bounds.row, Math.max(bounds.row, bounds.row + bounds.rows - from.rows)),
-            col: clamp(from.col + dc, bounds.col, Math.max(bounds.col, bounds.col + bounds.cols - from.cols)),
+            row: clamp(
+              from.row + dr,
+              bounds.row,
+              Math.max(bounds.row, bounds.row + bounds.rows - from.rows),
+            ),
+            col: clamp(
+              from.col + dc,
+              bounds.col,
+              Math.max(bounds.col, bounds.col + bounds.cols - from.cols),
+            ),
           };
         } else {
           const { from } = drag;
@@ -366,7 +377,15 @@ export function createTuiWindow(opts: TuiWindowOptions): TuiWindow {
         const label = ` ${win.title} `;
         // The highlighted title keeps text-level AA against its real ground
         // (chromeBg may be translucent, as in fallbackTheme: flatten it over bg first).
-        if (highlight) buf.text(top(), titleCol, label, legibleOn(composite(t.chromeBg, t.bg), t.chromeFg, t.frameActive), t.chromeBg, room);
+        if (highlight)
+          buf.text(
+            top(),
+            titleCol,
+            label,
+            legibleOn(composite(t.chromeBg, t.bg), t.chromeFg, t.frameActive),
+            t.chromeBg,
+            room,
+          );
         else buf.text(top(), titleCol, label, t.frame, t.bg, room);
       }
 

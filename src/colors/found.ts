@@ -22,13 +22,7 @@ export const bless = [
   '#042411',
 ];
 
-export const ellsworthKelly = [
-  '#fff',
-  '#f13401',
-  '#0769ce',
-  '#f1d93c',
-  '#11804b',
-];
+export const ellsworthKelly = ['#fff', '#f13401', '#0769ce', '#f1d93c', '#11804b'];
 
 export const warm = [
   '#7c203a',

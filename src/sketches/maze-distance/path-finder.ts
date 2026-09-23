@@ -14,7 +14,7 @@ const corners = Random.shuffle([
   [size - 1, Random.rangeFloor(0, size - 1)],
 ]) as Point[];
 
-const colors = Random.chance()
+const colors: string[] = Random.chance()
   ? generateColors()
   : Random.pick([...mindfulPalettes, ...autoAlbersPalettes]);
 

@@ -6,7 +6,7 @@ import { ColorCoords, ColorCube } from 'rybitten/cubes';
 
 Random.setSeed(Random.getRandomSeed());
 
-const cube: ColorCube = [
+const cube = [
   // White
   [0 / 255, 255 / 255, 237 / 255],
   // Red
@@ -23,7 +23,7 @@ const cube: ColorCube = [
   [60 / 255, 50 / 255, 125 / 255],
   // Black
   [29 / 255, 28 / 255, 28 / 255],
-];
+] as ColorCube;
 // red
 // .map((c) => [c[2], c[1], c[0]]);
 // green

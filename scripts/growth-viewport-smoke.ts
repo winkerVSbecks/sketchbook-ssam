@@ -4,7 +4,13 @@
  */
 import assert from 'node:assert/strict';
 
-import { cellRect, createGlyphBuffer, createMetrics, fallbackTheme, type TuiTheme } from '../src/tui';
+import {
+  cellRect,
+  createGlyphBuffer,
+  createMetrics,
+  fallbackTheme,
+  type TuiTheme,
+} from '../src/tui';
 import {
   createViewport,
   drawGrowth,
@@ -27,8 +33,7 @@ function test(name: string, fn: () => void) {
 const buffer = (rows: number, cols: number) => createGlyphBuffer(rows, cols);
 const dump = (buf: ReturnType<typeof createGlyphBuffer>): string[] =>
   buf.cells.map((line) => line.map((g) => g?.ch ?? '.').join(''));
-const close = (a: number, b: number, eps = 1e-9) =>
-  assert.ok(Math.abs(a - b) < eps, `${a} ≉ ${b}`);
+const close = (a: number, b: number, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} ≉ ${b}`);
 
 /** A square loop centred on the origin, side `2 * r`. */
 const square = (r: number): GrowthState => ({
@@ -230,7 +235,14 @@ test('detail mode draws the line in box glyphs and marks the nodes', () => {
   const res = drawGrowth(
     buf,
     rect,
-    { nodes: [{ x: -2, y: 0 }, { x: 2, y: 0 }], closed: false, step: 3 },
+    {
+      nodes: [
+        { x: -2, y: 0 },
+        { x: 2, y: 0 },
+      ],
+      closed: false,
+      step: 3,
+    },
     vp,
     fallbackTheme,
   );
@@ -245,7 +257,14 @@ test('detail mode draws the line in box glyphs and marks the nodes', () => {
   drawGrowth(
     vbuf,
     rect,
-    { nodes: [{ x: 0, y: -2 }, { x: 0, y: 2 }], closed: false, step: 3 },
+    {
+      nodes: [
+        { x: 0, y: -2 },
+        { x: 0, y: 2 },
+      ],
+      closed: false,
+      step: 3,
+    },
     vp,
     fallbackTheme,
   );
@@ -258,7 +277,14 @@ test('detail mode draws the line in box glyphs and marks the nodes', () => {
   drawGrowth(
     dbuf,
     rect,
-    { nodes: [{ x: -2, y: -2 }, { x: 2, y: 2 }], closed: false, step: 3 },
+    {
+      nodes: [
+        { x: -2, y: -2 },
+        { x: 2, y: 2 },
+      ],
+      closed: false,
+      step: 3,
+    },
     vp,
     fallbackTheme,
   );
@@ -270,7 +296,14 @@ test('detail mode draws the line in box glyphs and marks the nodes', () => {
   drawGrowth(
     dbuf2,
     rect,
-    { nodes: [{ x: -2, y: 2 }, { x: 2, y: -2 }], closed: false, step: 3 },
+    {
+      nodes: [
+        { x: -2, y: 2 },
+        { x: 2, y: -2 },
+      ],
+      closed: false,
+      step: 3,
+    },
     vp,
     fallbackTheme,
   );
@@ -334,7 +367,10 @@ test('drawing never writes outside the rect it was given', () => {
     for (let col = 0; col < buf.cols; col++) {
       if (!buf.get(row, col)) continue;
       const inside =
-        row >= rect.row && row < rect.row + rect.rows && col >= rect.col && col < rect.col + rect.cols;
+        row >= rect.row &&
+        row < rect.row + rect.rows &&
+        col >= rect.col &&
+        col < rect.col + rect.cols;
       assert.ok(inside, `wrote outside the rect at ${row},${col}`);
     }
   }
@@ -343,7 +379,20 @@ test('drawing never writes outside the rect it was given', () => {
   const clipped = buffer(14, 18);
   const tiny = cellRect(5, 4, 1, 3); // the row the y = 0 line lands on
   clipped.clip(tiny, () => {
-    drawGrowth(clipped, rect, { nodes: [{ x: -1e5, y: 0 }, { x: 1e5, y: 0 }], closed: false, step: 1 }, createViewport({ zoom: 50, cellAspect: 1 }), fallbackTheme);
+    drawGrowth(
+      clipped,
+      rect,
+      {
+        nodes: [
+          { x: -1e5, y: 0 },
+          { x: 1e5, y: 0 },
+        ],
+        closed: false,
+        step: 1,
+      },
+      createViewport({ zoom: 50, cellAspect: 1 }),
+      fallbackTheme,
+    );
   });
   const written = dump(clipped)
     .flatMap((line, row) => [...line].map((ch, col) => (ch === '.' ? null : { row, col })))
@@ -365,18 +414,45 @@ test('colour comes from the theme, not from the module', () => {
   const rect = cellRect(0, 0, 9, 9);
   const buf = buffer(9, 9);
   const vp = createViewport({ zoom: 1, cellAspect: 1 });
-  drawGrowth(buf, rect, { nodes: [{ x: -2, y: 0 }, { x: 2, y: 0 }], closed: false, step: 0 }, vp, theme);
+  drawGrowth(
+    buf,
+    rect,
+    {
+      nodes: [
+        { x: -2, y: 0 },
+        { x: 2, y: 0 },
+      ],
+      closed: false,
+      step: 0,
+    },
+    vp,
+    theme,
+  );
   assert.equal(buf.get(4, 3)?.fg, '#101010', 'the curve takes theme.fg');
   assert.equal(buf.get(4, 2)?.fg, '#909090', 'node marks take theme.accent');
   assert.equal(buf.get(4, 3)?.bg, undefined, 'no background unless asked for');
 
   const over = buffer(9, 9);
-  drawGrowth(over, rect, { nodes: [{ x: -2, y: 0 }, { x: 2, y: 0 }], closed: false, step: 0 }, vp, theme, {
-    color: theme.dim,
-    nodeColor: theme.frameActive,
-    nodeChar: '◆',
-    bg: theme.chromeBg,
-  });
+  drawGrowth(
+    over,
+    rect,
+    {
+      nodes: [
+        { x: -2, y: 0 },
+        { x: 2, y: 0 },
+      ],
+      closed: false,
+      step: 0,
+    },
+    vp,
+    theme,
+    {
+      color: theme.dim,
+      nodeColor: theme.frameActive,
+      nodeChar: '◆',
+      bg: theme.chromeBg,
+    },
+  );
   assert.equal(over.get(4, 3)?.fg, theme.dim);
   assert.equal(over.get(4, 3)?.bg, theme.chromeBg);
   assert.equal(over.get(4, 2)?.ch, '◆');
@@ -386,7 +462,14 @@ test('colour comes from the theme, not from the module', () => {
 test('a single node still marks its cell; growthBounds measures the organism', () => {
   const buf = buffer(9, 9);
   const vp = createViewport({ zoom: 1, cellAspect: 1 });
-  const res = drawGrowth(buf, cellRect(0, 0, 9, 9), { nodes: [{ x: 0, y: 0 }], closed: false, step: 0 }, vp, fallbackTheme, { mode: 'detail' });
+  const res = drawGrowth(
+    buf,
+    cellRect(0, 0, 9, 9),
+    { nodes: [{ x: 0, y: 0 }], closed: false, step: 0 },
+    vp,
+    fallbackTheme,
+    { mode: 'detail' },
+  );
   assert.equal(res.cellsDrawn, 1);
   assert.equal(res.nodesDrawn, 1);
   assert.equal(buf.get(4, 4)?.ch, '●');
@@ -394,7 +477,14 @@ test('a single node still marks its cell; growthBounds measures the organism', (
   assert.deepEqual(growthBounds(square(3)), { x: -3, y: -3, w: 6, h: 6 });
   assert.deepEqual(growthBounds({ nodes: [], closed: true, step: 0 }), { x: 0, y: 0, w: 0, h: 0 });
   assert.deepEqual(
-    growthBounds({ nodes: [{ x: 1, y: 2 }, { x: NaN, y: 9 }], closed: false, step: 0 }),
+    growthBounds({
+      nodes: [
+        { x: 1, y: 2 },
+        { x: NaN, y: 9 },
+      ],
+      closed: false,
+      step: 0,
+    }),
     { x: 1, y: 2, w: 0, h: 0 },
   );
 });

@@ -42,7 +42,8 @@ type Rgb = readonly [number, number, number];
 const clamp255 = (v: number) => Math.round(Math.min(255, Math.max(0, v)));
 
 /** Linear sRGB channel (0–1) → gamma-encoded 0–255. */
-const encode = (v: number) => clamp255(255 * (v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055));
+const encode = (v: number) =>
+  clamp255(255 * (v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055));
 
 /** Oklab (L, a, b) → gamma-encoded sRGB, clipped to the gamut (Björn Ottosson's matrices). */
 function oklabToRgb(L: number, a: number, b: number): Rgb {
@@ -82,9 +83,18 @@ function parseRgba(color: string): Rgba | null {
   const hex = /^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.exec(c);
   if (hex) {
     let h = hex[1];
-    if (h.length === 3) h = h.split('').map((ch) => ch + ch).join('');
+    if (h.length === 3)
+      h = h
+        .split('')
+        .map((ch) => ch + ch)
+        .join('');
     const a = h.length === 8 ? parseInt(h.slice(6, 8), 16) / 255 : 1;
-    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16), a];
+    return [
+      parseInt(h.slice(0, 2), 16),
+      parseInt(h.slice(2, 4), 16),
+      parseInt(h.slice(4, 6), 16),
+      a,
+    ];
   }
   const fn = /^(rgba?|oklab|oklch)\((.*)\)$/i.exec(c);
   if (!fn) return null;
@@ -105,10 +115,14 @@ function parseRgba(color: string): Rgba | null {
   return null;
 }
 
-const toHex = ([r, g, b]: Rgb): string => '#' + [r, g, b].map((v) => clamp255(v).toString(16).padStart(2, '0')).join('');
+const toHex = ([r, g, b]: Rgb): string =>
+  '#' + [r, g, b].map((v) => clamp255(v).toString(16).padStart(2, '0')).join('');
 
 /** Gamma-space mix: `t` = 0 → `a`, 1 → `b`. */
-const mix = (a: Rgb, b: Rgb, t: number): Rgb => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t].map(clamp255) as unknown as Rgb;
+const mix = (a: Rgb, b: Rgb, t: number): Rgb =>
+  [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t].map(
+    clamp255,
+  ) as unknown as Rgb;
 
 /**
  * A translucent colour flattened over a solid one → opaque `#rrggbb`, so its
@@ -174,7 +188,13 @@ function extremeInk(bg: string): string {
  * the nearest mix that reaches `min` (strengthening toward `to`), or `to`
  * itself when even that falls short. Luminance is monotonic in the mix.
  */
-function mixToContrast(from: string, to: string, bg: string, min: number, keepAbove: boolean): string {
+function mixToContrast(
+  from: string,
+  to: string,
+  bg: string,
+  min: number,
+  keepAbove: boolean,
+): string {
   const a = parseColor(from);
   const b = parseColor(to);
   if (!a || !b) return from;
@@ -263,15 +283,22 @@ export function themeFromPalette(palette: readonly string[]): TuiTheme {
     const inkOk = contrastRatio(bestInk, bg) >= MIN_CONTRAST;
     ink = inkOk ? bestInk : luminance(bgRgb) > 0.5 ? fallbackTheme.bg : fallbackTheme.fg;
     const rest = inkOk ? candidates.filter((c) => c !== bestInk) : candidates;
-    const vividRest = rest.length ? rest.reduce((best, c) => (chroma(c) > chroma(best) ? c : best)) : ink;
+    const vividRest = rest.length
+      ? rest.reduce((best, c) => (chroma(c) > chroma(best) ? c : best))
+      : ink;
     hi = contrastRatio(vividRest, bg) >= MIN_CONTRAST ? vividRest : ink;
     const chromeCandidates = rest.filter((c) => c !== vividRest);
-    const bestChrome = chromeCandidates.length ? byContrast(chromeCandidates) : rest.length ? hi : ink;
+    const bestChrome = chromeCandidates.length
+      ? byContrast(chromeCandidates)
+      : rest.length
+        ? hi
+        : ink;
     chromeBg = contrastRatio(bestChrome, bg) >= MIN_CONTRAST ? bestChrome : ink;
     // The active frame needs text-level AA: the ink when it gets there, else the
     // strongest palette entry that does (often the accent), else pure black/white.
     const aa = candidates.filter((c) => contrastRatio(c, bg) >= AA_CONTRAST);
-    const frameInk = contrastRatio(ink, bg) >= AA_CONTRAST ? ink : aa.length ? byContrast(aa) : extremeInk(bg);
+    const frameInk =
+      contrastRatio(ink, bg) >= AA_CONTRAST ? ink : aa.length ? byContrast(aa) : extremeInk(bg);
     frames = framePair(frameInk, bg);
   }
 

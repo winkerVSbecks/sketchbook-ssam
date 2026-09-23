@@ -90,22 +90,15 @@ function hsl2farbrad(h: number, s: number, l: number) {
   return ryb2rgb([rgbColor.r, rgbColor.g, rgbColor.b]);
 }
 
-export function generateColors(
-  format: 'srgb' | 'hex' = 'srgb',
-  hue: number
-): string[] {
+export function generateColors(format: 'srgb' | 'hex' = 'srgb', hue: number): string[] {
   const options = newOptions(hue);
 
   const colorHSL = generateColorRamp(options as any);
 
   const colors =
     format === 'srgb'
-      ? (colorHSL.map((hsl) =>
-          formatCss(hsl2farbrad(...hsl) as any)
-        ) as unknown as string[])
-      : (colorHSL.map((hsl) =>
-          formatHex(hsl2farbrad(...hsl) as any)
-        ) as unknown as string[]);
+      ? (colorHSL.map((hsl) => formatCss(hsl2farbrad(...hsl) as any)) as unknown as string[])
+      : (colorHSL.map((hsl) => formatHex(hsl2farbrad(...hsl) as any)) as unknown as string[]);
 
   return colors;
 }

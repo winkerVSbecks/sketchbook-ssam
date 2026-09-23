@@ -1,11 +1,6 @@
 import * as Color from '@texel/color';
 
-const VALID_GAMUTS = [
-  Color.sRGBGamut,
-  Color.DisplayP3Gamut,
-  Color.A98RGBGamut,
-  Color.Rec2020Gamut,
-];
+const VALID_GAMUTS = [Color.sRGBGamut, Color.DisplayP3Gamut, Color.A98RGBGamut, Color.Rec2020Gamut];
 type ValidGamut =
   | typeof Color.sRGBGamut
   | typeof Color.DisplayP3Gamut
@@ -24,7 +19,7 @@ const K3 = (1.0 + K1) / (1.0 + K2);
 //   0.5 *
 //   (K3 * x - K1 + Math.sqrt((K3 * x - K1) * (K3 * x - K1) + 4 * K2 * K3 * x));
 
-const LrToL = (x) => (x ** 2 + K1 * x) / (K3 * (x + K2));
+const LrToL = (x: number) => (x ** 2 + K1 * x) / (K3 * (x + K2));
 
 const MAX_CHROMA = 0.225; // max chroma for all colors across all spaces
 
@@ -55,14 +50,7 @@ const BW_BACKGROUND = BLACK;
 const BW_TONES = [BLACK, WHITE, GRAY];
 
 export type System = 0 | 1;
-export type ColorSpace =
-  | 'xyz'
-  | 'oklab'
-  | 'oklch'
-  | 'srgb'
-  | 'display-p3'
-  | 'a98-rgb'
-  | 'rec2020';
+export type ColorSpace = 'xyz' | 'oklab' | 'oklch' | 'srgb' | 'display-p3' | 'a98-rgb' | 'rec2020';
 
 export function getPalette({
   system = 0,
@@ -97,31 +85,18 @@ export function getPalette({
   return colors;
 }
 
-function toColor(
-  coords: number[],
-  gamut: ValidGamut,
-  space: ValidSpace,
-  serialize: boolean
-) {
+function toColor(coords: number[], gamut: ValidGamut, space: ValidSpace, serialize: boolean) {
   const [Lr, H, C = MAX_CHROMA] = coords;
   const L = LrToL(Lr);
   const oklch = [L, C, H];
   let outCoords;
   if (gamut) {
-    outCoords = Color.gamutMapOKLCH(
-      oklch,
-      gamut,
-      space,
-      undefined,
-      Color.MapToL
-    );
+    outCoords = Color.gamutMapOKLCH(oklch, gamut, space, undefined, Color.MapToL);
   } else {
     outCoords = Color.convert(oklch, Color.OKLCH, space);
   }
   if (serialize) {
-    return space.id === 'srgb'
-      ? Color.RGBToHex(outCoords)
-      : Color.serialize(outCoords, space);
+    return space.id === 'srgb' ? Color.RGBToHex(outCoords) : Color.serialize(outCoords, space);
   } else {
     return outCoords;
   }

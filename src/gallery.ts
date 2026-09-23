@@ -15,9 +15,7 @@ const allSketchSet = new Set(allSketches);
 function expandEntry(entry: string): string[] {
   if (allSketchSet.has(entry)) return [entry];
   const prefix = entry.endsWith('/') ? entry : `${entry}/`;
-  return allSketches.filter(
-    (p) => p.startsWith(prefix) && !p.slice(prefix.length).includes('/'),
-  );
+  return allSketches.filter((p) => p.startsWith(prefix) && !p.slice(prefix.length).includes('/'));
 }
 
 const explicitList = import.meta.env.VITE_GALLERY as string | undefined;

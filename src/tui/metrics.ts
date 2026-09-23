@@ -63,10 +63,7 @@ const CAP_HEIGHT_EM = 0.72;
  * The baseline is placed so the reference glyph's ink is vertically centred in
  * the row — one `measureText` call covers both the advance and the cap height.
  */
-export function createMetrics(
-  ctx: TextMeasurer | null,
-  opts: MetricsOptions = {},
-): TuiMetrics {
+export function createMetrics(ctx: TextMeasurer | null, opts: MetricsOptions = {}): TuiMetrics {
   const fontSize = opts.fontSize ?? 14;
   const lineH = opts.lineH ?? 20;
   const family = opts.family ?? TUI_FONT_FAMILY;

@@ -11,11 +11,7 @@ export const colorHarmonies = {
     normalizeHue(h + 150),
     normalizeHue(h - 150),
   ],
-  triadic: (h: number) => [
-    normalizeHue(h),
-    normalizeHue(h + 120),
-    normalizeHue(h + 240),
-  ],
+  triadic: (h: number) => [normalizeHue(h), normalizeHue(h + 120), normalizeHue(h + 240)],
   tetradic: (h: number) => [
     normalizeHue(h),
     normalizeHue(h + 90),

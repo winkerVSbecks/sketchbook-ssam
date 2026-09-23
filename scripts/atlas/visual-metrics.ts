@@ -30,9 +30,9 @@ const outPath = arg('out', join(repoRoot, 'scripts/atlas/data/visual-metrics.jso
 
 mkdirSync(cacheDir, { recursive: true });
 
-const archive = JSON.parse(
-  readFileSync(join(repoRoot, 'archive-app/archive.json'), 'utf8'),
-) as { sketches: { id: string; cloudinary: { url: string } }[] };
+const archive = JSON.parse(readFileSync(join(repoRoot, 'archive-app/archive.json'), 'utf8')) as {
+  sketches: { id: string; cloudinary: { url: string } }[];
+};
 
 const slugOf = (id: string) => id.replace('sketches/', '').split('/').join('__');
 

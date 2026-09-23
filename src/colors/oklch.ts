@@ -30,7 +30,7 @@ export function splitComplementary(): string[] {
   const colors = [];
 
   const [baseHue, splitHue1, splitHue2] = colorHarmonies.splitComplementary(
-    Random.rangeFloor(0, 360)
+    Random.rangeFloor(0, 360),
   );
 
   // Background (Kelly's "ground")
@@ -56,9 +56,7 @@ export function splitComplementary(): string[] {
 export function complementary(): string[] {
   const colors = [];
 
-  const [baseHue, complementaryHue] = colorHarmonies.complementary(
-    Random.rangeFloor(0, 360)
-  );
+  const [baseHue, complementaryHue] = colorHarmonies.complementary(Random.rangeFloor(0, 360));
 
   // Background (Kelly's "ground")
   const bgL = Random.range(0.85, 0.95); // Oklch lightness (0-1)
@@ -127,9 +125,7 @@ export function pentadic(): string[] {
 export function triadic(): string[] {
   const colors = [];
 
-  const [baseHue, splitHue1, splitHue2] = colorHarmonies.triadic(
-    Random.rangeFloor(0, 360)
-  );
+  const [baseHue, splitHue1, splitHue2] = colorHarmonies.triadic(Random.rangeFloor(0, 360));
 
   // Background (Kelly's "ground")
   const bgL = Random.range(0.85, 0.95); // Oklch lightness (0-1)
@@ -155,7 +151,7 @@ export function superSaturated(): string[] {
   const colors = [];
 
   const [baseHue, complementaryHue] = colorHarmonies.complementary(
-    Random.pick([60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360])
+    Random.pick([60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360]),
     // Random.rangeFloor(0, 360)
   );
   const chroma = Random.range(0.3, 0.8);
@@ -218,9 +214,7 @@ export function complementaryWithVariants(): {
 
   const accentL = Random.range(0.45, 0.6);
   const accentC = Random.range(0.3, 0.8);
-  colors.fg.push(
-    `oklch(${(accentL * 100).toFixed(1)}% ${accentC} ${complementaryHue})`
-  );
+  colors.fg.push(`oklch(${(accentL * 100).toFixed(1)}% ${accentC} ${complementaryHue})`);
 
   complementaryVariations.forEach((h) => {
     colors.fg.push(`oklch(${(accentL * 100).toFixed(1)}% ${accentC} ${h})`);

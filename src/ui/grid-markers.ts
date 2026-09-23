@@ -199,8 +199,17 @@ export function drawGridMarkers(
 ) {
   if (camera) {
     drawZoomGrid(ctx, camera, {
-      width, height, margin, subdivisions, ruler, rulerInset, frameRadius, ink, paper,
-      yLabels, xLabels,
+      width,
+      height,
+      margin,
+      subdivisions,
+      ruler,
+      rulerInset,
+      frameRadius,
+      ink,
+      paper,
+      yLabels,
+      xLabels,
     });
     return;
   }
@@ -384,7 +393,19 @@ interface ZoomGridOptions {
 function drawZoomGrid(
   ctx: CanvasRenderingContext2D,
   camera: Camera,
-  { width, height, margin, subdivisions, ruler, rulerInset, frameRadius, ink, paper, xLabels, yLabels }: ZoomGridOptions,
+  {
+    width,
+    height,
+    margin,
+    subdivisions,
+    ruler,
+    rulerInset,
+    frameRadius,
+    ink,
+    paper,
+    xLabels,
+    yLabels,
+  }: ZoomGridOptions,
 ) {
   const rulerW = rulerWidth(margin, ruler);
   const fx0 = margin;
@@ -465,7 +486,10 @@ function drawZoomGrid(
     const subPx = sub * scale;
     // Unlabelled ticks between labels: the largest nice step ≤ 24 px that divides `sub`; at least the midpoint
     const fine = niceStepFloor(24 / scale);
-    const perLabel = Math.abs(sub / fine - Math.round(sub / fine)) < 1e-9 ? Math.max(2, Math.round(sub / fine)) : 2;
+    const perLabel =
+      Math.abs(sub / fine - Math.round(sub / fine)) < 1e-9
+        ? Math.max(2, Math.round(sub / fine))
+        : 2;
     const finePx = subPx / perLabel;
     // Breathing room from each row boundary: half a label step, but never more than one fine tick
     const inset = rulerInset ?? Math.min(subPx * 0.5, finePx);

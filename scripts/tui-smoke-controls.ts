@@ -35,7 +35,15 @@ test('range: track click at 25 % → 25 % of span (stepped)', () => {
   let seen = -1;
   // 2 rows × 15 cols: track ├ + 13 knob cells + ┤ → 12 intervals, 3/12 = 25 %.
   const rect = cellRect(0, 0, 2, 15);
-  const r = createRange({ id: 'v', label: 'v', min: 0, max: 100, value: 0, step: 5, onChange: (v) => (seen = v) });
+  const r = createRange({
+    id: 'v',
+    label: 'v',
+    min: 0,
+    max: 100,
+    value: 0,
+    step: 5,
+    onChange: (v) => (seen = v),
+  });
   assert.deepEqual(r.track(rect), { row: 1, col0: 0, col1: 14 });
   assert.equal(r.pointerDown(at(1, 1 + 3), rect), true);
   assert.equal(r.value, 25);
@@ -74,7 +82,15 @@ test('range: draws label, tabular value and ├──●──┤ track', () => 
   const r = createRange({ id: 'gap', label: 'gap', min: 0, max: 10, value: 5 });
   r.draw(buf, cellRect(0, 0, 2, 14), fallbackTheme, false);
   assert.deepEqual(dump(buf), ['gap...... 5.00', '├──────●─────┤']);
-  const inl = createRange({ id: 'x', label: 'x', min: 0, max: 1, value: 1, inline: true, format: (v) => v.toFixed(1) });
+  const inl = createRange({
+    id: 'x',
+    label: 'x',
+    min: 0,
+    max: 1,
+    value: 1,
+    inline: true,
+    format: (v) => v.toFixed(1),
+  });
   const buf2 = createGlyphBuffer(1, 14);
   inl.draw(buf2, cellRect(0, 0, 1, 14), fallbackTheme, false);
   assert.deepEqual(dump(buf2), ['x.├─────●┤.1.0']);
@@ -85,7 +101,11 @@ test('range: draws label, tabular value and ├──●──┤ track', () => 
 test('toggle: exclusive keeps exactly one active', () => {
   const calls: string[][] = [];
   const g = createToggleGroup({
-    items: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }, { id: 'c', label: 'C' }],
+    items: [
+      { id: 'a', label: 'A' },
+      { id: 'b', label: 'B' },
+      { id: 'c', label: 'C' },
+    ],
     exclusive: true,
     onChange: (a) => calls.push(a),
   });
@@ -105,7 +125,10 @@ test('toggle: exclusive keeps exactly one active', () => {
 
 test('toggle: independent items toggle on and off', () => {
   const g = createToggleGroup({
-    items: [{ id: 'grid', label: 'grid' }, { id: 'axes', label: 'axes' }],
+    items: [
+      { id: 'grid', label: 'grid' },
+      { id: 'axes', label: 'axes' },
+    ],
     active: ['axes'],
   });
   const rect = cellRect(5, 1, 2, 10);
@@ -148,7 +171,13 @@ test('button: press → release fires once; release outside does not', () => {
 test('layout: [button, 3 toggles, range] in 12 rows → non-overlapping with 1-row gaps', () => {
   const controls = [
     createButton({ id: 'b', label: 'B' }),
-    createToggleGroup({ items: [{ id: '1', label: '1' }, { id: '2', label: '2' }, { id: '3', label: '3' }] }),
+    createToggleGroup({
+      items: [
+        { id: '1', label: '1' },
+        { id: '2', label: '2' },
+        { id: '3', label: '3' },
+      ],
+    }),
     createRange({ id: 'r', label: 'r', min: 0, max: 1, value: 0 }),
   ];
   const rects = layoutControls(controls, cellRect(2, 3, 12, 20));
@@ -169,7 +198,14 @@ test('layout: overflow is clipped, hidden controls get rows 0', () => {
     createButton({ id: 'c', label: 'c' }),
   ];
   const rects = layoutControls(controls, cellRect(0, 0, 4, 10));
-  assert.deepEqual(rects.map((r) => [r.row, r.rows]), [[0, 2], [3, 1], [4, 0]]);
+  assert.deepEqual(
+    rects.map((r) => [r.row, r.rows]),
+    [
+      [0, 2],
+      [3, 1],
+      [4, 0],
+    ],
+  );
 });
 
 test('layout: padding insets the controls; a padded host lays out and hit-tests the same way', () => {
@@ -182,7 +218,10 @@ test('layout: padding insets the controls; a padded host lays out and hit-tests 
     { row: 3, col: 5, rows: 1, cols: 16 },
     { row: 5, col: 5, rows: 2, cols: 16 },
   ]);
-  assert.deepEqual(layoutControls(controls, inner, 1), layoutControls(controls, inner, { rows: 1, cols: 1 }));
+  assert.deepEqual(
+    layoutControls(controls, inner, 1),
+    layoutControls(controls, inner, { rows: 1, cols: 1 }),
+  );
   assert.deepEqual(layoutControls(controls, inner), layoutControls(controls, inner, 0));
   // Padding larger than the rect collapses to an empty content area, never negative.
   assert.deepEqual(padInner(cellRect(0, 0, 2, 4), { rows: 3, cols: 5 }), cellRect(3, 5, 0, 0));

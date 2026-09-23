@@ -1,6 +1,12 @@
 import { createCamera, type Camera } from './camera';
 import { attachCameraGestures } from './gestures';
-import { drawGridLines, drawGridMarkers, gridMarkersInnerRect, gridStep, type GridMarkersOptions } from './grid-markers';
+import {
+  drawGridLines,
+  drawGridMarkers,
+  gridMarkersInnerRect,
+  gridStep,
+  type GridMarkersOptions,
+} from './grid-markers';
 import { createHandles, type Handles, type HandlesOptions } from './handles';
 import { createLoupe, type Loupe } from './loupe';
 import { attachPointer } from './pointer';
@@ -37,7 +43,9 @@ export interface ShellOptions {
   pixelRatio?: number;
   /** Canvas background; also used to knock out ruler numerals. */
   background?: string;
-  grid?: Partial<Pick<GridMarkersOptions, 'cols' | 'subdivisions' | 'margin' | 'xOrigin' | 'yOrigin'>>;
+  grid?: Partial<
+    Pick<GridMarkersOptions, 'cols' | 'subdivisions' | 'margin' | 'xOrigin' | 'yOrigin'>
+  >;
   /** Exclusive render modes shown as toolbar toggles. Omit for no mode buttons. */
   modes?: ShellMode[];
   /** Parameters shown as range sliders in the panel window. */
@@ -195,7 +203,11 @@ export function createShell({
       steps: loupeOpts.steps,
       magnification: loupeOpts.magnification,
       render: (c, lens, info) => {
-        drawGridLines(c, lens, { step: gridStep(camera.zoom), subdivisions: grid.subdivisions, area: lens.viewport });
+        drawGridLines(c, lens, {
+          step: gridStep(camera.zoom),
+          subdivisions: grid.subdivisions,
+          area: lens.viewport,
+        });
         currentScene?.(c, lens, view(true, info.magnification));
       },
     });
@@ -205,7 +217,8 @@ export function createShell({
       exclusive: false,
       onChange: (active) => {
         if (active.includes('zoom')) {
-          if (!theLoupe.center) theLoupe.placeAt({ x: inner.x + inner.w / 2, y: inner.y + inner.h / 2 });
+          if (!theLoupe.center)
+            theLoupe.placeAt({ x: inner.x + inner.w / 2, y: inner.y + inner.h / 2 });
           else theLoupe.visible = true;
         } else theLoupe.hide();
       },

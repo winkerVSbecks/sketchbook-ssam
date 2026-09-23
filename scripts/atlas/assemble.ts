@@ -1,7 +1,7 @@
 /**
  * Assemble archive-app/atlas.json — the data behind `npm run atlas`.
  *
- * Inputs come from a corpus-analysis pass (agent-generated, see CLAUDE.md):
+ * Inputs come from a corpus-analysis pass (agent-generated, see AGENTS.md):
  *   --records   dir with code-*.json and vision-*.json record arrays
  *   --metrics   visual-metrics.json (per-id color metrics from thumbnails)
  *   --synthesis dir with taxonomy.json, clusters.json, insights.json (optional files)
@@ -60,7 +60,7 @@ const synthesisDir = arg('synthesis');
 const outPath = arg('out', join(repoRoot, 'archive-app/atlas.json'));
 
 const readJson = (p: string) => JSON.parse(readFileSync(p, 'utf8'));
-const readOptional = <T,>(p: string): T | null => (existsSync(p) ? (readJson(p) as T) : null);
+const readOptional = <T>(p: string): T | null => (existsSync(p) ? (readJson(p) as T) : null);
 
 // ---------- load ----------
 
@@ -262,7 +262,8 @@ const bags = nodes.map(bagOf);
 const totals = bags.map((b) => [...b.values()].reduce((a, w) => a + w, 0));
 
 function sim(i: number, j: number): number {
-  const [small, large] = bags[i]!.size < bags[j]!.size ? [bags[i]!, bags[j]!] : [bags[j]!, bags[i]!];
+  const [small, large] =
+    bags[i]!.size < bags[j]!.size ? [bags[i]!, bags[j]!] : [bags[j]!, bags[i]!];
   let inter = 0;
   for (const [key, w] of small) {
     const other = large.get(key);

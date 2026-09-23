@@ -10,11 +10,7 @@ import {
   type Rect,
 } from './types';
 
-export type IconPainter = (
-  ctx: CanvasRenderingContext2D,
-  rect: Rect,
-  active: boolean,
-) => void;
+export type IconPainter = (ctx: CanvasRenderingContext2D, rect: Rect, active: boolean) => void;
 
 export interface ToggleItem {
   id: string;
@@ -102,10 +98,7 @@ export function createToggleGroup({
     },
     isActive: (id) => state.has(id),
     setActive,
-    measure: () =>
-      direction === 'column'
-        ? items.length * size + (items.length - 1) * gap
-        : size,
+    measure: () => (direction === 'column' ? items.length * size + (items.length - 1) * gap : size),
     draw: (ctx, rect) => {
       const rs = itemRects(rect);
       ctx.save();
@@ -120,11 +113,7 @@ export function createToggleGroup({
         ctx.lineWidth = theme.border;
         ctx.stroke();
         const pad = size * 0.16;
-        item.drawIcon(
-          ctx,
-          { x: r.x + pad, y: r.y + pad, w: r.w - pad * 2, h: r.h - pad * 2 },
-          on,
-        );
+        item.drawIcon(ctx, { x: r.x + pad, y: r.y + pad, w: r.w - pad * 2, h: r.h - pad * 2 }, on);
         if (cornerMarker) drawCornerMarker(ctx, r, 7, 4, on ? theme.paper : theme.ink);
       });
       ctx.restore();
@@ -146,8 +135,7 @@ export function createToggleGroup({
       if (i === null || i !== p) return false;
       return setActive(items[i].id);
     },
-    cursorAt: (pt, rect): Cursor | null =>
-      indexAt(pt, rect) !== null ? 'pointer' : null,
+    cursorAt: (pt, rect): Cursor | null => (indexAt(pt, rect) !== null ? 'pointer' : null),
   };
   return group;
 }

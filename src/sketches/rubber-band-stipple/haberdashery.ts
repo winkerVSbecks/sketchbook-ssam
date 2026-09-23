@@ -81,11 +81,11 @@ export const sketch = ({
     total: 6,
     hStart: Random.range(0, 360),
     hCycles: 0.5,
-    hEasing: (x) => Math.pow(x, 4),
+    hEasing: (x: number) => Math.pow(x, 4),
     sRange: [0.75, 1],
-    sEasing: (x) => Math.pow(x, 2),
+    sEasing: (x: number) => Math.pow(x, 2),
     lRange: [1, 0.08],
-    lEasing: (x) => Math.pow(x, 1.1),
+    lEasing: (x: number) => Math.pow(x, 1.1),
   }));
   const bg = '#000000';
   const colorScale = interpolate(colors);

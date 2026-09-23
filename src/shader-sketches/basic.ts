@@ -32,13 +32,7 @@ void main() {
   gl_Position = vec4(position, 0, 1);
 }`;
 
-const sketch: Sketch<'webgl2'> = ({
-  wrap,
-  canvas,
-  width,
-  height,
-  pixelRatio,
-}) => {
+const sketch: Sketch<'webgl2'> = ({ wrap, canvas, width, height, pixelRatio }) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => wrap.dispose());
     import.meta.hot.accept(() => wrap.hotReload());

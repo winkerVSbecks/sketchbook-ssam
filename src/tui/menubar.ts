@@ -182,7 +182,8 @@ export function layoutMenuBar(
 
 export function createMenuBar(opts: MenuBarOptions): TuiMenuBar {
   const { metrics, theme, items, status } = opts;
-  const getCols = () => Math.max(0, Math.floor(typeof opts.cols === 'function' ? opts.cols() : opts.cols));
+  const getCols = () =>
+    Math.max(0, Math.floor(typeof opts.cols === 'function' ? opts.cols() : opts.cols));
   const getRow = () => Math.floor(typeof opts.row === 'function' ? opts.row() : opts.row);
   const getRows = () => Math.max(1, Math.floor(opts.rows ?? 2));
   const getBandPx = () => {
@@ -198,7 +199,12 @@ export function createMenuBar(opts: MenuBarOptions): TuiMenuBar {
   let pressed: string | null = null;
 
   const rect = (): CellRect => cellRect(getRow(), 0, getRows(), getCols());
-  const pxRect = (): Rect => ({ x: 0, y: getRow() * metrics.lineH, w: getWidthPx(), h: getBandPx() });
+  const pxRect = (): Rect => ({
+    x: 0,
+    y: getRow() * metrics.lineH,
+    w: getWidthPx(),
+    h: getBandPx(),
+  });
   const layout = (): MenuBarLayout => layoutMenuBar(items(), getCols(), status?.());
 
   const spanAtCol = (col: number): MenuSpan | null => {
@@ -232,7 +238,8 @@ export function createMenuBar(opts: MenuBarOptions): TuiMenuBar {
     spans.forEach((s, i) => {
       // `s.col - 2` is the separator's own cell plus the space each side: the span
       // start, not the label — a parked item's brackets sit inside its span.
-      if (i > 0) buf.text(r.row, s.col - 2, MENU_SEPARATOR, theme.chromeFg, theme.chromeBg, undefined, dy);
+      if (i > 0)
+        buf.text(r.row, s.col - 2, MENU_SEPARATOR, theme.chromeFg, theme.chromeBg, undefined, dy);
     });
     spans.forEach((s) => {
       // Active: inverted over the whole span (label + ITEM_PAD cells each side), so
@@ -244,7 +251,11 @@ export function createMenuBar(opts: MenuBarOptions): TuiMenuBar {
       const fg = s.item.active
         ? theme.chromeBg
         : isPressed
-          ? legibleOn(composite(theme.selectionBg, composite(theme.chromeBg, theme.bg)), theme.chromeFg, theme.frameActive)
+          ? legibleOn(
+              composite(theme.selectionBg, composite(theme.chromeBg, theme.bg)),
+              theme.chromeFg,
+              theme.frameActive,
+            )
           : theme.chromeFg;
       // The highlight is an inset block centred on the band's pixel midline, so
       // the band's own ground stays under it (and above and below it).

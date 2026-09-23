@@ -47,7 +47,7 @@ export const sketch = ({ wrap, context, width, height }: SketchProps) => {
     output.forEach((regions) => {
       regions.forEach((region) => {
         context.strokeStyle = 'red';
-        drawPath(context, region, false);
+        drawPath(context, region as number[][], false);
         context.stroke();
       });
     });
