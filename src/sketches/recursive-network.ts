@@ -142,6 +142,28 @@ const config = {
   gridWeight: 0.6,
 
   // ── colour ───────────────────────────────────────────────────────────────
+  /** px — spacing of the probe grid that finds which areas touch or overlap. */
+  neighbourStep: 6,
+  /** px — areas nearer than this count as neighbours even if they don't overlap. */
+  neighbourGap: 4,
+  /**
+   * px — probes this close to an arc's endpoint are skipped: areas that only
+   * meet at a node, as a hub's spokes all do, are not neighbours.
+   */
+  nodeClearance: 16,
+  /**
+   * On: only areas whose outlines run alongside each other are neighbours —
+   * a map colouring. Off: any two that overlap are too, which needs far more
+   * colours than the palette has.
+   */
+  touchOnly: true,
+  /**
+   * Three hues are rarely enough for a clean colouring, so each family's
+   * accent is also offered as a fill, used only where its washes run out.
+   */
+  accentFills: true,
+  /** Points per arc when an area's outline is traced for the probe. */
+  outlineSamples: 48,
   /**
    * Degrees between neighbouring hues on cusphanger's ring. Small keeps the
    * families close cousins, 120 makes a triad, 180 a complement.
@@ -171,11 +193,12 @@ let families: Family[] = [];
 let rule = "#ffffff";
 
 // One cusphanger palette: a tinted ground plus, per hue in the harmony, three
-// swatches graded by contrast against it. Each hue is a *family* — an arc and
-// everything drawn on it (its subdivision circles, its arrowheads) is coloured
-// from one family, so a family reads as one drawing event rather than a colour.
-// Every line is drawn in the family's ink and every fill in its wash, so a
-// stroke always stands clear of the area it bounds.
+// swatches graded by contrast against it. Each hue is a *family*. Every area —
+// an arc's lune, or the seed disc — takes one, and the arc bounding it is
+// inked from the same family along with its circles and arrowheads. Families
+// are handed out once the figure is grown, as a map colouring: no two areas
+// that touch or overlap share one (see `colourAreas`). Lines are drawn in the
+// family's ink and fills in its wash, so a stroke stands clear of its area.
 const buildPalette = () => {
   const palette = cuspPalette({
     angle: config.angle,
@@ -287,6 +310,12 @@ groundFolder.addBinding(config, "gridAlpha", { min: 0, max: 1, step: 0.05 });
 groundFolder.addBinding(config, "gridWeight", { min: 0, max: 3, step: 0.1 });
 
 const colour = pane.addFolder({ title: "colour", expanded: false });
+colour.addBinding(config, "neighbourStep", { min: 2, max: 30, step: 1 });
+colour.addBinding(config, "neighbourGap", { min: 0, max: 20, step: 0.5 });
+colour.addBinding(config, "nodeClearance", { min: 0, max: 60, step: 1 });
+colour.addBinding(config, "touchOnly");
+colour.addBinding(config, "accentFills");
+colour.addBinding(config, "outlineSamples", { min: 8, max: 128, step: 1 });
 colour.addBinding(config, "angle", { min: 10, max: 180, step: 1 });
 colour.addBinding(config, "hueCount", { min: 1, max: 6, step: 1 });
 colour.addBinding(config, "ground", {
@@ -341,6 +370,8 @@ interface Sweep {
 
 interface Arc extends Sweep {
   family: number;
+  /** Which of its family's swatches fills the arc's area. */
+  fill: "wash" | "accent";
   /** 0 = the seed circle, 1 = grown off it, 2 = grown off one of those… */
   generation: number;
   /** The circle this arc is part of. The seed's two semicircles share one. */
@@ -353,9 +384,8 @@ interface Arc extends Sweep {
 }
 
 interface Mark {
-  family: number;
-  /** Inherited from the arc the mark sits on. */
-  generation: number;
+  /** The arc the mark sits on — it is inked in that arc's family. */
+  arc: Arc;
   x: number;
   y: number;
 }
@@ -387,7 +417,6 @@ const compassArc = (
   radius: number,
   side: number,
   major: boolean,
-  family: number,
   generation: number,
 ): Arc | null => {
   const dx = b[0] - a[0];
@@ -418,7 +447,9 @@ const compassArc = (
   if (major) sweep -= Math.sign(sweep) * TAU;
 
   return {
-    family,
+    // Assigned by `colourAreas` once the whole figure is known.
+    family: 0,
+    fill: "wash",
     generation,
     curve: -1,
     cx,
@@ -521,6 +552,187 @@ const withinReach = (arc: Arc, cx: number, cy: number, maxR: number) => {
     if (Math.hypot(x - cx, y - cy) > maxR) return false;
   }
   return true;
+};
+
+interface Area {
+  outline: Pt[];
+  /** minX, minY, maxX, maxY — grown by the neighbour gap. */
+  box: [number, number, number, number];
+}
+
+/**
+ * An area as a polygon: out along its arc, back along its lune. The seed
+ * circle has no lune and closes on itself.
+ */
+const areaOf = (arc: Arc, samples: number, gap: number): Area => {
+  const outline: Pt[] = [];
+  for (let i = 0; i < samples; i++) outline.push(pointOnArc(arc, i / samples));
+  if (arc.lune)
+    for (let i = 0; i < samples; i++)
+      outline.push(pointOnArc(arc.lune, i / samples));
+  const xs = outline.map((p) => p[0]);
+  const ys = outline.map((p) => p[1]);
+  return {
+    outline,
+    box: [
+      Math.min(...xs) - gap,
+      Math.min(...ys) - gap,
+      Math.max(...xs) + gap,
+      Math.max(...ys) + gap,
+    ],
+  };
+};
+
+/** Even–odd ray cast. */
+const insidePolygon = (pts: Pt[], x: number, y: number) => {
+  let inside = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const [xi, yi] = pts[i];
+    const [xj, yj] = pts[j];
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi)
+      inside = !inside;
+  }
+  return inside;
+};
+
+const distanceToSegment = (p: Pt, a: Pt, b: Pt) => {
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const len2 = dx * dx + dy * dy;
+  const t =
+    len2 === 0
+      ? 0
+      : Math.max(
+          0,
+          Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / len2),
+        );
+  return Math.hypot(p[0] - (a[0] + t * dx), p[1] - (a[1] + t * dy));
+};
+
+const nearOutline = (pts: Pt[], p: Pt, gap: number) =>
+  pts.some((a, i) => distanceToSegment(p, a, pts[(i + 1) % pts.length]) <= gap);
+
+/**
+ * Which areas are neighbours. A grid of probes is laid over the figure; each
+ * probe collects the areas it falls inside, or within `neighbourGap` of, and
+ * every pair it collects is linked. So overlapping areas are neighbours, and
+ * so are areas that run alongside each other, but areas that only meet at a
+ * node are not — probes near an endpoint are skipped.
+ */
+const findNeighbours = (
+  arcs: Arc[],
+  ends: Pt[],
+  touchOnly = config.touchOnly,
+): Set<number>[] => {
+  const gap = config.neighbourGap;
+  const areas = arcs.map((arc) => areaOf(arc, config.outlineSamples, gap));
+  const links = arcs.map(() => new Set<number>());
+  const x0 = Math.min(...areas.map((a) => a.box[0]));
+  const y0 = Math.min(...areas.map((a) => a.box[1]));
+  const x1 = Math.max(...areas.map((a) => a.box[2]));
+  const y1 = Math.max(...areas.map((a) => a.box[3]));
+
+  for (let y = y0; y <= y1; y += config.neighbourStep) {
+    for (let x = x0; x <= x1; x += config.neighbourStep) {
+      const p: Pt = [x, y];
+      if (ends.some((e) => Math.hypot(e[0] - x, e[1] - y) < config.nodeClearance))
+        continue;
+      const here = areas.flatMap(({ outline, box }, i) =>
+        x >= box[0] &&
+        x <= box[2] &&
+        y >= box[1] &&
+        y <= box[3] &&
+        (nearOutline(outline, p, gap) || (!touchOnly && insidePolygon(outline, x, y)))
+          ? [i]
+          : [],
+      );
+      for (const i of here)
+        for (const j of here) if (i !== j) links[i].add(j);
+    }
+  }
+  return links;
+};
+
+/**
+ * Map colouring: every area takes one of `count` colours so that no two
+ * neighbours share one. An exact search — DSatur order (the area with the most
+ * distinct colours already around it goes next, ties to the most neighbours),
+ * trying the first `preferred` colours before the rest, each group in a seeded
+ * random order so no family is favoured, and
+ * backing up on a dead end. The figure is small, but the search is capped at
+ * `budget` steps; if it runs out, or no clean colouring exists, the best
+ * colouring seen is kept, with the fewest neighbouring pairs sharing a colour.
+ */
+const colourAreas = (
+  links: Set<number>[],
+  count: number,
+  preferred = count,
+  budget = 20000,
+): number[] => {
+  const n = links.length;
+  const colour = new Array<number>(n).fill(-1);
+  const clashesOf = (c: number[]) =>
+    links.reduce((sum, ls, i) => sum + [...ls].filter((j) => j > i && c[j] === c[i]).length, 0);
+
+  const nextArea = () => {
+    let next = -1;
+    let bestSaturation = -1;
+    let bestDegree = -1;
+    for (let i = 0; i < n; i++) {
+      if (colour[i] >= 0) continue;
+      const saturation = new Set([...links[i]].map((j) => colour[j]).filter((c) => c >= 0)).size;
+      if (saturation > bestSaturation || (saturation === bestSaturation && links[i].size > bestDegree)) {
+        next = i;
+        bestSaturation = saturation;
+        bestDegree = links[i].size;
+      }
+    }
+    return next;
+  };
+
+  const range = (from: number, to: number) =>
+    Array.from({ length: to - from }, (_, i) => from + i);
+
+  let steps = 0;
+  const search = (left: number): boolean => {
+    if (left === 0) return true;
+    if (++steps > budget) return false;
+    const area = nextArea();
+    const taken = new Set([...links[area]].map((j) => colour[j]));
+    const order = [
+      ...Random.shuffle(range(0, preferred)),
+      ...Random.shuffle(range(preferred, count)),
+    ];
+    for (const c of order) {
+      if (taken.has(c)) continue;
+      colour[area] = c;
+      if (search(left - 1)) return true;
+      colour[area] = -1;
+      if (steps > budget) return false;
+    }
+    return false;
+  };
+  if (search(n)) return colour;
+
+  // No clean colouring found: fall back to greedy DSatur, each area taking the
+  // colour it clashes with least.
+  colour.fill(-1);
+  for (let step = 0; step < n; step++) {
+    const area = nextArea();
+    const clashes = Array.from({ length: count }, (_, c) =>
+      [...links[area]].filter((j) => colour[j] === c).length,
+    );
+    const least = Math.min(...clashes);
+    const best = clashes.flatMap((k, c) => (k === least ? [c] : []));
+    const early = best.filter((c) => c < preferred);
+    colour[area] = Random.pick(early.length > 0 ? early : best);
+  }
+  const clashing = clashesOf(colour);
+  if (clashing > 0)
+    console.warn(
+      `recursive-network: ${clashing} neighbouring pair(s) share a colour — raise hueCount or turn on accentFills`,
+    );
+  return colour;
 };
 
 export const sketch = ({
@@ -642,8 +854,7 @@ export const sketch = ({
         const [tx, ty] = tangentOnArc(arc, t);
         markers.push({
           kind: "arrow",
-          family: arc.family,
-          generation: arc.generation,
+          arc,
           x,
           y,
           angle: Math.atan2(ty, tx),
@@ -666,8 +877,7 @@ export const sketch = ({
         const [x, y] = pointOnArc(arc, t);
         markers.push({
           kind: "circle",
-          family: arc.family,
-          generation: arc.generation,
+          arc,
           x,
           y,
         });
@@ -693,6 +903,7 @@ export const sketch = ({
     const start = (config.seedAngle * Math.PI) / 180;
     const circle: Arc = {
       family: 0,
+      fill: "wash",
       generation: 0,
       curve: seedCurve,
       cx,
@@ -749,7 +960,6 @@ export const sketch = ({
           Random.pick(openings),
           Random.chance(config.sideBalance) ? 1 : -1,
           Random.chance(config.majorChance),
-          Random.rangeFloor(0, families.length),
           generation,
         );
         if (!arc || !withinReach(arc, cx, cy, R * config.reach)) continue;
@@ -768,10 +978,27 @@ export const sketch = ({
       }
     }
 
+    // Areas meet at their endpoints by construction; only contact elsewhere
+    // makes two of them neighbours.
+    const ends = arcs.flatMap((arc) =>
+      arc.lune ? [pointOnArc(arc, 0), pointOnArc(arc, 1)] : [],
+    );
+    // Fill colours are family × tier: every wash first, then every accent.
+    const hues = families.length;
+    const colours = colourAreas(
+      findNeighbours(arcs, ends),
+      config.accentFills ? hues * 2 : hues,
+      hues,
+    );
+    arcs.forEach((arc, i) => {
+      arc.family = colours[i] % hues;
+      arc.fill = colours[i] < hues ? "wash" : "accent";
+    });
+
     return { nodes, arcs, markers };
   };
 
-  let scene = build();
+    let scene = build();
 
   requestRebuild = () => {
     scene = build();
@@ -827,15 +1054,15 @@ export const sketch = ({
 
   /**
    * The seed disc, then each grown arc filled against the stretch of its
-   * parent it spans: out along the arc, back along the parent. Filled one by one in the family's
-   * wash, so nested lunes deepen where they stack.
+   * parent it spans: out along the arc, back along the parent. Filled one by one in the swatch the
+   * map colouring gave it, so nested lunes deepen where they stack.
    */
   const drawFills = () => {
     context.save();
     context.globalAlpha = config.fillAlpha;
     for (const arc of scene.arcs) {
       const lune = arc.lune;
-      context.fillStyle = families[arc.family].wash;
+      context.fillStyle = families[arc.family][arc.fill];
       context.beginPath();
       context.arc(arc.cx, arc.cy, arc.r, arc.a0, arc.a1, arc.a1 < arc.a0);
       // The seed circle closes on itself, so its fill is the whole disc.
@@ -916,7 +1143,7 @@ export const sketch = ({
     }
 
     for (const m of scene.markers) {
-      const ink = families[m.family].ink;
+      const ink = families[m.arc.family].ink;
       if (m.kind === "circle")
         drawCircle(
           m.x,
@@ -936,7 +1163,7 @@ export const sketch = ({
           n.y,
           config.seedNodeSize,
           config.weight * config.seedNodeWeight,
-          families[0].ink,
+          families[scene.arcs[0].family].ink,
         );
     }
   };
