@@ -7,7 +7,7 @@
 # @raycast.packageName Sketchbook
 
 # Optional parameters:
-# @raycast.icon images/icon.png
+# @raycast.icon icons/atlas.png
 # @raycast.description Start Atlas (:5181), or stop it if this command started it
 
-exec "$(dirname "$0")/_service.sh" atlas 5181 atlas
+exec "$(dirname "$0")/_service.sh" atlas 5181 atlas toggle-atlas.sh

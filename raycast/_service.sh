@@ -1,17 +1,20 @@
 #!/bin/bash
 # Shared start/stop toggle for the Raycast script commands beside this file.
-# Usage: _service.sh <name> <port> <npm script>
+# Usage: _service.sh <name> <port> <npm script> <toggle script filename>
 #
 # Starts `npm run <script>` detached in its own process group, records the
 # group in .raycast/<name>.pid and logs to .raycast/<name>.log. Run again and
 # it stops that group. Only ever signals a process it recorded itself; if the
 # port is held by something else (say a terminal `npm run review`) it just
-# opens the page.
+# opens the page. Each start/stop also flips the toggle's icon (_icons.sh).
 
 set -u
 name=$1
 port=$2
 script=$3
+toggle=$4
+
+source "$(dirname "$0")/_icons.sh"
 
 repo="$(cd "$(dirname "$0")/.." && pwd)"
 state="$repo/.raycast"
@@ -34,6 +37,7 @@ if [[ -f "$pidfile" ]]; then
     done
     kill -KILL -- "-$pgid" 2>/dev/null
     rm -f "$pidfile"
+    sync_icon "$name" "$port" "$toggle"
     echo "Stopped $name"
     exit 0
   fi
@@ -42,6 +46,7 @@ fi
 
 if lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
   open "$url"
+  sync_icon "$name" "$port" "$toggle"
   echo "$name already running on :$port (not started here) — opened it"
   exit 0
 fi
@@ -53,4 +58,5 @@ cd "$repo"
 nohup npm run "$script" >"$logfile" 2>&1 </dev/null &
 echo $! >"$pidfile"
 disown
+set_icon "$name" on "$toggle"
 echo "Started $name on :$port"
