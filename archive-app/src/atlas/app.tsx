@@ -355,7 +355,11 @@ function Ledger({
             >
               <span className="irow-title">
                 {ins.title}
-                <span className="irow-kind"> · {KIND_LABEL[ins.kind] ?? ins.kind}</span>
+                {/* Non-breaking: the kind never strands on a line of its own. */}
+                <span className="irow-kind">
+                  {'\u00a0·\u00a0'}
+                  {KIND_LABEL[ins.kind] ?? ins.kind}
+                </span>
               </span>
             </button>
           );
