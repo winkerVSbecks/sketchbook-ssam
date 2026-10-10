@@ -43,8 +43,15 @@ interface Params {
   /** Ground left round the field, as a fraction of the canvas width. */
   margin: number;
   walkers: number;
-  /** Share of the local cell width that is ink; the rest is the gap. */
-  solid: number;
+  /**
+   * Share of the local cell width that is ink (the rest is the gap between
+   * paths), far from the foci (τ = 0) and next to them (|τ| = tauMax);
+   * `falloff` shapes the blend: 1 linear in τ, >1 holds the far share
+   * longer, <1 reaches the near share sooner.
+   */
+  lineFar: number;
+  lineNear: number;
+  falloff: number;
   /** Swap ink and ground. */
   invert: boolean;
   seed: string;
@@ -62,7 +69,9 @@ const params: Params = {
   focal: 0.24,
   margin: 0.06,
   walkers: 24,
-  solid: 0.78,
+  lineFar: 0.85,
+  lineNear: 0.45,
+  falloff: 1,
   invert: false,
   seed: Random.getRandomSeed(),
   paper: 'a4',
@@ -103,10 +112,11 @@ const bipolarToXY = (a: number, tau: number, sigma: number): Point => {
 };
 
 /**
- * nalee's solidStyle, scaled: each path is one band, `params.solid` of the
- * local cell width (the rest is the gap between paths). The band is built
- * from the walker's grid path directly: every turn is rounded to a quarter
- * arc of radius solid / 2 cells (so the inner edge closes to a point instead
+ * nalee's solidStyle, scaled: each path is one band, a share of the local
+ * cell width (the rest is the gap between paths). The share runs from
+ * `lineFar` midway between the foci to `lineNear` beside them, so the gaps
+ * open up toward the centres. The band is built from the walker's grid path
+ * directly: every turn is rounded to a quarter arc of radius share / 2 cells (so the inner edge closes to a point instead
  * of looping), then the path is sampled ~3px apart along the true τ/σ curve,
  * each sample carrying the exact local width. The same samples fill the
  * screen band and generate the plotter lines.
@@ -118,6 +128,8 @@ const ARC_STEPS = 10;
 
 /** Local cell width (px) at a grid position. */
 type CellWidth = (gx: number, gy: number) => number;
+/** Share of the cell that is ink at a grid column (it depends on τ only). */
+type LineShare = (gx: number) => number;
 interface Sample {
   p: Point;
   /** band width, px */
@@ -132,9 +144,9 @@ type PlotMode = 'fill' | 'outline' | 'centre';
 
 const sign = (v: number) => (Math.abs(v) < 1e-9 ? 0 : Math.sign(v));
 
-/** Grid path → the same path with each turn rounded to a quarter arc of radius `r` cells. */
-function filletGrid(pts: Point[], r: number): Point[] {
-  if (pts.length < 3 || r <= 0) return pts;
+/** Grid path → the same path with each turn rounded to a quarter arc of half the local share. */
+function filletGrid(pts: Point[], share: LineShare): Point[] {
+  if (pts.length < 3) return pts;
   const out: Point[] = [pts[0]];
   for (let i = 1; i < pts.length - 1; i++) {
     const [px, py] = pts[i - 1];
@@ -147,6 +159,8 @@ function filletGrid(pts: Point[], r: number): Point[] {
       out.push(pts[i]);
       continue;
     }
+    // Radius half the band there, so the inner edge closes to a point.
+    const r = share(cx) / 2;
     // Centre inside the corner; the arc runs from (c − d1·r) to (c + d2·r).
     const ox = cx - d1[0] * r + d2[0] * r;
     const oy = cy - d1[1] * r + d2[1] * r;
@@ -163,13 +177,18 @@ function filletGrid(pts: Point[], r: number): Point[] {
 }
 
 /** Sample a grid polyline ~SAMPLE_PX apart in world space, with width and frame at each sample. */
-function sampleBand(grid: Point[], toWorld: DomainToWorld, cellWidth: CellWidth): Band {
+function sampleBand(
+  grid: Point[],
+  toWorld: DomainToWorld,
+  cellWidth: CellWidth,
+  share: LineShare,
+): Band {
   const raw: { p: Point; w: number }[] = [];
   const push = (gx: number, gy: number) => {
     const p = toWorld(gx, gy);
     const last = raw[raw.length - 1];
     if (last && Math.hypot(p[0] - last.p[0], p[1] - last.p[1]) < 1e-6) return;
-    raw.push({ p, w: cellWidth(gx, gy) * params.solid });
+    raw.push({ p, w: cellWidth(gx, gy) * share(gx) });
   };
   push(grid[0][0], grid[0][1]);
   for (let i = 1; i < grid.length; i++) {
@@ -402,11 +421,15 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
     } satisfies Config;
 
     const system = createNaleeSystem(domain, config, domainToWorld, [colors.ink], colors.ground);
-    const corner = params.solid / 2; // cells: the inner edge of a turn closes to a point
+    // |τ| / tauMax: 0 midway between the foci, 1 at the grid's edge beside them.
+    const share: LineShare = (gx) => {
+      const t = Math.min(1, Math.abs(gx - tauSteps) / tauSteps);
+      return params.lineFar + (params.lineNear - params.lineFar) * t ** params.falloff;
+    };
     bands = system.walkers
       .flatMap((w) => walkerToPaths(w))
       .filter((path) => path.length > 1)
-      .map((path) => sampleBand(filletGrid(path as Point[], corner), domainToWorld, cellWidth))
+      .map((path) => sampleBand(filletGrid(path as Point[], share), domainToWorld, cellWidth, share))
       .filter((band) => band.length > 1);
   };
 
@@ -434,7 +457,9 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
 
   const paths = pane.addFolder({ title: 'Paths' });
   onInput(paths.addBinding(params, 'walkers', { min: 1, max: 80, step: 1 }));
-  onInput(paths.addBinding(params, 'solid', { min: 0.05, max: 1, step: 0.01, label: 'line (× cell)' }));
+  onInput(paths.addBinding(params, 'lineFar', { min: 0.05, max: 1, step: 0.01, label: 'line far' }));
+  onInput(paths.addBinding(params, 'lineNear', { min: 0.05, max: 1, step: 0.01, label: 'line near foci' }));
+  onInput(paths.addBinding(params, 'falloff', { min: 0.2, max: 4, step: 0.05 }));
 
   const colour = pane.addFolder({ title: 'Colour' });
   colour.addBinding(colors, 'ink', { readonly: true });
