@@ -190,6 +190,7 @@ function digest(): void {
     }[];
     clusters: { key: string; name: string; count: number }[];
     threads: { key: string; name: string; note: string; members: string[] }[];
+    insights: { kind: string; title: string }[];
     tagCounts: Record<string, [string, number][]>;
     colorSystems?: { key: string; name: string }[];
   }>(join(repoRoot, 'archive-app/atlas.json'));
@@ -200,6 +201,11 @@ function digest(): void {
     '',
     '## Threads (current)',
     ...atlas.threads.map((t) => `- ${t.key} · ${t.name} · ${t.members.length}: ${t.note}`),
+  );
+  out.push(
+    '',
+    '## Insights (current, being replaced)',
+    ...atlas.insights.map((i) => `- ${i.kind} · ${i.title}`),
   );
   const uses = new Map<string, number>();
   for (const n of atlas.nodes) for (const k of n.colorSystems) uses.set(k, (uses.get(k) ?? 0) + 1);

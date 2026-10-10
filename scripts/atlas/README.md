@@ -16,8 +16,16 @@ under `scripts/atlas/data/`:
    thumbs into a cache dir and measures color in OKLCH).
 3. **Synthesis** (`data/synthesis/*.json`) — agent-generated: `taxonomy.json`
    (tag merges), `clusters.json` (clusters + threads), `insights.json`
-   (ranked opportunities). Regenerate by asking Claude; shapes are documented
-   in `assemble.ts`.
+   (ranked opportunities, merged from `insights-curator.json` and
+   `insights-technician.json`). Threads follow `tagging/threads-rules.md`,
+   insights `tagging/insights-rules.md`.
+
+The whole refresh (tag new sketches, metrics, cluster newcomers, threads,
+insights, assemble) is the `atlas-synthesis` project skill
+(`.claude/skills/atlas-synthesis/`). Its mechanical half is
+`npx tsx scripts/atlas/synthesis.ts status | digest | format <file...>`:
+`status` lists what is stale and exits 1 when assembling now would turn
+untagged sketches into placeholder clusters.
 
 Then rebuild the app data (deterministic — similarity edges, tag counts,
 cluster fallbacks, and the colour systems: `color-systems.ts` follows each
