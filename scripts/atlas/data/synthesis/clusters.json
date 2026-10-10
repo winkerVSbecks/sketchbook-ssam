@@ -498,7 +498,7 @@
   {
    "key": "nalee-lineage",
    "name": "The Nalee System, End to End",
-   "note": "The negative-space packing rule from its birth as a sujni quilt through Kelly awnings, a detour into physarum trails, hull and jali variants, and its late migration into single-line and voxel forms.",
+   "note": "The packing rule from a sujni quilt through Kelly awnings, physarum, jali and hulls, then single-line meanders, voxels and neon bio-sprue tubes.",
    "members": [
     "sketches/sujni/sujni-basic",
     "sketches/nalee/sketches/basic",
@@ -509,18 +509,18 @@
     "sketches/nalee/sketches/polar-ruins",
     "sketches/nalee-jali/a",
     "sketches/nalee-hulls/k_best",
-    "sketches/nalee/sketches/polar-color-wheel",
     "sketches/nalee-one-line/basic",
     "sketches/bauhaus/nalee-composition",
     "sketches/conformal-mapping/nalee",
     "sketches/voxels/nalee",
-    "sketches/nalee-one-line/albers-meander"
+    "sketches/nalee-one-line/albers-meander",
+    "sketches/bio-sprue/sprue"
    ]
   },
   {
    "key": "rubber-band-hulls",
    "name": "Rubber Bands and Hulls",
-   "note": "Convex hulls as a recurring device \u2014 from early clustered slashes and shattered polygons to colliding shells, nalee hulls, and the rubber-band-stipple series where the hull becomes an elastic band snapped around dots.",
+   "note": "Convex hulls from clustered slashes and shattered polygons to colliding shells, nalee hulls and rubber-band stipple, ending as one band wrapped round haberdashery pegs.",
    "members": [
     "sketches/convex-hull-101",
     "sketches/patchwork/patchwork-full",
@@ -532,13 +532,14 @@
     "sketches/nalee-hulls/k_best",
     "sketches/rubber-banding/basic",
     "sketches/rubber-band-stipple/rubber-band-stipple",
+    "sketches/rubber-band-stipple/haberdashery",
     "sketches/rubber-band-stipple/skeleton-albers"
    ]
   },
   {
    "key": "textile-lineage",
    "name": "Textile Logic",
-   "note": "The loom as a mental model, developing from embroidered spirals and sujni stitches through Albers weavings, a soft-body rug, clearloop and anni-weaving, and finally woven terminal charts and rubber-band stipple.",
+   "note": "The loom as a model, from embroidered spirals and sujni stitches through Albers weavings, a soft-body rug and anni-weaving to woven terminal charts on a glyph desktop.",
    "members": [
     "sketches/embroidered-spirals",
     "sketches/sujni/sujni-stitches",
@@ -549,7 +550,8 @@
     "sketches/anni-weaving/anni-weaving",
     "sketches/voxels/samantha-bittman",
     "sketches/terminal-charts/terminal-charts-patterns",
-    "sketches/rubber-band-stipple/weaving-techniques"
+    "sketches/rubber-band-stipple/weaving-techniques",
+    "sketches/terminal-ui/layered-compositions"
    ]
   },
   {
@@ -589,7 +591,7 @@
   {
    "key": "windows-screens",
    "name": "Windows, Screens and Blinds",
-   "note": "The aperture as a recurring form \u2014 perspective windows and khidki lattices, jali screens, distorted domain-polygon windows, nalee jali, and gravura blinds that slide open and shut.",
+   "note": "The aperture from perspective windows and khidki through jali, domain-polygon and nalee screens to gravura and sliding blinds, then draggable terminal windows.",
    "members": [
     "sketches/perspectives",
     "sketches/khidki",
@@ -598,14 +600,16 @@
     "sketches/domain-polygon/window/sketch-distort",
     "sketches/nalee-jali/b",
     "sketches/gravura/rybitten-blinds",
+    "sketches/clearloop/stretch",
     "sketches/blinds/blinds",
-    "sketches/clearloop/stretch"
+    "sketches/blinds/collapse",
+    "sketches/terminal-ui/layered-compositions"
    ]
   },
   {
    "key": "ascii-terminal",
    "name": "Text as Image",
-   "note": "Rendering into the character grid \u2014 from maze distance fields and cluster-growth printouts to a console color traveller, chladni type, a quine, and the terminal-charts series.",
+   "note": "Rendering into the character grid, from maze distance fields and cluster-growth printouts through chladni type and a quine to terminal charts and a windowed glyph desktop.",
    "members": [
     "sketches/maze-distance/ascii",
     "sketches/cluster-growth/multi-random",
@@ -613,13 +617,15 @@
     "sketches/color-traveller/color-traveller-canvas",
     "sketches/chladni/ascii",
     "sketches/quine",
-    "sketches/terminal-charts/terminal-charts"
+    "sketches/terminal-charts/terminal-charts",
+    "sketches/terminal-ui/layered-compositions",
+    "sketches/terminal-ui/differential-growth"
    ]
   },
   {
    "key": "emergence-process",
    "name": "Process as Image",
-   "note": "Simulations left to draw themselves \u2014 boids and DLA growth, physarum trails, wave-function collapse, soft bodies, flowing curve particles, and XOR automata, each image the trace of a run.",
+   "note": "Simulations that draw themselves: boids, DLA, physarum, wave-function collapse, soft bodies and XOR automata, then spring reliefs, differential growth and a recursive network.",
    "members": [
     "sketches/boids/noise-field-color",
     "sketches/growth",
@@ -628,7 +634,42 @@
     "sketches/cluster-growth/system-test",
     "sketches/soft-body/rug",
     "sketches/curve-particles/backdrop",
-    "sketches/automata/xor-game-of-life"
+    "sketches/automata/xor-game-of-life",
+    "sketches/canvas-ui/curve-relief",
+    "sketches/terminal-ui/differential-growth",
+    "sketches/recursive-network"
+   ]
+  },
+  {
+   "key": "cusphanger-tiers",
+   "name": "Cusphanger Contrast Tiers",
+   "note": "Contrast-tiered P3 colour from rounded arc reductions and a gradient nalee line to haberdashery bands and collapsing blinds, then its own terminal explorer and a compass network.",
+   "members": [
+    "sketches/paint-without-thinking/arcs-reduction-rounded-animated-cusp",
+    "sketches/nalee-one-line/basic-gradient-cusp",
+    "sketches/rubber-band-stipple/haberdashery-cusp",
+    "sketches/blinds/collapse-cusp",
+    "sketches/terminal-ui/palette-picker",
+    "sketches/terminal-ui/cusp-hanger",
+    "sketches/recursive-network"
+   ]
+  },
+  {
+   "key": "sketch-as-instrument",
+   "name": "The Sketch as Instrument",
+   "note": "Sketches built to be operated: texel ramps, SAT debug views and rough grid processes, then field and tensor probes, the canvas-UI shell, flatland constructions and the terminal desktop.",
+   "members": [
+    "sketches/texel-colors-basic",
+    "sketches/collision/spaw-debug",
+    "sketches/domain-polygon/just-grid-rough-process",
+    "sketches/magnetic-field/electric-field-ssam",
+    "sketches/conformal-mapping/transforms",
+    "sketches/tensors/tensors-options",
+    "sketches/canvas-ui/controls-demo",
+    "sketches/flatland/napoleon",
+    "sketches/canvas-ui/torsions",
+    "sketches/terminal-ui/layered-compositions",
+    "sketches/terminal-ui/palette-picker"
    ]
   }
  ]
