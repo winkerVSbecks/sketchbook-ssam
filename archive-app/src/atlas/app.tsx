@@ -353,8 +353,10 @@ function Ledger({
               aria-pressed={active}
               onClick={() => toggle({ kind: 'insight', index: i })}
             >
-              <span className="irow-kind">{KIND_LABEL[ins.kind] ?? ins.kind}</span>
-              <span className="irow-title">{ins.title}</span>
+              <span className="irow-title">
+                {ins.title}
+                <span className="irow-kind"> · {KIND_LABEL[ins.kind] ?? ins.kind}</span>
+              </span>
             </button>
           );
         })}
