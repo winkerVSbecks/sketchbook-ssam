@@ -162,34 +162,76 @@ code {
 .lsec > .label {
   margin-bottom: 0.5rem;
 }
+.fold {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  letter-spacing: inherit;
+  transition: color 0.15s ease;
+}
+.fold:hover {
+  color: var(--fg);
+}
+.fold path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.fold-count {
+  margin-left: 0.25rem;
+  font-weight: 400;
+}
 .lrow {
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 3rem 1.75rem;
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr) 3rem minmax(1.75rem, auto);
+  align-items: start;
   gap: 0.5rem;
   padding: 0.125rem 0;
   font-size: 0.8125rem;
+  line-height: 1.35;
 }
 .lrow-label {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   text-decoration: underline;
   text-decoration-color: transparent;
   text-underline-offset: 3px;
   transition: text-decoration-color 0.15s ease;
 }
-.lrow-bar {
+/* The row's total as a faint bar; with a pick active, the share of the pick
+   that falls in this row is inked over it (a cross-tab, read at a glance). */
+.lrow-track {
   grid-column: 2;
+  position: relative;
   height: 3px;
+  margin-top: 0.5em;
+}
+.lrow-bar,
+.lrow-part {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
   background: var(--fg);
+}
+.lrow-bar {
   opacity: 0.2;
   transition: opacity 0.15s ease;
+}
+.lrow-part {
+  opacity: 0.9;
+}
+.lrow.has-part .lrow-bar {
+  opacity: 0.1;
+}
+.lrow-of {
+  color: var(--fg);
 }
 .lrow-count {
   grid-column: 3;
   text-align: right;
+  white-space: nowrap;
   color: var(--muted);
 }
 .lrow:hover .lrow-label {
@@ -331,6 +373,8 @@ code {
 }
 .set-tools {
   display: flex;
+  flex-wrap: wrap;
+  row-gap: 0.75rem;
   justify-content: space-between;
   align-items: baseline;
   gap: 1.5rem;
@@ -338,11 +382,14 @@ code {
 }
 .seg {
   display: flex;
+  flex-wrap: wrap;
+  white-space: nowrap;
   align-items: baseline;
   gap: 1rem;
   font-size: 0.875rem;
 }
 .seg button {
+  white-space: nowrap;
   color: var(--muted);
   padding-bottom: 2px;
   border-bottom: 1px solid transparent;
@@ -357,8 +404,33 @@ code {
   border-bottom-color: var(--fg);
 }
 
+/* Groups run full width; a group too small to fill a row sits beside its
+   neighbours instead, so a sparse grouping stays a sheet, not a ladder. */
+.groups {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 2.5rem;
+  animation: set-in 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes set-in {
+  from {
+    opacity: 0.25;
+  }
+}
 .group {
+  flex: 1 1 100%;
+  min-width: 0;
   margin-top: 0.5rem;
+}
+.group.is-small {
+  flex: 0 0 auto;
+}
+/* A small group is exactly as wide as its own sketches. */
+.group.is-small .thumbs {
+  grid-template-columns: repeat(var(--n), var(--sheet));
+}
+.group.is-small .thumbs.is-plates {
+  grid-template-columns: repeat(var(--n), 10.5rem);
 }
 .group-head {
   position: sticky;
@@ -542,17 +614,17 @@ code {
   list-style: none;
   margin: 0;
   padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem 0.5rem;
 }
 .kin button {
+  display: block;
   width: 100%;
-  display: grid;
-  grid-template-columns: 2.75rem minmax(0, 1fr);
-  gap: 0.75rem;
-  align-items: center;
-  padding: 0.25rem 0;
+  min-width: 0;
 }
 .kin img {
-  width: 2.75rem;
+  width: 100%;
   aspect-ratio: 1;
   object-fit: cover;
   background: var(--img-bg);
@@ -561,24 +633,20 @@ code {
 .kin button:hover img {
   opacity: 0.65;
 }
-.kin-text {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
+.kin-name,
+.kin-shared {
+  display: block;
+  font-size: 0.75rem;
   line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .kin-name {
-  font-size: 0.8125rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  margin-top: 0.25rem;
 }
 .kin-shared {
-  font-size: 0.75rem;
   color: var(--muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .kin-row {
   display: grid;
@@ -635,6 +703,9 @@ button.kin-thumb:hover img {
       'bar bar'
       'ledger set';
   }
+  .app.has-drawer .set {
+    padding-right: calc(var(--drawer-w) + 2rem);
+  }
   .drawer {
     position: fixed;
     top: var(--bar-h);
@@ -658,9 +729,7 @@ button.kin-thumb:hover img {
   outline: none;
 }
 .help::backdrop {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(8px) saturate(180%);
-  -webkit-backdrop-filter: blur(8px) saturate(180%);
+  background: rgba(255, 255, 255, 0.85);
 }
 .help table {
   border-collapse: collapse;

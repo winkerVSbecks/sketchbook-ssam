@@ -141,12 +141,15 @@ function describe(pick: Pick): { title: string; kind: string | null; body: strin
 function LedgerRow({
   label,
   count,
+  part,
   max,
   active,
   onClick,
 }: {
   label: string;
   count: number;
+  /** how many of the current pick fall in this row; inked over the bar */
+  part?: number;
   max?: number;
   active: boolean;
   onClick: () => void;
@@ -154,16 +157,66 @@ function LedgerRow({
   return (
     <button
       type="button"
-      className={`lrow${active ? ' is-active' : ''}`}
+      className={`lrow${active ? ' is-active' : ''}${part !== undefined ? ' has-part' : ''}`}
       aria-pressed={active}
       onClick={onClick}
     >
       <span className="lrow-label">{label}</span>
       {max !== undefined && (
-        <span className="lrow-bar" style={{ width: `${(count / max) * 100}%` }} aria-hidden />
+        <span className="lrow-track" aria-hidden>
+          <span className="lrow-bar" style={{ width: `${(count / max) * 100}%` }} />
+          {part !== undefined && part > 0 && (
+            <span className="lrow-part" style={{ width: `${(part / max) * 100}%` }} />
+          )}
+        </span>
       )}
-      <span className="lrow-count">{count}</span>
+      <span className="lrow-count">
+        {part !== undefined && part > 0 && <span className="lrow-of">{part} / </span>}
+        {count}
+      </span>
     </button>
+  );
+}
+
+/** A ledger section whose rows fold away; remembered across visits. */
+function Fold({
+  id,
+  title,
+  count,
+  forceOpen,
+  children,
+}: {
+  id: string;
+  title: string;
+  count: number;
+  forceOpen: boolean;
+  children: React.ReactNode;
+}) {
+  const storeKey = `atlas.fold.${id}`;
+  const [open, setOpen] = useState(() => localStorage.getItem(storeKey) === 'open');
+  const shown = open || forceOpen;
+  return (
+    <section className="lsec">
+      <h2 className="label">
+        <button
+          type="button"
+          className="fold"
+          aria-expanded={shown}
+          onClick={() => {
+            const next = !shown;
+            setOpen(next);
+            localStorage.setItem(storeKey, next ? 'open' : 'closed');
+          }}
+        >
+          <svg viewBox="0 0 10 10" width="10" height="10" aria-hidden>
+            <path d={shown ? 'M2 3.5l3 3 3-3' : 'M3.5 2l3 3-3 3'} />
+          </svg>
+          {title}
+          <span className="fold-count">{count}</span>
+        </button>
+      </h2>
+      {shown && children}
+    </section>
   );
 }
 
@@ -225,6 +278,18 @@ function Ledger({
   onPick: (p: Pick) => void;
 }) {
   const setByMonth = useMemo(() => countByMonth(setNodes), [setNodes]);
+  // The current pick, cross-tabulated: how it spreads over clusters and
+  // colour systems. Shown on every list except the one the pick came from.
+  const parts = useMemo(() => {
+    if (pick.kind === 'all') return null;
+    const cluster = new Map<string, number>();
+    const system = new Map<string, number>();
+    for (const n of setNodes) {
+      cluster.set(n.cluster, (cluster.get(n.cluster) ?? 0) + 1);
+      for (const k of n.colorSystems) system.set(k, (system.get(k) ?? 0) + 1);
+    }
+    return { cluster, system };
+  }, [pick, setNodes]);
   const toggle = (p: Pick) => onPick(samePick(pick, p) ? { kind: 'all' } : p);
   return (
     <nav className="ledger" aria-label="Catalogue">
@@ -247,6 +312,7 @@ function Ledger({
             key={c.key}
             label={c.name}
             count={c.count}
+            part={pick.kind === 'cluster' ? undefined : (parts?.cluster.get(c.key) ?? 0)}
             max={clusterMax}
             active={pick.kind === 'cluster' && pick.key === c.key}
             onClick={() => toggle({ kind: 'cluster', key: c.key })}
@@ -254,22 +320,12 @@ function Ledger({
         ))}
       </section>
 
-      <section className="lsec">
-        <h2 className="label">Colour system</h2>
-        {systemsByUse.map((s) => (
-          <LedgerRow
-            key={s.key}
-            label={s.name}
-            count={systemUses.get(s.key) ?? 0}
-            max={systemMax}
-            active={pick.kind === 'system' && pick.key === s.key}
-            onClick={() => toggle({ kind: 'system', key: s.key })}
-          />
-        ))}
-      </section>
-
-      <section className="lsec">
-        <h2 className="label">Threads</h2>
+      <Fold
+        id="threads"
+        title="Threads"
+        count={data.threads.length}
+        forceOpen={pick.kind === 'thread'}
+      >
         {data.threads.map((t) => (
           <LedgerRow
             key={t.key}
@@ -279,10 +335,14 @@ function Ledger({
             onClick={() => toggle({ kind: 'thread', key: t.key })}
           />
         ))}
-      </section>
+      </Fold>
 
-      <section className="lsec">
-        <h2 className="label">Insights</h2>
+      <Fold
+        id="insights"
+        title="Insights"
+        count={data.insights.length}
+        forceOpen={pick.kind === 'insight'}
+      >
         {data.insights.map((ins, i) => {
           const active = pick.kind === 'insight' && pick.index === i;
           return (
@@ -298,6 +358,21 @@ function Ledger({
             </button>
           );
         })}
+      </Fold>
+
+      <section className="lsec">
+        <h2 className="label">Colour system</h2>
+        {systemsByUse.map((s) => (
+          <LedgerRow
+            key={s.key}
+            label={s.name}
+            count={systemUses.get(s.key) ?? 0}
+            part={pick.kind === 'system' ? undefined : (parts?.system.get(s.key) ?? 0)}
+            max={systemMax}
+            active={pick.kind === 'system' && pick.key === s.key}
+            onClick={() => toggle({ kind: 'system', key: s.key })}
+          />
+        ))}
       </section>
     </nav>
   );
@@ -410,6 +485,28 @@ function Drawer({
       {node.notable && <p className="drawer-notable">{node.notable}</p>}
 
       <section className="dsec">
+        <h3 className="label">Run</h3>
+        <button
+          type="button"
+          className="copy"
+          title="Copy the run command (c)"
+          onClick={() => copy('run', runCommand(node.id))}
+        >
+          <code>{runCommand(node.id)}</code>
+          <span className="copy-state">{copied === 'run' ? 'copied' : 'copy'}</span>
+        </button>
+        <button
+          type="button"
+          className="copy"
+          title="Copy the file path"
+          onClick={() => copy('file', `src/${node.id}.ts`)}
+        >
+          <code>src/{node.id}.ts</code>
+          <span className="copy-state">{copied === 'file' ? 'copied' : 'copy'}</span>
+        </button>
+      </section>
+
+      <section className="dsec">
         <h3 className="label">Kin across series</h3>
         {kin.length === 0 ? (
           <p className="drawer-quiet">No close kin outside its own series.</p>
@@ -419,17 +516,14 @@ function Drawer({
               const shared = sharedTags(node, k);
               return (
                 <li key={k.id}>
-                  <button type="button" onClick={() => onSelect(k.id)}>
-                    <img src={thumbUrl(k.url, 120)} alt="" loading="lazy" decoding="async" />
-                    <span className="kin-text">
-                      <span className="kin-name">
-                        {k.seriesLabel ? `${k.seriesLabel} / ` : ''}
-                        {k.name}
-                      </span>
-                      {shared.length > 0 && (
-                        <span className="kin-shared">{shared.join(' · ')}</span>
-                      )}
-                    </span>
+                  <button
+                    type="button"
+                    title={`${k.id}${shared.length ? `\nshares ${shared.join(', ')}` : ''}`}
+                    onClick={() => onSelect(k.id)}
+                  >
+                    <img src={thumbUrl(k.url, 200)} alt="" loading="lazy" decoding="async" />
+                    <span className="kin-name">{k.name}</span>
+                    {shared[0] && <span className="kin-shared">{shared[0]}</span>}
                   </button>
                 </li>
               );
@@ -487,28 +581,6 @@ function Drawer({
           </div>
         </section>
       )}
-
-      <section className="dsec">
-        <h3 className="label">Run</h3>
-        <button
-          type="button"
-          className="copy"
-          title="Copy the run command (c)"
-          onClick={() => copy('run', runCommand(node.id))}
-        >
-          <code>{runCommand(node.id)}</code>
-          <span className="copy-state">{copied === 'run' ? 'copied' : 'copy'}</span>
-        </button>
-        <button
-          type="button"
-          className="copy"
-          title="Copy the file path"
-          onClick={() => copy('file', `src/${node.id}.ts`)}
-        >
-          <code>src/{node.id}.ts</code>
-          <span className="copy-state">{copied === 'file' ? 'copied' : 'copy'}</span>
-        </button>
-      </section>
     </aside>
   );
 }
@@ -814,47 +886,56 @@ export function App() {
             Nothing here matches “{view.query}”. Press <kbd>esc</kbd> to clear the search.
           </p>
         ) : (
-          groups.map((g) => (
-            <section key={g.key} className="group">
-              {g.label && (
-                <h2 className="group-head">
-                  <span>{g.label}</span>
-                  <span className="quiet">{g.nodes.length}</span>
-                </h2>
-              )}
-              <div className={`thumbs${view.plates ? ' is-plates' : ''}`}>
-                {g.nodes.map((n, i) => (
-                  <button
-                    key={n.id}
-                    type="button"
-                    data-id={n.id}
-                    className={`thumb${view.sel === n.id ? ' is-selected' : ''}`}
-                    aria-label={n.id}
-                    aria-current={view.sel === n.id || undefined}
-                    title={
-                      view.plates
-                        ? undefined
-                        : `${n.seriesLabel ? `${n.seriesLabel} / ` : ''}${n.name}`
-                    }
-                    onClick={() => select(view.sel === n.id ? null : n.id)}
-                  >
-                    <img
-                      src={thumbUrl(n.url, view.plates ? 400 : 160)}
-                      alt=""
-                      loading="lazy"
-                      decoding="async"
-                    />
-                    {view.plates && (
-                      <span className="thumb-cap">
-                        {sequence && <span className="quiet">{i + 1} </span>}
-                        {n.name}
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </section>
-          ))
+          // Keyed on the pick so a new set eases in rather than cutting over.
+          <div className="groups" key={viewToHash({ ...DEFAULT_VIEW, pick: view.pick })}>
+            {groups.map((g) => (
+              <section
+                key={g.key}
+                className={`group${groups.length > 1 && g.nodes.length <= (view.plates ? 2 : 5) ? ' is-small' : ''}`}
+              >
+                {g.label && (
+                  <h2 className="group-head">
+                    <span>{g.label}</span>
+                    <span className="quiet">{g.nodes.length}</span>
+                  </h2>
+                )}
+                <div
+                  className={`thumbs${view.plates ? ' is-plates' : ''}`}
+                  style={{ '--n': g.nodes.length } as React.CSSProperties}
+                >
+                  {g.nodes.map((n, i) => (
+                    <button
+                      key={n.id}
+                      type="button"
+                      data-id={n.id}
+                      className={`thumb${view.sel === n.id ? ' is-selected' : ''}`}
+                      aria-label={n.id}
+                      aria-current={view.sel === n.id || undefined}
+                      title={
+                        view.plates
+                          ? undefined
+                          : `${n.seriesLabel ? `${n.seriesLabel} / ` : ''}${n.name}`
+                      }
+                      onClick={() => select(view.sel === n.id ? null : n.id)}
+                    >
+                      <img
+                        src={thumbUrl(n.url, view.plates ? 400 : 160)}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                      />
+                      {view.plates && (
+                        <span className="thumb-cap">
+                          {sequence && <span className="quiet">{i + 1} </span>}
+                          {n.name}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
         )}
       </main>
 
