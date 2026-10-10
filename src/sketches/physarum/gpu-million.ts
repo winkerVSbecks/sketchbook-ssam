@@ -193,7 +193,7 @@ function seedAgents(w: number, h: number): Float32Array {
   return data;
 }
 
-const sketch: Sketch<'webgpu'> = async ({ wrap, context, width, height, ...props }) => {
+export const sketch: Sketch<'webgpu'> = async ({ wrap, context, width, height, ...props }) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => wrap.dispose());
     import.meta.hot.accept(() => wrap.hotReload());
