@@ -41,15 +41,6 @@
       },
       {
         "rule": "design-system-font-size",
-        "value": "*",
-        "files": [
-          ".impeccable/mocks/atlas/index.html"
-        ],
-        "createdAt": "2026-10-10T18:12:01.415Z",
-        "reason": "Claude: throwaway decision-round mockup, not shipped; type ramp is settled at build"
-      },
-      {
-        "rule": "design-system-font-size",
         "value": "0.875rem",
         "files": [
           "archive-app/src/atlas/atlas.css"
