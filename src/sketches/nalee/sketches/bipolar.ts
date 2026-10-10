@@ -12,9 +12,10 @@ import type { Config, DomainToWorld, Node, Walker } from '../types';
  * of bipolar coordinates around two foci: constant τ draws circles round each
  * focus, constant σ the arcs through both. The walker fills the cell grid
  * unchanged; only domainToWorld knows about the foci. Because the map is
- * conformal and Δτ = Δσ, every cell is square, so each tube is drawn as wide
- * as its own step — the rings crowd and thin toward the two foci and swell
- * where the grid runs out toward the canvas edge.
+ * conformal and Δτ = Δσ, every cell is square, so each path is drawn as a
+ * solid band as wide as its own step (nalee's solidStyle, scaled per cell) —
+ * the bands crowd and thin toward the two foci and swell where the grid runs
+ * out toward the canvas edge.
  */
 
 Random.setSeed(Random.getRandomSeed());
@@ -32,17 +33,18 @@ const bipolarToXY = (a: number, tau: number, sigma: number): Point => {
 };
 
 /**
- * Pipe drawn segment by segment, each as wide as its own cell, so the tube
- * scales with the local grid. Three passes (ground halo, colour, core) keep
- * the joins clean; a window of highlight travels the core once per loop.
+ * nalee's solidStyle, scaled: one stroke in the walker's colour, drawn segment
+ * by segment so each piece is as wide as its own cell. `SOLID` of the cell
+ * width is ink; the rest is the gap that keeps neighbouring paths apart.
  */
 const SUBSTEPS = 6; // each cell step traced along the true τ/σ curve
+const SOLID = 0.78;
 
 type GridLookup = (p: Point) => Point | undefined;
 
-const scaledPipe =
-  (bg: string, toGrid: GridLookup, toWorld: DomainToWorld) =>
-  (context: CanvasRenderingContext2D, walker: Walker, pts: Point[], playhead: number) => {
+const scaledSolid =
+  (toGrid: GridLookup, toWorld: DomainToWorld) =>
+  (context: CanvasRenderingContext2D, walker: Walker, pts: Point[]) => {
     if (pts.length < 2) return;
     const segs = pts.slice(1).map((b, i) => {
       const a = pts[i];
@@ -57,26 +59,16 @@ const scaledPipe =
           : [a, b];
       return { curve, len: Math.hypot(b[0] - a[0], b[1] - a[1]) };
     });
-    const n = segs.length;
-    const head = ((playhead + walker.lengths[1]) % 1) * n;
-    const span = Math.max(1, n * walker.lengths[0] * 0.5);
-
-    const pass = (scale: number, color: (i: number) => string) => {
-      segs.forEach((s, i) => {
-        context.strokeStyle = color(i);
-        context.lineWidth = s.len * scale;
-        context.beginPath();
-        s.curve.forEach(([x, y], k) => (k ? context.lineTo(x, y) : context.moveTo(x, y)));
-        context.stroke();
-      });
-    };
-
     context.setLineDash([]);
     context.lineCap = 'round';
     context.lineJoin = 'round';
-    pass(0.94, () => bg);
-    pass(0.7, () => walker.color);
-    pass(0.32, (i) => ((head - i + n) % n < span ? walker.highlightColor : bg));
+    context.strokeStyle = walker.color;
+    for (const s of segs) {
+      context.lineWidth = s.len * SOLID;
+      context.beginPath();
+      s.curve.forEach(([x, y], k) => (k ? context.lineTo(x, y) : context.moveTo(x, y)));
+      context.stroke();
+    }
   };
 
 export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) => {
@@ -130,7 +122,7 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
     stepSize: 1,
     walkerCount: 24,
     padding: 0,
-    pathStyle: scaledPipe(bg, toGrid, domainToWorld),
+    pathStyle: scaledSolid(toGrid, domainToWorld),
     flat: true,
   } satisfies Config;
 
