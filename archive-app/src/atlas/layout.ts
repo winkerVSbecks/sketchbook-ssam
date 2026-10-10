@@ -4,14 +4,21 @@
  * deterministic — same data, same map — so the canvas is stable across loads
  * (arrangement from rules applied uniformly, not per-view taste).
  */
-import { NODE_W, nodeH, type AtlasNode, type Cluster } from './model.ts';
+import { NODE_W, nodeH, type AtlasNode, type Cluster, type ColorSystem } from './model.ts';
 
 export type Pt = { x: number; y: number };
 export type Bounds = { minX: number; minY: number; maxX: number; maxY: number };
 export type GroupLabel = { text: string; sub?: string; x: number; y: number };
-export type Layout = { pos: Map<string, Pt>; labels: GroupLabel[]; bounds: Bounds };
+/** A strip of colour cells in world space (one sampled palette). */
+export type SwatchRow = { x: number; y: number; w: number; h: number; colors: string[] };
+export type Layout = {
+  pos: Map<string, Pt>;
+  labels: GroupLabel[];
+  bounds: Bounds;
+  swatches?: SwatchRow[];
+};
 
-export type LensKey = 'clusters' | 'series' | 'timeline' | 'spectrum';
+export type LensKey = 'clusters' | 'series' | 'timeline' | 'systems';
 
 const GAP = 10;
 const HEADER = 36;
@@ -20,16 +27,6 @@ const BLOCK_GAP_Y = 132;
 
 const byDate = (a: AtlasNode, b: AtlasNode) =>
   a.date.localeCompare(b.date) || a.id.localeCompare(b.id);
-
-/** Deterministic 0..1 from a string, for tie-breaking jitter. */
-function hash01(s: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return ((h >>> 0) % 9973) / 9973;
-}
 
 export function layoutBounds(nodes: AtlasNode[], pos: Map<string, Pt>): Bounds {
   const b = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
@@ -63,16 +60,30 @@ type Block = {
   rowHs: number[];
   w: number;
   h: number;
+  /** sample palettes drawn as strips between the label and the grid */
+  swatches?: string[][];
+  /** start a new shelf before this block */
+  breakBefore?: boolean;
 };
 
-function gridBlock(items: AtlasNode[], label: string, sub: string): Block {
+type BlockExtra = Pick<Block, 'swatches' | 'breakBefore'> & { minW?: number };
+
+const SWATCH_H = 18;
+const SWATCH_GAP = 4;
+const SWATCH_PAD = 14;
+const swatchesH = (rows: string[][] | undefined) =>
+  rows?.length ? rows.length * (SWATCH_H + SWATCH_GAP) - SWATCH_GAP + SWATCH_PAD : 0;
+
+function gridBlock(items: AtlasNode[], label: string, sub: string, extra: BlockExtra = {}): Block {
   const cols = Math.max(1, Math.min(14, Math.ceil(Math.sqrt(items.length * 1.7))));
   const rows: AtlasNode[][] = [];
   for (let i = 0; i < items.length; i += cols) rows.push(items.slice(i, i + cols));
   const rowHs = rows.map((row) => Math.max(...row.map(nodeH)));
-  const w = Math.min(cols, items.length) * (NODE_W + GAP) - GAP;
-  const h = rowHs.reduce((a, rh) => a + rh + GAP, -GAP);
-  return { label, sub, rows, rowHs, w, h };
+  const gridW = Math.min(cols, items.length) * (NODE_W + GAP) - GAP;
+  const w = Math.max(gridW, extra.minW ?? 0);
+  const h = rowHs.reduce((a, rh) => a + rh + GAP, -GAP) + swatchesH(extra.swatches);
+  const { swatches, breakBefore } = extra;
+  return { label, sub, rows, rowHs, w, h, swatches, breakBefore };
 }
 
 function shelfPack(blocks: Block[]): Layout {
@@ -85,17 +96,23 @@ function shelfPack(blocks: Block[]): Layout {
 
   const pos = new Map<string, Pt>();
   const labels: GroupLabel[] = [];
+  const swatches: SwatchRow[] = [];
   let x = 0;
   let y = 0;
   let shelfH = 0;
   for (const b of blocks) {
-    if (x > 0 && x + b.w > rowMaxW) {
+    if (x > 0 && (b.breakBefore || x + b.w > rowMaxW)) {
       x = 0;
       y += shelfH + BLOCK_GAP_Y;
       shelfH = 0;
     }
     labels.push({ text: b.label, sub: b.sub, x, y });
     let yy = y + HEADER;
+    for (const colors of b.swatches ?? []) {
+      swatches.push({ x, y: yy, w: b.w, h: SWATCH_H, colors });
+      yy += SWATCH_H + SWATCH_GAP;
+    }
+    if (b.swatches?.length) yy += SWATCH_PAD - SWATCH_GAP;
     b.rows.forEach((row, ri) => {
       row.forEach((n, ci) => pos.set(n.id, { x: x + ci * (NODE_W + GAP), y: yy }));
       yy += b.rowHs[ri]! + GAP;
@@ -103,7 +120,7 @@ function shelfPack(blocks: Block[]): Layout {
     shelfH = Math.max(shelfH, b.h + HEADER);
     x += b.w + BLOCK_GAP_X;
   }
-  return { pos, labels, bounds: { minX: 0, minY: 0, maxX: 1, maxY: 1 } };
+  return { pos, labels, swatches, bounds: { minX: 0, minY: 0, maxX: 1, maxY: 1 } };
 }
 
 export function clustersLayout(nodes: AtlasNode[], clusters: Cluster[]): Layout {
@@ -202,94 +219,69 @@ export function timelineLayout(nodes: AtlasNode[], clusters: Cluster[]): Layout 
   return layout;
 }
 
-// ---------- spectrum (hue wheel + achromatic column) ----------
+// ---------- systems (one room per src/colors colour system) ----------
 
-export function spectrumLayout(nodes: AtlasNode[]): Layout {
-  const chromatic: AtlasNode[] = [];
-  const mono: AtlasNode[] = [];
+/** Rooms are at least this wide so a system's swatches read even when few
+ * sketches use it. */
+const SYSTEM_MIN_W = 5 * (NODE_W + GAP) - GAP;
+
+/**
+ * Each colour system in src/colors gets a room: its name, sampled palettes as
+ * swatch strips, then the sketches that draw from it (a sketch using several
+ * sits with the one it imports first). Rooms run busiest first. Sketches that
+ * use no src/colors system follow on a new shelf, grouped by their code-read
+ * palette tag (hand-picked hex, monochrome, external libraries…).
+ */
+export function systemsLayout(nodes: AtlasNode[], systems: ColorSystem[]): Layout {
+  const bySystem = new Map<string, AtlasNode[]>(systems.map((s) => [s.key, []]));
+  const byTag = new Map<string, AtlasNode[]>();
   for (const n of nodes) {
-    if (n.metrics && n.metrics.hue !== null && n.metrics.meanC >= 0.025) chromatic.push(n);
-    else mono.push(n);
-  }
-
-  type Item = { n: AtlasNode; x: number; y: number; tx: number; ty: number; r: number };
-  const items: Item[] = chromatic.map((n) => {
-    const m = n.metrics!;
-    const theta = ((m.hue! - 90) * Math.PI) / 180; // red family at the top
-    const cNorm = Math.min(1, Math.max(0, (m.meanC - 0.02) / 0.12));
-    const r = 460 + cNorm * 950 + hash01(n.id) * 60;
-    const tx = Math.cos(theta) * r - NODE_W / 2;
-    const ty = Math.sin(theta) * r - nodeH(n) / 2;
-    return { n, x: tx, y: ty, tx, ty, r: 46 };
-  });
-
-  // Relax overlaps while holding to targets: quiet, even spacing.
-  const CELL = 96;
-  for (let iter = 0; iter < 90; iter++) {
-    for (const it of items) {
-      it.x += (it.tx - it.x) * 0.05;
-      it.y += (it.ty - it.y) * 0.05;
-    }
-    const grid = new Map<string, Item[]>();
-    for (const it of items) {
-      const key = `${Math.floor(it.x / CELL)}:${Math.floor(it.y / CELL)}`;
-      const cell = grid.get(key) ?? [];
-      cell.push(it);
-      grid.set(key, cell);
-    }
-    for (const it of items) {
-      const cx = Math.floor(it.x / CELL);
-      const cy = Math.floor(it.y / CELL);
-      for (let gx = cx - 1; gx <= cx + 1; gx++) {
-        for (let gy = cy - 1; gy <= cy + 1; gy++) {
-          for (const other of grid.get(`${gx}:${gy}`) ?? []) {
-            if (other === it) continue;
-            const dx = other.x - it.x;
-            const dy = other.y - it.y;
-            const d = Math.hypot(dx, dy) || 0.001;
-            const min = it.r + other.r;
-            if (d < min) {
-              const push = (min - d) / 2 / d;
-              it.x -= dx * push;
-              it.y -= dy * push;
-              other.x += dx * push;
-              other.y += dy * push;
-            }
-          }
-        }
-      }
+    const primary = n.colorSystems.find((k) => bySystem.has(k));
+    if (primary) bySystem.get(primary)!.push(n);
+    else {
+      const list = byTag.get(n.palette) ?? [];
+      list.push(n);
+      byTag.set(n.palette, list);
     }
   }
+  const usesOf = (key: string) => nodes.filter((n) => n.colorSystems.includes(key)).length;
 
-  const pos = new Map<string, Pt>();
-  for (const it of items) pos.set(it.n.id, { x: Math.round(it.x), y: Math.round(it.y) });
+  const systemBlocks = systems
+    .map((s, order) => ({ s, order, items: bySystem.get(s.key)!.sort(byDate) }))
+    .sort((a, b) => b.items.length - a.items.length || a.order - b.order)
+    .map(({ s, items }) => {
+      // Labels counter-scale at far zoom, so the sub stays as short as the
+      // other lenses' counts: "42 +9" = 42 here, 9 more filed under another.
+      const shared = usesOf(s.key) - items.length;
+      const sub = `${items.length}${shared > 0 ? ` +${shared}` : ''}`;
+      return gridBlock(items, s.name, sub, { swatches: s.samples, minW: SYSTEM_MIN_W });
+    });
 
-  // Achromatic work: a calm column to the right, light to dark.
-  mono.sort(
-    (a, b) => (b.metrics?.meanL ?? 0) - (a.metrics?.meanL ?? 0) || a.id.localeCompare(b.id),
-  );
-  const stripX = 1900;
-  const stripCols = 6;
-  let sy = -Math.ceil(mono.length / stripCols / 2) * (NODE_W + GAP);
-  const stripTop = sy - 44;
-  mono.forEach((n, i) => {
-    const ci = i % stripCols;
-    const ri = Math.floor(i / stripCols);
-    pos.set(n.id, { x: stripX + ci * (NODE_W + GAP), y: sy + ri * (85 + GAP) });
-  });
+  const tagBlocks = [...byTag.entries()]
+    .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))
+    .map(([tag, items], i) =>
+      // The first sub names the shelf; the rest are bare counts.
+      gridBlock(items.sort(byDate), tag, `${items.length}${i === 0 ? ' · not src/colors' : ''}`, {
+        breakBefore: i === 0,
+      }),
+    );
 
-  const labels: GroupLabel[] = [
-    { text: 'chromatic', sub: 'angle = hue · radius = chroma', x: -1480, y: -1440 },
-    { text: 'achromatic', sub: 'light → dark', x: stripX, y: stripTop },
-  ];
-  const nodesAll = [...chromatic, ...mono];
-  return { pos, labels, bounds: layoutBounds(nodesAll, pos) };
+  const layout = shelfPack([...systemBlocks, ...tagBlocks]);
+  layout.bounds = layoutBounds(nodes, layout.pos);
+  // Empty rooms hold only swatches; keep them and the labels inside fit-view.
+  for (const r of layout.swatches ?? []) {
+    layout.bounds.maxX = Math.max(layout.bounds.maxX, r.x + r.w);
+    layout.bounds.maxY = Math.max(layout.bounds.maxY, r.y + r.h);
+  }
+  layout.bounds.minY = Math.min(layout.bounds.minY, 0);
+  return layout;
 }
 
 export function computeLayout(
   lens: LensKey,
   nodes: AtlasNode[],
   clusters: Cluster[],
+  systems: ColorSystem[],
 ): Layout {
   switch (lens) {
     case 'clusters':
@@ -298,7 +290,7 @@ export function computeLayout(
       return seriesLayout(nodes);
     case 'timeline':
       return timelineLayout(nodes, clusters);
-    case 'spectrum':
-      return spectrumLayout(nodes);
+    case 'systems':
+      return systemsLayout(nodes, systems);
   }
 }

@@ -353,6 +353,24 @@ body {
   font-weight: 400;
 }
 
+/* ---------- swatches (systems lens) ---------- */
+/* A sampled palette as a strip of flush cells; [0] is the ground, so it is a
+   little wider and carries a hairline to read on the page. */
+.swatch-row {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  pointer-events: none;
+}
+.swatch-row span {
+  flex: 1 1 0;
+}
+.swatch-row span:first-child {
+  flex-grow: 1.6;
+  box-shadow: inset 0 0 0 1px var(--hairline);
+}
+
 /* ---------- edges ---------- */
 .edges {
   position: absolute;

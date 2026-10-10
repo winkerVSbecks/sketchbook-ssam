@@ -7,12 +7,17 @@
  *   --synthesis dir with taxonomy.json, clusters.json, insights.json (optional files)
  *   --out       output path (default archive-app/atlas.json)
  *
+ * Colour systems (which src/colors system each sketch imports, plus sample
+ * swatches per system) are derived here from source — see color-systems.ts.
+ *
  * The canonical sketch list is archive-app/archive.json. Similarity edges are
  * computed here (weighted tag overlap, cross-series only) so the app stays a
  * pure viewer.
  */
 import { readFileSync, readdirSync, writeFileSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+
+import { colorSystemCatalog, detectColorSystems } from './color-systems.ts';
 
 type CodeRecord = {
   id: string;
@@ -68,6 +73,7 @@ const archive = readJson(join(repoRoot, 'archive-app/archive.json')) as {
   sketches: {
     id: string;
     name: string;
+    path: string;
     firstCommitDate: string;
     year: number;
     cloudinary: { url: string; width: number; height: number };
@@ -169,6 +175,7 @@ const nodes = archive.sketches.map((s) => {
     medium: code?.medium ?? 'canvas2d',
     motion: code?.motion ?? 'static',
     palette: applyOne(code?.palette, canon.palettes) ?? 'custom-hex',
+    colorSystems: detectColorSystems(s.path),
     influences: applyTags(code?.influences, canon.influences),
     system: applyOne(code?.system ?? null, canon.systems),
     notable: code?.notable ?? null,
@@ -311,6 +318,7 @@ const data = {
     forms: countTags('forms'),
   },
   edges,
+  colorSystems: colorSystemCatalog(),
 };
 
 writeFileSync(outPath, JSON.stringify(data));

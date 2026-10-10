@@ -20,7 +20,9 @@ under `scripts/atlas/data/`:
    in `assemble.ts`.
 
 Then rebuild the app data (deterministic — similarity edges, tag counts,
-cluster fallbacks):
+cluster fallbacks, and the colour systems: `color-systems.ts` follows each
+sketch's imports to the `src/colors` systems it uses and samples swatches from
+every system, so a new system needs an entry in its catalog and module map):
 
 ```sh
 npx tsx scripts/atlas/assemble.ts \

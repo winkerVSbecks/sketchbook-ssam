@@ -3,7 +3,8 @@
  *
  * Four lenses arrange the same 372 nodes: Clusters (thematic rooms from the
  * corpus analysis), Series (folder groups, chronological), Timeline (month
- * columns × cluster lanes), Spectrum (hue wheel from measured color).
+ * columns × cluster lanes), Systems (one room per src/colors colour system,
+ * with sampled swatches, holding the sketches that draw from it).
  * Hairline edges surface cross-series affinities; the rail lists clusters,
  * threads (lineages), and opportunity insights. Keyboard-first, like the
  * Light Table: `?` shows shortcuts.
@@ -52,7 +53,7 @@ const LENSES: [LensKey, string][] = [
   ['clusters', 'Clusters'],
   ['series', 'Series'],
   ['timeline', 'Timeline'],
-  ['spectrum', 'Spectrum'],
+  ['systems', 'Systems'],
 ];
 
 /** How many of the newest sketches the rail's recent tab lists. */
@@ -72,7 +73,7 @@ const KIND_LABEL: Record<string, string> = {
 };
 
 const SHORTCUTS: [string[], string][] = [
-  [['1', '…', '4'], 'lens: clusters · series · timeline · spectrum'],
+  [['1', '…', '4'], 'lens: clusters · series · timeline · systems'],
   [['drag'], 'pan'],
   [['⌥ drag'], 'zoom to an area'],
   [['⌃ scroll'], 'zoom (pinch on a trackpad)'],
@@ -158,6 +159,17 @@ const World = memo(function World({
 }) {
   return (
     <>
+      {layout.swatches?.map((r, i) => (
+        <div
+          key={`sw-${i}`}
+          className="swatch-row"
+          style={{ transform: `translate(${r.x}px, ${r.y}px)`, width: r.w, height: r.h }}
+        >
+          {r.colors.map((c, j) => (
+            <span key={j} style={{ background: c }} title={c} />
+          ))}
+        </div>
+      ))}
       {layout.labels.map((l, i) => (
         <div
           key={`${l.text}-${i}`}
@@ -360,6 +372,7 @@ function Panel({
   const facts: [string, string | null][] = [
     ['medium', node.medium],
     ['motion', node.motion],
+    ['colours', node.colorSystems.join(', ') || null],
     ['palette', node.palette],
     ['system', node.system],
     ['influence', node.influences.join(', ') || null],
@@ -483,7 +496,10 @@ export function App() {
   const lastDragMoved = useRef(false);
   const marqueeRef = useRef<{ x0: number; y0: number } | null>(null);
 
-  const layout = useMemo(() => computeLayout(lens, data.nodes, data.clusters), [lens]);
+  const layout = useMemo(
+    () => computeLayout(lens, data.nodes, data.clusters, data.colorSystems),
+    [lens],
+  );
 
   const reducedMotion = useMemo(
     () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
