@@ -88,6 +88,8 @@ export const settings: SketchSettings = {
   dimensions: [512, 512],
   pixelRatio: 1,
   animate: false,
+  // Keep the drawn frame so a later exportFrame() reads it, not a cleared buffer.
+  attributes: { preserveDrawingBuffer: true },
 };
 
 ssam(sketch as Sketch<'webgl2'>, settings);

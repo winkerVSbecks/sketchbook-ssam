@@ -83,7 +83,9 @@ function callCloudRender(sketchPath: string): RenderResult {
   return { filename: parsed.filename, elapsedMs };
 }
 
-function pngPath(filename: string): string {
+function pngPath(name: string): string {
+  // ssam-export reports the export's basename; the file on disk is `<name>.png`.
+  const filename = /\.(png|jpe?g|webp)$/.test(name) ? name : `${name}.png`;
   if (filename.startsWith('/')) return filename;
   if (filename.startsWith('output/')) return join(PROJECT_ROOT, filename);
   return join(OUTPUT_DIR, filename);
