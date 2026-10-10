@@ -7,7 +7,7 @@
 # @raycast.packageName Sketchbook
 
 # Optional parameters:
-# @raycast.icon 🔍
+# @raycast.icon images/icon.png
 # @raycast.description Start Light Table (:5180), or stop it if this command started it
 
 exec "$(dirname "$0")/_service.sh" review 5180 review
