@@ -43,6 +43,8 @@ interface Params {
   /** Ground left round the field, as a fraction of the canvas width. */
   margin: number;
   walkers: number;
+  /** Concentric rings filling the empty disc round each focus (0 = none). */
+  rings: number;
   /**
    * Share of the local cell width that is ink (the rest is the gap between
    * paths), far from the foci (τ = 0) and next to them (|τ| = tauMax);
@@ -69,6 +71,7 @@ const params: Params = {
   focal: 0.24,
   margin: 0.06,
   walkers: 24,
+  rings: 8,
   lineFar: 0.85,
   lineNear: 0.45,
   falloff: 1,
@@ -212,6 +215,44 @@ function sampleBand(
     const d = Math.hypot(dx, dy) || 1;
     return { p, w, t: [dx / d, dy / d], n: [-dy / d, dx / d] };
   });
+}
+
+/**
+ * Concentric rings round one focus, filling the disc the grid leaves empty.
+ * The grid's inner edge is the τ-circle at `tauEdge` (centre a·coth τ,
+ * radius a / sinh τ — not centred on the focus), so the largest ring is the
+ * biggest focus-centred circle that fits inside it. `count` rings divide
+ * that radius evenly, each `share` of its pitch wide, as closed bands.
+ */
+function focusRings(
+  focus: Point,
+  side: 1 | -1,
+  a: number,
+  tauEdge: number,
+  count: number,
+  share: number,
+): Band[] {
+  const R = a / Math.sinh(tauEdge);
+  const c = a / Math.tanh(tauEdge);
+  const rMax = R - (c - a);
+  const pitch = rMax / count;
+  const w = pitch * share;
+  const out: Band[] = [];
+  for (let k = 0; k < count; k++) {
+    const r = rMax - pitch * (k + 0.5);
+    if (r <= w / 2) break;
+    const n = Math.max(24, Math.ceil((Math.PI * 2 * r) / SAMPLE_PX));
+    out.push(
+      Array.from({ length: n + 1 }, (_, k) => {
+        const th = (k / n) * Math.PI * 2 * side;
+        const ct = Math.cos(th);
+        const st = Math.sin(th);
+        const t: Point = [-st * side, ct * side];
+        return { p: [focus[0] + ct * r, focus[1] + st * r] as Point, w, t, n: [-t[1], t[0]] as Point };
+      }),
+    );
+  }
+  return out;
 }
 
 const offset = (s: Sample, k: number): Point => [s.p[0] + s.n[0] * k, s.p[1] + s.n[1] * k];
@@ -431,6 +472,16 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
       .filter((path) => path.length > 1)
       .map((path) => sampleBand(filletGrid(path as Point[], share), domainToWorld, cellWidth, share))
       .filter((band) => band.length > 1);
+
+    if (params.rings > 0) {
+      // The grid's inner edge sits half a cell beyond its last column; the
+      // rings take the near-foci line share so they read as the same ink.
+      const tauEdge = (tauSteps + 0.5) * step;
+      bands.push(
+        ...focusRings([cx + a, cy], 1, a, tauEdge, params.rings, share(0)),
+        ...focusRings([cx - a, cy], -1, a, tauEdge, params.rings, share(0)),
+      );
+    }
   };
 
   const rebuild = () => {
@@ -457,6 +508,7 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
 
   const paths = pane.addFolder({ title: 'Paths' });
   onInput(paths.addBinding(params, 'walkers', { min: 1, max: 80, step: 1 }));
+  onInput(paths.addBinding(params, 'rings', { min: 0, max: 40, step: 1, label: 'rings at foci' }));
   onInput(paths.addBinding(params, 'lineFar', { min: 0.05, max: 1, step: 0.01, label: 'line far' }));
   onInput(paths.addBinding(params, 'lineNear', { min: 0.05, max: 1, step: 0.01, label: 'line near foci' }));
   onInput(paths.addBinding(params, 'falloff', { min: 0.2, max: 4, step: 0.05 }));
