@@ -38,6 +38,42 @@
         ],
         "createdAt": "2026-09-28T14:49:25.311Z",
         "reason": "model: brag video composition at 1920x1080; type scaled for video, img src set per frame at runtime"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/atlas/index.html"
+        ],
+        "createdAt": "2026-10-10T18:12:01.415Z",
+        "reason": "Claude: throwaway decision-round mockup, not shipped; type ramp is settled at build"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "0.875rem",
+        "files": [
+          "archive-app/src/atlas/atlas.css"
+        ],
+        "createdAt": "2026-10-10T18:20:55.188Z",
+        "reason": "Claude: DESIGN.md Typography names .meta 0.875rem and .date 0.75rem; sidecar design.json is stale"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "0.75rem",
+        "files": [
+          "archive-app/src/atlas/atlas.css"
+        ],
+        "createdAt": "2026-10-10T18:20:55.216Z",
+        "reason": "Claude: DESIGN.md Typography names .meta 0.875rem and .date 0.75rem; sidecar design.json is stale"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "1.5rem",
+        "files": [
+          "archive-app/src/atlas/atlas.css"
+        ],
+        "createdAt": "2026-10-10T18:20:55.244Z",
+        "reason": "Claude: Atlas set heading, one per view; display clamp is masthead-only"
       }
     ]
   }

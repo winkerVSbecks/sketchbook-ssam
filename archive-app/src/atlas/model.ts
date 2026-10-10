@@ -106,8 +106,7 @@ export type AtlasData = {
 /** Base node width in world units; height follows the sketch's aspect. */
 export const NODE_W = 64;
 
-export const nodeH = (n: Pick<AtlasNode, 'w' | 'h'>) =>
-  Math.round((NODE_W * n.h) / n.w);
+export const nodeH = (n: Pick<AtlasNode, 'w' | 'h'>) => Math.round((NODE_W * n.h) / n.w);
 
 /** Cloudinary transform for a sized thumb of the archived render. */
 export const thumbUrl = (url: string, w: number) =>
@@ -148,31 +147,212 @@ export function hasTag(n: AtlasNode, field: TagField, tag: string): boolean {
   return n[field].includes(tag);
 }
 
-/** Directory the sketch file lives in, e.g. "sketches/nalee/sketches"; the
- * "type" of a sketch in the sketchbook's own filing scheme. */
-export const dirOf = (n: Pick<AtlasNode, 'id'>) => n.id.split('/').slice(0, -1).join('/');
-
-export type RecentGroup = { dir: string; label: string; nodes: AtlasNode[] };
+// ---------- picks, sets and groups (the catalogue) ----------
 
 /**
- * The `limit` most recently created sketches, grouped by directory. Groups are
- * ordered by their newest member; members newest-first. Ties on the same day
- * fall back to id so the list is stable across loads.
+ * The one thing chosen in the ledger. Picks replace each other — there is no
+ * stacking — so the set on screen always has a single, nameable reason.
  */
-export function recentByDirectory(nodes: AtlasNode[], limit: number): RecentGroup[] {
-  const recent = nodes
-    .slice()
-    .sort((a, b) => b.created.localeCompare(a.created) || a.id.localeCompare(b.id))
-    .slice(0, limit);
-  const groups = new Map<string, RecentGroup>();
-  for (const n of recent) {
-    const dir = dirOf(n);
-    let g = groups.get(dir);
-    if (!g) {
-      g = { dir, label: dir.replace(/^sketches\/?/, '') || 'one-offs', nodes: [] };
-      groups.set(dir, g);
-    }
-    g.nodes.push(n);
+export type Pick =
+  | { kind: 'all' }
+  | { kind: 'cluster'; key: string }
+  | { kind: 'system'; key: string }
+  | { kind: 'thread'; key: string }
+  | { kind: 'insight'; index: number }
+  | { kind: 'month'; month: string }
+  | { kind: 'tag'; field: TagField; tag: string };
+
+export type GroupBy = 'cluster' | 'series' | 'month' | 'system';
+
+export type Group = { key: string; label: string; nodes: AtlasNode[] };
+
+/** Sentinel group for sketches that use no src/colors system. */
+export const NO_SYSTEM = '—';
+
+const byCreated = (a: AtlasNode, b: AtlasNode) =>
+  a.created.localeCompare(b.created) || a.id.localeCompare(b.id);
+
+/** Threads and insights are ordered sequences: their order is the content. */
+export const isSequence = (pick: Pick) => pick.kind === 'thread' || pick.kind === 'insight';
+
+/** The sketches a pick stands for, in display order. */
+export function nodesFor(data: AtlasData, pick: Pick): AtlasNode[] {
+  const byId = (ids: string[]) =>
+    ids.map((id) => data.nodes.find((n) => n.id === id)).filter((n): n is AtlasNode => !!n);
+  switch (pick.kind) {
+    case 'all':
+      return data.nodes;
+    case 'cluster':
+      return data.nodes.filter((n) => n.cluster === pick.key);
+    case 'system':
+      return data.nodes.filter((n) => n.colorSystems.includes(pick.key));
+    case 'thread':
+      return byId(data.threads.find((t) => t.key === pick.key)?.members ?? []);
+    case 'insight':
+      return byId(data.insights[pick.index]?.relatedIds ?? []);
+    case 'month':
+      return data.nodes.filter((n) => n.date === pick.month);
+    case 'tag':
+      return data.nodes.filter((n) => hasTag(n, pick.field, pick.tag));
   }
-  return [...groups.values()];
+}
+
+/**
+ * Group a set for the centre column. Clusters keep the synthesis order,
+ * series run by first sketch, months run newest first (so the opening sheet
+ * ends on what is current), colour systems by each sketch's first-imported
+ * system, busiest first, with the sketches outside src/colors last.
+ */
+export function groupNodes(data: AtlasData, nodes: AtlasNode[], by: GroupBy): Group[] {
+  const groups = new Map<string, Group>();
+  const add = (key: string, label: string, n: AtlasNode) => {
+    let g = groups.get(key);
+    if (!g) groups.set(key, (g = { key, label, nodes: [] }));
+    g.nodes.push(n);
+  };
+  const sorted = nodes.slice().sort(byCreated);
+  for (const n of by === 'month' ? sorted.reverse() : sorted) {
+    if (by === 'cluster') {
+      add(n.cluster, data.clusters.find((c) => c.key === n.cluster)?.name ?? n.cluster, n);
+    } else if (by === 'series') {
+      add(n.seriesLabel ?? 'one-offs', n.seriesLabel ?? 'one-offs', n);
+    } else if (by === 'month') {
+      add(n.date, n.date.replace('-', '.'), n);
+    } else {
+      const key = n.colorSystems.find((k) => data.colorSystems.some((s) => s.key === k));
+      const name = data.colorSystems.find((s) => s.key === key)?.name;
+      add(key ?? NO_SYSTEM, name ?? 'no src/colors system', n);
+    }
+  }
+  const list = [...groups.values()];
+  if (by === 'cluster') {
+    const order = new Map(data.clusters.map((c, i) => [c.key, i]));
+    list.sort((a, b) => (order.get(a.key) ?? 999) - (order.get(b.key) ?? 999));
+  } else if (by === 'system') {
+    list.sort(
+      (a, b) =>
+        Number(a.key === NO_SYSTEM) - Number(b.key === NO_SYSTEM) ||
+        b.nodes.length - a.nodes.length,
+    );
+  }
+  return list;
+}
+
+/** Every month from the first sketch to the last, gaps included (YYYY-MM). */
+export function monthSpan(nodes: AtlasNode[]): string[] {
+  const dates = nodes.map((n) => n.date).sort();
+  if (dates.length === 0) return [];
+  let [y, m] = dates[0]!.split('-').map(Number) as [number, number];
+  const [ey, em] = dates.at(-1)!.split('-').map(Number) as [number, number];
+  const out: string[] = [];
+  while (y < ey || (y === ey && m <= em)) {
+    out.push(`${y}-${String(m).padStart(2, '0')}`);
+    if (++m > 12) {
+      m = 1;
+      y++;
+    }
+  }
+  return out;
+}
+
+/** Sketch count per YYYY-MM. */
+export function countByMonth(nodes: AtlasNode[]): Map<string, number> {
+  const m = new Map<string, number>();
+  for (const n of nodes) m.set(n.date, (m.get(n.date) ?? 0) + 1);
+  return m;
+}
+
+/** What two connected sketches actually share — shown under each kin. */
+export function sharedTags(a: AtlasNode, b: AtlasNode): string[] {
+  const out: string[] = [];
+  if (a.system && a.system === b.system) out.push(a.system);
+  for (const field of ['techniques', 'concepts', 'forms', 'influences'] as const) {
+    for (const t of a[field]) if (b[field].includes(t)) out.push(t);
+  }
+  return [...new Set(out)].slice(0, 3);
+}
+
+// ---------- URL state ----------
+
+export type ViewState = {
+  pick: Pick;
+  group: GroupBy;
+  plates: boolean;
+  sel: string | null;
+  query: string;
+};
+
+export const DEFAULT_VIEW: ViewState = {
+  pick: { kind: 'all' },
+  group: 'cluster',
+  plates: false,
+  sel: null,
+  query: '',
+};
+
+const GROUPS: GroupBy[] = ['cluster', 'series', 'month', 'system'];
+const TAG_FIELDS: TagField[] = ['concepts', 'techniques', 'forms'];
+
+function pickToString(p: Pick): string | null {
+  switch (p.kind) {
+    case 'all':
+      return null;
+    case 'insight':
+      return `insight:${p.index}`;
+    case 'month':
+      return `month:${p.month}`;
+    case 'tag':
+      return `tag:${p.field}:${p.tag}`;
+    default:
+      return `${p.kind}:${p.key}`;
+  }
+}
+
+function pickFromString(s: string | null): Pick {
+  if (!s) return { kind: 'all' };
+  const [kind, ...rest] = s.split(':');
+  const value = rest.join(':');
+  switch (kind) {
+    case 'cluster':
+    case 'system':
+    case 'thread':
+      return value ? { kind, key: value } : { kind: 'all' };
+    case 'insight':
+      return Number.isInteger(Number(value)) ? { kind, index: Number(value) } : { kind: 'all' };
+    case 'month':
+      return /^\d{4}-\d{2}$/.test(value) ? { kind, month: value } : { kind: 'all' };
+    case 'tag': {
+      const [field, ...tag] = rest;
+      return TAG_FIELDS.includes(field as TagField) && tag.length
+        ? { kind, field: field as TagField, tag: tag.join(':') }
+        : { kind: 'all' };
+    }
+    default:
+      return { kind: 'all' };
+  }
+}
+
+/** The view as a location hash, defaults omitted so the opening URL is bare. */
+export function viewToHash(v: ViewState): string {
+  const p = new URLSearchParams();
+  const pick = pickToString(v.pick);
+  if (pick) p.set('pick', pick);
+  if (v.group !== DEFAULT_VIEW.group) p.set('group', v.group);
+  if (v.plates) p.set('size', 'plates');
+  if (v.sel) p.set('sel', v.sel);
+  if (v.query) p.set('q', v.query);
+  const s = p.toString();
+  return s ? `#${s}` : '';
+}
+
+export function viewFromHash(hash: string): ViewState {
+  const p = new URLSearchParams(hash.replace(/^#/, ''));
+  const group = p.get('group') as GroupBy | null;
+  return {
+    pick: pickFromString(p.get('pick')),
+    group: group && GROUPS.includes(group) ? group : DEFAULT_VIEW.group,
+    plates: p.get('size') === 'plates',
+    sel: p.get('sel'),
+    query: p.get('q') ?? '',
+  };
 }

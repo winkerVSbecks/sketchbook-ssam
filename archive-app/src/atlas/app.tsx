@@ -1,65 +1,72 @@
 /**
- * The Atlas — an infinite canvas over the whole body of work.
+ * The Atlas — a card catalogue over the whole body of work.
  *
- * Four lenses arrange the same 372 nodes: Clusters (thematic rooms from the
- * corpus analysis), Series (folder groups, chronological), Timeline (month
- * columns × cluster lanes), Systems (one room per src/colors colour system,
- * with sampled swatches, holding the sketches that draw from it).
- * Hairline edges surface cross-series affinities; the rail lists clusters,
- * threads (lineages), and opportunity insights. Keyboard-first, like the
- * Light Table: `?` shows shortcuts.
+ * Three fixed columns, nothing to pan or zoom. The ledger (left) is the
+ * overview: clusters, colour systems, threads and insights as counted lists,
+ * plus a sketches-per-month histogram. Picking one row sets the centre to
+ * that set, grouped by cluster, series, month or colour system at a fixed
+ * size. Selecting a sketch opens the drawer (right): its facts, its kin
+ * across series, its thread, and the run command. Picks replace each other;
+ * the whole view lives in the URL hash. Keyboard-first: `?` shows shortcuts.
  */
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import rawData from '../../atlas.json';
 import {
-  NODE_W,
+  DEFAULT_VIEW,
+  countByMonth,
+  groupNodes,
+  isSequence,
   matchesQuery,
-  nodeH,
-  recentByDirectory,
+  monthSpan,
+  nodesFor,
   runCommand,
+  sharedTags,
   thumbUrl,
+  viewFromHash,
+  viewToHash,
   type AtlasData,
   type AtlasNode,
+  type GroupBy,
+  type Pick,
   type TagField,
+  type ViewState,
 } from './model.ts';
-import {
-  boundsOfIds,
-  computeLayout,
-  type Bounds,
-  type Layout,
-  type LensKey,
-} from './layout.ts';
 
 const data = rawData as unknown as AtlasData;
 const nodesById = new Map(data.nodes.map((n) => [n.id, n]));
-const yearRange = data.nodes.reduce(
-  (r, n) => [Math.min(r[0], n.year), Math.max(r[1], n.year)] as [number, number],
-  [Infinity, -Infinity] as [number, number],
+const months = monthSpan(data.nodes);
+const corpusByMonth = countByMonth(data.nodes);
+const monthMax = Math.max(1, ...corpusByMonth.values());
+const clusterMax = Math.max(1, ...data.clusters.map((c) => c.count));
+const systemUses = new Map(
+  data.colorSystems.map((s) => [
+    s.key,
+    data.nodes.filter((n) => n.colorSystems.includes(s.key)).length,
+  ]),
 );
+const systemsByUse = data.colorSystems
+  .slice()
+  .sort((a, b) => (systemUses.get(b.key) ?? 0) - (systemUses.get(a.key) ?? 0));
+const systemMax = Math.max(1, ...systemUses.values());
 
-const edgesByNode = (() => {
-  const m = new Map<string, { other: string; w: number }[]>();
+const kinOf = (() => {
+  const m = new Map<string, { id: string; w: number }[]>();
   for (const [a, b, w] of data.edges) {
     if (!m.has(a)) m.set(a, []);
     if (!m.has(b)) m.set(b, []);
-    m.get(a)!.push({ other: b, w });
-    m.get(b)!.push({ other: a, w });
+    m.get(a)!.push({ id: b, w });
+    m.get(b)!.push({ id: a, w });
   }
   for (const list of m.values()) list.sort((x, y) => y.w - x.w);
-  return m;
+  return (id: string) => (m.get(id) ?? []).map((k) => nodesById.get(k.id)!).filter(Boolean);
 })();
 
-const LENSES: [LensKey, string][] = [
-  ['clusters', 'Clusters'],
+const GROUP_LABELS: [GroupBy, string][] = [
+  ['cluster', 'Cluster'],
   ['series', 'Series'],
-  ['timeline', 'Timeline'],
-  ['systems', 'Systems'],
+  ['month', 'Month'],
+  ['system', 'Colour system'],
 ];
-
-/** How many of the newest sketches the rail's recent tab lists. */
-const RECENT_LIMIT = 20;
-
-const recentGroups = recentByDirectory(data.nodes, RECENT_LIMIT);
 
 const KIND_LABEL: Record<string, string> = {
   'unexplored-combination': 'combine',
@@ -72,150 +79,439 @@ const KIND_LABEL: Record<string, string> = {
   'outlier-worth-revisiting': 'outlier',
 };
 
+const FIELD_LABEL: Record<TagField, string> = {
+  concepts: 'concept',
+  techniques: 'technique',
+  forms: 'form',
+};
+
 const SHORTCUTS: [string[], string][] = [
-  [['1', '…', '4'], 'lens: clusters · series · timeline · systems'],
-  [['drag'], 'pan'],
-  [['⌥ drag'], 'zoom to an area'],
-  [['⌃ scroll'], 'zoom (pinch on a trackpad)'],
-  [['dbl-click'], 'zoom in on that point (⇧ zooms out)'],
-  [['+', '−'], 'zoom in / out'],
-  [['f'], 'fit everything'],
-  [['click'], 'select — show its connections, grey the rest'],
-  [['⌘ click'], 'open details'],
+  [['←', '→'], 'previous / next sketch'],
+  [['↑', '↓'], 'sketch above / below'],
+  [['1', '…', '4'], 'group by cluster · series · month · colour system'],
+  [['p'], 'sheet / plates'],
   [['/'], 'search'],
-  [['c', 't', 'i', 'r'], 'rail: clusters · threads · insights · recent'],
-  [['esc'], 'clear selection & filters, one step at a time'],
+  [['c'], 'copy the run command'],
+  [['esc'], 'close the drawer, clear search, then show everything'],
   [['?'], 'shortcuts'],
 ];
 
-type View = { x: number; y: number; k: number };
-/** Where a smooth zoom is heading, and the screen point it pivots on. */
-type ZoomTarget = { k: number; px: number; py: number; raf: number };
+const sameView = (a: ViewState, b: ViewState) => viewToHash(a) === viewToHash(b);
+const samePick = (a: Pick, b: Pick) =>
+  viewToHash({ ...DEFAULT_VIEW, pick: a }) === viewToHash({ ...DEFAULT_VIEW, pick: b });
 
-const MIN_K = 0.03;
-const MAX_K = 5;
-/** The connection web only reads as far-view texture; past this zoom it is
- * fully transparent, so the 1000+ paths are dropped from the paint entirely. */
-const UNDERLAY_MAX_K = 0.3;
-/** Time constant (ms) of the zoom's exponential approach to its target. */
-const ZOOM_TAU = 80;
-const clampK = (k: number) => Math.min(MAX_K, Math.max(MIN_K, k));
-type TagFilter = { field: TagField; tag: string };
-type RailTab = 'clusters' | 'threads' | 'insights' | 'recent';
-const RAIL_TABS: RailTab[] = ['clusters', 'threads', 'insights', 'recent'];
-
-// ---------- pure helpers ----------
-
-function fitViewFor(b: Bounds, vw: number, vh: number, pad = 90): View {
-  const bw = Math.max(1, b.maxX - b.minX);
-  const bh = Math.max(1, b.maxY - b.minY);
-  const k = Math.max(
-    0.03,
-    Math.min((vw - pad * 2) / bw, (vh - pad * 2) / bh, 1.6),
-  );
-  return {
-    k,
-    x: (vw - bw * k) / 2 - b.minX * k,
-    y: (vh - bh * k) / 2 - b.minY * k,
-  };
+/** Heading, count line and prose for whatever the ledger has picked. */
+function describe(pick: Pick): { title: string; kind: string | null; body: string | null } {
+  switch (pick.kind) {
+    case 'all':
+      return { title: 'All sketches', kind: null, body: null };
+    case 'cluster': {
+      const c = data.clusters.find((c) => c.key === pick.key);
+      return { title: c?.name ?? pick.key, kind: 'cluster', body: c?.blurb ?? null };
+    }
+    case 'system': {
+      const s = data.colorSystems.find((s) => s.key === pick.key);
+      return {
+        title: s?.name ?? pick.key,
+        kind: `colour system · ${s?.source ?? ''}`,
+        body: s?.blurb ?? null,
+      };
+    }
+    case 'thread': {
+      const t = data.threads.find((t) => t.key === pick.key);
+      return { title: t?.name ?? pick.key, kind: 'thread, in order', body: t?.note ?? null };
+    }
+    case 'insight': {
+      const i = data.insights[pick.index];
+      return {
+        title: i?.title ?? 'Insight',
+        kind: `insight · ${KIND_LABEL[i?.kind ?? ''] ?? i?.kind ?? ''}`,
+        body: i?.body ?? null,
+      };
+    }
+    case 'month':
+      return { title: pick.month.replace('-', '.'), kind: 'month', body: null };
+    case 'tag':
+      return { title: pick.tag, kind: FIELD_LABEL[pick.field], body: null };
+  }
 }
 
-function center(n: AtlasNode, layout: Layout): { x: number; y: number } | null {
-  const p = layout.pos.get(n.id);
-  if (!p) return null;
-  return { x: p.x + NODE_W / 2, y: p.y + nodeH(n) / 2 };
-}
+// ---------- ledger ----------
 
-function edgePath(aId: string, bId: string, layout: Layout): string | null {
-  const a = nodesById.get(aId);
-  const b = nodesById.get(bId);
-  if (!a || !b) return null;
-  const pa = center(a, layout);
-  const pb = center(b, layout);
-  if (!pa || !pb) return null;
-  const dx = pb.x - pa.x;
-  const dy = pb.y - pa.y;
-  const d = Math.hypot(dx, dy) || 1;
-  const off = Math.min(140, d * 0.14);
-  const mx = (pa.x + pb.x) / 2 - (dy / d) * off;
-  const my = (pa.y + pb.y) / 2 + (dx / d) * off;
-  return `M ${pa.x} ${pa.y} Q ${mx} ${my} ${pb.x} ${pb.y}`;
-}
-
-// ---------- memoized world (labels + nodes) ----------
-
-const World = memo(function World({
-  layout,
-  sel,
-  activeIds,
-  onSelect,
-  onHover,
+function LedgerRow({
+  label,
+  count,
+  max,
+  active,
+  onClick,
 }: {
-  layout: Layout;
-  sel: string | null;
-  activeIds: Set<string> | null;
-  onSelect: (id: string, detail: boolean) => void;
-  onHover: (id: string | null) => void;
+  label: string;
+  count: number;
+  max?: number;
+  active: boolean;
+  onClick: () => void;
 }) {
   return (
-    <>
-      {layout.swatches?.map((r, i) => (
-        <div
-          key={`sw-${i}`}
-          className="swatch-row"
-          style={{ transform: `translate(${r.x}px, ${r.y}px)`, width: r.w, height: r.h }}
-        >
-          {r.colors.map((c, j) => (
-            <span key={j} style={{ background: c }} title={c} />
-          ))}
+    <button
+      type="button"
+      className={`lrow${active ? ' is-active' : ''}`}
+      aria-pressed={active}
+      onClick={onClick}
+    >
+      <span className="lrow-label">{label}</span>
+      {max !== undefined && (
+        <span className="lrow-bar" style={{ width: `${(count / max) * 100}%` }} aria-hidden />
+      )}
+      <span className="lrow-count">{count}</span>
+    </button>
+  );
+}
+
+function Histogram({
+  setByMonth,
+  pick,
+  onPick,
+}: {
+  setByMonth: Map<string, number>;
+  pick: Pick;
+  onPick: (p: Pick) => void;
+}) {
+  const showSet = pick.kind !== 'all';
+  return (
+    <div className="hist" role="group" aria-label="Sketches per month">
+      <div className="hist-bars">
+        {months.map((m) => {
+          const all = corpusByMonth.get(m) ?? 0;
+          const inSet = setByMonth.get(m) ?? 0;
+          const active = pick.kind === 'month' && pick.month === m;
+          return (
+            <button
+              key={m}
+              type="button"
+              className={`hist-col${active ? ' is-active' : ''}`}
+              title={`${m.replace('-', '.')} · ${all} sketch${all === 1 ? '' : 'es'}`}
+              aria-label={`${m}, ${all} sketches`}
+              disabled={all === 0}
+              onClick={() => onPick(active ? { kind: 'all' } : { kind: 'month', month: m })}
+            >
+              <span className="hist-all" style={{ height: `${(all / monthMax) * 100}%` }} />
+              {showSet && inSet > 0 && (
+                <span className="hist-set" style={{ height: `${(inSet / monthMax) * 100}%` }} />
+              )}
+            </button>
+          );
+        })}
+      </div>
+      <div className="hist-years" aria-hidden>
+        {months.map((m, i) =>
+          m.endsWith('-01') ? (
+            <span key={m} style={{ left: `${(i / months.length) * 100}%` }}>
+              {m.slice(0, 4)}
+            </span>
+          ) : null,
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Ledger({
+  pick,
+  setNodes,
+  onPick,
+}: {
+  pick: Pick;
+  setNodes: AtlasNode[];
+  onPick: (p: Pick) => void;
+}) {
+  const setByMonth = useMemo(() => countByMonth(setNodes), [setNodes]);
+  const toggle = (p: Pick) => onPick(samePick(pick, p) ? { kind: 'all' } : p);
+  return (
+    <nav className="ledger" aria-label="Catalogue">
+      <LedgerRow
+        label="All sketches"
+        count={data.nodes.length}
+        active={pick.kind === 'all'}
+        onClick={() => onPick({ kind: 'all' })}
+      />
+
+      <section className="lsec">
+        <h2 className="label">Made</h2>
+        <Histogram setByMonth={setByMonth} pick={pick} onPick={onPick} />
+      </section>
+
+      <section className="lsec">
+        <h2 className="label">Cluster</h2>
+        {data.clusters.map((c) => (
+          <LedgerRow
+            key={c.key}
+            label={c.name}
+            count={c.count}
+            max={clusterMax}
+            active={pick.kind === 'cluster' && pick.key === c.key}
+            onClick={() => toggle({ kind: 'cluster', key: c.key })}
+          />
+        ))}
+      </section>
+
+      <section className="lsec">
+        <h2 className="label">Colour system</h2>
+        {systemsByUse.map((s) => (
+          <LedgerRow
+            key={s.key}
+            label={s.name}
+            count={systemUses.get(s.key) ?? 0}
+            max={systemMax}
+            active={pick.kind === 'system' && pick.key === s.key}
+            onClick={() => toggle({ kind: 'system', key: s.key })}
+          />
+        ))}
+      </section>
+
+      <section className="lsec">
+        <h2 className="label">Threads</h2>
+        {data.threads.map((t) => (
+          <LedgerRow
+            key={t.key}
+            label={t.name}
+            count={t.members.length}
+            active={pick.kind === 'thread' && pick.key === t.key}
+            onClick={() => toggle({ kind: 'thread', key: t.key })}
+          />
+        ))}
+      </section>
+
+      <section className="lsec">
+        <h2 className="label">Insights</h2>
+        {data.insights.map((ins, i) => {
+          const active = pick.kind === 'insight' && pick.index === i;
+          return (
+            <button
+              key={`${ins.title}-${i}`}
+              type="button"
+              className={`irow${active ? ' is-active' : ''}`}
+              aria-pressed={active}
+              onClick={() => toggle({ kind: 'insight', index: i })}
+            >
+              <span className="irow-kind">{KIND_LABEL[ins.kind] ?? ins.kind}</span>
+              <span className="irow-title">{ins.title}</span>
+            </button>
+          );
+        })}
+      </section>
+    </nav>
+  );
+}
+
+// ---------- drawer ----------
+
+function useCopy(resetKey: string) {
+  const [copied, setCopied] = useState<string | null>(null);
+  useEffect(() => setCopied(null), [resetKey]);
+  const copy = useCallback((label: string, text: string) => {
+    navigator.clipboard
+      .writeText(text)
+      .then(() => setCopied(label))
+      .catch(() => {});
+  }, []);
+  return { copied, copy };
+}
+
+function Thumb({ node, onSelect }: { node: AtlasNode; onSelect: (id: string) => void }) {
+  return (
+    <button type="button" className="kin-thumb" onClick={() => onSelect(node.id)} title={node.id}>
+      <img src={thumbUrl(node.url, 160)} alt="" loading="lazy" decoding="async" />
+    </button>
+  );
+}
+
+function Drawer({
+  node,
+  onSelect,
+  onPick,
+  onClose,
+}: {
+  node: AtlasNode;
+  onSelect: (id: string) => void;
+  onPick: (p: Pick) => void;
+  onClose: () => void;
+}) {
+  const { copied, copy } = useCopy(node.id);
+  const kin = kinOf(node.id).slice(0, 6);
+  const threads = data.threads.filter((t) => t.members.includes(node.id));
+  const primarySystem = data.colorSystems.find((s) => s.key === node.colorSystems[0]);
+  const sameSystem = primarySystem
+    ? data.nodes
+        .filter((n) => n.id !== node.id && n.colorSystems[0] === primarySystem.key)
+        .slice(-6)
+    : [];
+
+  const chips = (field: TagField) =>
+    node[field].map((t) => (
+      <button
+        key={`${field}-${t}`}
+        type="button"
+        className="chip"
+        title={`Show every sketch tagged ${t}`}
+        onClick={() => onPick({ kind: 'tag', field, tag: t })}
+      >
+        {t}
+      </button>
+    ));
+
+  const facts: [string, string | null][] = [
+    ['medium', `${node.medium} · ${node.motion}`],
+    ['colours', node.colorSystems.join(', ') || null],
+    ['palette', node.palette],
+    ['engine', node.system],
+    ['influence', node.influences.join(', ') || null],
+  ];
+
+  return (
+    <aside className="drawer" aria-label={node.id}>
+      <div className="drawer-head">
+        <div>
+          <h2 className="drawer-title">{node.name}</h2>
+          <p className="drawer-sub">
+            {node.seriesLabel ? `${node.seriesLabel} · ` : ''}
+            {node.created.replaceAll('-', '.')}
+          </p>
         </div>
-      ))}
-      {layout.labels.map((l, i) => (
-        <div
-          key={`${l.text}-${i}`}
-          className="group-label"
-          style={{ '--lx': `${l.x}px`, '--ly': `${l.y}px` } as React.CSSProperties}
-        >
-          {l.text}
-          {l.sub && <span className="sub">{l.sub}</span>}
-        </div>
-      ))}
-      {data.nodes.map((n) => {
-        const p = layout.pos.get(n.id);
-        if (!p) return null;
-        const dim = activeIds !== null && !activeIds.has(n.id);
+        <button type="button" className="icon-btn" aria-label="Close (esc)" onClick={onClose}>
+          <svg viewBox="0 0 14 14" width="14" height="14" aria-hidden>
+            <path d="M3 3l8 8M11 3l-8 8" />
+          </svg>
+        </button>
+      </div>
+      <a className="drawer-hero" href={node.url} target="_blank" rel="noreferrer">
+        <img
+          src={thumbUrl(node.url, 720)}
+          alt={node.id}
+          style={{ aspectRatio: `${node.w} / ${node.h}` }}
+        />
+      </a>
+      {node.description && <p className="drawer-desc">{node.description}</p>}
+      <div className="chips">
+        {chips('concepts')}
+        {chips('techniques')}
+        {chips('forms')}
+      </div>
+      <dl className="facts">
+        {facts.map(
+          ([k, v]) =>
+            v && (
+              <div key={k}>
+                <dt>{k}</dt>
+                <dd>{v}</dd>
+              </div>
+            ),
+        )}
+      </dl>
+      {node.notable && <p className="drawer-notable">{node.notable}</p>}
+
+      <section className="dsec">
+        <h3 className="label">Kin across series</h3>
+        {kin.length === 0 ? (
+          <p className="drawer-quiet">No close kin outside its own series.</p>
+        ) : (
+          <ul className="kin">
+            {kin.map((k) => {
+              const shared = sharedTags(node, k);
+              return (
+                <li key={k.id}>
+                  <button type="button" onClick={() => onSelect(k.id)}>
+                    <img src={thumbUrl(k.url, 120)} alt="" loading="lazy" decoding="async" />
+                    <span className="kin-text">
+                      <span className="kin-name">
+                        {k.seriesLabel ? `${k.seriesLabel} / ` : ''}
+                        {k.name}
+                      </span>
+                      {shared.length > 0 && (
+                        <span className="kin-shared">{shared.join(' · ')}</span>
+                      )}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      {threads.map((t) => {
+        const i = t.members.indexOf(node.id);
+        const near = t.members
+          .slice(Math.max(0, i - 2), i + 3)
+          .map((id) => nodesById.get(id))
+          .filter((n): n is AtlasNode => !!n);
         return (
-          <button
-            key={n.id}
-            type="button"
-            className={`node${sel === n.id ? ' is-selected' : ''}${dim ? ' is-dim' : ''}`}
-            style={{
-              transform: `translate(${p.x}px, ${p.y}px)`,
-              width: NODE_W,
-              height: nodeH(n),
-            }}
-            tabIndex={-1}
-            aria-label={n.id}
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelect(n.id, e.metaKey || e.ctrlKey);
-            }}
-            onPointerEnter={() => onHover(n.id)}
-            onPointerLeave={() => onHover(null)}
-          >
-            <img
-              src={thumbUrl(n.url, 256)}
-              alt=""
-              loading="lazy"
-              decoding="async"
-              draggable={false}
-            />
-          </button>
+          <section className="dsec" key={t.key}>
+            <h3 className="label dsec-head">
+              <button type="button" onClick={() => onPick({ kind: 'thread', key: t.key })}>
+                Thread · {t.name}
+              </button>
+              <span>
+                {i + 1} / {t.members.length}
+              </span>
+            </h3>
+            <div className="kin-row">
+              {near.map((n) =>
+                n.id === node.id ? (
+                  <span key={n.id} className="kin-thumb is-current">
+                    <img src={thumbUrl(n.url, 160)} alt="" />
+                  </span>
+                ) : (
+                  <Thumb key={n.id} node={n} onSelect={onSelect} />
+                ),
+              )}
+            </div>
+          </section>
         );
       })}
-    </>
+
+      {primarySystem && sameSystem.length > 0 && (
+        <section className="dsec">
+          <h3 className="label dsec-head">
+            <button
+              type="button"
+              onClick={() => onPick({ kind: 'system', key: primarySystem.key })}
+            >
+              Also {primarySystem.name}
+            </button>
+            <span>{systemUses.get(primarySystem.key)}</span>
+          </h3>
+          <div className="kin-row">
+            {sameSystem.map((n) => (
+              <Thumb key={n.id} node={n} onSelect={onSelect} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section className="dsec">
+        <h3 className="label">Run</h3>
+        <button
+          type="button"
+          className="copy"
+          title="Copy the run command (c)"
+          onClick={() => copy('run', runCommand(node.id))}
+        >
+          <code>{runCommand(node.id)}</code>
+          <span className="copy-state">{copied === 'run' ? 'copied' : 'copy'}</span>
+        </button>
+        <button
+          type="button"
+          className="copy"
+          title="Copy the file path"
+          onClick={() => copy('file', `src/${node.id}.ts`)}
+        >
+          <code>src/{node.id}.ts</code>
+          <span className="copy-state">{copied === 'file' ? 'copied' : 'copy'}</span>
+        </button>
+      </section>
+    </aside>
   );
-});
+}
 
 // ---------- help ----------
 
@@ -228,7 +524,13 @@ function Help({ open, onClose }: { open: boolean; onClose: () => void }) {
     else if (!open && d.open) d.close();
   }, [open]);
   return (
-    <dialog ref={ref} className="help" onClose={onClose} aria-label="Keyboard shortcuts">
+    <dialog
+      ref={ref}
+      className="help"
+      onClose={onClose}
+      onClick={(e) => e.target === ref.current && onClose()}
+      aria-label="Keyboard shortcuts"
+    >
       <table>
         <tbody>
           {SHORTCUTS.map(([keys, action]) => (
@@ -249,680 +551,157 @@ function Help({ open, onClose }: { open: boolean; onClose: () => void }) {
   );
 }
 
-/** What two connected sketches actually share — shown under each connection. */
-function sharedTags(a: AtlasNode, b: AtlasNode): string[] {
-  const out: string[] = [];
-  if (a.system && a.system === b.system) out.push(a.system);
-  for (const field of ['techniques', 'concepts', 'forms', 'influences'] as const) {
-    for (const t of a[field]) if (b[field].includes(t)) out.push(t);
-  }
-  return [...new Set(out)].slice(0, 3);
-}
-
-// ---------- details modal (⌘-click) ----------
-
-function DetailsModal({ node, onClose }: { node: AtlasNode | null; onClose: () => void }) {
-  const ref = useRef<HTMLDialogElement>(null);
-  const [copied, setCopied] = useState<string | null>(null);
-  useEffect(() => {
-    const d = ref.current;
-    if (!d) return;
-    if (node && !d.open) d.showModal();
-    else if (!node && d.open) d.close();
-    setCopied(null);
-  }, [node]);
-  const copy = (label: string, text: string) => {
-    navigator.clipboard
-      .writeText(text)
-      .then(() => setCopied(label))
-      .catch(() => {});
-  };
-  return (
-    <dialog
-      ref={ref}
-      className="details"
-      aria-label={node?.id}
-      onClose={onClose}
-      onClick={(e) => {
-        // Click on the backdrop (the dialog element itself) closes.
-        if (e.target === ref.current) onClose();
-      }}
-    >
-      {node && (
-        <>
-          <img
-            src={thumbUrl(node.url, 1200)}
-            alt={node.id}
-            style={{ aspectRatio: `${node.w} / ${node.h}` }}
-          />
-          <div className="details-meta">
-            <h2>
-              {node.seriesLabel ? `${node.seriesLabel} / ` : ''}
-              {node.name}
-            </h2>
-            <dl>
-              <div>
-                <dt>file</dt>
-                <dd>
-                  <button
-                    type="button"
-                    className="details-copy"
-                    title="Copy path"
-                    onClick={() => copy('file', `src/${node.id}.ts`)}
-                  >
-                    <code>src/{node.id}.ts</code>
-                    {copied === 'file' && <span className="quiet"> copied</span>}
-                  </button>
-                </dd>
-              </div>
-              <div>
-                <dt>created</dt>
-                <dd>{node.created.replaceAll('-', '.')}</dd>
-              </div>
-              <div>
-                <dt>run</dt>
-                <dd>
-                  <button
-                    type="button"
-                    className="details-copy"
-                    title="Copy run command"
-                    onClick={() => copy('run', runCommand(node.id))}
-                  >
-                    <code>{runCommand(node.id)}</code>
-                    {copied === 'run' && <span className="quiet"> copied</span>}
-                  </button>
-                </dd>
-              </div>
-            </dl>
-          </div>
-        </>
-      )}
-    </dialog>
-  );
-}
-
-// ---------- detail panel ----------
-
-function Panel({
-  node,
-  onTag,
-  onJump,
-  onClose,
-}: {
-  node: AtlasNode;
-  onTag: (field: TagField, tag: string) => void;
-  onJump: (id: string) => void;
-  onClose: () => void;
-}) {
-  const [copied, setCopied] = useState(false);
-  useEffect(() => setCopied(false), [node.id]);
-  const similar = (edgesByNode.get(node.id) ?? []).slice(0, 5);
-
-  const chips = (field: TagField, tags: string[]) =>
-    tags.length > 0 && (
-      <div className="chips">
-        {tags.map((t) => (
-          <button key={t} type="button" className="chip" onClick={() => onTag(field, t)}>
-            {t}
-          </button>
-        ))}
-      </div>
-    );
-
-  const facts: [string, string | null][] = [
-    ['medium', node.medium],
-    ['motion', node.motion],
-    ['colours', node.colorSystems.join(', ') || null],
-    ['palette', node.palette],
-    ['system', node.system],
-    ['influence', node.influences.join(', ') || null],
-    ['look', node.vision ? `${node.vision.bg} · ${node.vision.density} · ${node.vision.energy}` : null],
-  ];
-
-  return (
-    <aside className="panel" aria-label={node.id}>
-      <button type="button" className="panel-close" aria-label="Close (esc)" onClick={onClose}>
-        ×
-      </button>
-      <a href={node.url} target="_blank" rel="noreferrer">
-        <img
-          className="hero"
-          src={thumbUrl(node.url, 640)}
-          alt={node.id}
-          style={{ aspectRatio: `${node.w} / ${node.h}` }}
-        />
-      </a>
-      <h2 className="panel-title">{node.name}</h2>
-      <p className="panel-sub">
-        {node.seriesLabel ? `${node.seriesLabel} · ` : ''}
-        {node.date.replace('-', '.')}
-      </p>
-      {node.description && <p className="panel-desc">{node.description}</p>}
-      {chips('concepts', node.concepts)}
-      {chips('techniques', node.techniques)}
-      {chips('forms', node.forms)}
-      <dl className="facts">
-        {facts.map(
-          ([k, v]) =>
-            v && (
-              <div key={k}>
-                <dt>{k}</dt>
-                <dd>{v}</dd>
-              </div>
-            ),
-        )}
-      </dl>
-      {node.notable && <p className="panel-notable">{node.notable}</p>}
-      <h3 className="panel-h3">connections</h3>
-      <p className="panel-note">
-        The strongest kin from <em>other</em> series — scored on shared engines, techniques,
-        concepts, forms, and measured look. These are the lines on the map; everything
-        unconnected is greyed while this sketch is selected.
-      </p>
-      {similar.length === 0 ? (
-        <p className="panel-note">No cross-series connections — this one stands alone.</p>
-      ) : (
-        <ul className="similar">
-          {similar.map(({ other }) => {
-            const o = nodesById.get(other);
-            if (!o) return null;
-            const shared = sharedTags(node, o);
-            return (
-              <li key={other}>
-                <button type="button" onClick={() => onJump(other)}>
-                  <img src={thumbUrl(o.url, 96)} alt="" loading="lazy" />
-                  <span className="similar-text">
-                    <span className="similar-name">
-                      {o.seriesLabel ? `${o.seriesLabel} / ` : ''}
-                      {o.name}
-                    </span>
-                    {shared.length > 0 && (
-                      <span className="similar-shared">{shared.join(' · ')}</span>
-                    )}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-      <button
-        type="button"
-        className="panel-action"
-        onClick={() => {
-          navigator.clipboard
-            .writeText(runCommand(node.id))
-            .then(() => setCopied(true))
-            .catch(() => {});
-        }}
-      >
-        {copied ? 'copied' : 'copy run command'}
-      </button>
-    </aside>
-  );
-}
-
 // ---------- app ----------
 
-export function App() {
-  const [lens, setLens] = useState<LensKey>('clusters');
-  const [sel, setSel] = useState<string | null>(null);
-  const [hover, setHover] = useState<string | null>(null);
-  const [query, setQuery] = useState('');
-  const [tagFilter, setTagFilter] = useState<TagFilter | null>(null);
-  const [threadKey, setThreadKey] = useState<string | null>(null);
-  const [insightIdx, setInsightIdx] = useState<number | null>(null);
-  const [railTab, setRailTab] = useState<RailTab>('clusters');
-  const [activeCluster, setActiveCluster] = useState<string | null>(null);
-  const [helpOpen, setHelpOpen] = useState(false);
-  const [modalId, setModalId] = useState<string | null>(null);
-  const [nodesAnimate, setNodesAnimate] = useState(false);
-  const [panning, setPanning] = useState(false);
-  const [altDown, setAltDown] = useState(false);
-  const [marquee, setMarquee] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(
-    null,
-  );
-
-  const stageRef = useRef<HTMLDivElement | null>(null);
-  const searchRef = useRef<HTMLInputElement | null>(null);
-  const viewRef = useRef<View>({ x: 0, y: 0, k: 0.2 });
-  const worldRef = useRef<HTMLDivElement | null>(null);
-  const underlayRef = useRef<SVGGElement | null>(null);
-  const animRef = useRef(0);
-  const zoomRef = useRef<ZoomTarget | null>(null);
-  const dragRef = useRef<{ sx: number; sy: number; lx: number; ly: number; moved: boolean } | null>(
-    null,
-  );
-  const lastDragMoved = useRef(false);
-  const marqueeRef = useRef<{ x0: number; y0: number } | null>(null);
-
-  const layout = useMemo(
-    () => computeLayout(lens, data.nodes, data.clusters, data.colorSystems),
-    [lens],
-  );
-
-  const reducedMotion = useMemo(
-    () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
-    [],
-  );
-
-  // ---------- view control ----------
-  //
-  // The view lives in a ref and is written straight to the DOM. Pan and zoom
-  // are the hot path — a wheel tick or an animation frame must never re-render
-  // the app (372 nodes, the rail, the header) to move the map a few pixels.
-
-  const applyView = useCallback((v: View) => {
-    viewRef.current = v;
-    const world = worldRef.current;
-    if (!world) return;
-    world.style.transform = `translate(${v.x}px, ${v.y}px) scale(${v.k})`;
-    world.style.setProperty('--k', String(v.k));
-    if (underlayRef.current) {
-      underlayRef.current.style.display = v.k >= UNDERLAY_MAX_K ? 'none' : '';
-    }
-  }, []);
-
-  /** While the map is in motion, nodes ignore the pointer so hover state does
-   * not churn under a moving cursor. */
-  const setMoving = (on: boolean) =>
-    stageRef.current?.style.setProperty('--node-events', on ? 'none' : 'auto');
-
-  const cancelFly = useCallback(() => cancelAnimationFrame(animRef.current), []);
-  const cancelZoom = useCallback(() => {
-    if (zoomRef.current) cancelAnimationFrame(zoomRef.current.raf);
-    zoomRef.current = null;
-  }, []);
-  const cancelAnim = useCallback(() => {
-    cancelFly();
-    cancelZoom();
-    setMoving(false);
-  }, [cancelFly, cancelZoom]);
-
-  useLayoutEffect(() => applyView(viewRef.current), [applyView]);
-
-  const animateTo = useCallback(
-    (target: View) => {
-      cancelAnim();
-      if (reducedMotion) {
-        applyView(target);
-        return;
-      }
-      const from = viewRef.current;
-      const t0 = performance.now();
-      const D = 420;
-      setMoving(true);
-      const step = (now: number) => {
-        const t = Math.max(0, Math.min(1, (now - t0) / D));
-        const e = 1 - Math.pow(1 - t, 4);
-        applyView({
-          x: from.x + (target.x - from.x) * e,
-          y: from.y + (target.y - from.y) * e,
-          k: from.k + (target.k - from.k) * e,
-        });
-        if (t < 1) animRef.current = requestAnimationFrame(step);
-        else setMoving(false);
-      };
-      animRef.current = requestAnimationFrame(step);
-    },
-    [applyView, cancelAnim, reducedMotion],
-  );
-
-  const stageSize = () => {
-    const r = stageRef.current?.getBoundingClientRect();
-    return { w: r?.width ?? window.innerWidth, h: r?.height ?? window.innerHeight };
-  };
-
-  const fitBounds = useCallback(
-    (b: Bounds) => {
-      const { w, h } = stageSize();
-      animateTo(fitViewFor(b, w, h));
-    },
-    [animateTo],
-  );
-
-  const fitAll = useCallback(() => fitBounds(layout.bounds), [fitBounds, layout]);
-
-  const fitIds = useCallback(
-    (ids: string[]) => {
-      if (ids.length === 0) return;
-      fitBounds(boundsOfIds(ids, nodesById, layout.pos));
-    },
-    [fitBounds, layout],
-  );
-
-  const focusNode = useCallback(
-    (id: string) => {
-      const n = nodesById.get(id);
-      if (!n) return;
-      const c = center(n, layout);
-      if (!c) return;
-      const { w, h } = stageSize();
-      const k = Math.max(viewRef.current.k, 0.7);
-      animateTo({ k, x: w / 2 - c.x * k, y: h / 2 - c.y * k });
-    },
-    [animateTo, layout],
-  );
-
-  /**
-   * Zoom by a factor about a screen point, easing there instead of jumping.
-   * Every call moves the target; one frame loop chases it with an exponential
-   * approach in log-scale space, so a burst of wheel ticks reads as one
-   * continuous glide and a single tick still settles gently.
-   */
-  const zoomBy = useCallback(
-    (f: number, cx?: number, cy?: number) => {
-      cancelFly();
-      const { w, h } = stageSize();
-      const px = cx ?? w / 2;
-      const py = cy ?? h / 2;
-      const running = zoomRef.current;
-      const k = clampK((running?.k ?? viewRef.current.k) * f);
-      if (reducedMotion) {
-        const v = viewRef.current;
-        const s = k / v.k;
-        applyView({ k, x: px - (px - v.x) * s, y: py - (py - v.y) * s });
-        return;
-      }
-      if (running) {
-        running.k = k;
-        running.px = px;
-        running.py = py;
-        return;
-      }
-      const z: ZoomTarget = { k, px, py, raf: 0 };
-      zoomRef.current = z;
-      setMoving(true);
-      let last = performance.now();
-      const step = (now: number) => {
-        // rAF timestamps mark the frame start and can precede the
-        // performance.now() taken when the loop was armed: clamp at zero or
-        // the first step eases away from the target.
-        const dt = Math.max(0, Math.min(64, now - last));
-        last = now;
-        const v = viewRef.current;
-        const a = 1 - Math.exp(-dt / ZOOM_TAU);
-        let k = Math.exp(Math.log(v.k) + (Math.log(z.k) - Math.log(v.k)) * a);
-        const done = Math.abs(Math.log(z.k / k)) < 0.002;
-        if (done) k = z.k;
-        const s = k / v.k;
-        applyView({ k, x: z.px - (z.px - v.x) * s, y: z.py - (z.py - v.y) * s });
-        if (done) {
-          zoomRef.current = null;
-          setMoving(false);
-          return;
-        }
-        z.raf = requestAnimationFrame(step);
-      };
-      z.raf = requestAnimationFrame(step);
-    },
-    [applyView, cancelFly, reducedMotion],
-  );
-
-  // Fit on mount and on every lens change; let nodes animate only after the
-  // first layout has painted so they don't fly in from the origin.
+function useHashView(): [ViewState, (next: Partial<ViewState>) => void] {
+  const [view, setView] = useState<ViewState>(() => viewFromHash(location.hash));
   useEffect(() => {
-    fitAll();
-    const t = setTimeout(() => setNodesAnimate(true), 80);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [layout]);
-
-  // Track Alt for the marquee-zoom affordance (crosshair cursor).
-  useEffect(() => {
-    const down = (e: KeyboardEvent) => e.key === 'Alt' && setAltDown(true);
-    const up = (e: KeyboardEvent) => e.key === 'Alt' && setAltDown(false);
-    const blur = () => setAltDown(false);
-    window.addEventListener('keydown', down);
-    window.addEventListener('keyup', up);
-    window.addEventListener('blur', blur);
+    const onHash = () =>
+      setView((v) => {
+        const next = viewFromHash(location.hash);
+        return sameView(v, next) ? v : next;
+      });
+    // Back/forward through pushState entries fires popstate, not hashchange.
+    window.addEventListener('hashchange', onHash);
+    window.addEventListener('popstate', onHash);
     return () => {
-      window.removeEventListener('keydown', down);
-      window.removeEventListener('keyup', up);
-      window.removeEventListener('blur', blur);
+      window.removeEventListener('hashchange', onHash);
+      window.removeEventListener('popstate', onHash);
     };
   }, []);
-
-  // Wheel: two-finger scroll pans, pinch / ctrl-scroll zooms at the cursor.
-  useEffect(() => {
-    const stage = stageRef.current;
-    if (!stage) return;
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      const rect = stage.getBoundingClientRect();
-      if (e.ctrlKey || e.metaKey) {
-        const f = Math.exp(-e.deltaY * 0.0022);
-        zoomBy(f, e.clientX - rect.left, e.clientY - rect.top);
-      } else {
-        cancelAnim();
-        const v = viewRef.current;
-        applyView({ ...v, x: v.x - e.deltaX, y: v.y - e.deltaY });
-      }
-    };
-    stage.addEventListener('wheel', onWheel, { passive: false });
-    return () => stage.removeEventListener('wheel', onWheel);
-  }, [applyView, cancelAnim, zoomBy]);
-
-  // ---------- filters & focus sets ----------
-
-  const clearFocus = useCallback(() => {
-    setQuery('');
-    setTagFilter(null);
-    setThreadKey(null);
-    setInsightIdx(null);
+  // The history write lives outside the state updater: updaters must stay
+  // pure (StrictMode runs them twice, which would push every pick twice).
+  const viewRef = useRef(view);
+  viewRef.current = view;
+  const update = useCallback((patch: Partial<ViewState>) => {
+    const v = viewRef.current;
+    const next = { ...v, ...patch };
+    // A new pick is a place you can go back to; selection and search are not.
+    const push = patch.pick !== undefined && !samePick(v.pick, next.pick);
+    const url = `${location.pathname}${location.search}${viewToHash(next)}`;
+    if (push) history.pushState(null, '', url);
+    else history.replaceState(null, '', url);
+    viewRef.current = next;
+    setView(next);
   }, []);
+  return [view, update];
+}
 
-  const activeIds = useMemo<Set<string> | null>(() => {
-    if (insightIdx !== null) {
-      const ins = data.insights[insightIdx];
-      return ins ? new Set(ins.relatedIds) : null;
-    }
-    if (threadKey) {
-      const t = data.threads.find((t) => t.key === threadKey);
-      return t ? new Set(t.members) : null;
-    }
-    if (sel) {
-      // Selection focuses its connections: the node plus every neighbor it
-      // shares a similarity edge with; the rest of the corpus greys back.
-      const set = new Set([sel]);
-      for (const { other } of edgesByNode.get(sel) ?? []) set.add(other);
-      return set;
-    }
-    if (tagFilter) {
-      return new Set(
-        data.nodes.filter((n) => n[tagFilter.field].includes(tagFilter.tag)).map((n) => n.id),
-      );
-    }
-    if (query.trim()) {
-      return new Set(data.nodes.filter((n) => matchesQuery(n, query)).map((n) => n.id));
-    }
-    return null;
-  }, [insightIdx, threadKey, sel, tagFilter, query]);
+export function App() {
+  const [view, update] = useHashView();
+  const [helpOpen, setHelpOpen] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const setRef = useRef<HTMLElement>(null);
+  const { copy } = useCopy(view.sel ?? '');
 
-  const setTag = useCallback(
-    (field: TagField, tag: string) => {
-      clearFocus();
-      setTagFilter({ field, tag });
-    },
-    [clearFocus],
+  const pickNodes = useMemo(() => nodesFor(data, view.pick), [view.pick]);
+  const shown = useMemo(
+    () => (view.query ? pickNodes.filter((n) => matchesQuery(n, view.query)) : pickNodes),
+    [pickNodes, view.query],
   );
-
-  const jumpTo = useCallback(
-    (id: string) => {
-      setSel(id);
-      focusNode(id);
-    },
-    [focusNode],
+  const sequence = isSequence(view.pick);
+  const groups = useMemo(
+    () =>
+      sequence
+        ? [{ key: 'sequence', label: '', nodes: shown }]
+        : groupNodes(data, shown, view.group),
+    [sequence, shown, view.group],
   );
+  const order = useMemo(() => groups.flatMap((g) => g.nodes.map((n) => n.id)), [groups]);
+  const selNode = view.sel ? nodesById.get(view.sel) : undefined;
+  const { title, kind, body } = describe(view.pick);
+  const seriesCount = new Set(shown.flatMap((n) => (n.seriesLabel ? [n.seriesLabel] : []))).size;
 
-  // ---------- URL hash ----------
+  const pick = useCallback(
+    (p: Pick) => {
+      update({ pick: p, query: '' });
+      setRef.current?.scrollTo({ top: 0 });
+    },
+    [update],
+  );
+  const select = useCallback((id: string | null) => update({ sel: id }), [update]);
 
+  // Keep the selection in view when it moves by keyboard or from the drawer.
   useEffect(() => {
-    const fromHash = decodeURIComponent(window.location.hash.slice(1));
-    if (fromHash && nodesById.has(fromHash)) setSel(fromHash);
-  }, []);
-  useEffect(() => {
-    history.replaceState(null, '', sel ? `#${encodeURIComponent(sel)}` : '#');
-  }, [sel]);
+    if (!view.sel) return;
+    const el = setRef.current?.querySelector(`[data-id="${CSS.escape(view.sel)}"]`);
+    el?.scrollIntoView({ block: 'nearest' });
+  }, [view.sel]);
 
-  // ---------- pointer pan ----------
-
-  const stagePoint = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  /** The sketch one row up or down: the nearest thumb in the row above/below. */
+  const vertical = (dir: 1 | -1): string | null => {
+    const root = setRef.current;
+    if (!root || !view.sel) return null;
+    const cur = root.querySelector<HTMLElement>(`[data-id="${CSS.escape(view.sel)}"]`);
+    if (!cur) return null;
+    const r = cur.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    let best: { id: string; d: number } | null = null;
+    for (const el of root.querySelectorAll<HTMLElement>('[data-id]')) {
+      const b = el.getBoundingClientRect();
+      const dy = dir > 0 ? b.top - r.bottom : r.top - b.bottom;
+      if (dy < 0) continue;
+      const d = dy * 4 + Math.abs(b.left + b.width / 2 - cx);
+      if (!best || d < best.d) best = { id: el.dataset.id!, d };
+    }
+    return best?.id ?? null;
   };
-
-  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.button !== 0) return;
-    cancelAnim();
-    if (e.altKey) {
-      // ⌥-drag: rubber-band a region to zoom into.
-      const p = stagePoint(e);
-      marqueeRef.current = { x0: p.x, y0: p.y };
-      setMarquee({ x0: p.x, y0: p.y, x1: p.x, y1: p.y });
-      e.currentTarget.setPointerCapture(e.pointerId);
-      e.preventDefault();
-      return;
-    }
-    // No pointer capture yet: capturing on down retargets the eventual click
-    // to the stage, so node buttons would never receive it. Capture only once
-    // an actual pan begins.
-    dragRef.current = { sx: e.clientX, sy: e.clientY, lx: e.clientX, ly: e.clientY, moved: false };
-  };
-  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (marqueeRef.current) {
-      const start = marqueeRef.current;
-      const p = stagePoint(e);
-      setMarquee({ x0: start.x0, y0: start.y0, x1: p.x, y1: p.y });
-      return;
-    }
-    const d = dragRef.current;
-    if (!d) return;
-    if (!d.moved && Math.hypot(e.clientX - d.sx, e.clientY - d.sy) > 4) {
-      d.moved = true;
-      setPanning(true);
-      e.currentTarget.setPointerCapture(e.pointerId);
-    }
-    if (d.moved) {
-      const dx = e.clientX - d.lx;
-      const dy = e.clientY - d.ly;
-      const v = viewRef.current;
-      applyView({ ...v, x: v.x + dx, y: v.y + dy });
-    }
-    d.lx = e.clientX;
-    d.ly = e.clientY;
-  };
-  const onPointerUp = () => {
-    if (marqueeRef.current && marquee) {
-      const w = Math.abs(marquee.x1 - marquee.x0);
-      const h = Math.abs(marquee.y1 - marquee.y0);
-      if (w > 12 && h > 12) {
-        // Screen rect → world bounds, then fit.
-        const v = viewRef.current;
-        const b: Bounds = {
-          minX: (Math.min(marquee.x0, marquee.x1) - v.x) / v.k,
-          minY: (Math.min(marquee.y0, marquee.y1) - v.y) / v.k,
-          maxX: (Math.max(marquee.x0, marquee.x1) - v.x) / v.k,
-          maxY: (Math.max(marquee.y0, marquee.y1) - v.y) / v.k,
-        };
-        const { w: sw, h: sh } = stageSize();
-        animateTo(fitViewFor(b, sw, sh, 48));
-      }
-      marqueeRef.current = null;
-      setMarquee(null);
-      // Swallow the click that follows the release.
-      lastDragMoved.current = true;
-      return;
-    }
-    lastDragMoved.current = dragRef.current?.moved ?? false;
-    dragRef.current = null;
-    setPanning(false);
-  };
-
-  const onSelect = useCallback((id: string, detail: boolean) => {
-    if (lastDragMoved.current) return;
-    if (detail) {
-      setModalId(id);
-      return;
-    }
-    setSel((s) => (s === id ? null : id));
-  }, []);
-  const onHover = useCallback((id: string | null) => setHover(id), []);
-
-  // ---------- keyboard ----------
 
   const onKey = (e: KeyboardEvent) => {
-    if (e.metaKey || e.ctrlKey || e.altKey) return;
-    const inInput = e.target instanceof HTMLInputElement;
-    if (inInput) {
+    const typing = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
+    if (typing) {
       if (e.key === 'Escape') {
-        (e.target as HTMLInputElement).blur();
-        setQuery('');
+        if (view.query) update({ query: '' });
+        (e.target as HTMLElement).blur();
       }
       return;
     }
-    if (helpOpen) {
-      if (e.key === '?') setHelpOpen(false);
-      return;
-    }
-    const handled = () => e.preventDefault();
+    if (e.metaKey || e.ctrlKey || e.altKey || helpOpen) return;
+    const i = view.sel ? order.indexOf(view.sel) : -1;
+    const step = (d: number) => {
+      if (order.length === 0) return;
+      e.preventDefault();
+      select(order[i === -1 ? 0 : Math.min(order.length - 1, Math.max(0, i + d))]!);
+    };
     switch (e.key) {
+      case 'ArrowRight':
+      case 'j':
+        step(1);
+        break;
+      case 'ArrowLeft':
+      case 'k':
+        step(-1);
+        break;
+      case 'ArrowDown':
+      case 'ArrowUp': {
+        e.preventDefault();
+        if (i === -1) return step(0);
+        const id = vertical(e.key === 'ArrowDown' ? 1 : -1);
+        if (id) select(id);
+        break;
+      }
       case '1':
       case '2':
       case '3':
-      case '4': {
-        handled();
-        const lensKey = LENSES[Number(e.key) - 1]?.[0];
-        if (lensKey) {
-          setNodesAnimate(true);
-          setLens(lensKey);
-        }
+      case '4':
+        if (!sequence) update({ group: GROUP_LABELS[Number(e.key) - 1]![0] });
         break;
-      }
-      case 'f':
-        handled();
-        fitAll();
-        break;
-      case '/':
-        handled();
-        searchRef.current?.focus();
-        break;
-      case '+':
-      case '=':
-        handled();
-        zoomBy(1.4);
-        break;
-      case '-':
-        handled();
-        zoomBy(1 / 1.4);
+      case 'p':
+        update({ plates: !view.plates });
         break;
       case 'c':
-        handled();
-        setRailTab('clusters');
+        if (view.sel) copy('run', runCommand(view.sel));
         break;
-      case 't':
-        handled();
-        setRailTab('threads');
-        break;
-      case 'i':
-        handled();
-        setRailTab('insights');
-        break;
-      case 'r':
-        handled();
-        setRailTab('recent');
+      case '/':
+        e.preventDefault();
+        searchRef.current?.focus();
         break;
       case 'Escape':
-        handled();
-        if (modalId) setModalId(null);
-        else if (insightIdx !== null) setInsightIdx(null);
-        else if (threadKey) setThreadKey(null);
-        else if (sel) setSel(null);
-        else if (tagFilter) setTagFilter(null);
-        else if (query) setQuery('');
+        if (view.sel) select(null);
+        else if (view.query) update({ query: '' });
+        else if (view.pick.kind !== 'all') pick({ kind: 'all' });
         break;
       case '?':
-        handled();
         setHelpOpen(true);
         break;
     }
@@ -935,315 +714,155 @@ export function App() {
     return () => window.removeEventListener('keydown', listener);
   }, []);
 
-  // ---------- edges ----------
-
-  const underlayPaths = useMemo(() => {
-    if (lens !== 'clusters' && lens !== 'series') return [];
-    return data.edges
-      .map(([a, b]) => edgePath(a, b, layout))
-      .filter((p): p is string => p !== null);
-  }, [lens, layout]);
-
-  const focusEdges = useMemo(() => {
-    if (threadKey) return [];
-    const focus = hover ?? sel;
-    if (!focus) return [];
-    return (edgesByNode.get(focus) ?? [])
-      .map(({ other }) => edgePath(focus, other, layout))
-      .filter((p): p is string => p !== null);
-  }, [hover, sel, threadKey, layout]);
-
-  const threadPath = useMemo(() => {
-    if (!threadKey) return null;
-    const t = data.threads.find((t) => t.key === threadKey);
-    if (!t) return null;
-    const pts = t.members
-      .map((id) => {
-        const n = nodesById.get(id);
-        return n ? center(n, layout) : null;
-      })
-      .filter((p): p is { x: number; y: number } => p !== null);
-    if (pts.length < 2) return null;
-    return pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-  }, [threadKey, layout]);
-
-  // ---------- rail data ----------
-
-  const selNode = sel ? nodesById.get(sel) : undefined;
-  const shownCount = activeIds?.size ?? null;
-  const activeInsight = insightIdx !== null ? data.insights[insightIdx] : undefined;
-
-  const clusterIds = useCallback(
-    (key: string) => data.nodes.filter((n) => n.cluster === key).map((n) => n.id),
-    [],
-  );
-
-  // ---------- render ----------
-
   if (data.nodes.length === 0) {
     return (
       <p className="empty">
-        <code>atlas.json</code> is empty — run the corpus analysis, then{' '}
+        <code>atlas.json</code> is empty. Run the corpus analysis, then{' '}
         <code>scripts/atlas/assemble.ts</code>.
       </p>
     );
   }
 
+  const years = `${data.nodes.reduce((m, n) => Math.min(m, n.year), 9999)}–${data.nodes.reduce(
+    (m, n) => Math.max(m, n.year),
+    0,
+  )}`;
+
   return (
-    <div className="app">
+    <div className={`app${selNode ? ' has-drawer' : ''}`}>
       <header className="bar">
-        <div className="bar-left">
-          Atlas
+        <div className="bar-brand">
+          Atlas{' '}
           <span className="quiet">
-            {' '}
-            · {data.nodes.length} sketches · {yearRange[0]}–{yearRange[1]}
+            · {data.nodes.length} sketches · {years}
           </span>
         </div>
-        <nav className="bar-lenses" aria-label="Lens">
-          {LENSES.map(([key, label], i) => (
-            <button
-              key={key}
-              type="button"
-              className={`lens-btn${lens === key ? ' is-active' : ''}`}
-              onClick={() => setLens(key)}
-            >
-              {label}
-              <span className="lens-kbd">{i + 1}</span>
-            </button>
-          ))}
-        </nav>
-        <div className="bar-meta">
-          {tagFilter && (
-            <button type="button" className="filter-pill" onClick={() => setTagFilter(null)}>
-              {tagFilter.tag} ×
-            </button>
-          )}
-          {shownCount !== null && <span className="quiet">{shownCount} shown</span>}
-          <input
-            ref={searchRef}
-            className="search"
-            type="search"
-            placeholder="search"
-            value={query}
-            onChange={(e) => {
-              setTagFilter(null);
-              setThreadKey(null);
-              setInsightIdx(null);
-              setQuery(e.target.value);
-            }}
-            aria-label="Search sketches (/)"
-          />
-          <button
-            type="button"
-            className="help-button"
-            aria-label="Keyboard shortcuts (?)"
-            onClick={() => setHelpOpen(true)}
-          >
-            ?
-          </button>
-        </div>
+        <input
+          ref={searchRef}
+          className="search"
+          type="search"
+          placeholder="search"
+          aria-label="Search sketches"
+          value={view.query}
+          onChange={(e) => update({ query: e.target.value })}
+        />
+        <button
+          type="button"
+          className="help-btn"
+          aria-label="Keyboard shortcuts (?)"
+          onClick={() => setHelpOpen(true)}
+        >
+          ?
+        </button>
       </header>
 
-      <div className="main">
-        <aside className="rail">
-          <div className="rail-tabs" role="tablist">
-            {RAIL_TABS.map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                role="tab"
-                aria-selected={railTab === tab}
-                className={`rail-tab${railTab === tab ? ' is-active' : ''}`}
-                onClick={() => setRailTab(tab)}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-          <div className="rail-body">
-            {railTab === 'clusters' &&
-              data.clusters.map((c) => (
-                <div key={c.key}>
-                  <button
-                    type="button"
-                    className={`row${activeCluster === c.key ? ' is-active' : ''}`}
-                    onClick={() => {
-                      setActiveCluster(c.key);
-                      fitIds(clusterIds(c.key));
-                    }}
-                  >
-                    <span className="row-text">{c.name}</span>
-                    <span className="row-count">{c.count}</span>
-                  </button>
-                  {activeCluster === c.key && c.blurb && (
-                    <p className="row-note">{c.blurb}</p>
-                  )}
-                </div>
-              ))}
-            {railTab === 'threads' &&
-              (data.threads.length === 0 ? (
-                <p className="row-note">No threads yet — synthesis pending.</p>
+      <Ledger pick={view.pick} setNodes={pickNodes} onPick={pick} />
+
+      <main ref={setRef} className="set" aria-label={title}>
+        <header className="set-head">
+          <h1 className="set-title">{title}</h1>
+          <p className="set-meta">
+            {kind && `${kind} · `}
+            {view.query ? `${shown.length} of ${pickNodes.length}` : shown.length} sketch
+            {shown.length === 1 ? '' : 'es'}
+            {!sequence && seriesCount > 1 && ` · ${seriesCount} series`}
+          </p>
+          {body && <p className="set-body">{body}</p>}
+          <div className="set-tools">
+            <div className="seg" role="group" aria-label="Group by">
+              {sequence ? (
+                <span className="quiet">
+                  in {view.pick.kind === 'thread' ? 'lineage' : 'note'} order
+                </span>
               ) : (
-                data.threads.map((t) => (
-                  <div key={t.key}>
+                <>
+                  <span className="quiet">Group by</span>
+                  {GROUP_LABELS.map(([key, label]) => (
                     <button
+                      key={key}
                       type="button"
-                      className={`row${threadKey === t.key ? ' is-active' : ''}`}
-                      onClick={() => {
-                        if (threadKey === t.key) {
-                          setThreadKey(null);
-                        } else {
-                          clearFocus();
-                          setThreadKey(t.key);
-                          fitIds(t.members);
-                        }
-                      }}
+                      aria-pressed={view.group === key}
+                      onClick={() => update({ group: key })}
                     >
-                      <span className="row-text">{t.name}</span>
-                      <span className="row-count">{t.members.length}</span>
-                    </button>
-                    {threadKey === t.key && t.note && <p className="row-note">{t.note}</p>}
-                  </div>
-                ))
-              ))}
-            {railTab === 'insights' &&
-              (data.insights.length === 0 ? (
-                <p className="row-note">No insights yet — synthesis pending.</p>
-              ) : (
-                data.insights.map((ins, i) => (
-                  <div key={`${ins.title}-${i}`}>
-                    <button
-                      type="button"
-                      className={`row row-insight${insightIdx === i ? ' is-active' : ''}`}
-                      onClick={() => {
-                        if (insightIdx === i) {
-                          setInsightIdx(null);
-                        } else {
-                          clearFocus();
-                          setInsightIdx(i);
-                          fitIds(ins.relatedIds);
-                        }
-                      }}
-                    >
-                      <span className="row-kind">{KIND_LABEL[ins.kind] ?? ins.kind}</span>
-                      <span className="row-text">{ins.title}</span>
-                    </button>
-                    {insightIdx === i && <p className="row-note">{ins.body}</p>}
-                  </div>
-                ))
-              ))}
-            {railTab === 'recent' &&
-              recentGroups.map((g) => (
-                <div key={g.dir} className="recent-group">
-                  <button
-                    type="button"
-                    className="row row-group"
-                    title={g.dir}
-                    onClick={() => fitIds(g.nodes.map((n) => n.id))}
-                  >
-                    <span className="row-text">{g.label}</span>
-                    <span className="row-count">{g.nodes.length}</span>
-                  </button>
-                  {g.nodes.map((n) => (
-                    <button
-                      key={n.id}
-                      type="button"
-                      className={`row row-recent${sel === n.id ? ' is-active' : ''}`}
-                      onClick={() => jumpTo(n.id)}
-                    >
-                      <img src={thumbUrl(n.url, 96)} alt="" loading="lazy" />
-                      <span className="row-text">{n.name}</span>
-                      <span className="row-count">{n.created.slice(2).replaceAll('-', '.')}</span>
+                      {label}
                     </button>
                   ))}
-                </div>
-              ))}
-          </div>
-        </aside>
-
-        <div
-          ref={stageRef}
-          className={`stage${panning ? ' is-panning' : ''}${altDown || marquee ? ' is-zoom' : ''}`}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
-          onClick={() => {
-            if (!lastDragMoved.current) setSel(null);
-          }}
-          onDoubleClick={(e) => {
-            // Double-click dives in on that spot (⇧ backs out). The two clicks
-            // toggle a node's selection back off, so re-select it: zooming in
-            // on a sketch is a reason to be looking at it.
-            if (e.altKey || lastDragMoved.current) return;
-            const p = stagePoint(e);
-            const id = (e.target as HTMLElement).closest('.node')?.getAttribute('aria-label');
-            if (id) setSel(id);
-            zoomBy(e.shiftKey ? 0.5 : 2, p.x, p.y);
-          }}
-          onScroll={(e) => {
-            // The stage must never scroll natively (focus/scrollIntoView can
-            // scroll overflow:hidden containers and desync the transform).
-            e.currentTarget.scrollTo(0, 0);
-          }}
-        >
-          <div ref={worldRef} className={`world${nodesAnimate ? ' animate' : ''}`}>
-            <svg className="edges" aria-hidden="true">
-              <g ref={underlayRef} className="edges-underlay">
-                {underlayPaths.map((p, i) => (
-                  <path key={i} d={p} />
-                ))}
-              </g>
-              <g className="edges-focus">
-                {focusEdges.map((p, i) => (
-                  <path key={i} d={p} vectorEffect="non-scaling-stroke" />
-                ))}
-              </g>
-              {threadPath && (
-                <path className="edge-thread" d={threadPath} vectorEffect="non-scaling-stroke" />
+                </>
               )}
-            </svg>
-            <World
-              layout={layout}
-              sel={sel}
-              activeIds={activeIds}
-              onSelect={onSelect}
-              onHover={onHover}
-            />
-          </div>
-          {marquee && (
-            <div
-              className="marquee"
-              aria-hidden="true"
-              style={{
-                left: Math.min(marquee.x0, marquee.x1),
-                top: Math.min(marquee.y0, marquee.y1),
-                width: Math.abs(marquee.x1 - marquee.x0),
-                height: Math.abs(marquee.y1 - marquee.y0),
-              }}
-            />
-          )}
-          {activeInsight && (
-            <div className="insight-banner" role="status">
-              <span className="row-kind">{KIND_LABEL[activeInsight.kind] ?? activeInsight.kind}</span>
-              <strong>{activeInsight.title}</strong>
-              <button type="button" onClick={() => setInsightIdx(null)} aria-label="Dismiss">
-                ×
+            </div>
+            <div className="seg" role="group" aria-label="Thumbnail size">
+              <button
+                type="button"
+                aria-pressed={!view.plates}
+                onClick={() => update({ plates: false })}
+              >
+                Sheet
+              </button>
+              <button
+                type="button"
+                aria-pressed={view.plates}
+                onClick={() => update({ plates: true })}
+              >
+                Plates
               </button>
             </div>
-          )}
-        </div>
+          </div>
+        </header>
 
-        {selNode && (
-          <Panel node={selNode} onTag={setTag} onJump={jumpTo} onClose={() => setSel(null)} />
+        {shown.length === 0 ? (
+          <p className="empty">
+            Nothing here matches “{view.query}”. Press <kbd>esc</kbd> to clear the search.
+          </p>
+        ) : (
+          groups.map((g) => (
+            <section key={g.key} className="group">
+              {g.label && (
+                <h2 className="group-head">
+                  <span>{g.label}</span>
+                  <span className="quiet">{g.nodes.length}</span>
+                </h2>
+              )}
+              <div className={`thumbs${view.plates ? ' is-plates' : ''}`}>
+                {g.nodes.map((n, i) => (
+                  <button
+                    key={n.id}
+                    type="button"
+                    data-id={n.id}
+                    className={`thumb${view.sel === n.id ? ' is-selected' : ''}`}
+                    aria-label={n.id}
+                    aria-current={view.sel === n.id || undefined}
+                    title={
+                      view.plates
+                        ? undefined
+                        : `${n.seriesLabel ? `${n.seriesLabel} / ` : ''}${n.name}`
+                    }
+                    onClick={() => select(view.sel === n.id ? null : n.id)}
+                  >
+                    <img
+                      src={thumbUrl(n.url, view.plates ? 400 : 160)}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    {view.plates && (
+                      <span className="thumb-cap">
+                        {sequence && <span className="quiet">{i + 1} </span>}
+                        {n.name}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </section>
+          ))
         )}
-      </div>
+      </main>
+
+      {selNode && (
+        <Drawer node={selNode} onSelect={select} onPick={pick} onClose={() => select(null)} />
+      )}
 
       <Help open={helpOpen} onClose={() => setHelpOpen(false)} />
-      <DetailsModal
-        node={modalId ? (nodesById.get(modalId) ?? null) : null}
-        onClose={() => setModalId(null)}
-      />
     </div>
   );
 }
