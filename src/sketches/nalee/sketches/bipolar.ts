@@ -1,7 +1,9 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-import { randomPalette } from '../../../colors/riso';
+import { Pane } from 'tweakpane';
+import { randomPalette } from '../../../colors';
+import { contrastRatio } from '../../../tui';
 import { createNaleeSystem } from '../nalee-system';
 import { clipDomainWithWorldCoords } from '../domain';
 import { xyToId } from '../utils';
@@ -16,15 +18,61 @@ import type { Config, DomainToWorld, Node, Walker } from '../types';
  * solid band as wide as its own step (nalee's solidStyle, scaled per cell) —
  * the bands crowd and thin toward the two foci and swell where the grid runs
  * out toward the canvas edge.
+ *
+ * Two colours, high contrast: the most contrasting pair of a random palette,
+ * one ink on one ground. Every parameter lives in the tweakpane; changing one
+ * rebuilds the grid and re-walks it from the same seed.
  */
 
-Random.setSeed(Random.getRandomSeed());
+interface Params {
+  /** Cells round each σ loop; Δσ = Δτ = 2π / sigmaRes keeps cells square. */
+  sigmaRes: number;
+  /** How close to the foci the grid reaches (τ extent each side). */
+  tauMax: number;
+  /** Focal half-distance, as a fraction of the canvas width. */
+  focal: number;
+  /** Ground left round the field, as a fraction of the canvas width. */
+  margin: number;
+  walkers: number;
+  /** Share of the local cell width that is ink; the rest is the gap. */
+  solid: number;
+  /** Swap ink and ground. */
+  invert: boolean;
+  seed: string;
+}
 
-const SIGMA_RES = 64 * 2; // cells round each σ loop
-const STEP = (Math.PI * 2) / SIGMA_RES; // Δσ = Δτ: square cells
-const TAU_MAX = 2.5; // how close to the foci the grid reaches
-const TAU_STEPS = Math.round(TAU_MAX / STEP); // per side of the τ = 0 axis
-const MARGIN = 0.06; // of width, the ground left round the field
+const params: Params = {
+  sigmaRes: 128,
+  tauMax: 2.5,
+  focal: 0.24,
+  margin: 0.06,
+  walkers: 24,
+  solid: 0.78,
+  invert: false,
+  seed: Random.getRandomSeed(),
+};
+
+/** Below this the pair is re-drawn from another palette (WCAG ratio). */
+const MIN_CONTRAST = 7;
+
+/** The two most contrasting colours of a random palette, trying a few palettes for ≥ MIN_CONTRAST. */
+function contrastPair(): [string, string] {
+  let best: [string, string] = ['#ffffff', '#000000'];
+  let bestRatio = 0;
+  for (let attempt = 0; attempt < 24 && bestRatio < MIN_CONTRAST; attempt++) {
+    const palette = randomPalette();
+    for (let i = 0; i < palette.length; i++) {
+      for (let j = i + 1; j < palette.length; j++) {
+        const r = contrastRatio(palette[i], palette[j]);
+        if (r > bestRatio) {
+          bestRatio = r;
+          best = [palette[i], palette[j]];
+        }
+      }
+    }
+  }
+  return best;
+}
 
 /** Bipolar → cartesian, foci at (±a, 0). */
 const bipolarToXY = (a: number, tau: number, sigma: number): Point => {
@@ -34,13 +82,12 @@ const bipolarToXY = (a: number, tau: number, sigma: number): Point => {
 
 /**
  * nalee's solidStyle, scaled: each path is one filled band in the walker's
- * colour, `SOLID` of the local cell width (the rest is the gap between
+ * colour, `params.solid` of the local cell width (the rest is the gap between
  * paths). The band is built as an outline, not stroked cell by cell: the
  * width comes from the exact bipolar scale factor at every sample, so it
  * swells and thins continuously, and big cells are sampled densely, so the
  * curve stays smooth where the grid is coarse.
  */
-const SOLID = 0.78;
 /** Target spacing of samples along a path, in px. */
 const SAMPLE_PX = 3;
 
@@ -65,8 +112,8 @@ function sampleBand(
     const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
     if (!ga || !gb) {
       // Off the lookup (should not happen): fall back to the chord.
-      if (i === 1) out.push({ p: a, w: len * SOLID });
-      out.push({ p: b, w: len * SOLID });
+      if (i === 1) out.push({ p: a, w: len * params.solid });
+      out.push({ p: b, w: len * params.solid });
       continue;
     }
     const steps = Math.max(2, Math.ceil(len / SAMPLE_PX));
@@ -74,7 +121,7 @@ function sampleBand(
       const t = k / steps;
       const gx = ga[0] + (gb[0] - ga[0]) * t;
       const gy = ga[1] + (gb[1] - ga[1]) * t;
-      out.push({ p: toWorld(gx, gy), w: cellWidth(gx, gy) * SOLID });
+      out.push({ p: toWorld(gx, gy), w: cellWidth(gx, gy) * params.solid });
     }
   }
   return out;
@@ -132,70 +179,138 @@ const scaledSolid =
   };
 
 export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) => {
+  const pane = new Pane({ title: 'bipolar' }) as any;
+  pane.element.parentElement.style.zIndex = '1';
+
   if (import.meta.hot) {
-    import.meta.hot.dispose(() => wrap.dispose());
+    import.meta.hot.dispose(() => {
+      pane.dispose();
+      wrap.dispose();
+    });
     import.meta.hot.accept(() => wrap.hotReload());
   }
   import.meta.hot?.on('mcp:export', () => {
     props.exportFrame();
   });
 
-  const riso = randomPalette();
-  const bg = riso.bg;
-  const inkColors = Random.shuffle(riso.inkColors).slice(0, 4) as string[];
-  console.log('bg', bg, 'inks', inkColors);
-
-  const a = width * 0.24; // focal half-distance in px
+  const colors = { ink: '#000000', ground: '#ffffff' };
   const [cx, cy] = [width / 2, height / 2];
+  let draw: (frame: SketchProps) => void = () => {};
 
-  // Grid x ↔ τ (−TAU_MAX … TAU_MAX), grid y ↔ σ (−π … π). σ's seam at ±π
-  // lies on the segment between the foci and is left unjoined.
-  const domainToWorld: DomainToWorld = (x, y) => {
-    const [px, py] = bipolarToXY(a, (x - TAU_STEPS) * STEP, -Math.PI + (y + 0.5) * STEP);
-    return [cx + px, cy + py];
+  const dealPalette = () => {
+    const [p, q] = contrastPair();
+    // Lighter colour as ground by default; `invert` swaps them.
+    const [light, dark] = contrastRatio(p, '#ffffff') < contrastRatio(q, '#ffffff') ? [p, q] : [q, p];
+    colors.ground = light;
+    colors.ink = dark;
   };
-  // Bipolar coordinates are conformal with scale factor a / (cosh τ − cos σ),
-  // so a cell's side length is exactly that times STEP, anywhere on the grid.
-  const cellWidth: CellWidth = (x, y) =>
-    (a * STEP) / (Math.cosh((x - TAU_STEPS) * STEP) - Math.cos(-Math.PI + (y + 0.5) * STEP));
 
-  const nodes: Node[] = [];
-  for (let y = 0; y < SIGMA_RES; y++) {
-    for (let x = 0; x <= TAU_STEPS * 2; x++) {
-      const [worldX, worldY] = domainToWorld(x, y);
-      nodes.push({ x, y, occupied: false, id: xyToId(x, y), worldX, worldY });
+  /** Rebuild the grid, its clip and the walkers from `params`. */
+  const build = () => {
+    Random.setSeed(params.seed);
+    const step = (Math.PI * 2) / params.sigmaRes;
+    const tauSteps = Math.max(1, Math.round(params.tauMax / step));
+    const a = width * params.focal;
+    const ink = params.invert ? colors.ground : colors.ink;
+    const ground = params.invert ? colors.ink : colors.ground;
+
+    // Grid x ↔ τ (−tauMax … tauMax), grid y ↔ σ (−π … π). σ's seam at ±π
+    // lies on the segment between the foci and is left unjoined.
+    const domainToWorld: DomainToWorld = (x, y) => {
+      const [px, py] = bipolarToXY(a, (x - tauSteps) * step, -Math.PI + (y + 0.5) * step);
+      return [cx + px, cy + py];
+    };
+    // Bipolar coordinates are conformal with scale factor a / (cosh τ − cos σ),
+    // so a cell's side length is exactly that times the step, anywhere.
+    const cellWidth: CellWidth = (x, y) =>
+      (a * step) / (Math.cosh((x - tauSteps) * step) - Math.cos(-Math.PI + (y + 0.5) * step));
+
+    const nodes: Node[] = [];
+    for (let y = 0; y < params.sigmaRes; y++) {
+      for (let x = 0; x <= tauSteps * 2; x++) {
+        const [worldX, worldY] = domainToWorld(x, y);
+        nodes.push({ x, y, occupied: false, id: xyToId(x, y), worldX, worldY });
+      }
     }
-  }
-  // σ near 0 with τ near 0 runs off to infinity: keep only what lands on the sheet.
-  const m = width * MARGIN;
-  const sheet: Point[] = [
-    [m, m],
-    [width - m, m],
-    [width - m, height - m],
-    [m, height - m],
-  ];
-  const domain = clipDomainWithWorldCoords(nodes, sheet);
-  // nalee hands the path style world points; look their cells back up so
-  // each step can be traced along its curve rather than its chord.
-  const byWorld = new Map(domain.map((n) => [`${n.worldX},${n.worldY}`, [n.x, n.y] as Point]));
-  const toGrid: GridLookup = ([x, y]) => byWorld.get(`${x},${y}`);
+    // σ near 0 with τ near 0 runs off to infinity: keep only what lands on the sheet.
+    const m = width * params.margin;
+    const sheet: Point[] = [
+      [m, m],
+      [width - m, m],
+      [width - m, height - m],
+      [m, height - m],
+    ];
+    const domain = clipDomainWithWorldCoords(nodes, sheet);
+    // nalee hands the path style world points; look their cells back up so
+    // each step can be traced along its curve rather than its chord.
+    const byWorld = new Map(domain.map((n) => [`${n.worldX},${n.worldY}`, [n.x, n.y] as Point]));
+    const toGrid: GridLookup = ([x, y]) => byWorld.get(`${x},${y}`);
 
-  const config = {
-    resolution: [TAU_STEPS * 2, SIGMA_RES - 1],
-    size: 1,
-    stepSize: 1,
-    walkerCount: 24,
-    padding: 0,
-    pathStyle: scaledSolid(toGrid, domainToWorld, cellWidth),
-    flat: true,
-  } satisfies Config;
+    const config = {
+      resolution: [tauSteps * 2, params.sigmaRes - 1],
+      size: 1,
+      stepSize: 1,
+      walkerCount: params.walkers,
+      padding: 0,
+      pathStyle: scaledSolid(toGrid, domainToWorld, cellWidth),
+      flat: true,
+    } satisfies Config;
 
-  const naleeSystem = createNaleeSystem(domain, config, domainToWorld, inkColors, bg);
+    const naleeSystem = createNaleeSystem(domain, config, domainToWorld, [ink], ground);
+    draw = (frame) => {
+      context.fillStyle = ground;
+      context.fillRect(0, 0, width, height);
+      naleeSystem(frame);
+    };
+  };
+
+  const rebuild = () => {
+    build();
+    props.render();
+  };
+
+  // ─── Pane ────────────────────────────────────────────────────────────────────
+
+  // Rebuild on the editable inputs only, once a drag settles. A pane-wide
+  // 'change' listener would also hear the read-only monitors, which poll —
+  // and a rebuild per poll never lets the page go idle.
+  const onInput = (binding: any) =>
+    binding.on('change', (ev: { last?: boolean }) => {
+      if (ev.last !== false) rebuild();
+    });
+
+  const grid = pane.addFolder({ title: 'Grid' });
+  onInput(grid.addBinding(params, 'sigmaRes', { min: 24, max: 240, step: 4, label: 'resolution' }));
+  onInput(grid.addBinding(params, 'tauMax', { min: 0.8, max: 4, step: 0.1, label: 'reach (τ)' }));
+  onInput(grid.addBinding(params, 'focal', { min: 0.05, max: 0.45, step: 0.01, label: 'foci apart' }));
+  onInput(grid.addBinding(params, 'margin', { min: 0, max: 0.2, step: 0.005 }));
+
+  const paths = pane.addFolder({ title: 'Paths' });
+  onInput(paths.addBinding(params, 'walkers', { min: 1, max: 80, step: 1 }));
+  onInput(paths.addBinding(params, 'solid', { min: 0.05, max: 1, step: 0.01, label: 'line (× cell)' }));
+
+  const colour = pane.addFolder({ title: 'Colour' });
+  colour.addBinding(colors, 'ink', { readonly: true });
+  colour.addBinding(colors, 'ground', { readonly: true });
+  onInput(colour.addBinding(params, 'invert'));
+  colour.addButton({ title: 'New palette' }).on('click', () => {
+    dealPalette();
+    pane.refresh();
+    rebuild();
+  });
+
+  pane.addBinding(params, 'seed', { readonly: true });
+  pane.addButton({ title: 'Regenerate' }).on('click', () => {
+    params.seed = Random.getRandomSeed();
+    pane.refresh();
+    rebuild();
+  });
+
+  dealPalette();
+  build();
 
   wrap.render = (frame: SketchProps) => {
-    context.fillStyle = bg;
-    context.fillRect(0, 0, width, height);
-    naleeSystem(frame);
+    draw(frame);
   };
 };
 
@@ -203,11 +318,8 @@ export const settings: SketchSettings = {
   mode: '2d',
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
-  animate: true,
-  duration: 6000,
-  playFps: 60,
-  exportFps: 60,
-  framesFormat: ['mp4'],
+  // Nothing moves: the image is redrawn when the pane changes.
+  animate: false,
 };
 
 ssam(sketch as Sketch<'2d'>, settings);
