@@ -11,11 +11,8 @@
 # @raycast.icon images/icon.png
 # @raycast.description Which of Archive Site, Light Table and Atlas are running
 
-# Never starts or stops anything, so it is safe on a refresh timer. Each
-# refresh also brings the toggles' icons back in step (say after a server was
-# started from a terminal or died on its own).
-source "$(dirname "$0")/_icons.sh"
-state=$raycast_state
+# Read-only: never starts or stops anything, so it is safe on a refresh timer.
+state="$(cd "$(dirname "$0")/.." && pwd)/.raycast"
 
 green=$'\e[32m'
 yellow=$'\e[33m'
@@ -37,9 +34,5 @@ status() {
     echo -n "${dim}○ $label${reset}"
   fi
 }
-
-sync_icon archive 4173 toggle-archive-site.sh
-sync_icon review 5180 toggle-light-table.sh
-sync_icon atlas 5181 toggle-atlas.sh
 
 echo "$(status 'Archive' archive 4173)   $(status 'Light Table' review 5180)   $(status 'Atlas' atlas 5181)"

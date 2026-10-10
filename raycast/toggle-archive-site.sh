@@ -7,7 +7,7 @@
 # @raycast.packageName Sketchbook
 
 # Optional parameters:
-# @raycast.icon icons/archive.png
+# @raycast.icon images/icon.png
 # @raycast.description Start Archive Site (:4173), or stop it if this command started it
 
-exec "$(dirname "$0")/_service.sh" archive 4173 archive:dev toggle-archive-site.sh
+exec "$(dirname "$0")/_service.sh" archive 4173 archive:dev
