@@ -424,7 +424,7 @@ function Drawer({
   const sameSystem = primarySystem
     ? data.nodes
         .filter((n) => n.id !== node.id && n.colorSystems[0] === primarySystem.key)
-        .slice(-6)
+        .slice(-5)
     : [];
 
   const chips = (field: TagField) =>
