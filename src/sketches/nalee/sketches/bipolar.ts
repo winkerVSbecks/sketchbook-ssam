@@ -45,6 +45,8 @@ interface Params {
   walkers: number;
   /** Concentric rings filling the empty disc round each focus (0 = none). */
   rings: number;
+  /** Share of each ring's pitch that is ink; lower opens the gap between rings. */
+  ringLine: number;
   /**
    * Share of the local cell width that is ink (the rest is the gap between
    * paths), far from the foci (τ = 0) and next to them (|τ| = tauMax);
@@ -72,6 +74,7 @@ const params: Params = {
   margin: 0.06,
   walkers: 24,
   rings: 8,
+  ringLine: 0.3,
   lineFar: 0.85,
   lineNear: 0.45,
   falloff: 1,
@@ -474,12 +477,11 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
       .filter((band) => band.length > 1);
 
     if (params.rings > 0) {
-      // The grid's inner edge sits half a cell beyond its last column; the
-      // rings take the near-foci line share so they read as the same ink.
+      // The grid's inner edge sits half a cell beyond its last column.
       const tauEdge = (tauSteps + 0.5) * step;
       bands.push(
-        ...focusRings([cx + a, cy], 1, a, tauEdge, params.rings, share(0)),
-        ...focusRings([cx - a, cy], -1, a, tauEdge, params.rings, share(0)),
+        ...focusRings([cx + a, cy], 1, a, tauEdge, params.rings, params.ringLine),
+        ...focusRings([cx - a, cy], -1, a, tauEdge, params.rings, params.ringLine),
       );
     }
   };
@@ -509,6 +511,7 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
   const paths = pane.addFolder({ title: 'Paths' });
   onInput(paths.addBinding(params, 'walkers', { min: 1, max: 80, step: 1 }));
   onInput(paths.addBinding(params, 'rings', { min: 0, max: 40, step: 1, label: 'rings at foci' }));
+  onInput(paths.addBinding(params, 'ringLine', { min: 0.05, max: 1, step: 0.01, label: 'ring line' }));
   onInput(paths.addBinding(params, 'lineFar', { min: 0.05, max: 1, step: 0.01, label: 'line far' }));
   onInput(paths.addBinding(params, 'lineNear', { min: 0.05, max: 1, step: 0.01, label: 'line near foci' }));
   onInput(paths.addBinding(params, 'falloff', { min: 0.2, max: 4, step: 0.05 }));
