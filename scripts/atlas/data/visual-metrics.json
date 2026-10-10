@@ -522,6 +522,22 @@
    "#203070"
   ]
  },
+ "sketches/blinds/collapse-cusp": {
+  "bg": "#f7eeb4",
+  "bgL": 0.942,
+  "meanL": 0.867,
+  "meanC": 0.0903,
+  "ink": 0.251,
+  "hue": 105,
+  "hueShare": 0.62,
+  "colors": [
+   "#c03030",
+   "#40d070",
+   "#f0a090",
+   "#30d070",
+   "#004040"
+  ]
+ },
  "sketches/boids/cohesion-color": {
   "bg": "#bcbab9",
   "bgL": 0.79,
@@ -623,9 +639,9 @@
   "bgL": 0.967,
   "meanL": 0.939,
   "meanC": 0.0039,
-  "ink": 0.078,
+  "ink": 0.076,
   "hue": 285,
-  "hueShare": 0.72,
+  "hueShare": 0.769,
   "colors": [
    "#d0d0d0",
    "#909090",
@@ -670,16 +686,16 @@
   "bg": "#f5f5f3",
   "bgL": 0.97,
   "meanL": 0.873,
-  "meanC": 0.0376,
-  "ink": 0.414,
+  "meanC": 0.0375,
+  "ink": 0.413,
   "hue": 15,
-  "hueShare": 0.51,
+  "hueShare": 0.508,
   "colors": [
    "#f080a0",
    "#f09060",
    "#d0d0d0",
-   "#f09050",
-   "#e080a0"
+   "#e080a0",
+   "#f09050"
   ]
  },
  "sketches/chaikin-paths": {
@@ -3425,51 +3441,66 @@
   ]
  },
  "sketches/nalee-one-line/basic-gradient": {
-  "bg": "#e67300",
-  "bgL": 0.677,
-  "meanL": 0.678,
-  "meanC": 0.1599,
-  "ink": 0.119,
-  "hue": 45,
-  "hueShare": 0.892,
-  "colors": [
-   "#906010",
-   "#b09060",
-   "#e0a060",
-   "#d0a040",
-   "#c0a070"
-  ]
- },
- "sketches/nalee-one-line/circle": {
-  "bg": "#2f2f2f",
-  "bgL": 0.305,
-  "meanL": 0.344,
-  "meanC": 0.0019,
-  "ink": 0.138,
+  "bg": "#ffffff",
+  "bgL": 1,
+  "meanL": 0.97,
+  "meanC": 0.0003,
+  "ink": 0.004,
   "hue": null,
   "hueShare": 0,
   "colors": [
-   "#505050",
-   "#404040",
-   "#505040",
-   "#605050",
-   "#606060"
+   "#b0d0f0",
+   "#c0c0c0",
+   "#f0b0a0",
+   "#c0c0e0",
+   "#c0d0a0"
+  ]
+ },
+ "sketches/nalee-one-line/basic-gradient-cusp": {
+  "bg": "#e8f4f5",
+  "bgL": 0.958,
+  "meanL": 0.763,
+  "meanC": 0.0478,
+  "ink": 0.623,
+  "hue": 315,
+  "hueShare": 0.253,
+  "colors": [
+   "#b0d0d0",
+   "#907050",
+   "#408090",
+   "#9060a0",
+   "#b080a0"
+  ]
+ },
+ "sketches/nalee-one-line/circle": {
+  "bg": "#d6f7d8",
+  "bgL": 0.944,
+  "meanL": 0.939,
+  "meanC": 0.0544,
+  "ink": 0.022,
+  "hue": 135,
+  "hueShare": 0.994,
+  "colors": [
+   "#b0d0b0",
+   "#90c0a0",
+   "#a0d0b0",
+   "#80a080",
+   "#90c090"
   ]
  },
  "sketches/nalee-one-line/circle-chromotome": {
-  "bg": "#fcefdf",
-  "bgL": 0.958,
-  "meanL": 0.952,
-  "meanC": 0.0279,
-  "ink": 0.033,
-  "hue": 45,
-  "hueShare": 0.406,
+  "bg": "#e0f0f0",
+  "bgL": 0.943,
+  "meanL": 0.939,
+  "meanC": 0.0165,
+  "ink": 0.002,
+  "hue": null,
+  "hueShare": 0,
   "colors": [
-   "#f0d090",
-   "#d0d0d0",
-   "#b0d0d0",
-   "#d0d0c0",
-   "#c0d0a0"
+   "#d0b0c0",
+   "#d0c0c0",
+   "#d0d0b0",
+   "#c0b090"
   ]
  },
  "sketches/nalee-one-line/neon": {
@@ -4094,6 +4125,22 @@
    "#103010"
   ]
  },
+ "sketches/paint-without-thinking/arcs-reduction-rounded-animated-cusp": {
+  "bg": "#decaa5",
+  "bgL": 0.846,
+  "meanL": 0.451,
+  "meanC": 0.1275,
+  "ink": 0.916,
+  "hue": 45,
+  "hueShare": 0.949,
+  "colors": [
+   "#701000",
+   "#801010",
+   "#f0f0c0",
+   "#700000",
+   "#801000"
+  ]
+ },
  "sketches/paint-without-thinking/everything": {
   "bg": "#7f6411",
   "bgL": 0.516,
@@ -4531,6 +4578,22 @@
    "#505050"
   ]
  },
+ "sketches/recursive-network": {
+  "bg": "#0c0f0a",
+  "bgL": 0.163,
+  "meanL": 0.196,
+  "meanC": 0.0266,
+  "ink": 0.02,
+  "hue": 165,
+  "hueShare": 0.98,
+  "colors": [
+   "#003020",
+   "#003030",
+   "#103020",
+   "#004030",
+   "#002020"
+  ]
+ },
  "sketches/red-and-black/base": {
   "bg": "#00ea67",
   "bgL": 0.818,
@@ -4593,6 +4656,22 @@
    "#c06070",
    "#b05070",
    "#502030"
+  ]
+ },
+ "sketches/rubber-band-stipple/haberdashery-cusp": {
+  "bg": "#e2fcfa",
+  "bgL": 0.972,
+  "meanL": 0.856,
+  "meanC": 0.0486,
+  "ink": 0.393,
+  "hue": 135,
+  "hueShare": 0.985,
+  "colors": [
+   "#406000",
+   "#c0d0b0",
+   "#c0d0c0",
+   "#c0e0c0",
+   "#507010"
   ]
  },
  "sketches/rubber-band-stipple/rubber-band-stipple": {
@@ -5434,20 +5513,68 @@
    "#e09030"
   ]
  },
- "sketches/terminal-ui/layered-compositions": {
-  "bg": "#ff5518",
-  "bgL": 0.677,
-  "meanL": 0.647,
-  "meanC": 0.1996,
-  "ink": 0.132,
+ "sketches/terminal-ui/cusp-hanger": {
+  "bg": "#ebebe9",
+  "bgL": 0.94,
+  "meanL": 0.899,
+  "meanC": 0.0089,
+  "ink": 0.135,
   "hue": 45,
-  "hueShare": 0.995,
+  "hueShare": 0.264,
   "colors": [
-   "#201000",
-   "#401000",
-   "#f07040",
-   "#f07050",
-   "#f08060"
+   "#c0c0c0",
+   "#404040",
+   "#000000",
+   "#505050",
+   "#101010"
+  ]
+ },
+ "sketches/terminal-ui/differential-growth": {
+  "bg": "#101476",
+  "bgL": 0.283,
+  "meanL": 0.29,
+  "meanC": 0.1556,
+  "ink": 0.05,
+  "hue": 255,
+  "hueShare": 0.914,
+  "colors": [
+   "#c0c0d0",
+   "#f0f0e0",
+   "#b0b0d0",
+   "#e0e0e0",
+   "#d0d0e0"
+  ]
+ },
+ "sketches/terminal-ui/layered-compositions": {
+  "bg": "#f5f5ed",
+  "bgL": 0.968,
+  "meanL": 0.927,
+  "meanC": 0.0175,
+  "ink": 0.129,
+  "hue": 45,
+  "hueShare": 0.515,
+  "colors": [
+   "#c0d0d0",
+   "#805040",
+   "#602020",
+   "#b0d0d0",
+   "#f0c0b0"
+  ]
+ },
+ "sketches/terminal-ui/palette-picker": {
+  "bg": "#262f36",
+  "bgL": 0.3,
+  "meanL": 0.344,
+  "meanC": 0.0186,
+  "ink": 0.113,
+  "hue": 285,
+  "hueShare": 0.369,
+  "colors": [
+   "#f0f0e0",
+   "#405050",
+   "#404050",
+   "#c0c0b0",
+   "#b0b0a0"
   ]
  },
  "sketches/test": {
@@ -5539,19 +5666,35 @@
   ]
  },
  "sketches/trochoidal-wave/dither": {
-  "bg": "#696d6c",
-  "bgL": 0.531,
-  "meanL": 0.498,
-  "meanC": 0.0185,
-  "ink": 0.801,
-  "hue": 195,
-  "hueShare": 0.505,
+  "bg": "#606766",
+  "bgL": 0.507,
+  "meanL": 0.497,
+  "meanC": 0.0184,
+  "ink": 0.755,
+  "hue": 15,
+  "hueShare": 0.573,
   "colors": [
    "#001010",
-   "#203030",
-   "#000000",
-   "#a0a0a0",
-   "#808080"
+   "#808080",
+   "#102020",
+   "#c0b0b0",
+   "#909090"
+  ]
+ },
+ "sketches/trochoidal-wave/rani": {
+  "bg": "#fe499a",
+  "bgL": 0.685,
+  "meanL": 0.625,
+  "meanC": 0.1657,
+  "ink": 0.638,
+  "hue": 345,
+  "hueShare": 0.528,
+  "colors": [
+   "#f080a0",
+   "#003080",
+   "#103080",
+   "#f0f0f0",
+   "#002080"
   ]
  },
  "sketches/voxels/alphabet": {

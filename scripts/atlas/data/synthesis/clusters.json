@@ -53,7 +53,8 @@
     "sketches/nalee-one-line/albers-meander",
     "sketches/bio-sprue/bio-sprue",
     "sketches/bio-sprue/nalee",
-    "sketches/bio-sprue/sprue"
+    "sketches/bio-sprue/sprue",
+    "sketches/nalee-one-line/basic-gradient-cusp"
    ]
   },
   {
@@ -138,7 +139,8 @@
     "sketches/rubber-band-stipple/skeleton-field",
     "sketches/rubber-band-stipple/skeleton-albers",
     "sketches/rubber-band-stipple/skeleton-line",
-    "sketches/rubber-band-stipple/skeleton-inverted"
+    "sketches/rubber-band-stipple/skeleton-inverted",
+    "sketches/rubber-band-stipple/haberdashery-cusp"
    ]
   },
   {
@@ -171,7 +173,8 @@
     "sketches/paint-without-thinking/arcs",
     "sketches/paint-without-thinking/just-arcs",
     "sketches/snowflake/16x16",
-    "sketches/penplot-example"
+    "sketches/penplot-example",
+    "sketches/paint-without-thinking/arcs-reduction-rounded-animated-cusp"
    ]
   },
   {
@@ -280,7 +283,8 @@
     "sketches/flatland/flatland-truncation",
     "sketches/flatland/flatland-grid",
     "sketches/blinds/blinds",
-    "sketches/blinds/collapse"
+    "sketches/blinds/collapse",
+    "sketches/blinds/collapse-cusp"
    ]
   },
   {
@@ -302,7 +306,9 @@
     "sketches/texel-colors",
     "sketches/texel-colors-basic",
     "sketches/disco-color-fractions/console",
-    "sketches/css-color-ramp"
+    "sketches/css-color-ramp",
+    "sketches/terminal-ui/cusp-hanger",
+    "sketches/terminal-ui/palette-picker"
    ]
   },
   {
@@ -376,7 +382,8 @@
     "sketches/collision/basic",
     "sketches/collision/spaw-debug",
     "sketches/not-every-body-lives-the-same-way",
-    "sketches/canvas-ui/curve-relief"
+    "sketches/canvas-ui/curve-relief",
+    "sketches/recursive-network"
    ]
   },
   {
@@ -455,7 +462,8 @@
     "sketches/tensors/tensors",
     "sketches/tensors/tensors-blob",
     "sketches/tensors/tensors-options",
-    "sketches/tensors/tensors-sketch"
+    "sketches/tensors/tensors-sketch",
+    "sketches/trochoidal-wave/rani"
    ]
   },
   {
@@ -481,7 +489,8 @@
     "sketches/terminal-charts/compositions",
     "sketches/terminal-charts/terminal-charts",
     "sketches/terminal-charts/terminal-charts-patterns",
-    "sketches/terminal-charts/icons"
+    "sketches/terminal-charts/icons",
+    "sketches/terminal-ui/differential-growth"
    ]
   }
  ],
