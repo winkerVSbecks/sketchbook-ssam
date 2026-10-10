@@ -157,8 +157,13 @@ async function renderOnce(sketchPath: string): Promise<string> {
     executablePath,
     headless: true,
     args: [
-      '--use-gl=swiftshader',
+      // Software rendering for WebGL and WebGPU alike. ANGLE's SwiftShader is
+      // the one that works for both: the older `--use-gl=swiftshader` leaves a
+      // WebGPU canvas with an invalid swap-chain texture (blank exports).
+      '--use-angle=swiftshader',
       '--enable-unsafe-swiftshader',
+      // Headless Chromium exposes no WebGPU adapter without this.
+      '--enable-unsafe-webgpu',
       '--ignore-gpu-blocklist',
       '--no-sandbox',
       '--disable-dev-shm-usage',
