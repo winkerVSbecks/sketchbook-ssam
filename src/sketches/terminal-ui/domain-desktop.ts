@@ -12,7 +12,9 @@
  * fill, with the polygon cut out of them.
  *
  * The windows are live: drag, resize, minimise; `+ new` re-partitions,
- * settings changes the grid resolution or retints.
+ * settings changes the grid resolution or retints. The grid defaults to 8×8
+ * and a sparse deal is re-dealt from the same seed, so the desktop opens with
+ * at least eight windows on almost every seed.
  */
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
@@ -38,12 +40,23 @@ type Point = [number, number];
 
 /** Glyph fills, ordered from open to dense; a region's shape picks its place. */
 const FILLS = ['·', '─', '│', '╱', '╲', '┼', '░', '═', '║', '╳', '▒', '▚'] as const;
+// Finer grids give more windows: across 30 seeds the median window count
+// is ~4 at 4×4, 6 at 6×6, 9 at 8×8 and 11 at 9×9 (the merge passes eat the rest).
 const RESOLUTIONS: [number, number][] = [
-  [4, 4],
-  [5, 5],
   [6, 6],
   [7, 7],
+  [8, 8],
+  [9, 9],
+  [10, 10],
 ];
+const DEFAULT_RES: [number, number] = [8, 8];
+/** A partition with fewer usable windows than this is re-dealt from the same seed. */
+const MIN_WINDOWS = 8;
+/** How many deals of one seed to try before keeping the fullest one. */
+const DEALS = 12;
+/** Smallest region that still opens as a window (box border plus a line of fill). */
+const MIN_ROWS = 3;
+const MIN_COLS = 6;
 
 /** Ray-cast point-in-polygon. */
 function inside(x: number, y: number, poly: Point[]): boolean {
@@ -79,7 +92,7 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
   });
 
   let seed = Random.getRandomSeed();
-  let res = Random.pick(RESOLUTIONS) as [number, number];
+  let res: [number, number] = DEFAULT_RES;
   let rawPalette = randomPalette();
   let showPolygon = true;
   /** The partition polygon, in desktop cell space (x = col, y = row). */
@@ -152,28 +165,51 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     return areaRank === 0 && w === h ? diag : family[areaRank];
   };
 
+  const usable = (rect: CellRect) => rect.rows >= MIN_ROWS && rect.cols >= MIN_COLS;
+
+  /**
+   * One seed, dealt up to `DEALS` times (sub-seeds `seed/0`, `seed/1`, …):
+   * the merge passes can leave a fine grid with only a few big regions, so
+   * the first deal with at least `MIN_WINDOWS` usable regions wins, else the
+   * fullest. Same seed, same desktop.
+   */
+  const partition = (area: CellRect, worldW: number, worldH: number) => {
+    let best: ReturnType<typeof generateDomainSystem> | null = null;
+    let bestCount = -1;
+    for (let deal = 0; deal < DEALS; deal++) {
+      Random.setSeed(`${seed}/${deal}`);
+      const system = generateDomainSystem(
+        res,
+        0,
+        worldW,
+        worldH,
+        {
+          inset: [0, 0, 0, 0],
+          doCombineSmallRegions: true,
+          doCombineNarrowRegions: true,
+          doReduceNarrowRegions: true,
+        },
+        { x: 0, y: 0, w: worldW, h: worldH },
+      );
+      const count = system.domains.filter((d) => usable(regionRect(d, area))).length;
+      if (count > bestCount) {
+        best = system;
+        bestCount = count;
+      }
+      if (count >= MIN_WINDOWS) break;
+    }
+    return best!;
+  };
+
   const build = () => {
     for (const win of [...desktop.windows]) desktop.removeWindow(win);
     panes.clear();
-    Random.setSeed(seed);
     const area = desktop.area;
     const aspect = desktop.metrics.lineH / desktop.metrics.charW;
     // The system works in square world units: one column wide, `aspect` columns per row.
     const worldW = area.cols;
     const worldH = area.rows * aspect;
-    const { domains, polygon: poly } = generateDomainSystem(
-      res,
-      0,
-      worldW,
-      worldH,
-      {
-        inset: [0, 0, 0, 0],
-        doCombineSmallRegions: true,
-        doCombineNarrowRegions: true,
-        doReduceNarrowRegions: true,
-      },
-      { x: 0, y: 0, w: worldW, h: worldH },
-    );
+    const { domains, polygon: poly } = partition(area, worldW, worldH);
     polygon = (poly as Point[]).map(([x, y]) => [area.col + x, area.row + y / aspect]);
     // Largest regions first, so the small ones sit in front and stay grabbable.
     const sorted = [...domains].sort(
@@ -181,7 +217,7 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     );
     sorted.forEach((d, i) => {
       const rect = regionRect(d, area);
-      if (rect.rows < 3 || rect.cols < 6) return;
+      if (!usable(rect)) return;
       const island = isIsland(d);
       const label = `${island ? 'island' : 'region'} ${String(i + 1).padStart(2, '0')}`;
       const win = desktop.addWindow({
@@ -244,7 +280,7 @@ export const sketch = ({ wrap, context, canvas, width, height, ...props }: Sketc
     height,
     palette: rawPalette,
     settings: { controls, cols: 30 },
-    status: () => `seed ${seed} · ${res[0]}×${res[1]} grid · ${panes.size} regions`,
+    status: () => `seed ${seed} · ${res[0]}×${res[1]} grid · ${panes.size} windows`,
     onNewWindow: repartition,
     onChange: () => props.render(),
   });
