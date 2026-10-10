@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-07-02T16:00:00Z",
+  "generatedAt": "2026-10-10T18:32:05.449Z",
   "title": "Design System: Sketchbook (ssam)",
   "extensions": {
     "colorMeta": {
@@ -109,12 +109,25 @@
         "name": "icon-hover",
         "value": "color 0.15s ease",
         "purpose": "Icons and underlines ease Pencil → Ink on hover."
+      },
+      {
+        "name": "atlas-set-in",
+        "value": "opacity 0.25 → 1, 0.32s cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Atlas only: the set eases in when a pick replaces it. Removed under prefers-reduced-motion."
       }
     ],
     "breakpoints": [
       {
         "name": "grid-min",
         "value": "280px"
+      },
+      {
+        "name": "archive-stack",
+        "value": "640px"
+      },
+      {
+        "name": "atlas-drawer-float",
+        "value": "1180px"
       }
     ]
   },
@@ -128,10 +141,10 @@
       "css": ".ds-card { width: 280px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; } .ds-thumb { display: block; transition: opacity 0.2s ease; } .ds-thumb:hover { opacity: 0.65; } .ds-thumb:focus-visible { outline: 2px solid #111111; outline-offset: 2px; } .ds-thumb-img { width: 100%; aspect-ratio: 1 / 1; background: linear-gradient(135deg, #f4f4f3 0%, #f4f4f3 55%, #e9e9e7 55%, #e9e9e7 100%); } .ds-caption { display: flex; flex-direction: column; gap: 0.2rem; padding: 0.75rem 0.125rem 0; } .ds-name-row { display: flex; align-items: center; gap: 0.5rem; } .ds-name { font-size: 0.9375rem; font-weight: 500; letter-spacing: -0.005em; color: #111111; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; } .ds-icon { display: inline-flex; flex-shrink: 0; color: #767676; transition: color 0.15s ease; margin-left: auto; } .ds-icon:hover, .ds-icon:focus-visible { color: #111111; } .ds-date { font-size: 0.75rem; color: #767676; font-variant-numeric: tabular-nums; line-height: 1; }"
     },
     {
-      "name": "Year Header",
+      "name": "Section Header",
       "kind": "nav",
       "refersTo": "year-header",
-      "description": "Sticky drawer divider — Pencil label, hairline underline, white backing.",
+      "description": "Sticky Pencil label with a Hairline underline over translucent white: the drawer divider for a year, a series, or an Atlas group.",
       "html": "<h2 class=\"ds-year\">2026</h2>",
       "css": ".ds-year { margin: 0; padding: 1rem 0 0.75rem; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-size: 0.8125rem; font-weight: 500; letter-spacing: 0.04em; color: #767676; background: rgba(255, 255, 255, 0.88); backdrop-filter: saturate(180%) blur(8px); border-bottom: 1px solid rgba(0, 0, 0, 0.08); font-variant-numeric: tabular-nums; }"
     },
@@ -158,11 +171,51 @@
       "description": "One Pencil sentence with the fix inline as code — the system's only rounded corner (3px).",
       "html": "<p class=\"ds-empty\">No sketches archived yet. Run <code class=\"ds-code\">npm run archive</code>.</p>",
       "css": ".ds-empty { margin: 0; padding: 2rem 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-size: 15px; color: #767676; } .ds-code { background: #f4f4f3; padding: 0.15em 0.4em; border-radius: 3px; font-size: 0.875em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }"
+    },
+    {
+      "name": "View Toggle",
+      "kind": "nav",
+      "refersTo": "",
+      "description": "By year · By series in the masthead toolbar: the current view plain Ink at weight 500, the other a hairline-underlined link. A drawer label, not a tab bar.",
+      "html": "<nav class=\"ds-views\" aria-label=\"View\"><a href=\"#\" aria-current=\"page\">By year</a><span class=\"ds-views-sep\">·</span><a href=\"#\">By series</a></nav>",
+      "css": ".ds-views { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-size: 0.875rem; color: #111111; } .ds-views a { color: #111111; text-decoration: underline; text-decoration-color: rgba(0,0,0,0.08); text-underline-offset: 3px; transition: text-decoration-color 0.15s ease; } .ds-views a:hover { text-decoration-color: #111111; } .ds-views a[aria-current] { font-weight: 500; text-decoration: none; } .ds-views a:focus-visible { outline: 2px solid #111111; outline-offset: 2px; } .ds-views-sep { color: #767676; margin: 0 0.5rem; }"
+    },
+    {
+      "name": "Filter Input",
+      "kind": "input",
+      "refersTo": "",
+      "description": "Bare text input on a single Hairline that turns Ink on focus; Pencil placeholder; the result count sits on the open side so the field never shifts under the caret.",
+      "html": "<div class=\"ds-filter\"><span class=\"ds-count\">64 of 372</span><input type=\"search\" placeholder=\"Filter sketches\" aria-label=\"Filter sketches\"></div>",
+      "css": ".ds-filter { display: flex; align-items: baseline; gap: 0.75rem; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; } .ds-filter input { font: inherit; font-size: 15px; color: #111111; background: transparent; border: none; border-bottom: 1px solid rgba(0,0,0,0.08); border-radius: 0; padding: 0.25rem 0; width: 20rem; } .ds-filter input:focus { outline: none; border-bottom-color: #111111; } .ds-filter input::placeholder { color: #767676; opacity: 1; } .ds-filter input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; } .ds-count { color: #767676; font-size: 0.875rem; font-variant-numeric: tabular-nums; white-space: nowrap; }"
+    },
+    {
+      "name": "Atlas Ledger Row",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "A counted catalogue row: Ink label that wraps, a 3px Ink bar at 20% in a 3rem track, a Pencil tabular count. With a pick active the pick's share is inked over a 10% bar and prefixes the count.",
+      "html": "<div class=\"ds-ledger\"><button class=\"ds-lrow\" type=\"button\"><span class=\"ds-lrow-label\">Fields, Flows and Waves</span><span class=\"ds-lrow-track\"><span class=\"ds-lrow-bar\" style=\"width:82%\"></span></span><span class=\"ds-lrow-count\">41</span></button><button class=\"ds-lrow is-active\" type=\"button\" aria-pressed=\"true\"><span class=\"ds-lrow-label\">Color Studies and Gradients</span><span class=\"ds-lrow-track\"><span class=\"ds-lrow-bar\" style=\"width:34%\"></span></span><span class=\"ds-lrow-count\">17</span></button><button class=\"ds-lrow has-part\" type=\"button\"><span class=\"ds-lrow-label\">mindful</span><span class=\"ds-lrow-track\"><span class=\"ds-lrow-bar\" style=\"width:100%\"></span><span class=\"ds-lrow-part\" style=\"width:8%\"></span></span><span class=\"ds-lrow-count\"><span class=\"ds-of\">4 / </span>53</span></button></div>",
+      "css": ".ds-ledger { width: 260px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; } .ds-lrow { width: 100%; display: grid; grid-template-columns: minmax(0,1fr) 3rem minmax(1.75rem,auto); align-items: start; gap: 0.5rem; padding: 0.125rem 0; font: inherit; font-size: 0.8125rem; line-height: 1.35; color: #111111; background: none; border: 0; text-align: left; cursor: pointer; font-variant-numeric: tabular-nums; } .ds-lrow-label { text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 3px; transition: text-decoration-color 0.15s ease; } .ds-lrow:hover .ds-lrow-label { text-decoration-color: #111111; } .ds-lrow:focus-visible { outline: 2px solid #111111; outline-offset: 2px; } .ds-lrow-track { position: relative; height: 3px; margin-top: 0.5em; } .ds-lrow-bar, .ds-lrow-part { position: absolute; left: 0; top: 0; bottom: 0; background: #111111; } .ds-lrow-bar { opacity: 0.2; transition: opacity 0.15s ease; } .ds-lrow:hover .ds-lrow-bar { opacity: 0.45; } .ds-lrow-part { opacity: 0.9; } .ds-lrow.has-part .ds-lrow-bar { opacity: 0.1; } .ds-lrow-count { text-align: right; white-space: nowrap; color: #767676; } .ds-of { color: #111111; } .ds-lrow.is-active .ds-lrow-label { font-weight: 600; } .ds-lrow.is-active .ds-lrow-bar { opacity: 0.9; } .ds-lrow.is-active .ds-lrow-count { color: #111111; }"
+    },
+    {
+      "name": "Atlas Segmented Control",
+      "kind": "nav",
+      "refersTo": "",
+      "description": "Group by · Sheet/Plates as plain text buttons: Pencil at rest, Ink weight 500 with a 1px Ink underline when pressed. No pill, no box.",
+      "html": "<div class=\"ds-seg\" role=\"group\" aria-label=\"Group by\"><span class=\"ds-seg-label\">Group by</span><button type=\"button\" aria-pressed=\"true\">Cluster</button><button type=\"button\" aria-pressed=\"false\">Series</button><button type=\"button\" aria-pressed=\"false\">Month</button><button type=\"button\" aria-pressed=\"false\">Colour system</button></div>",
+      "css": ".ds-seg { display: flex; align-items: baseline; gap: 1rem; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-size: 0.875rem; } .ds-seg-label { color: #767676; } .ds-seg button { font: inherit; color: #767676; background: none; border: 0; border-bottom: 1px solid transparent; padding: 0 0 2px; cursor: pointer; white-space: nowrap; transition: color 0.15s ease; } .ds-seg button:hover { color: #111111; } .ds-seg button[aria-pressed=\"true\"] { color: #111111; font-weight: 500; border-bottom-color: #111111; } .ds-seg button:focus-visible { outline: 2px solid #111111; outline-offset: 2px; }"
+    },
+    {
+      "name": "Atlas Tag Chip",
+      "kind": "chip",
+      "refersTo": "",
+      "description": "A tag as 0.75rem text in a 1px Hairline box with square corners; the border goes Ink on hover and a click filters to that tag.",
+      "html": "<div class=\"ds-chips\"><button class=\"ds-chip\" type=\"button\">trig-waves</button><button class=\"ds-chip\" type=\"button\">dithering</button><button class=\"ds-chip\" type=\"button\">pixel-manipulation</button></div>",
+      "css": ".ds-chips { display: flex; flex-wrap: wrap; gap: 4px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; } .ds-chip { font: inherit; font-size: 0.75rem; color: #111111; background: none; padding: 0 0.5rem; border: 1px solid rgba(0,0,0,0.08); border-radius: 0; cursor: pointer; transition: border-color 0.15s ease; } .ds-chip:hover { border-color: #111111; } .ds-chip:focus-visible { outline: 2px solid #111111; outline-offset: 2px; }"
     }
   ],
   "narrative": {
     "northStar": "The Flat File",
-    "overview": "The artist's flat-file drawer: prints stored systematically, labeled in pencil, retrieved by date. This is a working archive, not an exhibition — chronology over curation, completeness over spectacle. The chrome exists to hold the work flat and findable, then get out of the way. The system is deliberately voiceless where the work is loud: the interface owns no hue, no shadow, no display typeface — the sketches supply all the color and all the personality on any page.",
+    "overview": "The artist's flat-file drawer: prints stored systematically, labeled in pencil, retrieved by date. This is a working archive, not an exhibition — chronology over curation, completeness over spectacle. The chrome exists to hold the work flat and findable, then get out of the way. Every visible decision (white ground, hairline dividers, pencil-gray labels, square prints on a uniform grid) comes from that drawer, not from web-portfolio convention.\n\nThe system is deliberately voiceless where the work is loud. The interface owns no hue, no shadow, no display typeface — the sketches (370+ and growing) supply all the color and all the personality on any page. Density is generous but systematic: one grid rule (`repeat(auto-fill, minmax(280px, 1fr))`, 4rem gutters) applied uniformly, the same anti-compositional stance the sketches themselves take. It explicitly rejects the generative-art genre look (dark neon, glitch, terminal chrome), the template portfolio (heroes, badges, eyebrow labels), social-feed dynamics (masonry, infinite scroll), and art-world solemnity (splash screens, ubiquitous fade-ins).",
     "keyCharacteristics": [
       "Achromatic chrome; all color is borrowed from the artwork",
       "One systematic grid, square 1:1 prints, uniform 4rem gutters",
@@ -184,7 +237,7 @@
       },
       {
         "name": "The Tabular Rule",
-        "body": "Every numeral in the interface — dates, years, counts — is set tabular-nums. Numbers in an archive are data; they align in columns.",
+        "body": "Every numeral in the interface — dates, years, counts — is set `tabular-nums`. Numbers in an archive are data; they align in columns.",
         "section": "typography"
       },
       {
@@ -194,21 +247,22 @@
       }
     ],
     "dos": [
-      "Do edit archive-app/src/ (React SSG workspace), then run npm run archive:site — everything in archive-app/dist/ is generated output; the data is archive-app/archive.json.",
-      "Do keep every numeral tabular (The Tabular Rule) and every metadata voice in Pencil (The Pencil Rule).",
-      "Do keep thumbnails square (1:1, object-fit: cover, 400×400 Cloudinary transform) and corners at 0px everywhere except inline code (3px).",
-      "Do hold hover states to the two sanctioned moves: image opacity → 0.65, icon/underline Pencil → Ink.",
-      "Do keep the grid rule uniform: repeat(auto-fill, minmax(280px, 1fr)) with 4rem gutters, applied identically to every year section."
+      "**Do** edit `archive-app/src/` (the React SSG workspace: `style.css`, `components.tsx`, `pages.tsx`, `islands/filter.ts`), then run `npm run archive:site`. Everything under `archive-app/dist/` is generated output (gitignored) — direct edits will be overwritten. The data is `archive-app/archive.json`.",
+      "**Do** keep every numeral tabular (The Tabular Rule) and every metadata voice in Pencil (The Pencil Rule).",
+      "**Do** keep thumbnails square (1:1, `object-fit: cover`, 400×400 Cloudinary transform) and corners at 0px everywhere except inline code (3px).",
+      "**Do** hold hover states to the two sanctioned moves: image opacity → 0.65, icon/underline Pencil → Ink.",
+      "**Do** keep the grid rule uniform: `repeat(auto-fill, minmax(280px, 1fr))` with 4rem gutters, applied identically to every year section.",
+      "**Do** edit the Atlas in `archive-app/src/atlas/` (`app.tsx` renders, `model.ts` holds picks, grouping and URL state as pure functions, `atlas.css` the tokens). Its data is `archive-app/atlas.json`, rebuilt by `scripts/atlas/assemble.ts`. The Atlas's sheet keeps its own fixed 72px thumb; the archive grid rule above does not apply to it."
     ],
     "donts": [
-      "Don't introduce any hue into the chrome — no accent color, ever (The Borrowed Color Rule).",
-      "Don't reach for creative-coder maximalism — dark neon backgrounds, glitch/CRT/terminal aesthetics, cursor trails.",
-      "Don't build template-portfolio grammar — hero sections, card surfaces with borders and shadows, badges, eyebrow labels.",
-      "Don't add social-feed dynamics — masonry layouts, infinite scroll, view counts, engagement chrome.",
-      "Don't indulge art-world pretension — splash screens, slow fade-ins on everything, scroll-jacking.",
-      "Don't add box-shadows, gradients, or glassmorphism — boundaries are 1px hairlines (The Hairline Rule).",
-      "Don't set body prose in Pencil (#767676) — prose is Ink.",
-      "Don't add a second typeface or a webfont — the system stack's silence is the choice."
+      "**Don't** introduce any hue into the chrome — no accent color, ever (The Borrowed Color Rule). PRODUCT.md: \"Color belongs to the work.\"",
+      "**Don't** reach for **creative-coder maximalism** — dark neon backgrounds, glitch/CRT/terminal aesthetics, cursor trails. The archive stays Gallery White.",
+      "**Don't** build **template-portfolio** grammar — hero sections, card surfaces with borders and shadows, badges, eyebrow labels. The thumb card has no box; keep it that way.",
+      "**Don't** add **social-feed dynamics** — masonry layouts, infinite scroll, view counts, engagement chrome. Year sections with a uniform grid, nothing else.",
+      "**Don't** indulge **art-world pretension** — splash screens, slow fade-ins on everything, scroll-jacking. Content is visible immediately; motion stays at the two hover transitions.",
+      "**Don't** add box-shadows, gradients, or glassmorphism. If a boundary needs marking, it's a 1px hairline (The Hairline Rule).",
+      "**Don't** set body prose in Pencil (#767676) — prose is Ink. (Pencil itself sits at ≈4.5:1, but it is a label voice, not a reading voice.)",
+      "**Don't** add a second typeface or a webfont. The system stack's silence is the choice."
     ]
   }
 }
