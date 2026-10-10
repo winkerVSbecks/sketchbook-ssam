@@ -104,6 +104,7 @@ Five achromatic values, named for studio materials; the palette's entire job is 
 
 ### Hierarchy
 - **Display** (600, fluid clamp(2rem, 1.55rem + 1.6vw, 3rem), -0.02em): The masthead "Sketchbook" only. One per page.
+- **Set heading** (600, 1.5rem, -0.015em): Atlas only — the name of the current set. One per view.
 - **Title** (500, 0.9375rem, -0.005em): Sketch names in captions. Single line, ellipsized — the drawer label, not a headline.
 - **Body** (400, 15px, 1.5): Prose and the empty state. Always Ink.
 - **Label** (500, 0.8125rem, +0.04em, tabular-nums): Sticky year markers. Related metadata voices: `.meta` byline at 0.875rem, `.date` at 0.75rem — all Pencil, all tabular.
@@ -162,6 +163,17 @@ Refined and restrained: visible but polite, readable at rest, subtle emphasis on
 ### Dev Gallery Cell (secondary surface — product register)
 - **Style:** `gallery.html` runs dark (#111 page, #000 cells, #eee text) because live sketches render against black in a screen context. Square iframe cells, 12px gutters, bottom overlay label (11px, 65% black scrim). Utilitarian by design; it borrows nothing from the archive system except restraint.
 
+### Atlas (secondary surface — local tool, card catalogue)
+`npm run atlas` (`archive-app/src/atlas/`, port 5181, never deployed). The Flat File system turned into a working catalogue: same five values, same system stack, same hairlines, but laid out for looking things up rather than for presentation. Desktop only.
+- **Structure:** Three fixed columns under a 52px bar, each scrolling on its own, nothing to pan or zoom. The **ledger** (300px, left) is the overview. The **set** (centre) is whatever the ledger has picked. The **drawer** (380px, right) is one sketch, and it exists only while a sketch is selected. Below 1180px the drawer floats over the set and the set reserves its width. Columns are divided by Hairlines only.
+- **Ledger rows:** Ink label (0.8125rem; names wrap and never truncate), a 3px Ink count bar at 20% opacity in a 3rem track, and a Pencil tabular count. The active row is weight 600 with its bar at 90%. When a pick is active, every other list inks the pick's share over its faint bar (10%) and prefixes the count (`4 / 53`). That cross-tab is the ledger's job. Threads and Insights fold behind a chevron row (remembered in `localStorage`) and open when one of their rows is picked. Insight rows are two-line clamped titles, with the kind trailing in Pencil after a non-breaking `·`, never above the title.
+- **Made histogram:** One 1px-gapped Ink column per month from the first sketch to the last, gaps included, 3.5rem tall, with January year labels beneath in Pencil. With a pick active, the corpus drops to 12% and the pick's months stand in Ink over it. Each column is a button that picks that month.
+- **Set:** A heading (600, 1.5rem, -0.015em, balanced; the Atlas's one step between Title and Display), then a Pencil meta line that leads with the pick's kind (`cluster · 41 sketches · 9 series`, never as an eyebrow above the heading), the pick's prose in Ink at a 68ch measure, and a toolbar. The toolbar's segmented controls (Group by · Sheet/Plates) are plain text buttons: Pencil at rest, Ink weight 500 with a 1px Ink underline when pressed.
+- **Groups:** Section Header grammar (sticky, translucent white backing, Hairline underline, Label type, Pencil count). Sheet thumbs are a fixed 72px square at a 6px gap. Plates are `minmax(10.5rem, 1fr)` with a 0.75rem caption, and threads and insights number their plates in order. A group of five or fewer (two in Plates) shrinks to its own width and sits beside its neighbours, so a sparse grouping stays a sheet, not a ladder. Selected is a 2px Ink outline offset 2px; hover is the Thumb Card's 65% opacity.
+- **Drawer:** Title-style name, Pencil date, the image at its own aspect on Unprimed, Ink description, then tag chips. Chips are 0.75rem text in a 1px Hairline box with square corners, the border going Ink on hover, and each chip picks its tag. Below the chips, a Pencil/Ink facts list, the run command and file path as Unprimed 3px-radius copy rows, related sketches from other series as a 3-column thumb grid captioned with name plus one shared tag, then the sketch's thread and colour-system neighbours as 5-up thumb rows.
+- **Motion:** The Atlas's one authored moment: when a pick replaces the set, the groups ease in from 25% opacity over 0.32s (`cubic-bezier(0.16, 1, 0.3, 1)`). It is the only motion beyond the sanctioned hover transitions, and `prefers-reduced-motion` removes all of it.
+- **State:** The whole view (pick, grouping, size, selection, search) lives in the URL hash. A new pick pushes history; selection and search replace it. Keyboard-first, with `?` listing the shortcuts in a Hairline dialog over a flat 85% white scrim (no blur).
+
 ## 6. Do's and Don'ts
 
 ### Do:
@@ -170,6 +182,7 @@ Refined and restrained: visible but polite, readable at rest, subtle emphasis on
 - **Do** keep thumbnails square (1:1, `object-fit: cover`, 400×400 Cloudinary transform) and corners at 0px everywhere except inline code (3px).
 - **Do** hold hover states to the two sanctioned moves: image opacity → 0.65, icon/underline Pencil → Ink.
 - **Do** keep the grid rule uniform: `repeat(auto-fill, minmax(280px, 1fr))` with 4rem gutters, applied identically to every year section.
+- **Do** edit the Atlas in `archive-app/src/atlas/` (`app.tsx` renders, `model.ts` holds picks, grouping and URL state as pure functions, `atlas.css` the tokens). Its data is `archive-app/atlas.json`, rebuilt by `scripts/atlas/assemble.ts`. The Atlas's sheet keeps its own fixed 72px thumb; the archive grid rule above does not apply to it.
 
 ### Don't:
 - **Don't** introduce any hue into the chrome — no accent color, ever (The Borrowed Color Rule). PRODUCT.md: "Color belongs to the work."
