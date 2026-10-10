@@ -52,13 +52,6 @@ interface Params {
   lineFar: number;
   lineNear: number;
   falloff: number;
-  /**
-   * How the gap between paths is set: `fixed` keeps it `gapMm` wide on the
-   * plotted sheet everywhere (bands are the cell minus the gap, and vanish
-   * where a cell is smaller than the gap); `share` uses lineFar/lineNear.
-   */
-  spacing: 'fixed' | 'share';
-  gapMm: number;
   /** Swap ink and ground. */
   invert: boolean;
   seed: string;
@@ -79,8 +72,6 @@ const params: Params = {
   lineFar: 0.85,
   lineNear: 0.45,
   falloff: 1,
-  spacing: 'fixed',
-  gapMm: 0.8,
   invert: false,
   seed: Random.getRandomSeed(),
   paper: 'a4',
@@ -122,10 +113,9 @@ const bipolarToXY = (a: number, tau: number, sigma: number): Point => {
 
 /**
  * nalee's solidStyle, scaled: each path is one band, a share of the local
- * cell width (the rest is the gap between paths). With `spacing: 'fixed'`
- * the gap is a constant `gapMm` on the plotted sheet, so the share is
- * 1 − gap / cell; with `'share'` it runs from `lineFar` midway between the
- * foci to `lineNear` beside them. The band is built from the walker's grid path
+ * cell width (the rest is the gap between paths). The share runs from
+ * `lineFar` midway between the foci to `lineNear` beside them, so the gaps
+ * open up toward the centres. The band is built from the walker's grid path
  * directly: every turn is rounded to a quarter arc of radius share / 2 cells (so the inner edge closes to a point instead
  * of looping), then the path is sampled ~3px apart along the true τ/σ curve,
  * each sample carrying the exact local width. The same samples fill the
@@ -138,8 +128,8 @@ const ARC_STEPS = 10;
 
 /** Local cell width (px) at a grid position. */
 type CellWidth = (gx: number, gy: number) => number;
-/** Share of the cell that is ink at a grid position (0 … 1). */
-type LineShare = (gx: number, gy: number) => number;
+/** Share of the cell that is ink at a grid column (it depends on τ only). */
+type LineShare = (gx: number) => number;
 interface Sample {
   p: Point;
   /** band width, px */
@@ -170,11 +160,7 @@ function filletGrid(pts: Point[], share: LineShare): Point[] {
       continue;
     }
     // Radius half the band there, so the inner edge closes to a point.
-    const r = share(cx, cy) / 2;
-    if (r <= 0) {
-      out.push(pts[i]);
-      continue;
-    }
+    const r = share(cx) / 2;
     // Centre inside the corner; the arc runs from (c − d1·r) to (c + d2·r).
     const ox = cx - d1[0] * r + d2[0] * r;
     const oy = cy - d1[1] * r + d2[1] * r;
@@ -202,7 +188,7 @@ function sampleBand(
     const p = toWorld(gx, gy);
     const last = raw[raw.length - 1];
     if (last && Math.hypot(p[0] - last.p[0], p[1] - last.p[1]) < 1e-6) return;
-    raw.push({ p, w: cellWidth(gx, gy) * share(gx, gy) });
+    raw.push({ p, w: cellWidth(gx, gy) * share(gx) });
   };
   push(grid[0][0], grid[0][1]);
   for (let i = 1; i < grid.length; i++) {
@@ -388,34 +374,7 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
     colors.ink = dark;
   };
 
-  /** The walk's grid paths and the geometry that turns them into bands. */
-  let walked: {
-    paths: Point[][];
-    domainToWorld: DomainToWorld;
-    cellWidth: CellWidth;
-    tauSteps: number;
-  } | null = null;
-
-  /** Turn the walked paths into bands with the current spacing (cheap; no re-walk). */
-  const bandify = () => {
-    if (!walked) return;
-    const { paths, domainToWorld, cellWidth, tauSteps } = walked;
-    const gapPx = params.gapMm / 10 / sheet().scale;
-    const share: LineShare =
-      params.spacing === 'fixed'
-        ? (gx, gy) => Math.max(0, 1 - gapPx / cellWidth(gx, gy))
-        : (gx) => {
-            // |τ| / tauMax: 0 midway between the foci, 1 at the grid's edge beside them.
-            const t = Math.min(1, Math.abs(gx - tauSteps) / tauSteps);
-            return params.lineFar + (params.lineNear - params.lineFar) * t ** params.falloff;
-          };
-    bands = paths
-      .map((path) => sampleBand(filletGrid(path, share), domainToWorld, cellWidth, share))
-      // Drop bands that never get wider than a hairline (a cell smaller than the gap).
-      .filter((band) => band.length > 1 && Math.max(...band.map((s) => s.w)) > 0.5);
-  };
-
-  /** Rebuild the grid, its clip and the walk from `params`, then the bands. */
+  /** Rebuild the grid, its clip, the walkers and their bands from `params`. */
   const build = () => {
     Random.setSeed(params.seed);
     const step = (Math.PI * 2) / params.sigmaRes;
@@ -462,15 +421,16 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
     } satisfies Config;
 
     const system = createNaleeSystem(domain, config, domainToWorld, [colors.ink], colors.ground);
-    walked = {
-      paths: system.walkers
-        .flatMap((w) => walkerToPaths(w) as Point[][])
-        .filter((path) => path.length > 1),
-      domainToWorld,
-      cellWidth,
-      tauSteps,
+    // |τ| / tauMax: 0 midway between the foci, 1 at the grid's edge beside them.
+    const share: LineShare = (gx) => {
+      const t = Math.min(1, Math.abs(gx - tauSteps) / tauSteps);
+      return params.lineFar + (params.lineNear - params.lineFar) * t ** params.falloff;
     };
-    bandify();
+    bands = system.walkers
+      .flatMap((w) => walkerToPaths(w))
+      .filter((path) => path.length > 1)
+      .map((path) => sampleBand(filletGrid(path as Point[], share), domainToWorld, cellWidth, share))
+      .filter((band) => band.length > 1);
   };
 
   const rebuild = () => {
@@ -488,10 +448,6 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
       if (ev.last !== false) then();
     });
   const redraw = () => props.render();
-  const respace = () => {
-    bandify();
-    props.render();
-  };
 
   const grid = pane.addFolder({ title: 'Grid' });
   onInput(grid.addBinding(params, 'sigmaRes', { min: 24, max: 240, step: 4, label: 'resolution' }));
@@ -501,31 +457,9 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
 
   const paths = pane.addFolder({ title: 'Paths' });
   onInput(paths.addBinding(params, 'walkers', { min: 1, max: 80, step: 1 }));
-  const spacing = pane.addFolder({ title: 'Spacing' });
-  onInput(
-    spacing.addBinding(params, 'spacing', {
-      label: 'gap is',
-      options: { 'fixed (mm)': 'fixed', 'share of cell': 'share' },
-    }),
-    () => {
-      showSpacing();
-      respace();
-    },
-  );
-  const gapInput = spacing.addBinding(params, 'gapMm', { min: 0.1, max: 5, step: 0.05, label: 'gap (mm)' });
-  onInput(gapInput, respace);
-  const shareInputs = [
-    spacing.addBinding(params, 'lineFar', { min: 0.05, max: 1, step: 0.01, label: 'line far' }),
-    spacing.addBinding(params, 'lineNear', { min: 0.05, max: 1, step: 0.01, label: 'line near foci' }),
-    spacing.addBinding(params, 'falloff', { min: 0.2, max: 4, step: 0.05 }),
-  ];
-  shareInputs.forEach((b) => onInput(b, respace));
-  /** Only the controls of the active spacing mode are shown. */
-  const showSpacing = () => {
-    gapInput.hidden = params.spacing !== 'fixed';
-    shareInputs.forEach((b) => (b.hidden = params.spacing !== 'share'));
-  };
-  showSpacing();
+  onInput(paths.addBinding(params, 'lineFar', { min: 0.05, max: 1, step: 0.01, label: 'line far' }));
+  onInput(paths.addBinding(params, 'lineNear', { min: 0.05, max: 1, step: 0.01, label: 'line near foci' }));
+  onInput(paths.addBinding(params, 'falloff', { min: 0.2, max: 4, step: 0.05 }));
 
   const colour = pane.addFolder({ title: 'Colour' });
   colour.addBinding(colors, 'ink', { readonly: true });
@@ -540,9 +474,9 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
   const plotFolder = pane.addFolder({ title: 'Plot' });
   onInput(
     plotFolder.addBinding(params, 'paper', { options: { A5: 'a5', A4: 'a4', A3: 'a3' } }),
-    respace, // the sheet sets how many px a mm of gap is
+    redraw,
   );
-  onInput(plotFolder.addBinding(params, 'plotMargin', { min: 0, max: 6, step: 0.1, label: 'margin (cm)' }), respace);
+  onInput(plotFolder.addBinding(params, 'plotMargin', { min: 0, max: 6, step: 0.1, label: 'margin (cm)' }), redraw);
   onInput(plotFolder.addBinding(params, 'penMm', { min: 0.1, max: 3, step: 0.05, label: 'pen (mm)' }), redraw);
   onInput(
     plotFolder.addBinding(params, 'plotMode', {
