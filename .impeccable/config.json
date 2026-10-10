@@ -1,0 +1,44 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-font-size",
+        "value": "*",
+        "files": [
+          "brag-output/work/comp.html"
+        ],
+        "createdAt": "2026-09-28T14:24:26.688Z",
+        "reason": "Claude: brag video composition, 1080p frame scale not web type ramp; img src assigned per frame at render time"
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "brag-output/work/comp.html"
+        ],
+        "createdAt": "2026-09-28T14:24:26.716Z",
+        "reason": "Claude: brag video composition, 1080p frame scale not web type ramp; img src assigned per frame at render time"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "*",
+        "files": [
+          "brag-output-2026-09-28-104251/work/comp.html"
+        ],
+        "createdAt": "2026-09-28T14:49:25.285Z",
+        "reason": "model: brag video composition at 1920x1080; type scaled for video, img src set per frame at runtime"
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "brag-output-2026-09-28-104251/work/comp.html"
+        ],
+        "createdAt": "2026-09-28T14:49:25.311Z",
+        "reason": "model: brag video composition at 1920x1080; type scaled for video, img src set per frame at runtime"
+      }
+    ]
+  }
+}

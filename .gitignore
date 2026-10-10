@@ -35,4 +35,7 @@ timelapse
 # archive-app build output
 archive-app/dist
 .playwright-mcp
+brag-output
+brag-output-*
 .raycast
+showreel-2026.09.25.mp4
