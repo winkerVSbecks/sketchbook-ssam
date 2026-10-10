@@ -35,9 +35,9 @@ Bring `archive-app/atlas.json` up to date with the archive. Scripts do the mecha
 
 5. **Assemble, then confirm.** Run the assemble command from `scripts/atlas/README.md`, then `status` again. It must exit 0 with no "missing records" warning from assemble.
 
-6. **Threads.** Write the digest (`npx tsx scripts/atlas/synthesis.ts digest > /tmp/atlas-digest.md`). Dispatch one fresh agent with `scripts/atlas/tagging/threads-rules.md` and the digest path.
+6. **Threads.** Write the digest (`npx tsx scripts/atlas/synthesis.ts digest > /tmp/atlas-digest.md`). Dispatch one fresh agent with `scripts/atlas/tagging/threads-rules.md` and the digest path. When it reports, run `npx tsx scripts/atlas/synthesis.ts check`; send any listed problem back to the agent.
 
-7. **Insights.** Dispatch two fresh agents in parallel, each with `scripts/atlas/tagging/insights-rules.md` and the digest path. Assign one the **curator** lens writing `scripts/atlas/data/synthesis/insights-curator.json`, and the other the **technician** lens writing `insights-technician.json`. When both report, merge them into `insights.json` yourself, following the rules file's Merge section.
+7. **Insights.** Dispatch two fresh agents in parallel, each with `scripts/atlas/tagging/insights-rules.md` and the digest path. Assign one the **curator** lens writing `scripts/atlas/data/synthesis/insights-curator.json`, and the other the **technician** lens writing `insights-technician.json`. When both report, run `npx tsx scripts/atlas/synthesis.ts check insights-curator.json insights-technician.json`. Then recompute a few of the counts each lens quotes from `archive-app/atlas.json`; correct a wrong number in place, since that is a fix, not a rewrite. Merge into `insights.json` yourself following the rules file's Merge section, and run `check` once more.
 
 8. **Assemble and verify.** Assemble again, then run `status` (exit 0) and `npm run test && npm run typecheck`. Spot-check the Atlas (`npm run atlas`, port 5181): the Threads and Insights folds list the new entries, and no cluster is named after a folder.
 
@@ -49,6 +49,7 @@ Bring `archive-app/atlas.json` up to date with the archive. Scripts do the mecha
 | -------------------------- | ------- |
 | what is stale              | `npx tsx scripts/atlas/synthesis.ts status` |
 | corpus summary for agents  | `npx tsx scripts/atlas/synthesis.ts digest` |
+| threads/insights keep the rules | `npx tsx scripts/atlas/synthesis.ts check [insight files]` |
 | keep a rewritten file's layout | `npx tsx scripts/atlas/synthesis.ts format <file...>` |
 | rebuild atlas.json         | the `assemble.ts` command in `scripts/atlas/README.md` |
 
@@ -57,5 +58,5 @@ Bring `archive-app/atlas.json` up to date with the archive. Scripts do the mecha
 - **Assembling with gaps:** `status` exiting 1 means the Atlas will show placeholder clusters. Finish steps 2–4 first.
 - **Rewriting clusters.json with a different JSON layout:** the diff then hides the real change. Always finish with `format`.
 - **Regrouping clusters while tagging:** newcomers join existing clusters. A regroup is its own request.
-- **Insight counts from memory:** every count in an insight comes from the current digest. Old insights quote numbers that have since changed.
+- **Trusting quoted counts:** `check` validates structure, not numbers. Lens agents get most counts right and some slightly wrong, so recompute a sample before merging.
 - **Renaming a thread's key:** Atlas URLs use it. Keep the key while the lineage is the same.

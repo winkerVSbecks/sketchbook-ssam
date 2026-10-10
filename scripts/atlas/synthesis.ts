@@ -8,6 +8,9 @@
  *   npx tsx scripts/atlas/synthesis.ts digest   — a compact corpus digest
  *       (one line per sketch plus clusters, threads, colour systems and tag
  *       counts) for the agents writing threads and insights to read.
+ *   npx tsx scripts/atlas/synthesis.ts check [files] — validate threads and
+ *       insights against threads-rules.md / insights-rules.md (ids, counts,
+ *       lengths, kinds, chronology). Exit 1 on any problem.
  *   npx tsx scripts/atlas/synthesis.ts format <file...> — re-serialise the
  *       synthesis files you rewrote in the layout each has at HEAD (indent,
  *       escaping, trailing newline) so the diff shows only real changes.
@@ -104,6 +107,62 @@ export function formatJson(value: unknown, style: JsonStyle): string {
       (ch) => `\\u${ch.charCodeAt(0).toString(16).padStart(4, '0')}`,
     );
   return style.trailingNewline ? `${out}\n` : out;
+}
+
+export const INSIGHT_KINDS = [
+  'technique-transfer',
+  'unexplored-combination',
+  'abandoned-thread',
+  'deepen-series',
+  'bridge',
+  'scale-shift',
+  'series-opportunity',
+  'outlier-worth-revisiting',
+];
+
+type FullInsight = InsightDef & { body: string; tags: string[]; clusterKeys?: string[] };
+
+/**
+ * Problems with threads and insights against threads-rules.md and
+ * insights-rules.md. Pure: `firstCommit` maps id → YYYY-MM-DD for every
+ * archived sketch; an empty result means the files keep the contract.
+ */
+export function checkSynthesis(
+  threads: ThreadDef[],
+  insights: FullInsight[],
+  firstCommit: Map<string, string>,
+  clusterKeys: Set<string>,
+): string[] {
+  const out: string[] = [];
+  const seriesOf = (id: string) => id.split('/').slice(1, -1).join('/') || id;
+  for (const t of threads) {
+    const at = `thread ${t.key}`;
+    const unknown = t.members.filter((id) => !firstCommit.has(id));
+    if (unknown.length) out.push(`${at}: unknown ids ${unknown.join(', ')}`);
+    if (t.members.length < 5 || t.members.length > 15)
+      out.push(`${at}: ${t.members.length} members (5–15)`);
+    if (new Set(t.members.map(seriesOf)).size < 3) out.push(`${at}: fewer than 3 series`);
+    const dates = t.members.map((id) => firstCommit.get(id) ?? '');
+    if (dates.some((d, i) => i > 0 && d < dates[i - 1]!))
+      out.push(`${at}: members not oldest first`);
+    if ((t.note ?? '').length > 200) out.push(`${at}: note ${(t.note ?? '').length} chars (≤200)`);
+  }
+  insights.forEach((ins, i) => {
+    const at = `insight ${i} "${ins.title}"`;
+    if (!INSIGHT_KINDS.includes(ins.kind)) out.push(`${at}: unknown kind ${ins.kind}`);
+    if (ins.title.length > 60) out.push(`${at}: title ${ins.title.length} chars (≤60)`);
+    if (ins.body.length > 600) out.push(`${at}: body ${ins.body.length} chars (≤600)`);
+    const unknown = ins.relatedIds.filter((id) => !firstCommit.has(id));
+    if (unknown.length) out.push(`${at}: unknown ids ${unknown.join(', ')}`);
+    if (ins.relatedIds.length < 3 || ins.relatedIds.length > 9)
+      out.push(`${at}: ${ins.relatedIds.length} relatedIds (3–9)`);
+    if (ins.tags.length < 3 || ins.tags.length > 6)
+      out.push(`${at}: ${ins.tags.length} tags (3–6)`);
+    const keys = ins.clusterKeys ?? [];
+    if (keys.length < 1 || keys.length > 3 || keys.some((k) => !clusterKeys.has(k)))
+      out.push(`${at}: clusterKeys must be 1–3 existing cluster keys`);
+  });
+  return out;
 }
 
 // ---------- io ----------
@@ -235,6 +294,27 @@ function digest(): void {
   console.log(out.join('\n'));
 }
 
+/** Validate threads and insights (or the named insight files) against the rules. */
+function check(files: string[]): number {
+  const archive = readJson<Archive>(join(repoRoot, 'archive-app/archive.json'));
+  const firstCommit = new Map(archive.sketches.map((s) => [s.id, s.firstCommitDate.slice(0, 10)]));
+  const syn = readJson<{ clusters: ClusterDef[]; threads?: ThreadDef[] }>(
+    join(synthesisDir, 'clusters.json'),
+  );
+  const keys = new Set(syn.clusters.map((c) => c.key));
+  const insightFiles = files.length ? files : ['insights.json'];
+  let problems = checkSynthesis(syn.threads ?? [], [], firstCommit, keys);
+  for (const f of insightFiles) {
+    const ins = readJson<{ insights: FullInsight[] }>(resolve(synthesisDir, f)).insights;
+    problems = problems.concat(checkSynthesis([], ins, firstCommit, keys).map((p) => `${f}: ${p}`));
+    console.log(`${f}: ${ins.length} insights`);
+  }
+  console.log(`clusters.json: ${(syn.threads ?? []).length} threads`);
+  for (const p of problems) console.log(`  ✗ ${p}`);
+  console.log(problems.length ? `${problems.length} problems` : 'all keep the contract');
+  return problems.length ? 1 : 0;
+}
+
 /** Re-serialise the named files in the layout each already had on disk (HEAD). */
 function format(files: string[]): number {
   if (files.length === 0) {
@@ -262,9 +342,12 @@ if (process.argv[1] && resolve(process.argv[1]) === resolve(import.meta.filename
   const cmd = process.argv[2];
   if (cmd === 'status') process.exit(status());
   else if (cmd === 'digest') digest();
+  else if (cmd === 'check') process.exit(check(process.argv.slice(3)));
   else if (cmd === 'format') process.exit(format(process.argv.slice(3)));
   else {
-    console.error('usage: synthesis.ts status | digest | format <file...>');
+    console.error(
+      'usage: synthesis.ts status | digest | check [insight files...] | format <file...>',
+    );
     process.exit(2);
   }
 }

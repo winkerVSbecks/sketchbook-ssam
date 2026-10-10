@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { detectJsonStyle, findGaps, formatJson } from './atlas/synthesis';
+import { checkSynthesis, detectJsonStyle, findGaps, formatJson } from './atlas/synthesis';
 
 let passed = 0;
 function test(name: string, fn: () => void) {
@@ -41,6 +41,42 @@ test('members that left the archive are reported with where they were found', ()
   assert.deepEqual(
     gaps.departed.map((d) => d.where),
     ['cluster k', 'thread t', 'insight 0 "X"'],
+  );
+});
+
+console.log('contract');
+
+test('threads and insights that break the rules are each named', () => {
+  const dates = new Map([
+    ['sketches/a/1', '2024-01-01'],
+    ['sketches/b/1', '2024-02-01'],
+    ['sketches/c/1', '2024-03-01'],
+    ['sketches/a/2', '2024-04-01'],
+    ['sketches/d/1', '2024-05-01'],
+  ]);
+  const good = [...dates.keys()];
+  assert.deepEqual(
+    checkSynthesis([{ key: 't', name: 'T', note: 'n', members: good }], [], dates, new Set()),
+    [],
+  );
+  const bad = checkSynthesis(
+    [{ key: 't', name: 'T', note: 'n', members: [...good].reverse() }],
+    [
+      {
+        kind: 'nope',
+        title: 'x',
+        body: 'y',
+        relatedIds: ['sketches/a/1', 'gone'],
+        tags: ['a'],
+        clusterKeys: ['k'],
+      },
+    ],
+    dates,
+    new Set(['k']),
+  );
+  assert.deepEqual(
+    bad.map((p) => p.split(': ')[1]!.split(' ')[0]),
+    ['members', 'unknown', 'unknown', '2', '1'],
   );
 });
 
