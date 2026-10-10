@@ -1,314 +1,362 @@
 {
+  "generatedAt": "2026-10-10T00:00:00.000Z",
   "insights": [
     {
       "kind": "technique-transfer",
-      "title": "Drive nalee walkers with a distance field",
-      "body": "nalee's 73 sketches route and color by grid occupancy, flow fields and polar grids, but never by a distance field \u2014 yet maze-distance builds gorgeous shells by shading cells by their geodesic distance, and the voxels/heerich work already uses distance-field height. Compute a distance transform over a nalee domain (from a seed, an edge, or a clipping polygon) and key ribbon color, width, or spawn priority to it, importing the maze-distance falloff into the space-filling engine.",
+      "title": "Extrude the maze distance field into stepwell voxels",
+      "body": "Distance fields drive 16 sketches, 9 of them the maze-distance glyph series, while heerich has 13 voxel sketches and voxels/wave and voxels/panna-meena already turn a Chebyshev distance into a stepwell. The maze's BFS distance has only ever been coloured or typed, never given height. Feed the sidewinder maze from maze-distance/basic into heerich as column heights, so each distance band becomes one terrace and the solved path reads as a sunken stair.",
       "relatedIds": [
-        "sketches/nalee/sketches/basic",
-        "sketches/nalee/sketches/clipped-domain",
         "sketches/maze-distance/basic",
-        "sketches/maze-distance/color-correction",
-        "sketches/maze-distance/space-filler",
+        "sketches/maze-distance/ascii-groups",
+        "sketches/voxels/wave",
+        "sketches/voxels/panna-meena",
         "sketches/voxels/todd-kelly",
-        "sketches/voxels/wave"
+        "sketches/voxels/nalee-3"
       ],
       "tags": [
-        "nalee",
         "distance-field",
-        "space-filling",
         "maze-generation",
-        "flow-field"
-      ]
-    },
-    {
-      "kind": "technique-transfer",
-      "title": "Dither the flat domain-polygon and nalee fields",
-      "body": "Dithering is a first-class utility here (src/dither.ts) and carries cluster-growth, curve-particles and gravura, but domain-polygon uses it zero times and nalee only twice across 73 sketches \u2014 both systems output large flat color areas that are exactly what an ordered/error-diffusion dither transforms. Run domain-polygon's subdivided regions and nalee's ribbons through the existing dither pass to add tonal grain and gradient banding without changing the geometry.",
-      "relatedIds": [
-        "sketches/domain-polygon/basic",
-        "sketches/domain-polygon/16x16",
-        "sketches/nalee/sketches/basic",
-        "sketches/gravura/basic",
-        "sketches/curve-particles/chunky",
-        "sketches/cluster-growth/basic"
+        "isometric-projection",
+        "heerich"
       ],
-      "tags": [
-        "dithering",
-        "domain-polygon",
-        "nalee",
-        "recursive-subdivision",
-        "gradients"
+      "clusterKeys": [
+        "ascii-and-terminal",
+        "isometric-and-architectural-space"
       ]
     },
     {
       "kind": "scale-shift",
-      "title": "Plot the one-line nalee \u2014 it is already one pen path",
-      "body": "nalee-one-line solves a Hamiltonian path so the whole fill is a single continuous stroke \u2014 the ideal pen-plotter form \u2014 yet only voxels/nalee-p and the two heerich plots have ever gone to the plotter. Feed the one-line path straight into src/penplot/render-penplot.ts to make a true single-stroke drawing, and extend the same treatment to nalee-hulls and conformal-mapping/nalee.",
+      "title": "Plot the Hamiltonian one-line as a single pen stroke",
+      "body": "The nalee-one-line series fills a grid with one Warnsdorff path in 9 sketches, and only 4 of 401 sketches export to the plotter, all of them heerich boxes or the penplot example. A single unbroken path is the one drawing a pen plotter does without lifting, yet every one-line version stays on screen with gradients or neon blur. Port nalee-one-line/albers-meander to penplot: two Hamiltonian paths as two pens, ghost and ink, on an A4 sheet using the export path from voxels/nalee-p.",
       "relatedIds": [
         "sketches/nalee-one-line/basic",
-        "sketches/nalee-one-line/circle",
+        "sketches/nalee-one-line/albers-meander",
         "sketches/nalee-one-line/stacked",
         "sketches/voxels/nalee-p",
         "sketches/anni-weaving/heerich-plotter",
-        "sketches/penplot-example",
-        "sketches/conformal-mapping/nalee"
+        "sketches/penplot-example"
       ],
       "tags": [
         "hamiltonian-path",
-        "penplot",
-        "nalee",
-        "space-filling"
-      ]
-    },
-    {
-      "kind": "bridge",
-      "title": "Clip every system to a jali screen, not just nalee",
-      "body": "clipping-mask is nalee's most-used technique (40 sketches) and the jali perforated-screen domain exists in nalee-jali and jali/truchet, but the jali clip has only ever masked nalee walks and one truchet tiling. Reuse clipDomainWithWorldCoords from nalee/domain.ts to clip domain-polygon subdivisions, heerich voxel stacks, and clixo tilings to a jali lattice, letting a second system show through the screen's holes.",
-      "relatedIds": [
-        "sketches/nalee-jali/a",
-        "sketches/nalee-jali/b",
-        "sketches/jali/truchet",
-        "sketches/jali/mexico",
-        "sketches/domain-polygon/basic",
-        "sketches/voxels/panna-meena",
-        "sketches/clixo/layers"
-      ],
-      "tags": [
-        "clipping-mask",
-        "tiling",
         "space-filling",
-        "isometric-projection"
-      ]
-    },
-    {
-      "kind": "abandoned-thread",
-      "title": "Port the CPU field-sims onto the idle WebGPU harness",
-      "body": "367 of 372 catalogued sketches are canvas2d, yet a working WebGPU stack (Clifford attractors, raymarch, GPU particles, GPU reaction-diffusion) sits in src/shader-sketches and never enters the archive. The catalogued physarum trail-sim, chladni plate, boids flock, verlet soft-bodies and subtractive-diffusion are all O(n^2) or per-pixel iterative and CPU-bound \u2014 reimplement one on the existing wgpu compute harness to unlock resolutions and step counts the canvas versions can't reach.",
-      "relatedIds": [
-        "sketches/physarum/basic",
-        "sketches/chladni/basic",
-        "sketches/boids/gradient-quadtree",
-        "sketches/soft-body/verlet-collision-quadtree",
-        "sketches/subtractive-diffusion",
-        "sketches/electric-field/basic"
+        "nalee",
+        "heerich"
       ],
-      "tags": [
-        "reaction-diffusion",
-        "particle-system",
-        "physarum",
-        "verlet-physics",
-        "canvas2d"
-      ]
-    },
-    {
-      "kind": "deepen-series",
-      "title": "Wang/truchet tiles were a one-day sprint",
-      "body": "paint-without-thinking built a full Wang- and truchet-tile constraint engine but all ten sketches carry a single date (2025-09-26) and the machinery was never reused \u2014 meanwhile clixo and quantum-equivalence do their own tiling by hand. Bring the Wang adjacency solver back and let it drive clixo's tile selection or seed a nalee domain, so tile constraints (not just modulo patterns) decide layout.",
-      "relatedIds": [
-        "sketches/paint-without-thinking/arcs",
-        "sketches/paint-without-thinking/everything",
-        "sketches/paint-without-thinking/arcs-reduction",
-        "sketches/bauhaus/truchet",
-        "sketches/jali/truchet",
-        "sketches/clixo/criss-cross"
-      ],
-      "tags": [
-        "truchet-tiles",
-        "wang-tiles",
-        "tiling",
-        "modulo-pattern"
+      "clusterKeys": [
+        "the-nalee-system",
+        "isometric-and-architectural-space"
       ]
     },
     {
       "kind": "unexplored-combination",
-      "title": "Cross xor/moire with a named grid system",
-      "body": "The xor series (eight sketches, Jan 2026) generates moire and XOR interference on its own bespoke grid and never touches any engine; nalee, heerich and clixo all maintain exactly the regular lattices XOR patterns need. Compute an xor-pattern field over a nalee grid domain or a heerich isometric lattice and use it to gate cell fill or ribbon color, marrying the interference look to a real spatial system.",
+      "title": "Fill overlapping hulls by XOR parity",
+      "body": "xor-pattern appears in 11 sketches, 8 of them line fans in Moire and Op Art, while overlap colouring has its own one-offs: boolean/robert-swain inverts intersections and siep-van-den-berg/no-251 shows only where rectangles overlap. The overlapping-hull work (nalee-hulls/i to l, rubber-band-stipple/shape) still paints hulls in stacking order. Rasterise several drifting rubber-band hulls into one XOR buffer, so odd overlaps fill and even ones cancel, and the stack becomes a parity map.",
       "relatedIds": [
-        "sketches/xor/lines",
         "sketches/xor/hexagon",
-        "sketches/xor/triangle",
-        "sketches/automata/xortomata",
-        "sketches/nalee/sketches/basic",
-        "sketches/voxels/wave",
-        "sketches/clixo/overlap"
+        "sketches/xor/polar-shape",
+        "sketches/boolean/robert-swain",
+        "sketches/siep-van-den-berg/no-251",
+        "sketches/nalee-hulls/k_best",
+        "sketches/rubber-band-stipple/shape"
       ],
       "tags": [
         "xor-pattern",
-        "moire",
-        "tiling",
-        "polar-grid",
-        "isometric-projection"
+        "convex-hull",
+        "clipping-mask",
+        "negative-space"
+      ],
+      "clusterKeys": [
+        "moire-and-op-art",
+        "hulls-and-aggregates",
+        "concrete-art-and-color-planes"
       ]
     },
     {
       "kind": "technique-transfer",
-      "title": "Warp heerich and clixo through the conformal maps",
-      "body": "bipolar (6) and conformal-mapping (5) are a coordinate-warp toolkit, and conformal-mapping/nalee already proves the warp composes cleanly onto a real system \u2014 but heerich's isometric lattice and clixo's tile grid have never been pushed through a conformal or bipolar transform. Apply the bipolar/conformal domainToWorld to heerich voxel positions or clixo tile centers to bend those rigid grids into lens- and spiral-space.",
+      "title": "Drop the collapsing blinds on springs, not easing",
+      "body": "Spring physics drives 9 sketches, and red-and-black/spring-anticipation gives vertices a pull-back and overshoot, while the 3 blinds sketches move their rects with plain easing as they fall flush toward the centre. The collapse is a physical event that is currently timed instead of weighted. Fork blinds/collapse-cusp and replace its eased fall with the per-vertex spring and anticipation from red-and-black, so each rect overshoots, settles and seals its lane at its own rate.",
       "relatedIds": [
-        "sketches/conformal-mapping/nalee",
-        "sketches/conformal-mapping/grid",
-        "sketches/bipolar/spiral",
-        "sketches/bipolar/basic",
-        "sketches/voxels/panna-meena",
-        "sketches/clixo/shape"
+        "sketches/red-and-black/spring",
+        "sketches/red-and-black/spring-anticipation",
+        "sketches/blinds/collapse",
+        "sketches/blinds/collapse-cusp",
+        "sketches/blinds/blinds"
       ],
       "tags": [
-        "conformal-mapping",
-        "bipolar-coordinates",
-        "isometric-projection",
-        "domain-warping"
+        "spring-physics",
+        "easing",
+        "clipping-mask",
+        "negative-space"
+      ],
+      "clusterKeys": [
+        "concrete-art-and-color-planes"
       ]
     },
     {
-      "kind": "abandoned-thread",
-      "title": "physarum x nalee was tried once and dropped",
-      "body": "physarum/trail is the only sketch that feeds the slime-mold sim into nalee, and the whole physarum series stops in late 2024 with no return. Revive it deliberately: use a physarum trail map as the flow field or spawn-weighting for nalee walkers, or let the settled physarum network define the clipping domain, turning a one-off experiment into a proper hybrid engine.",
+      "kind": "unexplored-combination",
+      "title": "Shade heerich voxel faces from cusphanger tiers",
+      "body": "cusphanger feeds 7 sketches, and 4 of those are -cusp forks that only swap a palette, while heerich's 13 voxel sketches shade faces from mix or custom hex. Cusphanger's high, mid and low contrast tiers are a ready three-step light model that no voxel sketch uses. Fork voxels/panna-meena with a cusphanger ground: top faces on the low wash tier, lit sides on mid, shadow sides on high ink, on a P3 canvas.",
       "relatedIds": [
-        "sketches/physarum/trail",
-        "sketches/physarum/basic",
+        "sketches/voxels/panna-meena",
+        "sketches/voxels/wave",
+        "sketches/anni-weaving/heerich-depth",
+        "sketches/blinds/collapse-cusp",
+        "sketches/terminal-ui/cusp-hanger",
+        "sketches/rubber-band-stipple/haberdashery-cusp"
+      ],
+      "tags": [
+        "isometric-projection",
+        "color-study",
+        "heerich",
+        "voxels"
+      ],
+      "clusterKeys": [
+        "isometric-and-architectural-space",
+        "color-studies-and-gradients"
+      ]
+    },
+    {
+      "kind": "unexplored-combination",
+      "title": "Solve the arc tiles with wave function collapse",
+      "body": "Wave function collapse appears in 8 sketches, all made on 2024-11-27 and never touched again, and paint-without-thinking runs 11 sketches of Wang arc tiles grown by an edge-matching random walk. Both are edge-constrained tile solvers, but WFC only ever drew pipes and the arc tiles only ever grew by walk. Run the WFC solver from wave-function-collapse/4 over the quarter-arc tile set, then pass the result through the rounded reduction from arcs-reduction-rounded.",
+      "relatedIds": [
+        "sketches/wave-function-collapse/4",
+        "sketches/wave-function-collapse/8",
+        "sketches/paint-without-thinking/just-arcs",
+        "sketches/paint-without-thinking/everything",
+        "sketches/paint-without-thinking/arcs-reduction-rounded"
+      ],
+      "tags": [
+        "wave-function-collapse",
+        "wang-tiles",
+        "truchet-tiles",
+        "flood-fill"
+      ],
+      "clusterKeys": [
+        "emergent-grids-and-automata",
+        "tiling-and-truchet"
+      ]
+    },
+    {
+      "kind": "technique-transfer",
+      "title": "Place clixo forms by a loom draft, not An+B",
+      "body": "The 11 clixo sketches place their forms by An+B modulo rules in 9 cases, and anni-weaving has 9 sketches driven by real weave drafts (twill, herringbone, houndstooth, satin, monk's belt). A draft is just a better-structured binary modulo matrix, and clixo has never used one. Fork clixo/criss-cross so the anni-weaving draft decides fill or outline per cell, and the clover forms read as a woven cloth.",
+      "relatedIds": [
+        "sketches/clixo/criss-cross",
+        "sketches/clixo/shifty-2",
+        "sketches/clixo/layers",
+        "sketches/anni-weaving/anni-weaving",
+        "sketches/anni-weaving/signal"
+      ],
+      "tags": [
+        "modulo-pattern",
+        "tiling",
+        "weaving-structure",
+        "clixo"
+      ],
+      "clusterKeys": [
+        "tiling-and-truchet",
+        "weaving-and-thread"
+      ]
+    },
+    {
+      "kind": "technique-transfer",
+      "title": "Grow nalee walkers on a bipolar grid",
+      "body": "nalee has left the cartesian grid only through polar domains, in 11 polar-grid sketches from nalee/sketches/polar to polar-color-wheel, while the bipolar series draws circle and hyperbola families around two foci in 6 sketches. Bipolar coordinates are still a grid of cells, so the walker can fill them unchanged. Build a bipolar cell domain from bipolar/basic and fill it with pipe walkers, so tube rings crowd toward the two foci instead of one centre.",
+      "relatedIds": [
+        "sketches/nalee/sketches/polar",
+        "sketches/nalee/sketches/polar-stacked-ruins",
+        "sketches/nalee/sketches/polar-color-wheel",
+        "sketches/bipolar/basic",
+        "sketches/bipolar/colors",
+        "sketches/bipolar/spiral-pattern"
+      ],
+      "tags": [
+        "polar-grid",
+        "bipolar-coordinates",
+        "space-filling",
+        "nalee"
+      ],
+      "clusterKeys": [
+        "the-nalee-system",
+        "fields-flows-and-waves"
+      ]
+    },
+    {
+      "kind": "unexplored-combination",
+      "title": "Cast light through a jali screen",
+      "body": "Raycasting appears in 4 sketches, 3 of them following the mouse among random walls or circles, and the windows-screens thread runs through 9 sketches of jali, khidki and blinds geometry. The screens are drawn as solid lattices and the rays hit nothing but random segments. Use the jali/truchet or nalee-jali/b lattice as the wall set in raycasting/grid and move the emitter on the playhead, so the image is the lit floor pattern the screen throws.",
+      "relatedIds": [
+        "sketches/raycasting/grid",
+        "sketches/raycasting/circles",
+        "sketches/jali/truchet",
+        "sketches/nalee-jali/b",
+        "sketches/khidki",
+        "sketches/gravura/rybitten-blinds"
+      ],
+      "tags": [
+        "raycasting",
+        "clipping-mask",
+        "windows",
+        "negative-space"
+      ],
+      "clusterKeys": [
+        "isometric-and-architectural-space",
+        "tiling-and-truchet",
+        "the-nalee-system"
+      ]
+    },
+    {
+      "kind": "technique-transfer",
+      "title": "Render the WFC pipe networks as glow tubes",
+      "body": "glow-lines and film-grain each appear in only 3 sketches, all bio-sprue, and the glow-style engine has a single user, while wave-function-collapse/7 fakes a tube by double-drawing each stroke and boids/pipe draws right-angled trails. The neon finish is proven on nalee tubes but has never touched another pipe system. Pass the connected runs of wave-function-collapse/4 through glow-style on a vignetted near-black ground, one hue per component.",
+      "relatedIds": [
+        "sketches/bio-sprue/nalee",
+        "sketches/bio-sprue/sprue",
+        "sketches/nalee-one-line/neon",
+        "sketches/wave-function-collapse/7",
+        "sketches/wave-function-collapse/4",
+        "sketches/boids/pipe"
+      ],
+      "tags": [
+        "glow-lines",
+        "film-grain",
+        "wave-function-collapse",
+        "glow-style"
+      ],
+      "clusterKeys": [
+        "the-nalee-system",
+        "emergent-grids-and-automata"
+      ]
+    },
+    {
+      "kind": "technique-transfer",
+      "title": "Draw Chladni nodal lines with field-line ticks",
+      "body": "The 5 chladni sketches show nodal lines as particles, strokes, trails or ASCII, and electric-field/hatch-field draws a field only as short cross ticks whose length decays with distance, using a spatial hash. Hatching appears in 14 sketches but never on a standing-wave field. Sample the Chladni gradient on the hatch-field grid and draw ticks that shrink toward the nodal lines, so the quiet lines appear as gaps in a black-and-white hatch.",
+      "relatedIds": [
+        "sketches/chladni/basic",
+        "sketches/chladni/ascii",
+        "sketches/chladni/strokes",
+        "sketches/electric-field/hatch-field",
+        "sketches/electric-field/basic"
+      ],
+      "tags": [
+        "chladni",
+        "hatching",
+        "stippling",
+        "flow-field"
+      ],
+      "clusterKeys": [
+        "fields-flows-and-waves"
+      ]
+    },
+    {
+      "kind": "unexplored-combination",
+      "title": "Extrude map-maker street blocks with heerich",
+      "body": "map-maker grows street networks in 3 sketches and heerich builds 13 voxel sketches; both sit in Architectural Space and have never met. The streets are flat lines and the voxel work extrudes only weaves, paths, letters and stepwells. Rasterise the blocks between map/basic's streets onto the heerich grid and give each block a height from its area, so the procedural plan becomes an isometric city.",
+      "relatedIds": [
+        "sketches/map/basic",
+        "sketches/map/clipped-hull",
+        "sketches/isometric/brutalism-stacks",
+        "sketches/voxels/nalee",
+        "sketches/voxels/panna-meena"
+      ],
+      "tags": [
+        "map-maker",
+        "heerich",
+        "isometric-projection",
+        "poisson-disk"
+      ],
+      "clusterKeys": [
+        "isometric-and-architectural-space"
+      ]
+    },
+    {
+      "kind": "technique-transfer",
+      "title": "Make the rubber band a real verlet chain",
+      "body": "rubber-band-stipple has 16 sketches that recompute the band each frame as a hull or tangent path, and 4 soft-body sketches already run verlet spring rings with quadtree collision. The band is called elastic but has no mass, so it never stretches, snaps or lags. Build haberdashery's band as a closed verlet chain from soft-body/verlet-101, wrapped around the same pegs, and let it settle and ripple as the pegs drift.",
+      "relatedIds": [
+        "sketches/rubber-band-stipple/haberdashery",
+        "sketches/rubber-band-stipple/wrap",
+        "sketches/soft-body/verlet-101",
+        "sketches/soft-body/verlet-collision-quadtree",
+        "sketches/canvas-ui/curve-relief"
+      ],
+      "tags": [
+        "verlet-physics",
+        "spring-physics",
+        "convex-hull",
+        "collision"
+      ],
+      "clusterKeys": [
+        "hulls-and-aggregates",
+        "simulation-and-physics"
+      ]
+    },
+    {
+      "kind": "technique-transfer",
+      "title": "Scope physarum through terminal desktop windows",
+      "body": "The tui engine has 4 sketches, and terminal-ui/differential-growth uses it as an instrument: one simulation seen through several zoomable windows with a live readout. The 5 physarum sketches and 5 chladni sketches run full-frame with no way to read their state. Run physarum/offscreen's agents behind a desktop of tui windows, one showing the trail buffer, one zoomed on a junction, one printing agent count and sensor angle.",
+      "relatedIds": [
+        "sketches/terminal-ui/differential-growth",
+        "sketches/terminal-ui/layered-compositions",
         "sketches/physarum/offscreen",
-        "sketches/physarum/circles",
-        "sketches/nalee/sketches/basic",
-        "sketches/nalee/sketches/clipped-domain"
+        "sketches/physarum/basic",
+        "sketches/chladni/ascii"
       ],
       "tags": [
         "physarum",
-        "flow-field",
-        "space-filling",
+        "ascii-render",
         "particle-system",
-        "nalee"
+        "tui"
+      ],
+      "clusterKeys": [
+        "ascii-and-terminal",
+        "simulation-and-physics"
       ]
     },
     {
       "kind": "scale-shift",
-      "title": "Sample the sparse end of nalee",
-      "body": "Across 73 nalee sketches only 10 read as sparse; the engine is almost always run dense or medium, so its behavior at low walker counts and large cells is under-explored. Deliberately run nalee with a handful of walkers on a coarse grid so individual ribbons become discrete specific objects with negative space around them, the opposite of the usual all-over fill.",
+      "title": "Run physarum at a million agents on the GPU",
+      "body": "Only 4 of 401 sketches use WebGL, all the tensors series with instanced meshes, while physarum/basic steers 16k agents on the CPU and its 5 sketches never grew past that. Slime-mold networks change character with agent count, and the CPU caps the scale. Port physarum/trail's sense-steer-deposit loop to ssam's webgpu mode as a compute pass and render a million agents seeded on the same packed circles.",
       "relatedIds": [
-        "sketches/nalee/sketches/asymmetric",
-        "sketches/nalee/sketches/clipped-domain",
-        "sketches/nalee/sketches/scroll",
-        "sketches/nalee/sketches/basic",
-        "sketches/kelly-nalee/awnings"
+        "sketches/physarum/basic",
+        "sketches/physarum/trail",
+        "sketches/physarum/packed-circles",
+        "sketches/tensors/tensors",
+        "sketches/tensors/tensors-options"
       ],
       "tags": [
-        "nalee",
-        "space-filling",
-        "random-walk"
+        "physarum",
+        "particle-system",
+        "instanced-mesh",
+        "feedback-loop"
+      ],
+      "clusterKeys": [
+        "simulation-and-physics",
+        "fields-flows-and-waves"
       ]
     },
     {
       "kind": "outlier-worth-revisiting",
-      "title": "Stippling returned without its voronoi engine",
-      "body": "stipling-noise (2024) built stippling on a voronoi + Lloyd-relaxation core, but the 15-sketch rubber-band-stipple revival (2026) rebuilt point distribution from poisson-disk and convex hulls and dropped voronoi/Lloyd entirely \u2014 a capable relaxation engine left on the shelf. Reintroduce Lloyd relaxation into rubber-band-stipple so the stipple points settle into even, organic spacing, or use the voronoi cells themselves as the woven regions.",
+      "title": "Let differential growth out of its window",
+      "body": "Differential growth appears once in 401 sketches, inside terminal-ui/differential-growth, where the curve is only seen through glyph-scope windows. The growth lineage (growth, growth-paths, growth-simple) stopped at node accretion in early 2024. Lift the growth-sim module behind the tui sketch into a plain full-frame sketch: one curve grown inside a nalee-style clipped domain and drawn as a single filled band.",
       "relatedIds": [
-        "sketches/stipling-noise/stipling-noise",
-        "sketches/stipling-noise/voronoi-stipling-basic",
-        "sketches/rubber-band-stipple/rubber-band-stipple",
-        "sketches/rubber-band-stipple/skeleton-field",
-        "sketches/rubber-band-stipple/shapes",
-        "sketches/chladni/basic"
-      ],
-      "tags": [
-        "voronoi",
-        "stippling",
-        "poisson-disk",
-        "clustering"
-      ]
-    },
-    {
-      "kind": "bridge",
-      "title": "cluster-growth's ascii+CA+dither look is stranded",
-      "body": "cluster-growth (2024) fuses cellular automata, ascii-render and dithering into a distinctive terminal texture, and the ascii-render family (maze-distance, terminal-charts) stays equally isolated \u2014 none of it has met nalee or domain-polygon. Render a nalee fill or a domain-polygon subdivision through the cluster-growth ascii+dither pipeline so the geometric systems inherit that character-cell, grown texture.",
-      "relatedIds": [
-        "sketches/cluster-growth/basic",
-        "sketches/cluster-growth/multi-random",
-        "sketches/maze-distance/ascii",
-        "sketches/terminal-charts/compositions",
-        "sketches/nalee/sketches/basic",
-        "sketches/domain-polygon/basic"
-      ],
-      "tags": [
-        "ascii-render",
-        "cellular-automata",
-        "dithering",
-        "space-filling"
-      ]
-    },
-    {
-      "kind": "abandoned-thread",
-      "title": "WFC never became a constraint layer for other systems",
-      "body": "wave-function-collapse explored eight variants in a single day (2024-11-27) then stopped, and its adjacency-constraint solver has never driven any tiling or layout engine since. Repurpose the WFC solver as the placement brain for clixo tiles or paint-without-thinking's tile set, or to lay out nalee sub-domains, so collapse constraints replace hand-tuned modulo and random placement.",
-      "relatedIds": [
-        "sketches/wave-function-collapse/1",
-        "sketches/wave-function-collapse/4",
-        "sketches/wave-function-collapse/8",
-        "sketches/clixo/criss-cross",
-        "sketches/paint-without-thinking/grid-areas",
-        "sketches/clearloop/basic"
-      ],
-      "tags": [
-        "wave-function-collapse",
-        "tiling",
-        "cellular-automata",
-        "modulo-pattern"
-      ]
-    },
-    {
-      "kind": "outlier-worth-revisiting",
-      "title": "The SAT packing engine never fed the tilers",
-      "body": "The collision series runs a proper SAT/convex-hull physics packer, but its settled arrangements of convex shapes are never used as input to any tiling or fill system \u2014 they just demonstrate collision. Take a packed collision layout and hand its cells to nalee (as domains), heerich (as isometric footprints), or map-maker, so physics discovers the partition that a systematic fill then inhabits.",
-      "relatedIds": [
-        "sketches/collision/basic",
-        "sketches/collision/basic-b&w",
-        "sketches/collision/explode",
-        "sketches/map/clipped-hull",
-        "sketches/nalee-hulls/a",
-        "sketches/clixo/layers"
-      ],
-      "tags": [
-        "collision",
-        "convex-hull",
-        "clustering",
-        "space-filling"
-      ]
-    },
-    {
-      "kind": "abandoned-thread",
-      "title": "Reaction-diffusion was run once and left in 2D",
-      "body": "subtractive-diffusion is the single reaction-diffusion sketch in the whole archive (2024) and it never met the systematic engines or the dithering pipeline, even though a GPU reaction-diffusion sketch exists off-catalog in shader-sketches. Use an RD concentration field as a clipping mask or color source for nalee/domain-polygon, or dither the RD output the way cluster-growth dithers CA, turning a one-off into a texture generator for the rest of the studio.",
-      "relatedIds": [
-        "sketches/subtractive-diffusion",
-        "sketches/automata/xor-game-of-life",
-        "sketches/cluster-growth/basic",
-        "sketches/chladni/layered",
-        "sketches/domain-polygon/basic",
+        "sketches/terminal-ui/differential-growth",
+        "sketches/growth",
+        "sketches/growth-paths",
+        "sketches/rubber-band-stipple/shape",
         "sketches/nalee/sketches/clipped-domain"
       ],
       "tags": [
-        "reaction-diffusion",
-        "cellular-automata",
-        "dithering",
+        "emergence",
+        "process-as-image",
+        "spring-physics",
         "clipping-mask"
-      ]
-    },
-    {
-      "kind": "series-opportunity",
-      "title": "Turn single-day sprints into a deep series",
-      "body": "The biggest bursts \u2014 nalee-hulls (12), clixo (11), paint-without-thinking (10), wave-function-collapse (8) \u2014 were each generated in one day, breadth-first, then abandoned; they are wide parameter sweeps never deepened into resolved objects. Pick one engine (clixo is the strongest candidate: a clean tiling system with only two animated sketches) and spend a focused session pushing a single parameter axis \u2014 scale, palette count, or motion \u2014 to production depth rather than sampling once.",
-      "relatedIds": [
-        "sketches/nalee-hulls/a",
-        "sketches/clixo/shape",
-        "sketches/clixo/animated-shape",
-        "sketches/paint-without-thinking/everything",
-        "sketches/wave-function-collapse/1",
-        "sketches/gears/1"
       ],
-      "tags": [
-        "clixo",
-        "tiling",
-        "wang-tiles",
-        "polar-geometry"
+      "clusterKeys": [
+        "simulation-and-physics",
+        "ascii-and-terminal"
       ]
     }
   ]
