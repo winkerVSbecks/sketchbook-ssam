@@ -48,11 +48,11 @@ export interface BandParams {
   /** Degrees between ring hues. */
   angle: number;
   saturation: number;
-  /** WCAG target of the curve's ink against the paper. */
+  /** WCAG target of the curve's ink against the ground. */
   ink: number;
-  /** WCAG target of the band's wash against the paper. */
+  /** WCAG target of the band's wash against the ground. */
   wash: number;
-  /** Swap ink and wash: dark bands, pale curves. */
+  /** Slate ground instead of paper: dark washes, pale inks. */
   reverse: boolean;
   /** Hairline outline of every band. */
   debug: boolean;
@@ -121,8 +121,9 @@ export const bandSketch =
       for (let i = 0; i < params.warmup && performance.now() - t0 < WARMUP_MS; i++) field.step();
     };
 
-    // Paper ground; each band washed in its hue's low tier and drawn in the
-    // same hue's ink, pushed past the default 9:1 so line on fill holds ≈7.5:1.
+    // Paper ground (slate when reversed); each band washed in its hue's low
+    // tier and drawn in the same hue's ink, pushed past the default 9:1 so
+    // line on fill holds ≈7.5:1 on either ground.
     const paint = () => {
       Random.setSeed(params.paletteSeed);
       const palette = cuspPalette({
@@ -130,7 +131,7 @@ export const bandSketch =
         count: o.multiHue ? params.count : 1,
         angle: params.angle,
         saturation: params.saturation,
-        ground: 'light',
+        ground: params.reverse ? 'dark' : 'light',
         targets: { high: params.ink, low: params.wash },
       });
       colors.bg = palette.bg.css;
@@ -210,8 +211,6 @@ export const bandSketch =
       for (let i = 0; i < params.speed; i++) field.step();
 
       const scale = Math.min(width, height) * (0.88 / field.extent);
-      const lines = params.reverse ? colors.washes : colors.inks;
-      const fills = params.reverse ? colors.inks : colors.washes;
 
       context.fillStyle = colors.bg;
       context.fillRect(0, 0, width, height);
@@ -220,7 +219,7 @@ export const bandSketch =
       context.translate((width - field.extent * scale) / 2, (height - field.extent * scale) / 2);
 
       field.rects.forEach((rects, i) => {
-        context.fillStyle = fills[i % fills.length];
+        context.fillStyle = colors.washes[i % colors.washes.length];
         context.beginPath();
         for (const [x, y, w, h] of rects) context.rect(x * scale, y * scale, w * scale, h * scale);
         context.fill();
@@ -229,7 +228,7 @@ export const bandSketch =
       context.lineJoin = 'round';
       context.lineCap = 'round';
       field.organisms.forEach((growth, i) => {
-        context.strokeStyle = lines[i % lines.length];
+        context.strokeStyle = colors.inks[i % colors.inks.length];
         context.lineWidth = growth.params.repulsionRadius * params.stroke * scale;
         context.beginPath();
         growth.state.nodes.forEach((p, j) => {

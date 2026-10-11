@@ -10,7 +10,7 @@
  * centreline and confined to it — so the walks survive only
  * as the corridors the curves have packed. On a paper ground each band is
  * washed in its hue's low tier and its curve drawn in the same hue's ink
- * (`reverse` swaps them). Pane and drawing live in ./band-sketch.
+ * (`reverse` turns the paper to slate). Pane and drawing live in ./band-sketch.
  */
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
