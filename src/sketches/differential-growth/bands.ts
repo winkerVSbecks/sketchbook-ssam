@@ -13,10 +13,12 @@ import {
   createMask,
   outline,
   regionAreas,
+  regionRects,
   seedLoop,
   stampPath,
   type Edge,
   type LatticePoint,
+  type Rect,
   type RegionMask,
 } from './region';
 
@@ -39,6 +41,8 @@ export interface BandField {
   mask: RegionMask;
   organisms: Growth[];
   edges: Edge[];
+  /** Each band's area as rectangles, indexed like `organisms`. */
+  rects: Rect[][];
   /** Side of the square the bands occupy, in world units. */
   extent: number;
   step(): void;
@@ -63,10 +67,13 @@ export function createBandField(paths: LatticePoint[][], o: BandOptions): BandFi
     return growth;
   });
 
+  const rects = regionRects(mask);
+
   return {
     mask,
     organisms,
     edges: outline(mask),
+    rects: paths.map((_, id) => rects.get(id) ?? []),
     extent: size * o.cell,
     step() {
       organisms.forEach((growth, id) => {

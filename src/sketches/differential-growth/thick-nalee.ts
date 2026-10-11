@@ -1,13 +1,14 @@
 /**
  * thick-nalee — nalee walks drawn with a line so thick it fills the canvas,
- * then the line itself left empty and its area filled by differential growth.
+ * then the line's area washed in and filled by differential growth.
  *
  * Walkers tile a lattice the nalee way (hold a direction, bounce at walls,
  * die when boxed in or past a drawn length, spawn until every node is taken).
  * Each walk becomes a band three quarters of the lattice pitch wide, so only
  * a thin strip of ground separates bands, and each band holds its own organism (../terminal-ui/growth-sim), seeded as a thin loop
  * down the band's centreline and confined to it — so the walks survive only
- * as the corridors the curves have packed.
+ * as the corridors the curves have packed. On a paper ground each band is
+ * washed in its hue's low tier and its curve drawn in the same hue's ink.
  */
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
@@ -24,6 +25,8 @@ const STEPS_PER_FRAME = 2;
 const STROKE = 0.55;
 /** Draw each region's outline as a hairline, to see the bands the curves are held in. */
 const DEBUG = false;
+/** WCAG targets against the paper: ink for the curve, wash for the band behind it. */
+const CONTRAST = { high: 12, low: 1.6 };
 
 export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   if (import.meta.hot) {
@@ -38,9 +41,12 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   Random.setSeed(seed);
   console.log(seed);
 
-  const palette = cuspPalette({ count: Random.rangeFloor(1, 4) });
+  // Paper ground; each band filled with its hue's wash and drawn in the same
+  // hue's ink, pushed past the default 9:1 so line on fill holds ≈7.5:1.
+  const palette = cuspPalette({ count: Random.rangeFloor(1, 4), ground: 'light', targets: CONTRAST });
   const bg = palette.bg.css;
   const inks = palette.tiers.high.map((s) => s.css);
+  const fills = palette.tiers.low.map((s) => s.css);
   const hairline = palette.tiers.low[0].css;
 
   const lattice = Random.pick([6, 7, 8]);
@@ -84,6 +90,13 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
       }
       context.stroke();
     }
+
+    field.rects.forEach((rects, i) => {
+      context.fillStyle = fills[i % fills.length];
+      context.beginPath();
+      for (const [x, y, w, h] of rects) context.rect(x * scale, y * scale, w * scale, h * scale);
+      context.fill();
+    });
 
     context.lineJoin = 'round';
     context.lineCap = 'round';

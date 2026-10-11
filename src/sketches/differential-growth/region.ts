@@ -284,3 +284,31 @@ export function outline(mask: RegionMask): Edge[] {
   }
   return edges;
 }
+
+/** An axis-aligned rectangle in world units, `[x, y, w, h]`. */
+export type Rect = [number, number, number, number];
+
+/**
+ * Each region as rectangles, one per horizontal run of its cells, keyed by
+ * id. Filled together in one path they give the region's area without the
+ * hairline seams separate per-cell fills leave between neighbours.
+ */
+export function regionRects(mask: RegionMask): Map<number, Rect[]> {
+  const { cols, rows, cell } = mask;
+  const rects = new Map<number, Rect[]>();
+  for (let y = 0; y < rows; y++) {
+    let x = 0;
+    while (x < cols) {
+      const id = idAt(mask, x, y);
+      let end = x + 1;
+      while (end < cols && idAt(mask, end, y) === id) end++;
+      if (id >= 0) {
+        const list = rects.get(id) ?? [];
+        list.push([x * cell, y * cell, (end - x) * cell, cell]);
+        rects.set(id, list);
+      }
+      x = end;
+    }
+  }
+  return rects;
+}

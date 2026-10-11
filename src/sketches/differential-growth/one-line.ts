@@ -2,7 +2,7 @@
  * one-line — thick-nalee with a single walker: one line through every node of
  * the lattice (a random Hamiltonian path, as in ../nalee-one-line), drawn so
  * thick it fills the canvas, its area then filled by one differential-growth
- * organism seeded down its centreline. One band, one curve, one ink.
+ * organism seeded down its centreline. One band, one wash, one ink, on paper.
  */
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
@@ -19,6 +19,8 @@ const STEPS_PER_FRAME = 2;
 const STROKE = 0.55;
 /** Draw each region's outline as a hairline, to see the bands the curves are held in. */
 const DEBUG = false;
+/** WCAG targets against the paper: ink for the curve, wash for the band behind it. */
+const CONTRAST = { high: 12, low: 1.6 };
 
 export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   if (import.meta.hot) {
@@ -33,9 +35,12 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   Random.setSeed(seed);
   console.log(seed);
 
-  const palette = cuspPalette({ count: 1 });
+  // Paper ground; each band filled with its hue's wash and drawn in the same
+  // hue's ink, pushed past the default 9:1 so line on fill holds ≈7.5:1.
+  const palette = cuspPalette({ count: 1, ground: 'light', targets: CONTRAST });
   const bg = palette.bg.css;
   const inks = palette.tiers.high.map((s) => s.css);
+  const fills = palette.tiers.low.map((s) => s.css);
   const hairline = palette.tiers.low[0].css;
 
   const lattice = Random.pick([5, 6, 7]);
@@ -71,6 +76,13 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
       }
       context.stroke();
     }
+
+    field.rects.forEach((rects, i) => {
+      context.fillStyle = fills[i % fills.length];
+      context.beginPath();
+      for (const [x, y, w, h] of rects) context.rect(x * scale, y * scale, w * scale, h * scale);
+      context.fill();
+    });
 
     context.lineJoin = 'round';
     context.lineCap = 'round';
