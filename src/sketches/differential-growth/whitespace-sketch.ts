@@ -66,8 +66,9 @@ interface Params {
   /** Colour seed: the palette's ring, shuffle and jitter. */
   paletteSeed: string;
   hue: number;
-  /** Hues taken off the ring, in ring order from the base: the base hue is
-   * the growth's, the rest go to the walks (cycling) and the frame's faces. */
+  /** Hues taken off the ring, in ring order from the base: the fill keeps to
+   * two (the growth takes the base, the walks the next); any more go to the
+   * frame's faces. */
   hues: number;
   /** Degrees between ring hues. */
   angle: number;
@@ -219,10 +220,10 @@ export const whitespaceSketch =
       for (let i = 0; i < params.warmup && performance.now() - t0 < WARMUP_MS; i++) layout.step();
     };
 
-    // Hues come off the ring in order from the base (`shuffle: false`): the
-    // base is the growth's; the walks cycle through the others; the frame's
-    // face and depth take the next three round the ring, so every face differs
-    // from its neighbour whenever there are hues enough.
+    // Hues come off the ring in order from the base (`shuffle: false`). The
+    // fill keeps to two: the base for the growth, the next for every walk.
+    // The frame's face and depth take the hues after those, wrapping round,
+    // so with four or more its faces stand apart from the fill.
     const paint = () => {
       Random.setSeed(params.paletteSeed);
       const palette = cuspPalette({
@@ -244,15 +245,15 @@ export const whitespaceSketch =
       colors.ink = high[base].css;
       colors.wash = low[base].css;
       colors.hairline = mid[base].css;
-      colors.walks = n > 1 ? order.slice(1).map((i) => mid[i].css) : [mid[base].css];
+      colors.walks = [mid[at(1)].css];
       // With one hue the side sits halfway down its ramp from mid to high.
       const [m, h] = [mid[base].color, high[base].color];
       colors.frame = {
-        front: high[at(1)].css,
-        top: mid[at(2)].css,
+        front: high[at(2)].css,
+        top: mid[at(3)].css,
         side:
           n > 1
-            ? mid[at(3)].css
+            ? mid[at(4)].css
             : `oklch(${((m.l + h.l) / 2).toFixed(4)} ${((m.c + h.c) / 2).toFixed(4)} ${m.h.toFixed(2)})`,
       };
     };
