@@ -1,5 +1,5 @@
 /**
- * The sketch body shared by `thick-nalee` and `one-line`: lattice paths
+ * The sketch body shared by `thick-nalee`, `one-line` and `windows`: lattice paths
  * stamped as thick bands, each band washed in and packed by its own
  * differential-growth curve, with a tweakpane over layout, growth and colour.
  *
@@ -15,6 +15,7 @@ import Random from 'canvas-sketch-util/random';
 import { cuspPalette } from '../../colors/cusphanger';
 import { createBandField, type BandField } from './bands';
 import type { LatticePoint } from './region';
+import { WINDOW_STYLES, windowFrame, type WindowStyle } from './window-frame';
 
 /** World units per mask cell. */
 const CELL = 2;
@@ -56,6 +57,10 @@ export interface BandParams {
   reverse: boolean;
   /** Hairline outline of every band. */
   debug: boolean;
+  /** Windowed variants: which paths fill the field. */
+  grid: 'walks' | 'line';
+  /** Windowed variants: the frame the field is seen through. */
+  window: WindowStyle;
 }
 
 export interface BandSketchOptions {
@@ -68,6 +73,8 @@ export interface BandSketchOptions {
   walks?: boolean;
   /** Show the hue-count control (variants with more than one band). */
   multiHue?: boolean;
+  /** Clip the field to a window frame, with grid and frame controls. */
+  windowed?: boolean;
 }
 
 export const bandSketch =
@@ -94,6 +101,8 @@ export const bandSketch =
       wash: 1.6,
       reverse: false,
       debug: false,
+      grid: 'walks',
+      window: 'arch',
       ...o.defaults(),
     };
 
@@ -103,7 +112,13 @@ export const bandSketch =
     pane.element.parentElement.style.zIndex = '1';
 
     let field: BandField;
-    const colors = { bg: '', inks: [] as string[], washes: [] as string[], hairline: '' };
+    const colors = {
+      bg: '',
+      inks: [] as string[],
+      washes: [] as string[],
+      hairline: '',
+      frame: { front: '', top: '', side: '' },
+    };
 
     const build = () => {
       Random.setSeed(params.seed);
@@ -138,6 +153,19 @@ export const bandSketch =
       colors.inks = palette.tiers.high.map((s) => s.css);
       colors.washes = palette.tiers.low.map((s) => s.css);
       colors.hairline = palette.tiers.mid[0].css;
+      // The frame is the darkest ink on the front; its depth faces step down
+      // to the mid tier, the side a shade deeper than the top.
+      // With one hue the side sits halfway down that hue's ramp from mid to high.
+      const mids = palette.tiers.mid;
+      const [m, h] = [mids[0].color, palette.tiers.high[0].color];
+      colors.frame = {
+        front: palette.tiers.high[0].css,
+        top: mids[mids.length - 1].css,
+        side:
+          mids.length > 1
+            ? mids[0].css
+            : `oklch(${((m.l + h.l) / 2).toFixed(4)} ${((m.c + h.c) / 2).toFixed(4)} ${m.h.toFixed(2)})`,
+      };
     };
 
     const rebuild = () => {
@@ -157,6 +185,18 @@ export const bandSketch =
       });
 
     const layout = pane.addFolder({ title: 'Layout' });
+    if (o.windowed) {
+      onInput(
+        layout.addBinding(params, 'window', {
+          options: Object.fromEntries(WINDOW_STYLES.map((w) => [w, w])),
+        }),
+        () => props.render(),
+      );
+      onInput(
+        layout.addBinding(params, 'grid', { options: { 'nalee walks': 'walks', 'one line': 'line' } }),
+        rebuild,
+      );
+    }
     onInput(layout.addBinding(params, 'lattice', { min: 2, max: 14, step: 1 }), rebuild);
     onInput(layout.addBinding(params, 'pitch', { min: 2, max: 10, step: 1 }), () => {
       params.gap = Math.min(params.gap, params.pitch - 1);
@@ -168,7 +208,7 @@ export const bandSketch =
       pane.refresh();
       rebuild();
     });
-    if (o.walks) {
+    if (o.walks || o.windowed) {
       onInput(
         layout.addBinding(params, 'walkLength', { min: 1, max: 12, step: 0.5, label: 'walk length' }),
         rebuild,
@@ -210,13 +250,22 @@ export const bandSketch =
     wrap.render = ({ width, height }: SketchProps) => {
       for (let i = 0; i < params.speed; i++) field.step();
 
-      const scale = Math.min(width, height) * (0.88 / field.extent);
-
       context.fillStyle = colors.bg;
       context.fillRect(0, 0, width, height);
 
+      // Windowed: the field covers the aperture's bounds and is clipped to it;
+      // otherwise it sits centred in the canvas with a margin.
+      const frame = o.windowed ? windowFrame(params.window, width, height) : undefined;
+      const box = frame?.bounds;
+      const scale = box
+        ? Math.max(box.w, box.h) / field.extent
+        : Math.min(width, height) * (0.88 / field.extent);
+      const cx = box ? box.x + box.w / 2 : width / 2;
+      const cy = box ? box.y + box.h / 2 : height / 2;
+
       context.save();
-      context.translate((width - field.extent * scale) / 2, (height - field.extent * scale) / 2);
+      if (frame) context.clip(frame.aperture);
+      context.translate(cx - (field.extent * scale) / 2, cy - (field.extent * scale) / 2);
 
       field.rects.forEach((rects, i) => {
         context.fillStyle = colors.washes[i % colors.washes.length];
@@ -251,6 +300,8 @@ export const bandSketch =
       }
 
       context.restore();
+
+      frame?.draw(context, colors.frame);
     };
 
     return () => pane.dispose();
