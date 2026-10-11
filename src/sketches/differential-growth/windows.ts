@@ -1,44 +1,25 @@
 /**
- * windows — the band grid seen through a window.
+ * windows — nalee-whitespace seen through a window.
  *
- * The field is thick-nalee's (or one-line's): lattice paths stamped as thick
- * bands, each washed in and packed by its own differential-growth curve. Here
- * it is clipped to a window frame (./window-frame) — the arched jali shell of
- * ../jali/truchet, or a deep rectangular frame with its top and right faces
- * extruded and the tunnel's reveals inside — so the growth is only seen
- * through the opening, the way the jali's tiles are in truchet.
- *
- * Paper ground (slate when reversed); bands take a hue's low-tier wash and
- * their curves the same hue's ink, ≈7.5:1 apart; the frame is the darkest ink
- * on its face and the mid tier on its depth. Pane and drawing live in
- * ./band-sketch.
+ * The field is nalee-whitespace's: differential growth packing a polyomino,
+ * the rest of the grid tiled by nalee walks. Here it covers the opening of a
+ * window frame (./window-frame) and is clipped to it — the arched jali shell
+ * of ../jali/truchet, or a deep rectangular frame with its top and right
+ * faces extruded and the tunnel's reveals inside — the way truchet's tiles
+ * are only seen through its arch. The frame's face takes the curve's ink, its
+ * depth the two mid tiers. Pane and drawing live in ./whitespace-sketch.
  */
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 
-import { bandSketch } from './band-sketch';
-import { hamiltonianPath, naleeWalks } from './region';
+import { whitespaceSketch } from './whitespace-sketch';
 import { WINDOW_STYLES } from './window-frame';
 
-const draw = bandSketch({
+const draw = whitespaceSketch({
   title: 'windows',
   windowed: true,
-  multiHue: true,
-  defaults: () => ({
-    window: Random.pick(WINDOW_STYLES),
-    lattice: Random.pick([6, 7, 8]),
-    count: Random.rangeFloor(1, 4),
-  }),
-  paths: ({ grid, lattice, walkLength }) =>
-    grid === 'line'
-      ? [hamiltonianPath(lattice, lattice)]
-      : naleeWalks(
-          lattice,
-          lattice,
-          () => true,
-          () => Random.rangeFloor(lattice, Math.max(lattice, lattice * walkLength) + 1),
-        ),
+  defaults: () => ({ window: Random.pick(WINDOW_STYLES) }),
 });
 
 export const sketch = (props: SketchProps) => {
