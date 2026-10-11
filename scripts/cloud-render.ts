@@ -36,7 +36,10 @@ const BROWSERS_PATH = join(CLOUD_DIR, 'browsers');
 // because full-screen sketches are composed for a screen, not a square.
 const HEADLESS_VIEWPORT = { width: 1600, height: 1000 };
 
-const READY_FLAG_TIMEOUT_MS = 15_000;
+// Most sketches are ready in well under a second; a few precompute for long
+// (voxels/nalee-2 takes ~50 s headless). CLOUD_RENDER_READY_MS raises the wait
+// for those runs without slowing the failure of a genuinely broken sketch.
+const READY_FLAG_TIMEOUT_MS = Number(process.env.CLOUD_RENDER_READY_MS) || 15_000;
 const EXPORT_TIMEOUT_MS = 12_000;
 const LOCK_STALE_MS = 60_000;
 
