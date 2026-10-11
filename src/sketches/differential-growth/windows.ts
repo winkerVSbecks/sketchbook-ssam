@@ -19,7 +19,7 @@ import { WINDOW_STYLES } from './window-frame';
 const draw = whitespaceSketch({
   title: 'windows',
   windowed: true,
-  defaults: () => ({ window: Random.pick(WINDOW_STYLES) }),
+  defaults: () => ({ window: Random.pick(WINDOW_STYLES), hues: 4 }),
 });
 
 export const sketch = (props: SketchProps) => {

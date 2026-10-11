@@ -66,7 +66,10 @@ interface Params {
   /** Colour seed: the palette's ring, shuffle and jitter. */
   paletteSeed: string;
   hue: number;
-  /** Degrees between ring hues (the walks take the second hue when it differs). */
+  /** Hues taken off the ring, in ring order from the base: the base hue is
+   * the growth's, the rest go to the walks (cycling) and the frame's faces. */
+  hues: number;
+  /** Degrees between ring hues. */
   angle: number;
   saturation: number;
   /** WCAG targets against the ground: curve, walks, domain wash. */
@@ -182,6 +185,7 @@ export const whitespaceSketch =
       speed: 2,
       paletteSeed: Random.getRandomSeed(),
       hue: 232,
+      hues: 2,
       angle: 51,
       saturation: 1,
       ink: 12,
@@ -203,7 +207,7 @@ export const whitespaceSketch =
     const colors = {
       bg: '',
       ink: '',
-      accent: '',
+      walks: [] as string[],
       wash: '',
       hairline: '',
       frame: { front: '', top: '', side: '' },
@@ -215,27 +219,42 @@ export const whitespaceSketch =
       for (let i = 0; i < params.warmup && performance.now() - t0 < WARMUP_MS; i++) layout.step();
     };
 
-    // One hue by default; a non-zero angle hands the walks a second hue off the ring.
+    // Hues come off the ring in order from the base (`shuffle: false`): the
+    // base is the growth's; the walks cycle through the others; the frame's
+    // face and depth take the next three round the ring, so every face differs
+    // from its neighbour whenever there are hues enough.
     const paint = () => {
       Random.setSeed(params.paletteSeed);
       const palette = cuspPalette({
         hue: params.hue,
-        count: params.angle > 0 ? 2 : 1,
-        angle: params.angle > 0 ? params.angle : 30,
+        count: params.hues,
+        angle: params.angle,
         shuffle: false,
         saturation: params.saturation,
         ground: params.reverse ? 'dark' : 'light',
         targets: { high: params.ink, mid: params.accent, low: params.wash },
       });
-      const base = palette.baseIndex;
-      const other = palette.hues.length > 1 ? 1 - base : base;
+      const { high, mid, low } = palette.tiers;
+      const n = palette.hues.length;
+      // Tier index of the j-th hue round the ring from the base.
+      const order = palette.ring.slice(0, n).map((h) => palette.hues.indexOf(h));
+      const at = (j: number) => order[j % n];
+      const base = at(0);
       colors.bg = palette.bg.css;
-      colors.ink = palette.tiers.high[base].css;
-      colors.wash = palette.tiers.low[base].css;
-      colors.accent = palette.tiers.mid[other].css;
-      colors.hairline = palette.tiers.mid[base].css;
-      // The frame's face is the curve's ink; its depth takes the two mid tiers.
-      colors.frame = { front: colors.ink, top: colors.accent, side: colors.hairline };
+      colors.ink = high[base].css;
+      colors.wash = low[base].css;
+      colors.hairline = mid[base].css;
+      colors.walks = n > 1 ? order.slice(1).map((i) => mid[i].css) : [mid[base].css];
+      // With one hue the side sits halfway down its ramp from mid to high.
+      const [m, h] = [mid[base].color, high[base].color];
+      colors.frame = {
+        front: high[at(1)].css,
+        top: mid[at(2)].css,
+        side:
+          n > 1
+            ? mid[at(3)].css
+            : `oklch(${((m.l + h.l) / 2).toFixed(4)} ${((m.c + h.c) / 2).toFixed(4)} ${m.h.toFixed(2)})`,
+      };
     };
 
     const rebuild = () => {
@@ -284,7 +303,8 @@ export const whitespaceSketch =
     onInput(colour.addBinding(params, 'reverse', { label: 'slate' }), repaint);
     onInput(colour.addBinding(params, 'fill', { label: 'wash domain' }), repaint);
     onInput(colour.addBinding(params, 'hue', { min: 0, max: 360, step: 1 }), repaint);
-    onInput(colour.addBinding(params, 'angle', { min: 0, max: 180, step: 1, label: 'walk hue Δ' }), repaint);
+    onInput(colour.addBinding(params, 'hues', { min: 1, max: 6, step: 1 }), repaint);
+    onInput(colour.addBinding(params, 'angle', { min: 1, max: 180, step: 1, label: 'hue Δ' }), repaint);
     onInput(colour.addBinding(params, 'saturation', { min: 0, max: 1, step: 0.01 }), repaint);
     onInput(colour.addBinding(params, 'ink', { min: 4.5, max: 18, step: 0.1, label: 'ink (:1)' }), repaint);
     onInput(colour.addBinding(params, 'accent', { min: 1.5, max: 12, step: 0.1, label: 'walks (:1)' }), repaint);
@@ -317,9 +337,15 @@ export const whitespaceSketch =
 
       context.fillStyle = colors.bg;
       context.fillRect(0, 0, width, height);
+      frame?.back?.(context, colors.frame);
 
       context.save();
-      if (frame) context.clip(frame.aperture);
+      if (frame) {
+        context.clip(frame.aperture);
+        // Repaint the ground over whatever the frame put behind the field.
+        context.fillStyle = colors.bg;
+        context.fillRect(0, 0, width, height);
+      }
       context.translate(cx - (extent * scale) / 2, cy - (extent * scale) / 2);
 
       if (params.fill) {
@@ -333,18 +359,21 @@ export const whitespaceSketch =
       context.lineCap = 'round';
       context.lineWidth = growth.params.repulsionRadius * params.stroke * scale;
 
-      context.strokeStyle = colors.accent;
-      context.beginPath();
-      for (const walk of walks) {
-        walk.forEach(([x, y], i) => {
-          const px = (x + 0.5) * pitch * scale;
-          const py = (y + 0.5) * pitch * scale;
-          if (i === 0) context.moveTo(px, py);
-          // A lone node still gets a mark: a zero-length segment with round caps.
-          if (i > 0 || walk.length === 1) context.lineTo(px, py);
-        });
-      }
-      context.stroke();
+      // One path per walk colour; walks take the colours in turn.
+      colors.walks.forEach((colour, c) => {
+        context.strokeStyle = colour;
+        context.beginPath();
+        for (let w = c; w < walks.length; w += colors.walks.length) {
+          walks[w].forEach(([x, y], i) => {
+            const px = (x + 0.5) * pitch * scale;
+            const py = (y + 0.5) * pitch * scale;
+            if (i === 0) context.moveTo(px, py);
+            // A lone node still gets a mark: a zero-length segment with round caps.
+            if (i > 0 || walks[w].length === 1) context.lineTo(px, py);
+          });
+        }
+        context.stroke();
+      });
 
       context.strokeStyle = colors.ink;
       context.beginPath();

@@ -2,8 +2,8 @@
  * Window frames that clip a sketch's field, for the `windows` variant.
  *
  *   - arch — the jali shell of ../jali/truchet: a rectangle under a pointed
- *            Bézier arch, a thick front edge and its depth extruded to the
- *            right;
+ *            Bézier arch, a thick front edge and the whole silhouette
+ *            extruded to the right behind it;
  *   - rect — a deep rectangular frame seen from the lower left: the front
  *            ring, its top and right faces extruded up and to the right, and
  *            inside the opening the left and bottom reveals of the tunnel.
@@ -31,6 +31,10 @@ export interface WindowFrame {
   aperture: Path2D;
   /** Bounding box of the aperture, to fit the field to. */
   bounds: { x: number; y: number; w: number; h: number };
+  /** Whatever sits behind the field (the arch's depth); the caller then
+   * repaints the ground inside the aperture before drawing the field. */
+  back?(context: CanvasRenderingContext2D, colors: FrameColors): void;
+  /** The frame laid over the field. */
   draw(context: CanvasRenderingContext2D, colors: FrameColors): void;
 }
 
@@ -132,25 +136,46 @@ function archFrame(width: number, height: number): WindowFrame {
   aperture.bezierCurveTo(x1, y1 * 0.8, x1, y1 * 0.8, x1, y1);
   aperture.closePath();
 
-  const side = new Path2D();
-  side.moveTo(x2, y2);
-  side.lineTo(x2, y1);
-  side.bezierCurveTo(x2, y1 * 0.8, x2, y1 * 0.8, x3, y3);
-  side.lineTo(x3 + off * 1.25, y3);
-  side.bezierCurveTo(x2 + off, y1 * 0.8, x2 + off, y1 * 0.8, x2 + off, y1);
-  side.lineTo(x2 + off, y2);
-  side.closePath();
+  // The front edge is the band within `t` outside the aperture: a stroke of
+  // width 2t along the aperture, clipped to its outside. Miter joins keep the
+  // apex sharp and the foot square.
+  const silhouette = (context: CanvasRenderingContext2D) => {
+    context.lineWidth = 2 * t;
+    context.lineJoin = 'miter';
+    context.fill(aperture);
+    context.stroke(aperture);
+  };
 
   return {
     aperture,
     bounds: { x: x1, y: y3, w: x2 - x1, h: y2 - y3 },
-    draw(context, c) {
+    back(context, c) {
+      // The depth is the frame's whole silhouette slid right a pixel at a
+      // time (truchet's extrusion direction), so it meets the front edge
+      // exactly along the arch and the foot.
+      context.save();
       context.fillStyle = c.side;
-      context.fill(side);
+      context.strokeStyle = c.side;
+      const steps = Math.max(1, Math.ceil(off));
+      for (let k = steps; k >= 1; k--) {
+        context.save();
+        context.translate((off * k) / steps, 0);
+        silhouette(context);
+        context.restore();
+      }
+      context.restore();
+    },
+    draw(context, c) {
+      context.save();
+      const outside = new Path2D();
+      outside.rect(0, 0, width, height);
+      outside.addPath(aperture);
+      context.clip(outside, 'evenodd');
       context.strokeStyle = c.front;
-      context.lineWidth = t;
-      context.lineJoin = 'round';
+      context.lineWidth = 2 * t;
+      context.lineJoin = 'miter';
       context.stroke(aperture);
+      context.restore();
     },
   };
 }
