@@ -35,6 +35,8 @@ export interface BandOptions {
   margin: number;
   /** Organism seeds, one per call. */
   seed: () => number;
+  /** Repulsion radius — the curve's own spacing, in world units. Default 0.9. */
+  radius?: number;
 }
 
 export interface BandField {
@@ -48,8 +50,9 @@ export interface BandField {
   step(): void;
 }
 
-/** Node budget per world unit² of band: enough curve to pack it, no more. */
+/** Node budget per world unit² of band at the default radius: enough to pack it. */
 const NODES_PER_AREA = 4;
+const DEFAULT_RADIUS = 0.9;
 
 export function createBandField(paths: LatticePoint[][], o: BandOptions): BandField {
   const size = o.lattice * o.pitch - (o.pitch - o.band);
@@ -58,12 +61,16 @@ export function createBandField(paths: LatticePoint[][], o: BandOptions): BandFi
   const areas = regionAreas(mask);
   const confine = createConfiner(mask, o.margin);
 
+  // A tighter curve needs proportionally more length to pack the same area.
+  const radius = o.radius ?? DEFAULT_RADIUS;
+  const density = NODES_PER_AREA * (DEFAULT_RADIUS / radius);
   const organisms = paths.map((path, id) => {
     const growth = createGrowth({
       seed: o.seed(),
-      maxNodes: Math.round((areas.get(id) ?? 0) * NODES_PER_AREA),
+      repulsionRadius: radius,
+      maxNodes: Math.round((areas.get(id) ?? 0) * density),
     });
-    growth.state.nodes = seedLoop(bandCentreline(path, o.pitch, o.band, o.cell), 0.35);
+    growth.state.nodes = seedLoop(bandCentreline(path, o.pitch, o.band, o.cell), radius * 0.4);
     return growth;
   });
 

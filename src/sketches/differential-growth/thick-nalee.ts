@@ -5,115 +5,47 @@
  * Walkers tile a lattice the nalee way (hold a direction, bounce at walls,
  * die when boxed in or past a drawn length, spawn until every node is taken).
  * Each walk becomes a band three quarters of the lattice pitch wide, so only
- * a thin strip of ground separates bands, and each band holds its own organism (../terminal-ui/growth-sim), seeded as a thin loop
- * down the band's centreline and confined to it — so the walks survive only
+ * a thin strip of ground separates bands, and each band holds its own
+ * organism (../terminal-ui/growth-sim), seeded as a thin loop down the band's
+ * centreline and confined to it — so the walks survive only
  * as the corridors the curves have packed. On a paper ground each band is
- * washed in its hue's low tier and its curve drawn in the same hue's ink.
+ * washed in its hue's low tier and its curve drawn in the same hue's ink
+ * (`reverse` swaps them). Pane and drawing live in ./band-sketch.
  */
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 
-import { cuspPalette } from '../../colors/cusphanger';
-import { createBandField } from './bands';
+import { bandSketch } from './band-sketch';
 import { naleeWalks } from './region';
 
-const WARMUP_STEPS = 500;
-const WARMUP_MS = 6000;
-const STEPS_PER_FRAME = 2;
-/** Curve width, as a fraction of the repulsion radius. */
-const STROKE = 0.55;
-/** Draw each region's outline as a hairline, to see the bands the curves are held in. */
-const DEBUG = false;
-/** WCAG targets against the paper: ink for the curve, wash for the band behind it. */
-const CONTRAST = { high: 12, low: 1.6 };
+const draw = bandSketch({
+  title: 'thick-nalee',
+  walks: true,
+  multiHue: true,
+  defaults: () => ({ lattice: Random.pick([6, 7, 8]), count: Random.rangeFloor(1, 4) }),
+  paths: ({ lattice, walkLength }) =>
+    naleeWalks(
+      lattice,
+      lattice,
+      () => true,
+      () => Random.rangeFloor(lattice, Math.max(lattice, lattice * walkLength) + 1),
+    ),
+});
 
-export const sketch = ({ wrap, context, ...props }: SketchProps) => {
+export const sketch = (props: SketchProps) => {
+  const { wrap } = props;
+  const cleanup = draw(props);
   if (import.meta.hot) {
-    import.meta.hot.dispose(() => wrap.dispose());
+    import.meta.hot.dispose(() => {
+      cleanup();
+      wrap.dispose();
+    });
     import.meta.hot.accept(() => wrap.hotReload());
   }
   import.meta.hot?.on('mcp:export', () => {
     props.exportFrame();
   });
-
-  const seed = Random.getRandomSeed();
-  Random.setSeed(seed);
-  console.log(seed);
-
-  // Paper ground; each band filled with its hue's wash and drawn in the same
-  // hue's ink, pushed past the default 9:1 so line on fill holds ≈7.5:1.
-  const palette = cuspPalette({ count: Random.rangeFloor(1, 4), ground: 'light', targets: CONTRAST });
-  const bg = palette.bg.css;
-  const inks = palette.tiers.high.map((s) => s.css);
-  const fills = palette.tiers.low.map((s) => s.css);
-  const hairline = palette.tiers.low[0].css;
-
-  const lattice = Random.pick([6, 7, 8]);
-  const field = createBandField(
-    naleeWalks(
-      lattice,
-      lattice,
-      () => true,
-      () => Random.rangeFloor(lattice, lattice * 3),
-    ),
-    {
-      lattice,
-      pitch: 4,
-      band: 3,
-      cell: 2,
-      margin: 0.45,
-      seed: () => Random.rangeFloor(1, 0xffffff),
-    },
-  );
-
-  const t0 = performance.now();
-  for (let i = 0; i < WARMUP_STEPS && performance.now() - t0 < WARMUP_MS; i++) field.step();
-
-  wrap.render = ({ width, height }: SketchProps) => {
-    for (let i = 0; i < STEPS_PER_FRAME; i++) field.step();
-
-    const scale = Math.min(width, height) * (0.88 / field.extent);
-    context.fillStyle = bg;
-    context.fillRect(0, 0, width, height);
-
-    context.save();
-    context.translate((width - field.extent * scale) / 2, (height - field.extent * scale) / 2);
-
-    if (DEBUG) {
-      context.strokeStyle = hairline;
-      context.lineWidth = 1;
-      context.beginPath();
-      for (const [x0, y0, x1, y1] of field.edges) {
-        context.moveTo(x0 * scale, y0 * scale);
-        context.lineTo(x1 * scale, y1 * scale);
-      }
-      context.stroke();
-    }
-
-    field.rects.forEach((rects, i) => {
-      context.fillStyle = fills[i % fills.length];
-      context.beginPath();
-      for (const [x, y, w, h] of rects) context.rect(x * scale, y * scale, w * scale, h * scale);
-      context.fill();
-    });
-
-    context.lineJoin = 'round';
-    context.lineCap = 'round';
-    field.organisms.forEach((growth, i) => {
-      context.strokeStyle = inks[i % inks.length];
-      context.lineWidth = growth.params.repulsionRadius * STROKE * scale;
-      context.beginPath();
-      growth.state.nodes.forEach((p, j) => {
-        if (j === 0) context.moveTo(p.x * scale, p.y * scale);
-        else context.lineTo(p.x * scale, p.y * scale);
-      });
-      context.closePath();
-      context.stroke();
-    });
-
-    context.restore();
-  };
 };
 
 export const settings: SketchSettings = {
