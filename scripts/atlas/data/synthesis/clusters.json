@@ -509,29 +509,29 @@
   {
    "key": "nalee-lineage",
    "name": "The Nalee System, End to End",
-   "note": "The packing rule from a sujni quilt through Kelly awnings, physarum, jali and hulls, then single-line meanders, voxels and neon bio-sprue tubes.",
+   "note": "The packing rule from a sujni quilt through Kelly awnings, physarum, jali and hulls to one-line meanders, voxels and neon sprue, then a bipolar grid, box-drawing pipes and plotter pens.",
    "members": [
     "sketches/sujni/sujni-basic",
     "sketches/nalee/sketches/basic",
     "sketches/nalee/sketches/polar",
     "sketches/kelly-nalee/basic",
     "sketches/physarum/trail",
-    "sketches/kelly-nalee/paris-review",
-    "sketches/nalee/sketches/polar-ruins",
     "sketches/nalee-jali/a",
     "sketches/nalee-hulls/k_best",
     "sketches/nalee-one-line/basic",
     "sketches/bauhaus/nalee-composition",
     "sketches/conformal-mapping/nalee",
     "sketches/voxels/nalee",
-    "sketches/nalee-one-line/albers-meander",
-    "sketches/bio-sprue/sprue"
+    "sketches/bio-sprue/sprue",
+    "sketches/nalee/sketches/bipolar",
+    "sketches/nalee/sketches/box-drawing",
+    "sketches/nalee-one-line/pen-stroke"
    ]
   },
   {
    "key": "rubber-band-hulls",
    "name": "Rubber Bands and Hulls",
-   "note": "Convex hulls from clustered slashes and shattered polygons to colliding shells, nalee hulls and rubber-band stipple, ending as one band wrapped round haberdashery pegs.",
+   "note": "Convex hulls from clustered slashes and shattered polygons to colliding shells, nalee hulls and rubber-band stipple, then a haberdashery band on pegs that becomes a belt round a gear train.",
    "members": [
     "sketches/convex-hull-101",
     "sketches/patchwork/patchwork-full",
@@ -544,7 +544,8 @@
     "sketches/rubber-banding/basic",
     "sketches/rubber-band-stipple/rubber-band-stipple",
     "sketches/rubber-band-stipple/haberdashery",
-    "sketches/rubber-band-stipple/skeleton-albers"
+    "sketches/rubber-band-stipple/skeleton-albers",
+    "sketches/gears/haberdashery-train"
    ]
   },
   {
@@ -563,23 +564,6 @@
     "sketches/terminal-charts/terminal-charts-patterns",
     "sketches/rubber-band-stipple/weaving-techniques",
     "sketches/terminal-ui/layered-compositions"
-   ]
-  },
-  {
-   "key": "dithering-treatment",
-   "name": "Dithering as a Treatment",
-   "note": "A halftone finish returning across unrelated systems \u2014 patchwork, sujni, growth, physarum, cluster growth, tau waves, curve particles, and fractal grids all resolved through the same dot screen.",
-   "members": [
-    "sketches/patchwork/patchwork-full",
-    "sketches/sujni/sujni-dither",
-    "sketches/tentacle/standard-dither",
-    "sketches/growth",
-    "sketches/physarum/trail",
-    "sketches/cluster-growth/basic",
-    "sketches/tau-wave/tau-wave",
-    "sketches/curve-particles/crumble-chunky",
-    "sketches/fractal-grid/b&w",
-    "sketches/gravura/rainbow"
    ]
   },
   {
@@ -602,7 +586,7 @@
   {
    "key": "windows-screens",
    "name": "Windows, Screens and Blinds",
-   "note": "The aperture from perspective windows and khidki through jali, domain-polygon and nalee screens to gravura and sliding blinds, then draggable terminal windows.",
+   "note": "The aperture from perspective windows and khidki through jali, domain-polygon and nalee screens to gravura and sliding blinds, then terminal windows used as scopes onto physarum.",
    "members": [
     "sketches/perspectives",
     "sketches/khidki",
@@ -614,13 +598,14 @@
     "sketches/clearloop/stretch",
     "sketches/blinds/blinds",
     "sketches/blinds/collapse",
-    "sketches/terminal-ui/layered-compositions"
+    "sketches/terminal-ui/layered-compositions",
+    "sketches/terminal-ui/physarum-scopes"
    ]
   },
   {
    "key": "ascii-terminal",
    "name": "Text as Image",
-   "note": "Rendering into the character grid, from maze distance fields and cluster-growth printouts through chladni type and a quine to terminal charts and a windowed glyph desktop.",
+   "note": "The character grid, from maze distance fields and cluster-growth printouts through chladni type and a quine to terminal charts, a glyph desktop, box-drawing nalee pipes and physarum scopes.",
    "members": [
     "sketches/maze-distance/ascii",
     "sketches/cluster-growth/multi-random",
@@ -630,13 +615,15 @@
     "sketches/quine",
     "sketches/terminal-charts/terminal-charts",
     "sketches/terminal-ui/layered-compositions",
-    "sketches/terminal-ui/differential-growth"
+    "sketches/terminal-ui/differential-growth",
+    "sketches/nalee/sketches/box-drawing",
+    "sketches/terminal-ui/physarum-scopes"
    ]
   },
   {
    "key": "emergence-process",
    "name": "Process as Image",
-   "note": "Simulations that draw themselves: boids, DLA, physarum, wave-function collapse, soft bodies and XOR automata, then spring reliefs, differential growth and a recursive network.",
+   "note": "Simulations that draw themselves: boids, DLA, physarum, wave-function collapse, soft bodies and XOR automata, then spring reliefs, differential growth, a recursive network and GPU physarum.",
    "members": [
     "sketches/boids/noise-field-color",
     "sketches/growth",
@@ -648,13 +635,15 @@
     "sketches/automata/xor-game-of-life",
     "sketches/canvas-ui/curve-relief",
     "sketches/terminal-ui/differential-growth",
-    "sketches/recursive-network"
+    "sketches/recursive-network",
+    "sketches/differential-growth",
+    "sketches/physarum/gpu-million"
    ]
   },
   {
    "key": "cusphanger-tiers",
    "name": "Cusphanger Contrast Tiers",
-   "note": "Contrast-tiered P3 colour from rounded arc reductions and a gradient nalee line to haberdashery bands and collapsing blinds, then its own terminal explorer and a compass network.",
+   "note": "Contrast-tiered P3 colour from arc reductions and a gradient nalee line to haberdashery bands and blinds, its own terminal explorer, then a compass network, Chladni plates, gear belts, letter holes.",
    "members": [
     "sketches/paint-without-thinking/arcs-reduction-rounded-animated-cusp",
     "sketches/nalee-one-line/basic-gradient-cusp",
@@ -662,13 +651,16 @@
     "sketches/blinds/collapse-cusp",
     "sketches/terminal-ui/palette-picker",
     "sketches/terminal-ui/cusp-hanger",
-    "sketches/recursive-network"
+    "sketches/recursive-network",
+    "sketches/chladni/plate-catalogue",
+    "sketches/gears/haberdashery-train",
+    "sketches/grey-goo/alphabet-holes"
    ]
   },
   {
    "key": "sketch-as-instrument",
    "name": "The Sketch as Instrument",
-   "note": "Sketches built to be operated: texel ramps, SAT debug views and rough grid processes, then field and tensor probes, the canvas-UI shell, flatland constructions and the terminal desktop.",
+   "note": "Sketches built to be operated: texel ramps, SAT debug views and rough grid processes, then field and tensor probes, the canvas-UI shell, flatland, the terminal desktop and physarum scopes.",
    "members": [
     "sketches/texel-colors-basic",
     "sketches/collision/spaw-debug",
@@ -680,7 +672,21 @@
     "sketches/flatland/napoleon",
     "sketches/canvas-ui/torsions",
     "sketches/terminal-ui/layered-compositions",
-    "sketches/terminal-ui/palette-picker"
+    "sketches/terminal-ui/palette-picker",
+    "sketches/terminal-ui/physarum-scopes"
+   ]
+  },
+  {
+   "key": "pen-plotter",
+   "name": "Onto the Pen Plotter",
+   "note": "Screen systems redrawn as pen paths, from a heerich weave draft and a hatched test sheet through Panna Meena and nalee voxels to two-pen Hamiltonian lines and a bipolar nalee plot.",
+   "members": [
+    "sketches/anni-weaving/heerich-plotter",
+    "sketches/penplot-example",
+    "sketches/voxels/panna-meena-p",
+    "sketches/voxels/nalee-p",
+    "sketches/nalee-one-line/pen-stroke",
+    "sketches/nalee/sketches/bipolar-plot"
    ]
   }
  ]
