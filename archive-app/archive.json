@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-10T17:37:57.930Z",
+  "generatedAt": "2026-10-11T14:53:41.637Z",
   "sketches": [
     {
       "id": "sketches/42-loc",
@@ -802,6 +802,22 @@
       }
     },
     {
+      "id": "sketches/chladni/plate-catalogue",
+      "name": "plate-catalogue",
+      "path": "src/sketches/chladni/plate-catalogue.ts",
+      "firstCommitDate": "2026-10-10T14:46:41-04:00",
+      "year": 2026,
+      "lastCommitSha": "d5c9e2c32e541d3ee1d60668c0566479150a0a6b",
+      "archivedAt": "2026-10-11T14:50:51.015Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/chladni-plate-catalogue",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1791730250/sketchbook/2026/chladni-plate-catalogue.png",
+        "version": 1791730250,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
       "id": "sketches/chladni/strokes",
       "name": "strokes",
       "path": "src/sketches/chladni/strokes.ts",
@@ -1015,12 +1031,12 @@
       "path": "src/sketches/clixo/layers.ts",
       "firstCommitDate": "2024-12-15T22:22:08-05:00",
       "year": 2024,
-      "lastCommitSha": "2afec5826eb0783fbc7abbe6f95521cb2063558c",
-      "archivedAt": "2026-05-17T19:39:39.954Z",
+      "lastCommitSha": "874841dc3ba601c9ca3ed73f917f95b1de919533",
+      "archivedAt": "2026-10-11T14:50:53.395Z",
       "cloudinary": {
         "publicId": "sketchbook/2024/clixo-layers",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779046779/sketchbook/2024/clixo-layers.png",
-        "version": 1779046779,
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1791730252/sketchbook/2024/clixo-layers.png",
+        "version": 1791730252,
         "width": 1080,
         "height": 1080
       }
@@ -1303,12 +1319,12 @@
       "path": "src/sketches/collision/spaw-debug.ts",
       "firstCommitDate": "2025-01-23T10:05:08-05:00",
       "year": 2025,
-      "lastCommitSha": "e1a95450bef4de8d2285ff5c74754d782b230f4b",
-      "archivedAt": "2026-05-17T19:40:28.576Z",
+      "lastCommitSha": "874841dc3ba601c9ca3ed73f917f95b1de919533",
+      "archivedAt": "2026-10-11T14:50:55.747Z",
       "cloudinary": {
         "publicId": "sketchbook/2025/collision-spaw-debug",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779046828/sketchbook/2025/collision-spaw-debug.png",
-        "version": 1779046828,
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1791730255/sketchbook/2025/collision-spaw-debug.png",
+        "version": 1791730255,
         "width": 1080,
         "height": 1080
       }
@@ -1479,12 +1495,12 @@
       "path": "src/sketches/convex-hull-101.ts",
       "firstCommitDate": "2023-12-20T22:39:58-05:00",
       "year": 2023,
-      "lastCommitSha": "03a8f3b90eacac057893013f3c9e330f935042f2",
-      "archivedAt": "2026-05-17T23:46:40.416Z",
+      "lastCommitSha": "874841dc3ba601c9ca3ed73f917f95b1de919533",
+      "archivedAt": "2026-10-11T14:51:00.421Z",
       "cloudinary": {
         "publicId": "sketchbook/2023/convex-hull-101",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779061600/sketchbook/2023/convex-hull-101.png",
-        "version": 1779061600,
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1791730259/sketchbook/2023/convex-hull-101.png",
+        "version": 1791730259,
         "width": 1080,
         "height": 1080
       }
@@ -1645,6 +1661,22 @@
         "publicId": "sketchbook/2026/development-of-concrete-art-fibonacci-blinds",
         "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779061645/sketchbook/2026/development-of-concrete-art-fibonacci-blinds.png",
         "version": 1779061645,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/differential-growth",
+      "name": "differential-growth",
+      "path": "src/sketches/differential-growth.ts",
+      "firstCommitDate": "2026-10-10T14:51:56-04:00",
+      "year": 2026,
+      "lastCommitSha": "dcd1751abeca23875bd9ca6e3be9386149164529",
+      "archivedAt": "2026-10-11T14:51:03.634Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/differential-growth",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1791730263/sketchbook/2026/differential-growth.png",
+        "version": 1791730263,
         "width": 1080,
         "height": 1080
       }
@@ -2322,6 +2354,22 @@
       }
     },
     {
+      "id": "sketches/gears/haberdashery-train",
+      "name": "haberdashery-train",
+      "path": "src/sketches/gears/haberdashery-train.ts",
+      "firstCommitDate": "2026-10-10T14:49:03-04:00",
+      "year": 2026,
+      "lastCommitSha": "6bfd17db4489aad0398d423b9cf4cafabd941d41",
+      "archivedAt": "2026-10-11T14:51:06.895Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/gears-haberdashery-train",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1791730266/sketchbook/2026/gears-haberdashery-train.png",
+        "version": 1791730266,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
       "id": "sketches/gravura/basic",
       "name": "basic",
       "path": "src/sketches/gravura/basic.ts",
@@ -2413,6 +2461,22 @@
         "publicId": "sketchbook/2025/gravura-rybitten-blinds",
         "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779061781/sketchbook/2025/gravura-rybitten-blinds.png",
         "version": 1779061781,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/grey-goo/alphabet-holes",
+      "name": "alphabet-holes",
+      "path": "src/sketches/grey-goo/alphabet-holes.ts",
+      "firstCommitDate": "2026-10-10T14:48:20-04:00",
+      "year": 2026,
+      "lastCommitSha": "b957a6fa2929f58861934e1938139d17c2ac9601",
+      "archivedAt": "2026-10-11T14:51:15.420Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/grey-goo-alphabet-holes",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1791730274/sketchbook/2026/grey-goo-alphabet-holes.png",
+        "version": 1791730274,
         "width": 1080,
         "height": 1080
       }
@@ -3031,12 +3095,12 @@
       "path": "src/sketches/layered-slashes.ts",
       "firstCommitDate": "2024-01-02T13:24:13-05:00",
       "year": 2024,
-      "lastCommitSha": "7ed200d372b27fefda41754b19dfb828f89b4e9f",
-      "archivedAt": "2026-05-17T23:52:00.944Z",
+      "lastCommitSha": "874841dc3ba601c9ca3ed73f917f95b1de919533",
+      "archivedAt": "2026-10-11T14:51:19.891Z",
       "cloudinary": {
         "publicId": "sketchbook/2024/layered-slashes",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779061920/sketchbook/2024/layered-slashes.png",
-        "version": 1779061920,
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1791730279/sketchbook/2024/layered-slashes.png",
+        "version": 1791730279,
         "width": 1200,
         "height": 1600
       }
@@ -3047,12 +3111,12 @@
       "path": "src/sketches/layered-slashes-2.ts",
       "firstCommitDate": "2024-01-02T13:24:13-05:00",
       "year": 2024,
-      "lastCommitSha": "550a74b044b1a16c9d078b6d282c096d8cac4e44",
-      "archivedAt": "2026-05-17T23:52:06.421Z",
+      "lastCommitSha": "874841dc3ba601c9ca3ed73f917f95b1de919533",
+      "archivedAt": "2026-10-11T14:51:24.234Z",
       "cloudinary": {
         "publicId": "sketchbook/2024/layered-slashes-2",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779061925/sketchbook/2024/layered-slashes-2.png",
-        "version": 1779061925,
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1791730283/sketchbook/2024/layered-slashes-2.png",
+        "version": 1791730283,
         "width": 1200,
         "height": 1600
       }
@@ -3095,12 +3159,12 @@
       "path": "src/sketches/map/clipped.ts",
       "firstCommitDate": "2025-02-02T20:59:08-05:00",
       "year": 2025,
-      "lastCommitSha": "cc23930337efa56459c550c4a83ece6cc9acc193",
-      "archivedAt": "2026-05-17T23:52:21.685Z",
+      "lastCommitSha": "874841dc3ba601c9ca3ed73f917f95b1de919533",
+      "archivedAt": "2026-10-11T14:51:29.087Z",
       "cloudinary": {
         "publicId": "sketchbook/2025/map-clipped",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779061941/sketchbook/2025/map-clipped.png",
-        "version": 1779061941,
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1791730288/sketchbook/2025/map-clipped.png",
+        "version": 1791730288,
         "width": 1080,
         "height": 1080
       }
@@ -3143,12 +3207,12 @@
       "path": "src/sketches/maze-distance/ascii-groups.ts",
       "firstCommitDate": "2024-01-09T10:58:19-05:00",
       "year": 2024,
-      "lastCommitSha": "ef2b167a76e1600d8b3c2c28fe8a77dc4d414f2e",
-      "archivedAt": "2026-05-17T23:52:35.921Z",
+      "lastCommitSha": "874841dc3ba601c9ca3ed73f917f95b1de919533",
+      "archivedAt": "2026-10-11T14:51:33.407Z",
       "cloudinary": {
         "publicId": "sketchbook/2024/maze-distance-ascii-groups",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779061955/sketchbook/2024/maze-distance-ascii-groups.png",
-        "version": 1779061955,
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1791730292/sketchbook/2024/maze-distance-ascii-groups.png",
+        "version": 1791730292,
         "width": 1080,
         "height": 1080
       }
@@ -3159,12 +3223,12 @@
       "path": "src/sketches/maze-distance/ascii-more-colors.ts",
       "firstCommitDate": "2024-01-09T10:58:19-05:00",
       "year": 2024,
-      "lastCommitSha": "ef2b167a76e1600d8b3c2c28fe8a77dc4d414f2e",
-      "archivedAt": "2026-05-17T23:52:40.593Z",
+      "lastCommitSha": "874841dc3ba601c9ca3ed73f917f95b1de919533",
+      "archivedAt": "2026-10-11T14:51:37.816Z",
       "cloudinary": {
         "publicId": "sketchbook/2024/maze-distance-ascii-more-colors",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779061960/sketchbook/2024/maze-distance-ascii-more-colors.png",
-        "version": 1779061960,
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1791730297/sketchbook/2024/maze-distance-ascii-more-colors.png",
+        "version": 1791730297,
         "width": 1080,
         "height": 1080
       }
@@ -3239,12 +3303,12 @@
       "path": "src/sketches/maze-distance/path-finder.ts",
       "firstCommitDate": "2024-01-09T10:58:19-05:00",
       "year": 2024,
-      "lastCommitSha": "ef2b167a76e1600d8b3c2c28fe8a77dc4d414f2e",
-      "archivedAt": "2026-05-17T23:53:07.985Z",
+      "lastCommitSha": "874841dc3ba601c9ca3ed73f917f95b1de919533",
+      "archivedAt": "2026-10-11T14:51:42.301Z",
       "cloudinary": {
         "publicId": "sketchbook/2024/maze-distance-path-finder",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779061987/sketchbook/2024/maze-distance-path-finder.png",
-        "version": 1779061987,
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1791730301/sketchbook/2024/maze-distance-path-finder.png",
+        "version": 1791730301,
         "width": 1080,
         "height": 1080
       }
@@ -3255,12 +3319,28 @@
       "path": "src/sketches/maze-distance/space-filler.ts",
       "firstCommitDate": "2024-01-09T10:58:19-05:00",
       "year": 2024,
-      "lastCommitSha": "4e2948c8e1e90c507c0117ad2b5b8ff9a102ed9d",
-      "archivedAt": "2026-05-17T23:53:12.450Z",
+      "lastCommitSha": "874841dc3ba601c9ca3ed73f917f95b1de919533",
+      "archivedAt": "2026-10-11T14:51:47.198Z",
       "cloudinary": {
         "publicId": "sketchbook/2024/maze-distance-space-filler",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779061992/sketchbook/2024/maze-distance-space-filler.png",
-        "version": 1779061992,
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1791730306/sketchbook/2024/maze-distance-space-filler.png",
+        "version": 1791730306,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/maze-distance/stepwell-voxels",
+      "name": "stepwell-voxels",
+      "path": "src/sketches/maze-distance/stepwell-voxels.ts",
+      "firstCommitDate": "2026-10-10T14:48:15-04:00",
+      "year": 2026,
+      "lastCommitSha": "088f15e8992763b2ca8ff9ca4cbe176d950973ec",
+      "archivedAt": "2026-10-11T14:51:49.425Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/maze-distance-stepwell-voxels",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1791730308/sketchbook/2026/maze-distance-stepwell-voxels.png",
+        "version": 1791730308,
         "width": 1080,
         "height": 1080
       }
@@ -3319,12 +3399,12 @@
       "path": "src/sketches/nalee-hulls/a.ts",
       "firstCommitDate": "2025-09-15T12:04:53-04:00",
       "year": 2025,
-      "lastCommitSha": "1fcdcdda481797c0fd8a1f4527a34ce39c9be9a1",
-      "archivedAt": "2026-05-17T23:53:31.113Z",
+      "lastCommitSha": "874841dc3ba601c9ca3ed73f917f95b1de919533",
+      "archivedAt": "2026-10-11T14:51:54.009Z",
       "cloudinary": {
         "publicId": "sketchbook/2025/nalee-hulls-a",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779062010/sketchbook/2025/nalee-hulls-a.png",
-        "version": 1779062010,
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1791730313/sketchbook/2025/nalee-hulls-a.png",
+        "version": 1791730313,
         "width": 1080,
         "height": 1080
       }
@@ -3666,6 +3746,22 @@
       }
     },
     {
+      "id": "sketches/nalee-one-line/pen-stroke",
+      "name": "pen-stroke",
+      "path": "src/sketches/nalee-one-line/pen-stroke.ts",
+      "firstCommitDate": "2026-10-10T14:50:06-04:00",
+      "year": 2026,
+      "lastCommitSha": "7819291861656ae3cc2183a55db4b84d00dd078b",
+      "archivedAt": "2026-10-11T14:51:55.673Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/nalee-one-line-pen-stroke",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1791730315/sketchbook/2026/nalee-one-line-pen-stroke.png",
+        "version": 1791730315,
+        "width": 1080,
+        "height": 1527
+      }
+    },
+    {
       "id": "sketches/nalee-one-line/stacked",
       "name": "stacked",
       "path": "src/sketches/nalee-one-line/stacked.ts",
@@ -3741,6 +3837,54 @@
         "publicId": "sketchbook/2024/nalee-sketches-basic-found-colors",
         "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779062112/sketchbook/2024/nalee-sketches-basic-found-colors.png",
         "version": 1779062112,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/nalee/sketches/bipolar",
+      "name": "bipolar",
+      "path": "src/sketches/nalee/sketches/bipolar.ts",
+      "firstCommitDate": "2026-10-10T14:48:55-04:00",
+      "year": 2026,
+      "lastCommitSha": "3a8753064183e2ec44076a53f1d007070bc79da9",
+      "archivedAt": "2026-10-11T14:52:01.687Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/nalee-sketches-bipolar",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1791730320/sketchbook/2026/nalee-sketches-bipolar.png",
+        "version": 1791730320,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/nalee/sketches/bipolar-plot",
+      "name": "bipolar-plot",
+      "path": "src/sketches/nalee/sketches/bipolar-plot.ts",
+      "firstCommitDate": "2026-10-10T14:48:55-04:00",
+      "year": 2026,
+      "lastCommitSha": "542fc6db7f7a38959615e731ac2e9571dab3fdc5",
+      "archivedAt": "2026-10-11T14:52:05.373Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/nalee-sketches-bipolar-plot",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1791730325/sketchbook/2026/nalee-sketches-bipolar-plot.png",
+        "version": 1791730325,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/nalee/sketches/box-drawing",
+      "name": "box-drawing",
+      "path": "src/sketches/nalee/sketches/box-drawing.ts",
+      "firstCommitDate": "2026-10-10T14:47:26-04:00",
+      "year": 2026,
+      "lastCommitSha": "7c927dc1e8f107e5cc7a7742838772c15b4c47db",
+      "archivedAt": "2026-10-11T14:52:07.967Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/nalee-sketches-box-drawing",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1791730327/sketchbook/2026/nalee-sketches-box-drawing.png",
+        "version": 1791730327,
         "width": 1080,
         "height": 1080
       }
@@ -4087,12 +4231,12 @@
       "path": "src/sketches/next-move/color-variations.ts",
       "firstCommitDate": "2024-11-18T10:12:11-05:00",
       "year": 2024,
-      "lastCommitSha": "ef2b167a76e1600d8b3c2c28fe8a77dc4d414f2e",
-      "archivedAt": "2026-05-17T23:57:15.026Z",
+      "lastCommitSha": "874841dc3ba601c9ca3ed73f917f95b1de919533",
+      "archivedAt": "2026-10-11T14:52:17.572Z",
       "cloudinary": {
         "publicId": "sketchbook/2024/next-move-color-variations",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779062234/sketchbook/2024/next-move-color-variations.png",
-        "version": 1779062234,
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1791730336/sketchbook/2024/next-move-color-variations.png",
+        "version": 1791730336,
         "width": 1080,
         "height": 1080
       }
@@ -4119,12 +4263,12 @@
       "path": "src/sketches/next-move/multi-colors.ts",
       "firstCommitDate": "2024-11-18T10:12:11-05:00",
       "year": 2024,
-      "lastCommitSha": "ef2b167a76e1600d8b3c2c28fe8a77dc4d414f2e",
-      "archivedAt": "2026-05-17T23:57:25.607Z",
+      "lastCommitSha": "874841dc3ba601c9ca3ed73f917f95b1de919533",
+      "archivedAt": "2026-10-11T14:52:26.834Z",
       "cloudinary": {
         "publicId": "sketchbook/2024/next-move-multi-colors",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779062244/sketchbook/2024/next-move-multi-colors.png",
-        "version": 1779062244,
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1791730345/sketchbook/2024/next-move-multi-colors.png",
+        "version": 1791730345,
         "width": 1080,
         "height": 1080
       }
@@ -4615,12 +4759,12 @@
       "path": "src/sketches/quantum-equivalence/rybitten-monochrome-rainbow.ts",
       "firstCommitDate": "2025-12-06T14:17:55-05:00",
       "year": 2025,
-      "lastCommitSha": "af763eb9e4fd19aecdf4eb05fe9327e92c381388",
-      "archivedAt": "2026-05-17T23:59:09.852Z",
+      "lastCommitSha": "874841dc3ba601c9ca3ed73f917f95b1de919533",
+      "archivedAt": "2026-10-11T14:52:47.926Z",
       "cloudinary": {
         "publicId": "sketchbook/2025/quantum-equivalence-rybitten-monochrome-rainbow",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779062349/sketchbook/2025/quantum-equivalence-rybitten-monochrome-rainbow.png",
-        "version": 1779062349,
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1791730367/sketchbook/2025/quantum-equivalence-rybitten-monochrome-rainbow.png",
+        "version": 1791730367,
         "width": 1080,
         "height": 1080
       }
@@ -4647,12 +4791,12 @@
       "path": "src/sketches/quantum-equivalence/rybitten-rgb-rainbow.ts",
       "firstCommitDate": "2025-12-06T14:17:55-05:00",
       "year": 2025,
-      "lastCommitSha": "af763eb9e4fd19aecdf4eb05fe9327e92c381388",
-      "archivedAt": "2026-05-17T19:51:20.664Z",
+      "lastCommitSha": "874841dc3ba601c9ca3ed73f917f95b1de919533",
+      "archivedAt": "2026-10-11T14:52:50.418Z",
       "cloudinary": {
         "publicId": "sketchbook/2025/quantum-equivalence-rybitten-rgb-rainbow",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779047480/sketchbook/2025/quantum-equivalence-rybitten-rgb-rainbow.png",
-        "version": 1779047480,
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1791730369/sketchbook/2025/quantum-equivalence-rybitten-rgb-rainbow.png",
+        "version": 1791730369,
         "width": 1080,
         "height": 1080
       }
@@ -4743,12 +4887,12 @@
       "path": "src/sketches/recursive-network.ts",
       "firstCommitDate": "2026-09-21T11:03:46-04:00",
       "year": 2026,
-      "lastCommitSha": "f1cb830f94727be5be93f8135c4b1f760e6a0d9c",
-      "archivedAt": "2026-09-22T19:51:54.831Z",
+      "lastCommitSha": "a744ee22410c1dbfdf4f4a0262bfd68cb7e9eb75",
+      "archivedAt": "2026-10-11T14:52:54.232Z",
       "cloudinary": {
         "publicId": "sketchbook/2026/recursive-network",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1790106714/sketchbook/2026/recursive-network.png",
-        "version": 1790106714,
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1791730373/sketchbook/2026/recursive-network.png",
+        "version": 1791730373,
         "width": 1080,
         "height": 1080
       }
@@ -4807,12 +4951,12 @@
       "path": "src/sketches/rubber-band-stipple/haberdashery.ts",
       "firstCommitDate": "2026-05-19T10:30:18-04:00",
       "year": 2026,
-      "lastCommitSha": "0baefdd11e611f4a931814d6f31c3395d0f56934",
-      "archivedAt": "2026-05-25T15:42:21.410Z",
+      "lastCommitSha": "874841dc3ba601c9ca3ed73f917f95b1de919533",
+      "archivedAt": "2026-10-11T14:52:57.948Z",
       "cloudinary": {
         "publicId": "sketchbook/2026/rubber-band-stipple-haberdashery",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779723740/sketchbook/2026/rubber-band-stipple-haberdashery.png",
-        "version": 1779723740,
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1791730377/sketchbook/2026/rubber-band-stipple-haberdashery.png",
+        "version": 1791730377,
         "width": 1080,
         "height": 1080
       }
@@ -5143,12 +5287,12 @@
       "path": "src/sketches/slashes.ts",
       "firstCommitDate": "2024-01-02T13:24:13-05:00",
       "year": 2024,
-      "lastCommitSha": "7ed200d372b27fefda41754b19dfb828f89b4e9f",
-      "archivedAt": "2026-05-17T19:51:57.112Z",
+      "lastCommitSha": "874841dc3ba601c9ca3ed73f917f95b1de919533",
+      "archivedAt": "2026-10-11T14:53:00.861Z",
       "cloudinary": {
         "publicId": "sketchbook/2024/slashes",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779047516/sketchbook/2024/slashes.png",
-        "version": 1779047516,
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1791730380/sketchbook/2024/slashes.png",
+        "version": 1791730380,
         "width": 1600,
         "height": 1200
       }
@@ -5207,12 +5351,12 @@
       "path": "src/sketches/soft-body/verlet-101.ts",
       "firstCommitDate": "2025-01-15T21:03:20-05:00",
       "year": 2025,
-      "lastCommitSha": "68dfe852b24ab1158b778f63472f115e46a135b2",
-      "archivedAt": "2026-05-18T00:00:30.634Z",
+      "lastCommitSha": "874841dc3ba601c9ca3ed73f917f95b1de919533",
+      "archivedAt": "2026-10-11T14:53:06.127Z",
       "cloudinary": {
         "publicId": "sketchbook/2025/soft-body-verlet-101",
-        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779062430/sketchbook/2025/soft-body-verlet-101.png",
-        "version": 1779062430,
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1791730385/sketchbook/2025/soft-body-verlet-101.png",
+        "version": 1791730385,
         "width": 1080,
         "height": 1080
       }
@@ -5759,6 +5903,22 @@
         "version": 1790106723,
         "width": 1080,
         "height": 1080
+      }
+    },
+    {
+      "id": "sketches/terminal-ui/physarum-scopes",
+      "name": "physarum-scopes",
+      "path": "src/sketches/terminal-ui/physarum-scopes.ts",
+      "firstCommitDate": "2026-10-10T14:48:46-04:00",
+      "year": 2026,
+      "lastCommitSha": "35afd40f93af99a8f7cf8f0d87f73c2e57cbab99",
+      "archivedAt": "2026-10-11T14:53:09.094Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/terminal-ui-physarum-scopes",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1791730388/sketchbook/2026/terminal-ui-physarum-scopes.png",
+        "version": 1791730388,
+        "width": 1600,
+        "height": 1000
       }
     },
     {
