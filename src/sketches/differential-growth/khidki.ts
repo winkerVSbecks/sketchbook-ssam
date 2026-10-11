@@ -10,12 +10,13 @@
  * lozenges and the darts between them — are grown, the rest walked; a noise
  * field gathering each kind into patches is the alternative.
  *
- * Colour: slate ground (paper when off). The fill keeps to two hues off the
- * ring — the base for the growth, the next for the walks — and to quiet
- * values: the growth in the mid tier, the walks in the low, so the grill,
+ * Colour: slate ground (paper when off), a fresh palette every load. The
+ * fill keeps to two hues off the ring — the base for the growth, the next
+ * for the walks — at one quiet contrast level (the mid tier), so the grill,
  * drawn in the high-contrast tier of the hues after those, stands out over
- * them. Circles match the frame's top as in the reference. Every parameter lives in the tweakpane: layout and growth
- * rebuild from the same seed, colour only redraws.
+ * them. Circles match the frame's top as in the reference. Every parameter
+ * lives in the tweakpane: layout and growth rebuild from the same seed,
+ * colour only redraws.
  */
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
@@ -70,7 +71,8 @@ interface Params {
   hues: number;
   angle: number;
   saturation: number;
-  /** WCAG targets against the ground: grill (high tier), growth (mid), walks (low). */
+  /** WCAG targets against the ground: grill (high tier); `accent` is the
+   * fill's (mid tier), shared by growth and walks; `wash` the blocks' outlines. */
   ink: number;
   accent: number;
   wash: number;
@@ -105,7 +107,7 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     angle: 51,
     saturation: 1,
     ink: 12,
-    accent: 3.5,
+    accent: 3,
     wash: 2,
     reverse: true,
     debug: false,
@@ -167,9 +169,10 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     const order = palette.ring.slice(0, n).map((h) => palette.hues.indexOf(h));
     const at = (j: number) => order[j % n];
     colors.bg = palette.bg.css;
-    // Fills recede (mid growth, low walks); the grill takes the high tier.
+    // Fills recede to one contrast level (the mid tier) in their two hues;
+    // the grill takes the high tier.
     colors.ink = mid[at(0)].css;
-    colors.walks = low[at(1)].css;
+    colors.walks = mid[at(1)].css;
     colors.bars = high[at(2)].css;
     colors.circles = high[at(3)].css;
     colors.diamonds = high[at(4)].css;
@@ -238,8 +241,7 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   onInput(colour.addBinding(params, 'angle', { min: 1, max: 180, step: 1, label: 'hue Δ' }), repaint);
   onInput(colour.addBinding(params, 'saturation', { min: 0, max: 1, step: 0.01 }), repaint);
   onInput(colour.addBinding(params, 'ink', { min: 4.5, max: 18, step: 0.1, label: 'grill (:1)' }), repaint);
-  onInput(colour.addBinding(params, 'accent', { min: 1.2, max: 9, step: 0.1, label: 'growth (:1)' }), repaint);
-  onInput(colour.addBinding(params, 'wash', { min: 1.1, max: 6, step: 0.1, label: 'walks (:1)' }), repaint);
+  onInput(colour.addBinding(params, 'accent', { min: 1.2, max: 9, step: 0.1, label: 'fill (:1)' }), repaint);
   colour.addButton({ title: 'New palette' }).on('click', () => {
     params.paletteSeed = Random.getRandomSeed();
     params.hue = Math.round(Random.range(0, 360));
