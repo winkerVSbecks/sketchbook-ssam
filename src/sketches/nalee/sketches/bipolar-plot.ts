@@ -15,8 +15,14 @@ import type { Config, DomainToWorld, Node } from '../types';
 /**
  * bipolar-plot — fork of bipolar for the pen plotter: the gap between paths
  * is a fixed width in millimetres on the plotted sheet, everywhere, so every
- * gap plots the same. Each band is its cell minus the gap; bands vanish where
- * a cell is smaller than the gap, and the focus rings take the same gap.
+ * gap plots the same. Each band is its cell minus the gap.
+ *
+ * Cells near the foci (and along the segment between them) are smaller than
+ * a gap plus a pen, so a single grid leaves them empty. The grid here is
+ * multi-level instead: a quadtree over (τ, σ) whose coarse cells split only
+ * while every child stays at least gap + minLine pens wide. Each level is
+ * walked by its own nalee system, so the middle fills with wider paths and
+ * the outer field keeps the full resolution.
  *
  * bipolar — nalee pipe walkers on a bipolar grid. The cells are (τ, σ) steps
  * of bipolar coordinates around two foci: constant τ draws circles round each
@@ -48,10 +54,10 @@ interface Params {
   /** Ground left round the field, as a fraction of the canvas width. */
   margin: number;
   walkers: number;
-  /** Concentric rings filling the empty disc round each focus (0 = none). */
-  rings: number;
+  /** Smallest line the grid may produce, in pens: cells coarsen below gap + this. */
+  minLine: number;
 
-  /** Gap between neighbouring paths (and rings) on the plotted sheet, mm. */
+  /** Gap between neighbouring paths on the plotted sheet, mm. */
   gapMm: number;
   /** Swap ink and ground. */
   invert: boolean;
@@ -70,7 +76,7 @@ const params: Params = {
   focal: 0.24,
   margin: 0.06,
   walkers: 24,
-  rings: 8,
+  minLine: 1.5,
   gapMm: 0.8,
   invert: false,
   seed: Random.getRandomSeed(),
@@ -215,53 +221,6 @@ function sampleBand(
     const d = Math.hypot(dx, dy) || 1;
     return { p, w, t: [dx / d, dy / d], n: [-dy / d, dx / d] };
   });
-}
-
-/**
- * Concentric rings round one focus: `count` rings dividing a disc of radius
- * `rMax` evenly, each its pitch minus `gapPx` wide, as closed bands.
- */
-function focusRings(focus: Point, side: 1 | -1, rMax: number, count: number, gapPx: number): Band[] {
-  const pitch = rMax / count;
-  const w = pitch - gapPx;
-  if (w <= 0) return [];
-  const out: Band[] = [];
-  for (let k = 0; k < count; k++) {
-    const r = rMax - pitch * (k + 0.5);
-    if (r <= w / 2) break;
-    const n = Math.max(24, Math.ceil((Math.PI * 2 * r) / SAMPLE_PX));
-    out.push(
-      Array.from({ length: n + 1 }, (_, i) => {
-        const th = (i / n) * Math.PI * 2 * side;
-        const ct = Math.cos(th);
-        const st = Math.sin(th);
-        const t: Point = [-st * side, ct * side];
-        return { p: [focus[0] + ct * r, focus[1] + st * r] as Point, w, t, n: [-t[1], t[0]] as Point };
-      }),
-    );
-  }
-  return out;
-}
-
-/**
- * Radius of the largest focus-centred circle inside the region where bands
- * vanish (cell < gap). That boundary is cosh τ − cos σ = a·Δ / gap: sample σ,
- * solve τ, and take the nearest boundary point to the focus. Clamped to the
- * grid's own inner edge (τ = tauEdge) when the gap is narrower than the cells.
- */
-function voidRadius(a: number, step: number, gapPx: number, tauEdge: number): number {
-  const k = (a * step) / gapPx;
-  const edge = (t: number) => a / Math.sinh(t) - (a / Math.tanh(t) - a);
-  let r = Infinity;
-  for (let i = 0; i <= 720; i++) {
-    const sigma = -Math.PI + (i / 720) * Math.PI * 2;
-    const c = k + Math.cos(sigma);
-    if (c <= 1) continue;
-    const tau = Math.min(tauEdge, Math.acosh(c));
-    const [x, y] = bipolarToXY(a, tau, sigma);
-    r = Math.min(r, Math.hypot(x - a, y));
-  }
-  return Number.isFinite(r) ? Math.max(r, edge(tauEdge)) : edge(tauEdge);
 }
 
 const offset = (s: Sample, k: number): Point => [s.p[0] + s.n[0] * k, s.p[1] + s.n[1] * k];
@@ -445,31 +404,50 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
     colors.ink = dark;
   };
 
-  /** Rebuild the grid, its clip, the walkers and their bands from `params`. */
+  /** Rebuild the multi-level grid, its walks and their bands from `params`. */
   const build = () => {
     Random.setSeed(params.seed);
     const step = (Math.PI * 2) / params.sigmaRes;
-    const tauSteps = Math.max(1, Math.round(params.tauMax / step));
     const a = width * params.focal;
+    const { scale } = sheet();
+    // The gap is fixed on paper: convert mm → canvas px through the sheet.
+    const gapPx = params.gapMm / 10 / scale;
+    const penPxNow = params.penMm / 10 / scale;
+    const minCell = gapPx + params.minLine * penPxNow;
 
-    // Grid x ↔ τ (−tauMax … tauMax), grid y ↔ σ (−π … π). σ's seam at ±π
-    // lies on the segment between the foci and is left unjoined.
-    const domainToWorld: DomainToWorld = (x, y) => {
-      const [px, py] = bipolarToXY(a, (x - tauSteps) * step, -Math.PI + (y + 0.5) * step);
-      return [cx + px, cy + py];
+    // Levels: level k has step·2^k. The top level keeps at least 4 σ cells.
+    const top = Math.max(0, Math.min(6, Math.floor(Math.log2(params.sigmaRes / 4))));
+    const stepOf = (k: number) => step * 2 ** k;
+    const size = (k: number, i: number, j: number) => {
+      const s = stepOf(k);
+      const tau = (i + 0.5) * s;
+      const sigma = -Math.PI + (j + 0.5) * s;
+      return (a * s) / (Math.cosh(tau) - Math.cos(sigma));
     };
-    // Bipolar coordinates are conformal with scale factor a / (cosh τ − cos σ),
-    // so a cell's side length is exactly that times the step, anywhere.
-    const cellWidth: CellWidth = (x, y) =>
-      (a * step) / (Math.cosh((x - tauSteps) * step) - Math.cos(-Math.PI + (y + 0.5) * step));
 
-    const nodes: Node[] = [];
-    for (let y = 0; y < params.sigmaRes; y++) {
-      for (let x = 0; x <= tauSteps * 2; x++) {
-        const [worldX, worldY] = domainToWorld(x, y);
-        nodes.push({ x, y, occupied: false, id: xyToId(x, y), worldX, worldY });
+    // Quadtree over (τ, σ): split a cell while all four children stay ≥ minCell.
+    const leaves: [number, number][][] = Array.from({ length: top + 1 }, () => []);
+    const visit = (k: number, i: number, j: number) => {
+      const tauC = (i + 0.5) * stepOf(k);
+      if (Math.abs(tauC) > params.tauMax) return;
+      if (k > 0) {
+        const kids: [number, number][] = [
+          [i * 2, j * 2],
+          [i * 2 + 1, j * 2],
+          [i * 2, j * 2 + 1],
+          [i * 2 + 1, j * 2 + 1],
+        ];
+        if (kids.every(([ci, cj]) => size(k - 1, ci, cj) >= minCell)) {
+          for (const [ci, cj] of kids) visit(k - 1, ci, cj);
+          return;
+        }
       }
-    }
+      leaves[k].push([i, j]);
+    };
+    const nTop = Math.ceil(params.tauMax / stepOf(top));
+    const rowsTop = Math.round(params.sigmaRes / 2 ** top);
+    for (let i = -nTop; i < nTop; i++) for (let j = 0; j < rowsTop; j++) visit(top, i, j);
+
     // σ near 0 with τ near 0 runs off to infinity: keep only what lands on the sheet.
     const m = width * params.margin;
     const frame: Point[] = [
@@ -478,41 +456,59 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
       [width - m, height - m],
       [m, height - m],
     ];
-    const domain = clipDomainWithWorldCoords(nodes, frame);
 
-    const config = {
-      resolution: [tauSteps * 2, params.sigmaRes - 1],
-      size: 1,
-      stepSize: 1,
-      walkerCount: params.walkers,
-      padding: 0,
-      // The walk only; the bands are drawn here, not by nalee's path styles.
-      pathStyle: 'solidStyle',
-      flat: true,
-    } satisfies Config;
+    type Level = {
+      domain: Node[];
+      toWorld: DomainToWorld;
+      cellWidth: CellWidth;
+      off: number;
+      rows: number;
+    };
+    const levels: Level[] = leaves.map((cells, k) => {
+      const s = stepOf(k);
+      const off = nTop * 2 ** (top - k); // grid x = i + off, so x ≥ 0
+      const rows = Math.round(params.sigmaRes / 2 ** k);
+      const toWorld: DomainToWorld = (x, y) => {
+        const [px, py] = bipolarToXY(a, (x - off + 0.5) * s, -Math.PI + (y + 0.5) * s);
+        return [cx + px, cy + py];
+      };
+      // Conformal: a cell's side is a·s / (cosh τ − cos σ), anywhere.
+      const cellWidth: CellWidth = (x, y) =>
+        (a * s) / (Math.cosh((x - off + 0.5) * s) - Math.cos(-Math.PI + (y + 0.5) * s));
+      const nodes: Node[] = cells.map(([i, j]) => {
+        const x = i + off;
+        const [worldX, worldY] = toWorld(x, j);
+        return { x, y: j, occupied: false, id: xyToId(x, j), worldX, worldY };
+      });
+      return { domain: clipDomainWithWorldCoords(nodes, frame), toWorld, cellWidth, off, rows };
+    });
 
-    const system = createNaleeSystem(domain, config, domainToWorld, [colors.ink], colors.ground);
-    // The gap is fixed on paper: convert mm → canvas px through the sheet.
-    const gapPx = params.gapMm / 10 / sheet().scale;
-    const share: LineShare = (gx, gy) => Math.max(0, 1 - gapPx / cellWidth(gx, gy));
-    bands = system.walkers
-      .flatMap((w) => walkerToPaths(w))
-      .filter((path) => path.length > 1)
-      .map((path) => sampleBand(filletGrid(path as Point[], share), domainToWorld, cellWidth, share))
-      // Drop bands that never get wider than a hairline (cells smaller than the gap).
-      .filter((band) => band.length > 1 && Math.max(...band.map((s) => s.w)) > 0.5);
-
-    if (params.rings > 0) {
-      // The grid's inner edge sits half a cell beyond its last column.
-      const tauEdge = (tauSteps + 0.5) * step;
-      // Fill the hole the vanished bands leave, less one gap so the
-      // outermost ring stands clear of the last band.
-      const rMax = voidRadius(a, step, gapPx, tauEdge) - gapPx;
-      bands.push(
-        ...focusRings([cx + a, cy], 1, rMax, params.rings, gapPx),
-        ...focusRings([cx - a, cy], -1, rMax, params.rings, gapPx),
+    const total = levels.reduce((n, l) => n + l.domain.length, 0) || 1;
+    bands = levels.flatMap((level) => {
+      if (level.domain.length < 2) return [];
+      const config = {
+        resolution: [level.off * 2, level.rows - 1],
+        size: 1,
+        stepSize: 1,
+        walkerCount: Math.max(1, Math.round((params.walkers * level.domain.length) / total)),
+        padding: 0,
+        // The walk only; the bands are drawn here, not by nalee's path styles.
+        pathStyle: 'solidStyle',
+        flat: true,
+      } satisfies Config;
+      const system = createNaleeSystem(level.domain, config, level.toWorld, [colors.ink], colors.ground);
+      const share: LineShare = (gx, gy) => Math.max(0, 1 - gapPx / level.cellWidth(gx, gy));
+      return (
+        system.walkers
+          .flatMap((w) => walkerToPaths(w))
+          .filter((path) => path.length > 1)
+          .map((path) =>
+            sampleBand(filletGrid(path as Point[], share), level.toWorld, level.cellWidth, share),
+          )
+          // Drop bands that never get wider than a hairline.
+          .filter((band) => band.length > 1 && Math.max(...band.map((b) => b.w)) > 0.5)
       );
-    }
+    });
   };
 
   const rebuild = () => {
@@ -539,7 +535,7 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
 
   const paths = pane.addFolder({ title: 'Paths' });
   onInput(paths.addBinding(params, 'walkers', { min: 1, max: 80, step: 1 }));
-  onInput(paths.addBinding(params, 'rings', { min: 0, max: 40, step: 1, label: 'rings at foci' }));
+  onInput(paths.addBinding(params, 'minLine', { min: 1, max: 6, step: 0.25, label: 'min line (× pen)' }));
   onInput(paths.addBinding(params, 'gapMm', { min: 0.1, max: 5, step: 0.05, label: 'gap (mm)' }));
 
   const colour = pane.addFolder({ title: 'Colour' });
@@ -558,7 +554,7 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
     rebuild, // the sheet sets how many px a mm of gap is
   );
   onInput(plotFolder.addBinding(params, 'plotMargin', { min: 0, max: 6, step: 0.1, label: 'margin (cm)' }), rebuild);
-  onInput(plotFolder.addBinding(params, 'penMm', { min: 0.1, max: 3, step: 0.05, label: 'pen (mm)' }), redraw);
+  onInput(plotFolder.addBinding(params, 'penMm', { min: 0.1, max: 3, step: 0.05, label: 'pen (mm)' }), rebuild); // the pen sets where cells coarsen
   onInput(
     plotFolder.addBinding(params, 'plotMode', {
       label: 'draws',
