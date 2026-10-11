@@ -11,7 +11,7 @@
  * packed the domain's shape, corridors and dead ends included.
  *
  * It is drawn as one thing: a single closed band of constant width, one ink
- * on its own ground (cusphanger), the domain only as a low-contrast hairline.
+ * on its own ground (cusphanger); `DEBUG` adds the domain as a hairline.
  */
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
@@ -34,6 +34,8 @@ const WARMUP_MS = 6000;
 const STEPS_PER_FRAME = 2;
 /** Band width, as a fraction of the repulsion radius. */
 const BAND = 0.55;
+/** Draw each region's outline as a hairline, to see the domain the curve is held in. */
+const DEBUG = false;
 
 type Cells = boolean[][];
 
@@ -188,14 +190,16 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
     context.save();
     context.translate(ox, oy);
 
-    context.strokeStyle = hairline;
-    context.lineWidth = 1;
-    context.beginPath();
-    for (const [x0, y0, x1, y1] of edges) {
-      context.moveTo(x0 * CELL * scale, y0 * CELL * scale);
-      context.lineTo(x1 * CELL * scale, y1 * CELL * scale);
+    if (DEBUG) {
+      context.strokeStyle = hairline;
+      context.lineWidth = 1;
+      context.beginPath();
+      for (const [x0, y0, x1, y1] of edges) {
+        context.moveTo(x0 * CELL * scale, y0 * CELL * scale);
+        context.lineTo(x1 * CELL * scale, y1 * CELL * scale);
+      }
+      context.stroke();
     }
-    context.stroke();
 
     const nodes = growth.state.nodes;
     context.strokeStyle = ink;

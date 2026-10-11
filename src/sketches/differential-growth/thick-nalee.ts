@@ -22,6 +22,8 @@ const WARMUP_MS = 6000;
 const STEPS_PER_FRAME = 2;
 /** Curve width, as a fraction of the repulsion radius. */
 const STROKE = 0.55;
+/** Draw each region's outline as a hairline, to see the bands the curves are held in. */
+const DEBUG = false;
 
 export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   if (import.meta.hot) {
@@ -72,14 +74,16 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     context.save();
     context.translate((width - field.extent * scale) / 2, (height - field.extent * scale) / 2);
 
-    context.strokeStyle = hairline;
-    context.lineWidth = 1;
-    context.beginPath();
-    for (const [x0, y0, x1, y1] of field.edges) {
-      context.moveTo(x0 * scale, y0 * scale);
-      context.lineTo(x1 * scale, y1 * scale);
+    if (DEBUG) {
+      context.strokeStyle = hairline;
+      context.lineWidth = 1;
+      context.beginPath();
+      for (const [x0, y0, x1, y1] of field.edges) {
+        context.moveTo(x0 * scale, y0 * scale);
+        context.lineTo(x1 * scale, y1 * scale);
+      }
+      context.stroke();
     }
-    context.stroke();
 
     context.lineJoin = 'round';
     context.lineCap = 'round';
