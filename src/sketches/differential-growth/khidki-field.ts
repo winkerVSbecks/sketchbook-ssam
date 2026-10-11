@@ -3,8 +3,9 @@
  * vertical and horizontal bars, a lozenge across every cell joining its two
  * circle corners, circles and diamonds alternating on the crossings — laid
  * over the opening of a rectangular frame, and every block the grill leaves
- * open filled with either nalee walks or a differential-growth curve, the
- * two kinds gathered into patches by a noise field.
+ * open filled with either nalee walks or a differential-growth curve: whole
+ * lozenge stars grown and the rest walked, or the two gathered into noise
+ * patches.
  *
  * Proportions follow the reference: in units of the bar pitch `s`, the
  * opening is 5.4s × 7.1s, five vertical bars from 0.7s and seven horizontal
@@ -105,6 +106,10 @@ function segDist([px, py]: Pt, [[ax, ay], [bx, by]]: Segment): number {
 }
 
 export type BlockKind = 'growth' | 'nalee';
+/** How blocks are assigned a kind: whole lozenge stars, or noise patches. */
+export type FillPattern = 'stars' | 'patches';
+/** Which stars of the chosen set are grown. */
+export type StarPick = 'all' | 'checker' | 'random';
 
 export interface Block {
   id: number;
@@ -125,9 +130,13 @@ export interface KhidkiField {
 }
 
 export interface FieldOptions extends GrillOptions {
-  /** Share of blocks grown rather than walked. */
+  pattern: FillPattern;
+  /** Stars: centre on circles at odd or even grill positions. */
+  starSet: 'odd' | 'even';
+  starPick: StarPick;
+  /** Patches: share of blocks grown rather than walked. */
   growthShare: number;
-  /** Size of the patches blocks of one kind gather into, in bar pitches. */
+  /** Patches: size of the patches blocks of one kind gather into, in bar pitches. */
   groupSize: number;
   /** Repulsion radius: the curve's spacing, in world units. */
   radius: number;
@@ -198,16 +207,8 @@ export function createKhidkiField(o: FieldOptions): KhidkiField {
     blocks.push({ id, kind: 'nalee', area: cells.length * RES * RES });
   }
 
-  // Kinds come in patches, not a coin toss per block: sample smooth noise at
-  // every block's centre and grow the lowest `growthShare` of them, so
-  // neighbours mostly share a fill and the share stays exact.
-  const freq = 1 / (Math.max(0.1, o.groupSize) * PITCH);
-  const shift = Random.range(0, 1000);
-  const ranked = blocks
-    .map((b) => ({ b, n: Random.noise2D(centres[b.id][0] * freq + shift, centres[b.id][1] * freq) }))
-    .sort((p, q) => p.n - q.n);
-  const grown = Math.round(blocks.length * o.growthShare);
-  ranked.forEach(({ b }, i) => (b.kind = i < grown ? 'growth' : 'nalee'));
+  if (o.pattern === 'stars') assignStars(blocks, centres, o.starSet, o.starPick);
+  else assignPatches(blocks, centres, o.growthShare, o.groupSize);
 
   // Depth of every cell: steps to the nearest closed cell or the edge, so a
   // curve can start where its block is widest and walks keep off the bars.
@@ -285,4 +286,51 @@ export function createKhidkiField(o: FieldOptions): KhidkiField {
       }
     },
   };
+}
+
+/**
+ * Whole lozenge stars grown, the rest walked. Every cell's lozenge runs from
+ * one circle corner to the other, so the 2×2 cells round a circle hold its
+ * four lozenges and the darts between them: that square is its star. Squares
+ * round circles at every other grill position (odd or even) tile the grill
+ * without overlap; `pick` chooses which of those stars grow. Blocks outside
+ * the bars' span — the strips along the frame — are always walked.
+ */
+function assignStars(blocks: Block[], centres: Pt[], set: 'odd' | 'even', pick: StarPick): void {
+  const p = set === 'odd' ? 1 : 0;
+  const chosen = new Map<string, boolean>();
+  const isChosen = (ci: number, cj: number) => {
+    const key = `${ci},${cj}`;
+    if (!chosen.has(key)) {
+      const a = (ci - p) / 2;
+      const b = (cj - p) / 2;
+      chosen.set(key, pick === 'all' ? true : pick === 'checker' ? (a + b) % 2 === 0 : Random.chance(0.5));
+    }
+    return chosen.get(key)!;
+  };
+  for (const block of blocks) {
+    const [x, y] = centres[block.id];
+    // Grill coordinates: bar i at x = 0.7s + i·s, bar j at y = 0.5s + j·s.
+    const gx = (x - 0.7 * PITCH) / PITCH;
+    const gy = (y - 0.5 * PITCH) / PITCH;
+    const inside = gx > 0 && gx < 4 && gy > 0 && gy < 6;
+    const ci = Math.round((gx - p) / 2) * 2 + p;
+    const cj = Math.round((gy - p) / 2) * 2 + p;
+    block.kind = inside && isChosen(ci, cj) ? 'growth' : 'nalee';
+  }
+}
+
+/**
+ * Patches, not a coin toss per block: sample smooth noise at every block's
+ * centre and grow the lowest `share` of them, so neighbours mostly share a
+ * fill and the share stays exact.
+ */
+function assignPatches(blocks: Block[], centres: Pt[], share: number, size: number): void {
+  const freq = 1 / (Math.max(0.1, size) * PITCH);
+  const shift = Random.range(0, 1000);
+  const ranked = blocks
+    .map((b) => ({ b, n: Random.noise2D(centres[b.id][0] * freq + shift, centres[b.id][1] * freq) }))
+    .sort((q, r) => q.n - r.n);
+  const grown = Math.round(blocks.length * share);
+  ranked.forEach(({ b }, i) => (b.kind = i < grown ? 'growth' : 'nalee'));
 }

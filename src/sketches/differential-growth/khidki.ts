@@ -6,8 +6,9 @@
  * its two circle corners, circles and diamonds alternating on the crossings
  * (./khidki-field). Every block the grill leaves open is filled with nalee
  * walks or with a differential-growth curve grown from the block's widest
- * point and confined to it; a noise field decides which, so each kind
- * gathers into patches of neighbouring blocks.
+ * point and confined to it. Whole lozenge stars — a circle, its four
+ * lozenges and the darts between them — are grown, the rest walked; a noise
+ * field gathering each kind into patches is the alternative.
  *
  * Colour: slate ground (paper when off). The fill keeps to two hues off the
  * ring — the base for the growth, the next for the walks — and to quiet
@@ -22,7 +23,14 @@ import Random from 'canvas-sketch-util/random';
 import { Pane } from 'tweakpane';
 
 import { cuspPalette } from '../../colors/cusphanger';
-import { APERTURE_H, APERTURE_W, createKhidkiField, type KhidkiField } from './khidki-field';
+import {
+  APERTURE_H,
+  APERTURE_W,
+  createKhidkiField,
+  type FillPattern,
+  type KhidkiField,
+  type StarPick,
+} from './khidki-field';
 import { outline } from './region';
 import { windowFrame } from './window-frame';
 
@@ -35,9 +43,15 @@ interface Params {
   bar: number;
   /** Circle and diamond size, relative to the reference. */
   knot: number;
-  /** Share of blocks grown rather than walked. */
+  /** Whole lozenge stars grown and the rest walked, or noise patches. */
+  pattern: FillPattern;
+  /** Stars centred on circles at odd or even grill positions. */
+  starSet: 'odd' | 'even';
+  /** Which of those stars grow. */
+  starPick: StarPick;
+  /** Patches: share of blocks grown rather than walked. */
   growthShare: number;
-  /** Size of the patches each kind gathers into, in bar pitches. */
+  /** Patches: size of the patches each kind gathers into, in bar pitches. */
   groupSize: number;
   /** Walk lattice pitch, in world units. */
   walkPitch: number;
@@ -73,6 +87,9 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     seed,
     bar: 0.5,
     knot: 1,
+    pattern: 'stars',
+    starSet: 'odd',
+    starPick: 'checker',
     growthShare: 0.5,
     groupSize: 2.5,
     walkPitch: 0.9,
@@ -178,6 +195,18 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   const layout = pane.addFolder({ title: 'Grill' });
   onInput(layout.addBinding(params, 'bar', { min: 0.2, max: 3, step: 0.05 }), rebuild);
   onInput(layout.addBinding(params, 'knot', { min: 0, max: 2.5, step: 0.05, label: 'circles' }), rebuild);
+  onInput(
+    layout.addBinding(params, 'pattern', { options: { 'lozenge stars': 'stars', 'noise patches': 'patches' } }),
+    rebuild,
+  );
+  onInput(layout.addBinding(params, 'starSet', { options: { odd: 'odd', even: 'even' }, label: 'star set' }), rebuild);
+  onInput(
+    layout.addBinding(params, 'starPick', {
+      options: { all: 'all', checker: 'checker', random: 'random' },
+      label: 'grown stars',
+    }),
+    rebuild,
+  );
   onInput(
     layout.addBinding(params, 'growthShare', { min: 0, max: 1, step: 0.05, label: 'grown share' }),
     rebuild,
