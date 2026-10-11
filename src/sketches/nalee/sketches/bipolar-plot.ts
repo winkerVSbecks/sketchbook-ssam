@@ -597,7 +597,10 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
       }
     } else {
       context.fillStyle = ink;
-      for (const band of bands) fillBand(context, band);
+      // Only what the pen can draw: stretches thinner than the pen are left
+      // off here too, so the screen matches the plot.
+      const pen = penPx();
+      for (const band of bands) for (const run of plottable(band, pen)) fillBand(context, run);
     }
   };
 };
