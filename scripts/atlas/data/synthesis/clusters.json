@@ -54,7 +54,11 @@
     "sketches/bio-sprue/bio-sprue",
     "sketches/bio-sprue/nalee",
     "sketches/bio-sprue/sprue",
-    "sketches/nalee-one-line/basic-gradient-cusp"
+    "sketches/nalee-one-line/basic-gradient-cusp",
+    "sketches/nalee-one-line/pen-stroke",
+    "sketches/nalee/sketches/bipolar",
+    "sketches/nalee/sketches/bipolar-plot",
+    "sketches/nalee/sketches/box-drawing"
    ]
   },
   {
@@ -140,7 +144,8 @@
     "sketches/rubber-band-stipple/skeleton-albers",
     "sketches/rubber-band-stipple/skeleton-line",
     "sketches/rubber-band-stipple/skeleton-inverted",
-    "sketches/rubber-band-stipple/haberdashery-cusp"
+    "sketches/rubber-band-stipple/haberdashery-cusp",
+    "sketches/grey-goo/alphabet-holes"
    ]
   },
   {
@@ -342,7 +347,8 @@
     "sketches/voxels/textbox",
     "sketches/voxels/alphabet",
     "sketches/voxels/alphabet-pixel",
-    "sketches/canvas-ui/torsions"
+    "sketches/canvas-ui/torsions",
+    "sketches/maze-distance/stepwell-voxels"
    ]
   },
   {
@@ -383,7 +389,10 @@
     "sketches/collision/spaw-debug",
     "sketches/not-every-body-lives-the-same-way",
     "sketches/canvas-ui/curve-relief",
-    "sketches/recursive-network"
+    "sketches/recursive-network",
+    "sketches/differential-growth",
+    "sketches/gears/haberdashery-train",
+    "sketches/physarum/gpu-million"
    ]
   },
   {
@@ -463,7 +472,8 @@
     "sketches/tensors/tensors-blob",
     "sketches/tensors/tensors-options",
     "sketches/tensors/tensors-sketch",
-    "sketches/trochoidal-wave/rani"
+    "sketches/trochoidal-wave/rani",
+    "sketches/chladni/plate-catalogue"
    ]
   },
   {
@@ -490,7 +500,8 @@
     "sketches/terminal-charts/terminal-charts",
     "sketches/terminal-charts/terminal-charts-patterns",
     "sketches/terminal-charts/icons",
-    "sketches/terminal-ui/differential-growth"
+    "sketches/terminal-ui/differential-growth",
+    "sketches/terminal-ui/physarum-scopes"
    ]
   }
  ],

@@ -763,6 +763,21 @@
   "hueShare": 1,
   "colors": []
  },
+ "sketches/chladni/plate-catalogue": {
+  "bg": "#f2ebe3",
+  "bgL": 0.943,
+  "meanL": 0.915,
+  "meanC": 0.0148,
+  "ink": 0.023,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#d0c0c0",
+   "#d0b0c0",
+   "#d0b0b0",
+   "#c0b0b0"
+  ]
+ },
  "sketches/chladni/strokes": {
   "bg": "#e16696",
   "bgL": 0.673,
@@ -1569,6 +1584,22 @@
    "#909090"
   ]
  },
+ "sketches/differential-growth": {
+  "bg": "#1f1015",
+  "bgL": 0.196,
+  "meanL": 0.326,
+  "meanC": 0.0507,
+  "ink": 0.352,
+  "hue": 105,
+  "hueShare": 1,
+  "colors": [
+   "#707020",
+   "#807020",
+   "#808030",
+   "#606020",
+   "#706020"
+  ]
+ },
  "sketches/disco-color-fractions/console": {
   "bg": "#ffffff",
   "bgL": 1,
@@ -2199,6 +2230,22 @@
    "#202020"
   ]
  },
+ "sketches/gears/haberdashery-train": {
+  "bg": "#180c0e",
+  "bgL": 0.172,
+  "meanL": 0.232,
+  "meanC": 0.0473,
+  "ink": 0.249,
+  "hue": 15,
+  "hueShare": 0.813,
+  "colors": [
+   "#700020",
+   "#600020",
+   "#701020",
+   "#601020",
+   "#501020"
+  ]
+ },
  "sketches/gravura/basic": {
   "bg": "#e1b9af",
   "bgL": 0.818,
@@ -2293,6 +2340,22 @@
    "#707090",
    "#808090",
    "#c09020"
+  ]
+ },
+ "sketches/grey-goo/alphabet-holes": {
+  "bg": "#050714",
+  "bgL": 0.134,
+  "meanL": 0.409,
+  "meanC": 0.0819,
+  "ink": 0.639,
+  "hue": 345,
+  "hueShare": 0.982,
+  "colors": [
+   "#f080c0",
+   "#f080b0",
+   "#603050",
+   "#804060",
+   "#a05080"
   ]
  },
  "sketches/grey-goo/animated": {
@@ -3124,6 +3187,22 @@
    "#c0d0b0"
   ]
  },
+ "sketches/maze-distance/stepwell-voxels": {
+  "bg": "#ffc6b2",
+  "bgL": 0.872,
+  "meanL": 0.777,
+  "meanC": 0.0705,
+  "ink": 0.283,
+  "hue": 45,
+  "hueShare": 0.77,
+  "colors": [
+   "#805050",
+   "#300010",
+   "#b08070",
+   "#906060",
+   "#c08080"
+  ]
+ },
  "sketches/memory-leak/memory-leak": {
   "bg": "#242424",
   "bgL": 0.26,
@@ -3519,6 +3598,16 @@
    "#900000"
   ]
  },
+ "sketches/nalee-one-line/pen-stroke": {
+  "bg": "#f0e7e0",
+  "bgL": 0.933,
+  "meanL": 0.911,
+  "meanC": 0.0214,
+  "ink": 0,
+  "hue": 345,
+  "hueShare": 0.933,
+  "colors": []
+ },
  "sketches/nalee-one-line/stacked": {
   "bg": "#000000",
   "bgL": 0,
@@ -3597,6 +3686,54 @@
    "#e08020",
    "#306000",
    "#504000"
+  ]
+ },
+ "sketches/nalee/sketches/bipolar": {
+  "bg": "#f1f5f4",
+  "bgL": 0.967,
+  "meanL": 0.62,
+  "meanC": 0.018,
+  "ink": 0.766,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#405060",
+   "#607070",
+   "#506060",
+   "#405050",
+   "#506070"
+  ]
+ },
+ "sketches/nalee/sketches/bipolar-plot": {
+  "bg": "#ffffff",
+  "bgL": 1,
+  "meanL": 0.586,
+  "meanC": 0,
+  "ink": 0.785,
+  "hue": null,
+  "hueShare": 0,
+  "colors": [
+   "#505050",
+   "#606060",
+   "#404040",
+   "#707070",
+   "#303030"
+  ]
+ },
+ "sketches/nalee/sketches/box-drawing": {
+  "bg": "#fe2499",
+  "bgL": 0.661,
+  "meanL": 0.65,
+  "meanC": 0.2314,
+  "ink": 0.327,
+  "hue": 345,
+  "hueShare": 0.647,
+  "colors": [
+   "#f05060",
+   "#f04070",
+   "#d020b0",
+   "#f05070",
+   "#f06050"
   ]
  },
  "sketches/nalee/sketches/clipped-domain": {
@@ -4331,6 +4468,22 @@
    "#505050",
    "#000000",
    "#707070"
+  ]
+ },
+ "sketches/physarum/gpu-million": {
+  "bg": "#a8b2e2",
+  "bgL": 0.773,
+  "meanL": 0.817,
+  "meanC": 0.0822,
+  "ink": 0.669,
+  "hue": 315,
+  "hueShare": 0.522,
+  "colors": [
+   "#f0c0f0",
+   "#e0c0f0",
+   "#d0c0f0",
+   "#f0d0f0",
+   "#5090c0"
   ]
  },
  "sketches/physarum/offscreen": {
@@ -5575,6 +5728,22 @@
    "#404050",
    "#c0c0b0",
    "#b0b0a0"
+  ]
+ },
+ "sketches/terminal-ui/physarum-scopes": {
+  "bg": "#323a40",
+  "bgL": 0.343,
+  "meanL": 0.353,
+  "meanC": 0.0179,
+  "ink": 0.129,
+  "hue": 285,
+  "hueShare": 0.957,
+  "colors": [
+   "#d0d0c0",
+   "#f0f0e0",
+   "#506060",
+   "#505060",
+   "#505050"
   ]
  },
  "sketches/test": {
