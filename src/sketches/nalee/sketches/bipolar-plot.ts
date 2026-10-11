@@ -319,6 +319,25 @@ function fillBand(context: CanvasRenderingContext2D, band: Band): void {
  * a focus strokes drop out instead of converging and over-inking the paper.
  * `outline` is the edge alone, `centre` one line down the middle.
  */
+/**
+ * The parts of a band at least a pen wide. A narrower stretch can't be drawn
+ * without the pen spilling over the fixed gap (near the foci that merges the
+ * paths into blots), so it is left off the plot.
+ */
+function plottable(band: Band, penPx: number): Band[] {
+  const runs: Band[] = [];
+  let run: Sample[] = [];
+  for (const s of band) {
+    if (s.w >= penPx) run.push(s);
+    else if (run.length) {
+      runs.push(run);
+      run = [];
+    }
+  }
+  if (run.length) runs.push(run);
+  return runs.filter((r) => r.length > 1);
+}
+
 function plotLines(band: Band, mode: PlotMode, penPx: number): Point[][] {
   if (band.length < 2) return [];
   if (mode === 'centre') return [band.map((s) => s.p)];
@@ -376,7 +395,9 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
   const penPx = () => params.penMm / 10 / sheet().scale;
 
   const plot = (): Point[][] =>
-    bands.flatMap((b) => plotLines(b, params.plotMode, penPx()));
+    bands.flatMap((b) =>
+      plottable(b, penPx()).flatMap((run) => plotLines(run, params.plotMode, penPx())),
+    );
 
   const buildSvg = (): string => {
     const { pw, ph, scale, ox, oy } = sheet();
