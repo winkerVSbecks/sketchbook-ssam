@@ -1,5 +1,5 @@
 /**
- * windows — nalee-whitespace seen through a window.
+ * jali — nalee-whitespace seen through a window.
  *
  * The field is nalee-whitespace's: differential growth packing a polyomino,
  * the rest of the grid tiled by nalee walks. Here it covers the opening of a
@@ -17,7 +17,7 @@ import { whitespaceSketch } from './whitespace-sketch';
 import { WINDOW_STYLES } from './window-frame';
 
 const draw = whitespaceSketch({
-  title: 'windows',
+  title: 'jali',
   windowed: true,
   defaults: () => ({ window: Random.pick(WINDOW_STYLES), hues: 4 }),
 });

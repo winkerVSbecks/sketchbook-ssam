@@ -1,5 +1,5 @@
 /**
- * The sketch body shared by `nalee-whitespace` and `windows`: differential
+ * The sketch body shared by `nalee-whitespace` and `jali`: differential
  * growth packing a polyomino grown from the centre of a square grid, the rest
  * of the grid's cells tiled by nalee walks on a finer lattice.
  *

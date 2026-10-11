@@ -1,5 +1,5 @@
 /**
- * Window frames that clip a sketch's field, for the `windows` variant.
+ * Window frames that clip a sketch's field, for the `jali` variant.
  *
  *   - arch — the jali shell of ../jali/truchet: a rectangle under a pointed
  *            Bézier arch, a thick front edge and the whole silhouette
