@@ -12,9 +12,10 @@
  * bars from 0.5s, lozenges waisted at 0.4/0.6 of the cross diagonal.
  *
  * Blocks are found, not drawn: the opening is rasterised into a fine mask,
- * cells under a bar, lozenge edge, circle or diamond are closed, and each
- * 4-connected run of open cells is one block (region.ts confines growth to
- * it). The grill is drawn over the fills, so the raster's steps never show.
+ * cells under a bar, lozenge edge or circle are closed (diamonds close
+ * nothing and sit on top of the fills), and each 4-connected run of open
+ * cells is one block (region.ts confines growth to it). The grill is drawn
+ * over the fills, so the raster's steps never show.
  *
  * Not a sketch — it exports no `sketch`, so the gallery and archive skip it.
  */
@@ -152,7 +153,8 @@ export function createKhidkiField(o: FieldOptions): KhidkiField {
   const rows = Math.ceil(APERTURE_H / RES);
   const mask = createMask(cols, rows, RES);
 
-  // Close every cell under the grill.
+  // Close every cell under the bars and circles. Diamonds close nothing: the
+  // fills run on underneath and the diamonds sit on top of them.
   const open = new Uint8Array(cols * rows);
   const half = o.bar / 2;
   for (let y = 0; y < rows; y++) {
@@ -160,8 +162,7 @@ export function createKhidkiField(o: FieldOptions): KhidkiField {
       const p: Pt = [(x + 0.5) * RES, (y + 0.5) * RES];
       const shut =
         grill.bars.some((seg) => segDist(p, seg) < half) ||
-        grill.circles.some(([cx, cy]) => Math.hypot(p[0] - cx, p[1] - cy) < grill.circleR) ||
-        grill.diamonds.some(([cx, cy]) => Math.abs(p[0] - cx) + Math.abs(p[1] - cy) < grill.diamondR);
+        grill.circles.some(([cx, cy]) => Math.hypot(p[0] - cx, p[1] - cy) < grill.circleR);
       open[y * cols + x] = shut ? 0 : 1;
     }
   }
