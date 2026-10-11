@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-11T14:53:41.637Z",
+  "generatedAt": "2026-10-11T14:55:45.372Z",
   "sketches": [
     {
       "id": "sketches/42-loc",
@@ -4621,6 +4621,22 @@
         "publicId": "sketchbook/2024/physarum-circles",
         "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779062304/sketchbook/2024/physarum-circles.png",
         "version": 1779062304,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/physarum/gpu-million",
+      "name": "gpu-million",
+      "path": "src/sketches/physarum/gpu-million.ts",
+      "firstCommitDate": "2026-10-10T14:54:27-04:00",
+      "year": 2026,
+      "lastCommitSha": "78d2257354ddfc56ebb742d541b86e05bc98e0b0",
+      "archivedAt": "2026-10-11T14:55:44.810Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/physarum-gpu-million",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1791730544/sketchbook/2026/physarum-gpu-million.png",
+        "version": 1791730544,
         "width": 1080,
         "height": 1080
       }
