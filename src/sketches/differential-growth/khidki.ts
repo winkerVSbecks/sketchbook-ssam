@@ -4,9 +4,10 @@
  * Inside the deep rectangular frame (./window-frame) sits the khidki grill:
  * vertical and horizontal bars, a waisted lozenge across every cell joining
  * its two circle corners, circles and diamonds alternating on the crossings
- * (./khidki-field). Every block the grill leaves open is filled, each at
- * random with nalee walks or with a differential-growth curve grown from the
- * block's widest point and confined to it.
+ * (./khidki-field). Every block the grill leaves open is filled with nalee
+ * walks or with a differential-growth curve grown from the block's widest
+ * point and confined to it; a noise field decides which, so each kind
+ * gathers into patches of neighbouring blocks.
  *
  * Colour: slate ground (paper when off). The fill keeps to two hues off the
  * ring — the base for the growth, the next for the walks — and to quiet
@@ -34,8 +35,10 @@ interface Params {
   bar: number;
   /** Circle and diamond size, relative to the reference. */
   knot: number;
-  /** Chance a block is grown rather than walked. */
+  /** Share of blocks grown rather than walked. */
   growthShare: number;
+  /** Size of the patches each kind gathers into, in bar pitches. */
+  groupSize: number;
   /** Walk lattice pitch, in world units. */
   walkPitch: number;
   /** Longest walk, in lattice steps. */
@@ -71,6 +74,7 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     bar: 0.5,
     knot: 1,
     growthShare: 0.5,
+    groupSize: 2.5,
     walkPitch: 0.9,
     walkLength: 40,
     radius: 0.9,
@@ -176,6 +180,10 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   onInput(layout.addBinding(params, 'knot', { min: 0, max: 2.5, step: 0.05, label: 'circles' }), rebuild);
   onInput(
     layout.addBinding(params, 'growthShare', { min: 0, max: 1, step: 0.05, label: 'grown share' }),
+    rebuild,
+  );
+  onInput(
+    layout.addBinding(params, 'groupSize', { min: 0.3, max: 8, step: 0.1, label: 'group size' }),
     rebuild,
   );
   onInput(layout.addBinding(params, 'walkPitch', { min: 0.5, max: 2.5, step: 0.05, label: 'walk pitch' }), rebuild);

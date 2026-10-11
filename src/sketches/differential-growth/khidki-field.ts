@@ -3,7 +3,8 @@
  * vertical and horizontal bars, a lozenge across every cell joining its two
  * circle corners, circles and diamonds alternating on the crossings — laid
  * over the opening of a rectangular frame, and every block the grill leaves
- * open filled with either nalee walks or a differential-growth curve.
+ * open filled with either nalee walks or a differential-growth curve, the
+ * two kinds gathered into patches by a noise field.
  *
  * Proportions follow the reference: in units of the bar pitch `s`, the
  * opening is 5.4s × 7.1s, five vertical bars from 0.7s and seven horizontal
@@ -124,8 +125,10 @@ export interface KhidkiField {
 }
 
 export interface FieldOptions extends GrillOptions {
-  /** Chance a block is grown rather than walked. */
+  /** Share of blocks grown rather than walked. */
   growthShare: number;
+  /** Size of the patches blocks of one kind gather into, in bar pitches. */
+  groupSize: number;
   /** Repulsion radius: the curve's spacing, in world units. */
   radius: number;
   /** Walk lattice pitch, in world units. */
@@ -158,6 +161,7 @@ export function createKhidkiField(o: FieldOptions): KhidkiField {
   // a loop of curve or a walk stay closed.
   const minCells = Math.ceil((2 * o.radius) ** 2 / (RES * RES));
   const blocks: Block[] = [];
+  const centres: Pt[] = [];
   const seen = new Uint8Array(cols * rows);
   for (let start = 0; start < open.length; start++) {
     if (!open[start] || seen[start]) continue;
@@ -183,13 +187,27 @@ export function createKhidkiField(o: FieldOptions): KhidkiField {
     }
     if (cells.length < minCells) continue;
     const id = blocks.length;
-    for (const c of cells) mask.ids[c] = id;
-    blocks.push({
-      id,
-      kind: Random.chance(o.growthShare) ? 'growth' : 'nalee',
-      area: cells.length * RES * RES,
-    });
+    let sx = 0;
+    let sy = 0;
+    for (const c of cells) {
+      mask.ids[c] = id;
+      sx += c % cols;
+      sy += Math.floor(c / cols);
+    }
+    centres.push([(sx / cells.length + 0.5) * RES, (sy / cells.length + 0.5) * RES]);
+    blocks.push({ id, kind: 'nalee', area: cells.length * RES * RES });
   }
+
+  // Kinds come in patches, not a coin toss per block: sample smooth noise at
+  // every block's centre and grow the lowest `growthShare` of them, so
+  // neighbours mostly share a fill and the share stays exact.
+  const freq = 1 / (Math.max(0.1, o.groupSize) * PITCH);
+  const shift = Random.range(0, 1000);
+  const ranked = blocks
+    .map((b) => ({ b, n: Random.noise2D(centres[b.id][0] * freq + shift, centres[b.id][1] * freq) }))
+    .sort((p, q) => p.n - q.n);
+  const grown = Math.round(blocks.length * o.growthShare);
+  ranked.forEach(({ b }, i) => (b.kind = i < grown ? 'growth' : 'nalee'));
 
   // Depth of every cell: steps to the nearest closed cell or the edge, so a
   // curve can start where its block is widest and walks keep off the bars.
