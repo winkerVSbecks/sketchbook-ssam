@@ -2,7 +2,7 @@
  * differential-growth — the curve let out of its window.
  *
  * terminal-ui/differential-growth only ever shows its organism through glyph
- * scopes. This is the same simulation (./terminal-ui/growth-sim: attraction,
+ * scopes. This is the same simulation (../terminal-ui/growth-sim: attraction,
  * repulsion, alignment, resampling) on a plain full frame, with one added
  * rule: the curve lives inside a nalee-style clipped domain — a polyomino of
  * grid cells grown at random from the centre — and any node that crosses its
@@ -17,8 +17,8 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 
-import { cuspPalette } from '../colors/cusphanger';
-import { createGrowth, type GrowthNode } from './terminal-ui/growth-sim';
+import { cuspPalette } from '../../colors/cusphanger';
+import { createGrowth, type GrowthNode } from '../terminal-ui/growth-sim';
 
 /** Domain grid: `GRID`×`GRID` cells of `CELL` world units each. */
 const GRID = 9;
