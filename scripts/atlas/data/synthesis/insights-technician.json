@@ -1,181 +1,91 @@
 {
-  "generatedAt": "2026-10-10T00:00:00.000Z",
+  "generatedAt": "2026-10-11T00:00:00.000Z",
   "insights": [
     {
       "kind": "technique-transfer",
-      "title": "Extrude the maze distance field into stepwell voxels",
-      "body": "Distance fields drive 16 sketches, 9 of them the maze-distance glyph series, while heerich has 13 voxel sketches and voxels/wave and voxels/panna-meena already turn a Chebyshev distance into a stepwell. The maze's BFS distance has only ever been coloured or typed, never given height. Feed the sidewinder maze from maze-distance/basic into heerich as column heights, so each distance band becomes one terrace and the solved path reads as a sunken stair.",
+      "title": "Run Gray-Scott on the GPU, one cell per pixel",
+      "body": "Reaction-diffusion is tagged on 2 of 412 sketches, and subtractive-diffusion runs it on a 100x100 grid of fat cells. physarum/gpu-million, the only webgpu sketch, already has the ping-pong compute passes and a three-stop ramp. Port subtractive-diffusion's Gray-Scott update into gpu-million's field pass at full canvas resolution, seed it everywhere, and let one coral or labyrinth regime cover the frame edge to edge, drawn through the same ramp.",
       "relatedIds": [
-        "sketches/maze-distance/basic",
-        "sketches/maze-distance/ascii-groups",
-        "sketches/voxels/wave",
-        "sketches/voxels/panna-meena",
-        "sketches/voxels/todd-kelly",
-        "sketches/voxels/nalee-3"
+        "sketches/subtractive-diffusion",
+        "sketches/physarum/gpu-million",
+        "sketches/physarum/basic",
+        "sketches/automata/xor-game-of-life"
       ],
       "tags": [
-        "distance-field",
-        "maze-generation",
-        "isometric-projection",
-        "heerich"
-      ],
-      "clusterKeys": [
-        "ascii-and-terminal",
-        "isometric-and-architectural-space"
-      ]
-    },
-    {
-      "kind": "scale-shift",
-      "title": "Plot the Hamiltonian one-line as a single pen stroke",
-      "body": "The nalee-one-line series fills a grid with one Warnsdorff path in 9 sketches, and only 4 of 401 sketches export to the plotter, all of them heerich boxes or the penplot example. A single unbroken path is the one drawing a pen plotter does without lifting, yet every one-line version stays on screen with gradients or neon blur. Port nalee-one-line/albers-meander to penplot: two Hamiltonian paths as two pens, ghost and ink, on an A4 sheet using the export path from voxels/nalee-p.",
-      "relatedIds": [
-        "sketches/nalee-one-line/basic",
-        "sketches/nalee-one-line/albers-meander",
-        "sketches/nalee-one-line/stacked",
-        "sketches/voxels/nalee-p",
-        "sketches/anni-weaving/heerich-plotter",
-        "sketches/penplot-example"
-      ],
-      "tags": [
-        "hamiltonian-path",
-        "space-filling",
-        "nalee",
-        "heerich"
-      ],
-      "clusterKeys": [
-        "the-nalee-system",
-        "isometric-and-architectural-space"
-      ]
-    },
-    {
-      "kind": "unexplored-combination",
-      "title": "Fill overlapping hulls by XOR parity",
-      "body": "xor-pattern appears in 11 sketches, 8 of them line fans in Moire and Op Art, while overlap colouring has its own one-offs: boolean/robert-swain inverts intersections and siep-van-den-berg/no-251 shows only where rectangles overlap. The overlapping-hull work (nalee-hulls/i to l, rubber-band-stipple/shape) still paints hulls in stacking order. Rasterise several drifting rubber-band hulls into one XOR buffer, so odd overlaps fill and even ones cancel, and the stack becomes a parity map.",
-      "relatedIds": [
-        "sketches/xor/hexagon",
-        "sketches/xor/polar-shape",
-        "sketches/boolean/robert-swain",
-        "sketches/siep-van-den-berg/no-251",
-        "sketches/nalee-hulls/k_best",
-        "sketches/rubber-band-stipple/shape"
-      ],
-      "tags": [
-        "xor-pattern",
-        "convex-hull",
-        "clipping-mask",
-        "negative-space"
-      ],
-      "clusterKeys": [
-        "moire-and-op-art",
-        "hulls-and-aggregates",
-        "concrete-art-and-color-planes"
-      ]
-    },
-    {
-      "kind": "technique-transfer",
-      "title": "Drop the collapsing blinds on springs, not easing",
-      "body": "Spring physics drives 9 sketches, and red-and-black/spring-anticipation gives vertices a pull-back and overshoot, while the 3 blinds sketches move their rects with plain easing as they fall flush toward the centre. The collapse is a physical event that is currently timed instead of weighted. Fork blinds/collapse-cusp and replace its eased fall with the per-vertex spring and anticipation from red-and-black, so each rect overshoots, settles and seals its lane at its own rate.",
-      "relatedIds": [
-        "sketches/red-and-black/spring",
-        "sketches/red-and-black/spring-anticipation",
-        "sketches/blinds/collapse",
-        "sketches/blinds/collapse-cusp",
-        "sketches/blinds/blinds"
-      ],
-      "tags": [
-        "spring-physics",
-        "easing",
-        "clipping-mask",
-        "negative-space"
-      ],
-      "clusterKeys": [
-        "concrete-art-and-color-planes"
-      ]
-    },
-    {
-      "kind": "unexplored-combination",
-      "title": "Shade heerich voxel faces from cusphanger tiers",
-      "body": "cusphanger feeds 7 sketches, and 4 of those are -cusp forks that only swap a palette, while heerich's 13 voxel sketches shade faces from mix or custom hex. Cusphanger's high, mid and low contrast tiers are a ready three-step light model that no voxel sketch uses. Fork voxels/panna-meena with a cusphanger ground: top faces on the low wash tier, lit sides on mid, shadow sides on high ink, on a P3 canvas.",
-      "relatedIds": [
-        "sketches/voxels/panna-meena",
-        "sketches/voxels/wave",
-        "sketches/anni-weaving/heerich-depth",
-        "sketches/blinds/collapse-cusp",
-        "sketches/terminal-ui/cusp-hanger",
-        "sketches/rubber-band-stipple/haberdashery-cusp"
-      ],
-      "tags": [
-        "isometric-projection",
-        "color-study",
-        "heerich",
-        "voxels"
-      ],
-      "clusterKeys": [
-        "isometric-and-architectural-space",
-        "color-studies-and-gradients"
-      ]
-    },
-    {
-      "kind": "unexplored-combination",
-      "title": "Solve the arc tiles with wave function collapse",
-      "body": "Wave function collapse appears in 8 sketches, all made on 2024-11-27 and never touched again, and paint-without-thinking runs 11 sketches of Wang arc tiles grown by an edge-matching random walk. Both are edge-constrained tile solvers, but WFC only ever drew pipes and the arc tiles only ever grew by walk. Run the WFC solver from wave-function-collapse/4 over the quarter-arc tile set, then pass the result through the rounded reduction from arcs-reduction-rounded.",
-      "relatedIds": [
-        "sketches/wave-function-collapse/4",
-        "sketches/wave-function-collapse/8",
-        "sketches/paint-without-thinking/just-arcs",
-        "sketches/paint-without-thinking/everything",
-        "sketches/paint-without-thinking/arcs-reduction-rounded"
-      ],
-      "tags": [
-        "wave-function-collapse",
-        "wang-tiles",
-        "truchet-tiles",
-        "flood-fill"
+        "reaction-diffusion",
+        "cellular-automata",
+        "emergence",
+        "process-as-image",
+        "field"
       ],
       "clusterKeys": [
         "emergent-grids-and-automata",
-        "tiling-and-truchet"
+        "simulation-and-physics"
       ]
     },
     {
       "kind": "technique-transfer",
-      "title": "Place clixo forms by a loom draft, not An+B",
-      "body": "The 11 clixo sketches place their forms by An+B modulo rules in 9 cases, and anni-weaving has 9 sketches driven by real weave drafts (twill, herringbone, houndstooth, satin, monk's belt). A draft is just a better-structured binary modulo matrix, and clixo has never used one. Fork clixo/criss-cross so the anni-weaving draft decides fill or outline per cell, and the clover forms read as a woven cloth.",
+      "title": "Settle a million grains on one Chladni plate",
+      "body": "The chladni technique appears on 5 sketches, and chladni/basic walks 10,000 particles onto the nodal lines, enough for a sketch of the figure but not its sand. gpu-million proved the WebGPU compute path for 2^20 agents. Move chladni/basic's amplitude-driven random walk into a compute pass with a million grains on a single high-mode plate (large m and n, so nodal lines cross the whole frame) and draw the settled density, not dots: a full field of sand.",
       "relatedIds": [
-        "sketches/clixo/criss-cross",
-        "sketches/clixo/shifty-2",
-        "sketches/clixo/layers",
-        "sketches/anni-weaving/anni-weaving",
-        "sketches/anni-weaving/signal"
+        "sketches/chladni/basic",
+        "sketches/chladni/layered",
+        "sketches/chladni/plate-catalogue",
+        "sketches/chladni/trail",
+        "sketches/physarum/gpu-million"
       ],
       "tags": [
-        "modulo-pattern",
-        "tiling",
-        "weaving-structure",
-        "clixo"
+        "chladni",
+        "particle-system",
+        "stippling",
+        "music-rhythm",
+        "field"
       ],
       "clusterKeys": [
-        "tiling-and-truchet",
-        "weaving-and-thread"
+        "fields-flows-and-waves",
+        "simulation-and-physics"
       ]
     },
     {
       "kind": "technique-transfer",
-      "title": "Grow nalee walkers on a bipolar grid",
-      "body": "nalee has left the cartesian grid only through polar domains, in 11 polar-grid sketches from nalee/sketches/polar to polar-color-wheel, while the bipolar series draws circle and hyperbola families around two foci in 6 sketches. Bipolar coordinates are still a grid of cells, so the walker can fill them unchanged. Build a bipolar cell domain from bipolar/basic and fill it with pipe walkers, so tube rings crowd toward the two foci instead of one centre.",
+      "title": "Fly a million boids and keep only their trail field",
+      "body": "Boids is tagged on 5 sketches, and the largest flock, boids/gradient-quadtree, holds 896 birds drawn as heads and gradient trails. physarum/gpu-million shows what a deposit field does at 2^20 agents. Run Reynolds flocking as a compute pass with a grid-binned neighbour search, drop the heads, and let each boid deposit into a decaying trail texture, so the flock reads as a combed, all-over current rather than a scatter of triangles.",
       "relatedIds": [
-        "sketches/nalee/sketches/polar",
-        "sketches/nalee/sketches/polar-stacked-ruins",
-        "sketches/nalee/sketches/polar-color-wheel",
-        "sketches/bipolar/basic",
-        "sketches/bipolar/colors",
-        "sketches/bipolar/spiral-pattern"
+        "sketches/boids/gradient-quadtree",
+        "sketches/boids/noise-field-color",
+        "sketches/boids/cohesion-color",
+        "sketches/physarum/gpu-million",
+        "sketches/physarum/trail"
       ],
       "tags": [
-        "polar-grid",
-        "bipolar-coordinates",
+        "boids",
+        "particle-system",
+        "physarum",
+        "emergence",
+        "field"
+      ],
+      "clusterKeys": [
+        "simulation-and-physics"
+      ]
+    },
+    {
+      "kind": "technique-transfer",
+      "title": "Walk nalee on confocal elliptic coordinates",
+      "body": "nalee drives 80 sketches but only the polar series, conformal-mapping/nalee and the new bipolar pair leave the square lattice; conformal-mapping is tagged 7 times, bipolar-coordinates 4. nalee/sketches/bipolar-plot solved the empty hole at the foci with a quadtree that coarsens toward them. Swap the (τ, σ) grid for elliptic (μ, ν), whose cells are bounded by confocal ellipses and hyperbolas, keep the quadtree at the two foci, and fill to every edge of the frame.",
+      "relatedIds": [
+        "sketches/nalee/sketches/bipolar",
+        "sketches/nalee/sketches/bipolar-plot",
+        "sketches/conformal-mapping/nalee",
+        "sketches/nalee/sketches/polar",
+        "sketches/conformal-mapping/transforms",
+        "sketches/bipolar/basic"
+      ],
+      "tags": [
         "space-filling",
-        "nalee"
+        "conformal-mapping",
+        "bipolar-coordinates",
+        "polar-grid",
+        "ribbons"
       ],
       "clusterKeys": [
         "the-nalee-system",
@@ -183,180 +93,254 @@
       ]
     },
     {
-      "kind": "unexplored-combination",
-      "title": "Cast light through a jali screen",
-      "body": "Raycasting appears in 4 sketches, 3 of them following the mouse among random walls or circles, and the windows-screens thread runs through 9 sketches of jali, khidki and blinds geometry. The screens are drawn as solid lattices and the rays hit nothing but random segments. Use the jali/truchet or nalee-jali/b lattice as the wall set in raycasting/grid and move the emitter on the playhead, so the image is the lit floor pattern the screen throws.",
+      "kind": "technique-transfer",
+      "title": "Thread one Hamiltonian line through the bipolar grid",
+      "body": "hamiltonian-path is tagged on 10 sketches, all square or polar lattices from nalee-one-line, while the bipolar (τ, σ) grid holds many walkers, never one. pen-stroke and bipolar-plot both landed. Run nalee-one-line's Warnsdorff walk over bipolar-plot's quadtree lattice, so a single unbroken meander packs every crescent cell from the frame's edge into both foci, and export it as one plotter path.",
       "relatedIds": [
-        "sketches/raycasting/grid",
-        "sketches/raycasting/circles",
-        "sketches/jali/truchet",
-        "sketches/nalee-jali/b",
-        "sketches/khidki",
-        "sketches/gravura/rybitten-blinds"
+        "sketches/nalee-one-line/basic",
+        "sketches/nalee-one-line/circle",
+        "sketches/nalee-one-line/pen-stroke",
+        "sketches/nalee/sketches/bipolar-plot",
+        "sketches/nalee/sketches/bipolar"
       ],
       "tags": [
-        "raycasting",
-        "clipping-mask",
-        "windows",
-        "negative-space"
+        "hamiltonian-path",
+        "bipolar-coordinates",
+        "space-filling",
+        "lines",
+        "self-reference"
       ],
       "clusterKeys": [
-        "isometric-and-architectural-space",
-        "tiling-and-truchet",
-        "the-nalee-system"
+        "the-nalee-system",
+        "fields-flows-and-waves"
       ]
     },
     {
       "kind": "technique-transfer",
-      "title": "Render the WFC pipe networks as glow tubes",
-      "body": "glow-lines and film-grain each appear in only 3 sketches, all bio-sprue, and the glow-style engine has a single user, while wave-function-collapse/7 fakes a tube by double-drawing each stroke and boids/pipe draws right-angled trails. The neon finish is proven on nalee tubes but has never touched another pipe system. Pass the connected runs of wave-function-collapse/4 through glow-style on a vignetted near-black ground, one hue per component.",
+      "title": "Pack noise streamlines at one even spacing",
+      "body": "flow-field is tagged on 36 sketches, and the curve-particles series seeds its trails at random, so they clump and leave holes. electric-field/hatch-field is the only sketch with a spatial hash, used to keep its seeds apart. Bring that hash to curve-particles' domain-warped noise as Jobard-Lefer evenly spaced streamlines: every line grows until it comes within one gap of another, then new seeds start on its flanks, until the whole frame is combed at one pitch.",
       "relatedIds": [
-        "sketches/bio-sprue/nalee",
-        "sketches/bio-sprue/sprue",
-        "sketches/nalee-one-line/neon",
-        "sketches/wave-function-collapse/7",
-        "sketches/wave-function-collapse/4",
-        "sketches/boids/pipe"
+        "sketches/curve-particles/backdrop",
+        "sketches/curve-particles/chunky",
+        "sketches/electric-field/hatch-field",
+        "sketches/domain-warping",
+        "sketches/pixel-flow"
       ],
       "tags": [
-        "glow-lines",
-        "film-grain",
-        "wave-function-collapse",
-        "glow-style"
+        "flow-field",
+        "noise-field",
+        "domain-warping",
+        "lines",
+        "field"
       ],
       "clusterKeys": [
-        "the-nalee-system",
+        "fields-flows-and-waves"
+      ]
+    },
+    {
+      "kind": "scale-shift",
+      "title": "Plot a physarum run as its agents' paths",
+      "body": "Only 6 of 412 sketches are penplot, all lattice drawings (heerich boxes, Hamiltonian lines, bipolar-plot), while physarum is tagged on 7 sketches that never left the screen. A slime-mould network is already a bundle of paths. Run physarum/basic past warm-up, record a few thousand agents' trajectories as polylines, simplify and clip them, and plot them in one fine pen, so the network draws itself in overlapping strokes across the A4 sheet.",
+      "relatedIds": [
+        "sketches/physarum/basic",
+        "sketches/physarum/circles",
+        "sketches/physarum/gpu-million",
+        "sketches/nalee-one-line/pen-stroke",
+        "sketches/nalee/sketches/bipolar-plot",
+        "sketches/voxels/nalee-p"
+      ],
+      "tags": [
+        "physarum",
+        "particle-system",
+        "process-as-image",
+        "lines",
+        "tool-study"
+      ],
+      "clusterKeys": [
+        "simulation-and-physics"
+      ]
+    },
+    {
+      "kind": "scale-shift",
+      "title": "Grow differential growth to pen width on an A4 sheet",
+      "body": "differential-growth is tagged on 2 sketches, both on screen, and its output is a single closed polyline, the plotter's native object; penplot holds 6 sketches. pen-stroke showed one long line on paper works. Run differential-growth's sim inside the A4 margin instead of a polyomino, set the repulsion radius to the pen's line width plus a gap, and keep growing until the curve has packed the whole sheet, then export one path.",
+      "relatedIds": [
+        "sketches/differential-growth",
+        "sketches/terminal-ui/differential-growth",
+        "sketches/nalee-one-line/pen-stroke",
+        "sketches/nalee/sketches/bipolar-plot",
+        "sketches/penplot-example"
+      ],
+      "tags": [
+        "differential-growth",
+        "spring-physics",
+        "process-as-image",
+        "curves",
+        "lines"
+      ],
+      "clusterKeys": [
+        "simulation-and-physics"
+      ]
+    },
+    {
+      "kind": "deepen-series",
+      "title": "Grow DLA coral in from every edge of the frame",
+      "body": "dla is tagged on 5 sketches, and growth, growth-paths and growth-simple all grow one tree from the centre to 1,400 nodes inside an 80% box, a specimen on a plate. Seed growth's nearest-node accretion along all four edges instead, raise the count by a hashed grid lookup, and keep adding until the branches from opposite sides interlock, then Atkinson-dither it as growth does, so the coral is the whole frame.",
+      "relatedIds": [
+        "sketches/growth",
+        "sketches/growth-paths",
+        "sketches/growth-simple",
+        "sketches/isometric/landscape",
+        "sketches/cluster-growth/multi-random-static"
+      ],
+      "tags": [
+        "dla",
+        "dithering",
+        "emergence",
+        "process-as-image",
+        "curves"
+      ],
+      "clusterKeys": [
+        "simulation-and-physics",
         "emergent-grids-and-automata"
       ]
     },
     {
-      "kind": "technique-transfer",
-      "title": "Draw Chladni nodal lines with field-line ticks",
-      "body": "The 5 chladni sketches show nodal lines as particles, strokes, trails or ASCII, and electric-field/hatch-field draws a field only as short cross ticks whose length decays with distance, using a spatial hash. Hatching appears in 14 sketches but never on a standing-wave field. Sample the Chladni gradient on the hatch-field grid and draw ticks that shrink toward the nodal lines, so the quiet lines appear as gaps in a black-and-white hatch.",
+      "kind": "scale-shift",
+      "title": "Solve a maze too fine to see as a distance gradient",
+      "body": "maze-generation is tagged on 22 sketches and distance-field on 17, but maze-distance/basic stops at a 64x64 sidewinder drawn in distance bands, and stepwell-voxels landed by reading that field as height. Run the BFS on a maze with one cell every few pixels, map distance continuously through a long ramp and drop the walls, so the frame becomes one river-delta texture whose bands follow every corridor.",
       "relatedIds": [
-        "sketches/chladni/basic",
-        "sketches/chladni/ascii",
-        "sketches/chladni/strokes",
-        "sketches/electric-field/hatch-field",
-        "sketches/electric-field/basic"
+        "sketches/maze-distance/basic",
+        "sketches/maze-distance/dither",
+        "sketches/maze-distance/stepwell-voxels",
+        "sketches/sujni/sujni-gradient",
+        "sketches/maze-distance/ascii"
       ],
       "tags": [
-        "chladni",
-        "hatching",
-        "stippling",
-        "flow-field"
-      ],
-      "clusterKeys": [
-        "fields-flows-and-waves"
-      ]
-    },
-    {
-      "kind": "unexplored-combination",
-      "title": "Extrude map-maker street blocks with heerich",
-      "body": "map-maker grows street networks in 3 sketches and heerich builds 13 voxel sketches; both sit in Architectural Space and have never met. The streets are flat lines and the voxel work extrudes only weaves, paths, letters and stepwells. Rasterise the blocks between map/basic's streets onto the heerich grid and give each block a height from its area, so the procedural plan becomes an isometric city.",
-      "relatedIds": [
-        "sketches/map/basic",
-        "sketches/map/clipped-hull",
-        "sketches/isometric/brutalism-stacks",
-        "sketches/voxels/nalee",
-        "sketches/voxels/panna-meena"
-      ],
-      "tags": [
-        "map-maker",
-        "heerich",
-        "isometric-projection",
-        "poisson-disk"
-      ],
-      "clusterKeys": [
-        "isometric-and-architectural-space"
-      ]
-    },
-    {
-      "kind": "technique-transfer",
-      "title": "Make the rubber band a real verlet chain",
-      "body": "rubber-band-stipple has 16 sketches that recompute the band each frame as a hull or tangent path, and 4 soft-body sketches already run verlet spring rings with quadtree collision. The band is called elastic but has no mass, so it never stretches, snaps or lags. Build haberdashery's band as a closed verlet chain from soft-body/verlet-101, wrapped around the same pegs, and let it settle and ripple as the pegs drift.",
-      "relatedIds": [
-        "sketches/rubber-band-stipple/haberdashery",
-        "sketches/rubber-band-stipple/wrap",
-        "sketches/soft-body/verlet-101",
-        "sketches/soft-body/verlet-collision-quadtree",
-        "sketches/canvas-ui/curve-relief"
-      ],
-      "tags": [
-        "verlet-physics",
-        "spring-physics",
-        "convex-hull",
-        "collision"
-      ],
-      "clusterKeys": [
-        "hulls-and-aggregates",
-        "simulation-and-physics"
-      ]
-    },
-    {
-      "kind": "technique-transfer",
-      "title": "Scope physarum through terminal desktop windows",
-      "body": "The tui engine has 4 sketches, and terminal-ui/differential-growth uses it as an instrument: one simulation seen through several zoomable windows with a live readout. The 5 physarum sketches and 5 chladni sketches run full-frame with no way to read their state. Run physarum/offscreen's agents behind a desktop of tui windows, one showing the trail buffer, one zoomed on a junction, one printing agent count and sensor angle.",
-      "relatedIds": [
-        "sketches/terminal-ui/differential-growth",
-        "sketches/terminal-ui/layered-compositions",
-        "sketches/physarum/offscreen",
-        "sketches/physarum/basic",
-        "sketches/chladni/ascii"
-      ],
-      "tags": [
-        "physarum",
-        "ascii-render",
-        "particle-system",
-        "tui"
+        "maze-generation",
+        "distance-field",
+        "gradients",
+        "field",
+        "process-as-image"
       ],
       "clusterKeys": [
         "ascii-and-terminal",
-        "simulation-and-physics"
+        "emergent-grids-and-automata"
+      ]
+    },
+    {
+      "kind": "deepen-series",
+      "title": "Let cluster-growth claim every cell of the grid",
+      "body": "The cluster-growth engine feeds 7 sketches, and each grows six clusters or one per packed circle to a radius limit, leaving most of the dotted grid empty. The accretion rule has never been allowed to run out of room. Seed dozens of clusters, remove the radius cap and let them grow until every cell belongs to one, rendering cluster-growth/basic's shaded ascii blocks at a fine cell size, so the boundaries where clusters meet become the drawing.",
+      "relatedIds": [
+        "sketches/cluster-growth/basic",
+        "sketches/cluster-growth/multi-random-static",
+        "sketches/cluster-growth/circle-pack",
+        "sketches/maze-distance/space-filler",
+        "sketches/color-traveller/color-traveller-canvas"
+      ],
+      "tags": [
+        "cellular-automata",
+        "ascii-render",
+        "emergence",
+        "glyphs",
+        "space-filling"
+      ],
+      "clusterKeys": [
+        "emergent-grids-and-automata",
+        "ascii-and-terminal"
       ]
     },
     {
       "kind": "scale-shift",
-      "title": "Run physarum at a million agents on the GPU",
-      "body": "Only 4 of 401 sketches use WebGL, all the tensors series with instanced meshes, while physarum/basic steers 16k agents on the CPU and its 5 sketches never grew past that. Slime-mold networks change character with agent count, and the CPU caps the scale. Port physarum/trail's sense-steer-deposit loop to ssam's webgpu mode as a compute pass and render a million agents seeded on the same packed circles.",
+      "title": "Pack the soft-body rug with a thousand small cells",
+      "body": "verlet-physics is tagged on 4 sketches, and soft-body/rug packs pack-spheres bodies of radius 0.1–0.3 of the frame and Chaikin-smooths them into blobs. verlet-collision-quadtree already carries the quadtree that makes more bodies affordable. Shrink the radii by ten, fill the frame with a thousand bodies under gentle pressure from the walls and let them squeeze into one another, so the rug becomes a foam with no ground left between cells.",
       "relatedIds": [
-        "sketches/physarum/basic",
-        "sketches/physarum/trail",
-        "sketches/physarum/packed-circles",
-        "sketches/tensors/tensors",
-        "sketches/tensors/tensors-options"
+        "sketches/soft-body/rug",
+        "sketches/soft-body/verlet-collision-quadtree",
+        "sketches/soft-body/verlet-101",
+        "sketches/grey-goo/genuary",
+        "sketches/growth-simple"
       ],
       "tags": [
-        "physarum",
-        "particle-system",
-        "instanced-mesh",
-        "feedback-loop"
+        "verlet-physics",
+        "spring-physics",
+        "collision",
+        "circle-packing",
+        "blobs"
       ],
       "clusterKeys": [
         "simulation-and-physics",
+        "hulls-and-aggregates"
+      ]
+    },
+    {
+      "kind": "abandoned-thread",
+      "title": "Stipple domain-warped noise with fifty thousand dots",
+      "body": "Weighted Voronoi stippling ran in 2 sketches in February 2024 (stippling is tagged 5 times) and stopped at 2,500 dots with their cells stroked. domain-warping is tagged on 21 sketches, and domain-warping itself gives a rich density field. Revive stipling-noise's Lloyd relaxation on that warped fBm with tens of thousands of points, drop the cell outlines and draw only dots sized by local weight, so tone comes from density alone.",
+      "relatedIds": [
+        "sketches/stipling-noise/stipling-noise",
+        "sketches/stipling-noise/voronoi-stipling-basic",
+        "sketches/domain-warping",
+        "sketches/grid/poisson-disc",
+        "sketches/rubber-band-stipple/rubber-band-stipple"
+      ],
+      "tags": [
+        "stippling",
+        "voronoi",
+        "domain-warping",
+        "noise-field",
+        "dots"
+      ],
+      "clusterKeys": [
+        "hulls-and-aggregates",
         "fields-flows-and-waves"
       ]
     },
     {
       "kind": "outlier-worth-revisiting",
-      "title": "Let differential growth out of its window",
-      "body": "Differential growth appears once in 401 sketches, inside terminal-ui/differential-growth, where the curve is only seen through glyph-scope windows. The growth lineage (growth, growth-paths, growth-simple) stopped at node accretion in early 2024. Lift the growth-sim module behind the tui sketch into a plain full-frame sketch: one curve grown inside a nalee-style clipped domain and drawn as a single filled band.",
+      "title": "Let the pipe boids pack the grid they walk",
+      "body": "boids/pipe is the one of 5 boids sketches that snaps headings to 45° and steps on a grid, which makes its trails nalee-like right-angled pipes, yet it wraps and overwrites instead of filling. random-walk is tagged on 28 sketches. Give each pipe boid an occupancy grid so it steers by flock rules but may not re-enter a claimed cell, and spawn new ones until no cell is free, so flocking writes the whole frame as one packed pipe field.",
       "relatedIds": [
-        "sketches/terminal-ui/differential-growth",
-        "sketches/growth",
-        "sketches/growth-paths",
-        "sketches/rubber-band-stipple/shape",
-        "sketches/nalee/sketches/clipped-domain"
+        "sketches/boids/pipe",
+        "sketches/boids/gradient",
+        "sketches/nalee/sketches/basic",
+        "sketches/not-every-body-lives-the-same-way",
+        "sketches/kelly-nalee/b&w"
       ],
       "tags": [
-        "emergence",
-        "process-as-image",
-        "spring-physics",
-        "clipping-mask"
+        "boids",
+        "space-filling",
+        "random-walk",
+        "grid",
+        "lines"
       ],
       "clusterKeys": [
         "simulation-and-physics",
-        "ascii-and-terminal"
+        "the-nalee-system"
+      ]
+    },
+    {
+      "kind": "technique-transfer",
+      "title": "Ramp the million-agent trail through one cusphanger hue",
+      "body": "cusphanger feeds 10 sketches, mostly a handful of flat shapes on a tinted ground, and none uses its tiers as a continuous ramp. gpu-million maps trail density through a three-stop auto-albers or mindful ramp. Feed it one cusphanger hue instead, from the P3 ground through the low wash and mid accent to the high ink, so the densest junctions of the million-agent network reach 9:1 ink and the sparse trails stay near the ground.",
+      "relatedIds": [
+        "sketches/physarum/gpu-million",
+        "sketches/nalee-one-line/basic-gradient-cusp",
+        "sketches/terminal-ui/cusp-hanger",
+        "sketches/physarum/trail",
+        "sketches/recursive-network"
+      ],
+      "tags": [
+        "physarum",
+        "gradients",
+        "color-study",
+        "emergence",
+        "field"
+      ],
+      "clusterKeys": [
+        "simulation-and-physics",
+        "color-studies-and-gradients"
       ]
     }
   ]
