@@ -72,7 +72,7 @@ interface Params {
 
 const params: Params = {
   sigmaRes: 128,
-  tauMax: 2.5,
+  tauMax: 8,
   focal: 0.24,
   margin: 0.06,
   walkers: 24,
@@ -425,11 +425,17 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
       return (a * s) / (Math.cosh(tau) - Math.cos(sigma));
     };
 
+    // How far toward the foci the grid can go: past the τ where even a top
+    // cell (worst case σ = π, cell = a·s / (cosh τ + 1)) drops below minCell,
+    // nothing fits. `reach (τ)` can stop it sooner.
+    const tauFit = Math.acosh(Math.max(1, (a * stepOf(top)) / minCell - 1));
+    const tauLimit = Math.min(params.tauMax, tauFit);
+
     // Quadtree over (τ, σ): split a cell while all four children stay ≥ minCell.
     const leaves: [number, number][][] = Array.from({ length: top + 1 }, () => []);
     const visit = (k: number, i: number, j: number) => {
       const tauC = (i + 0.5) * stepOf(k);
-      if (Math.abs(tauC) > params.tauMax) return;
+      if (Math.abs(tauC) > tauLimit) return;
       if (k > 0) {
         const kids: [number, number][] = [
           [i * 2, j * 2],
@@ -444,7 +450,7 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
       }
       leaves[k].push([i, j]);
     };
-    const nTop = Math.ceil(params.tauMax / stepOf(top));
+    const nTop = Math.ceil(tauLimit / stepOf(top));
     const rowsTop = Math.round(params.sigmaRes / 2 ** top);
     for (let i = -nTop; i < nTop; i++) for (let j = 0; j < rowsTop; j++) visit(top, i, j);
 
@@ -509,6 +515,28 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
           .filter((band) => band.length > 1 && Math.max(...band.map((b) => b.w)) > 0.5)
       );
     });
+
+    // What is left at each focus is a small τ-disc no cell can fill: a solid
+    // dot, one gap clear of the grid's inner edge (centre a·coth τ, radius
+    // a / sinh τ). A near-zero-length band so it fills and plots like a path
+    // end (its round caps are the whole dot).
+    const tauEdge = leaves.reduce(
+      (m, cells, k) => cells.reduce((mm, [i]) => Math.max(mm, (i + 1) * stepOf(k)), m),
+      0,
+    );
+    const r = a / Math.sinh(tauEdge) - gapPx;
+    if (r * 2 >= penPxNow) {
+      const c = a / Math.tanh(tauEdge);
+      for (const side of [1, -1] as const) {
+        const x = cx + side * c;
+        const t: Point = [1, 0];
+        const n: Point = [0, 1];
+        bands.push([
+          { p: [x - 0.01, cy], w: r * 2, t, n },
+          { p: [x + 0.01, cy], w: r * 2, t, n },
+        ]);
+      }
+    }
   };
 
   const rebuild = () => {
@@ -529,7 +557,7 @@ export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) 
 
   const grid = pane.addFolder({ title: 'Grid' });
   onInput(grid.addBinding(params, 'sigmaRes', { min: 24, max: 240, step: 4, label: 'resolution' }));
-  onInput(grid.addBinding(params, 'tauMax', { min: 0.8, max: 4, step: 0.1, label: 'reach (τ)' }));
+  onInput(grid.addBinding(params, 'tauMax', { min: 0.8, max: 8, step: 0.1, label: 'reach (τ)' }));
   onInput(grid.addBinding(params, 'focal', { min: 0.05, max: 0.45, step: 0.01, label: 'foci apart' }));
   onInput(grid.addBinding(params, 'margin', { min: 0, max: 0.2, step: 0.005 }));
 
