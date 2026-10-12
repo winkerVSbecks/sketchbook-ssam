@@ -24,6 +24,7 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 import { Pane } from 'tweakpane';
+import { formatCss, wcagContrast } from 'culori';
 
 import { cuspPalette } from '../../colors/cusphanger';
 import { createKhidkiField, type KhidkiField } from './khidki-field';
@@ -53,6 +54,8 @@ interface Params {
   /** WCAG contrast of the fills and the leading against the ground. */
   fill: number;
   lead: number;
+  /** WCAG contrast of the border band against the ground. */
+  bandTone: number;
 }
 
 export const sketch = ({ wrap, context, ...props }: SketchProps) => {
@@ -73,6 +76,7 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     slate: Random.chance(0.5),
     fill: 2.2,
     lead: 3.6,
+    bandTone: 2.8,
   };
 
   const inGallery = new URLSearchParams(location.search).has('gallery');
@@ -93,7 +97,7 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   let grille: Grille;
   let field: KhidkiField;
   const recipe = { text: '' };
-  const colours = { bg: '', growth: '', walks: '', lead: '', punctum: '' };
+  const colours = { bg: '', growth: '', walks: '', lead: '', band: '', punctum: '' };
 
   const build = () => {
     Random.setSeed(params.seed);
@@ -148,6 +152,13 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     colours.growth = p.tiers.mid[at(0)].css;
     colours.walks = p.tiers.mid[at(1)].css;
     colours.lead = p.tiers.high[at(0)].css;
+    // The band: the leading's own hue, the ramp sample nearest its contrast.
+    const ramp = p.ramps[at(0)];
+    const bg = p.bg.color;
+    const band = ramp.reduce((best, c) =>
+      Math.abs(wcagContrast(c, bg) - params.bandTone) < Math.abs(wcagContrast(best, bg) - params.bandTone) ? c : best,
+    );
+    colours.band = formatCss(band);
     colours.punctum = p.tiers.high[at(6)].css;
   };
 
@@ -193,6 +204,7 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   onInput(colour.addBinding(params, 'saturation', { min: 0, max: 1, step: 0.01 }), repaint);
   onInput(colour.addBinding(params, 'fill', { min: 1.2, max: 5, step: 0.1, label: 'fill (:1)' }), repaint);
   onInput(colour.addBinding(params, 'lead', { min: 1.5, max: 12, step: 0.1, label: 'leading (:1)' }), repaint);
+  onInput(colour.addBinding(params, 'bandTone', { min: 1.2, max: 12, step: 0.1, label: 'band (:1)' }), repaint);
   colour.addButton({ title: 'New palette' }).on('click', () => {
     params.paletteSeed = Random.getRandomSeed();
     params.hue = Math.round(Random.range(0, 360));
@@ -268,12 +280,13 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     context.restore();
 
     if (params.band) {
-      // A flat band in the leading's colour, filling everything between the
-      // opening and the canvas edge: an edge, not an object.
+      // A flat band a step quieter than the leading, in its hue, filling
+      // everything between the opening and the canvas edge: an edge, not an
+      // object.
       const band = new Path2D();
       band.rect(0, 0, width, height);
       band.rect(ox, oy, W * scale, H * scale);
-      context.fillStyle = colours.lead;
+      context.fillStyle = colours.band;
       context.fill(band, 'evenodd');
     }
   };
