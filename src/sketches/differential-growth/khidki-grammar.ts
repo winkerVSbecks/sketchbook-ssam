@@ -61,7 +61,7 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     symmetry: Random.pick(SYMMETRIES),
     depth: Random.rangeFloor(2, 5),
     punctum: Random.chance(0.4),
-    band: false,
+    band: true,
     bar: 0.6,
     radius: 1,
     stroke: 0.35,
@@ -268,10 +268,13 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     context.restore();
 
     if (params.band) {
-      // A flat band in the leading's colour: an edge, not an object.
-      context.strokeStyle = colours.lead;
-      context.lineWidth = inset;
-      context.strokeRect(ox - inset / 2, oy - inset / 2, W * scale + inset, H * scale + inset);
+      // A flat band in the leading's colour, filling everything between the
+      // opening and the canvas edge: an edge, not an object.
+      const band = new Path2D();
+      band.rect(0, 0, width, height);
+      band.rect(ox, oy, W * scale, H * scale);
+      context.fillStyle = colours.lead;
+      context.fill(band, 'evenodd');
     }
   };
 };
