@@ -14,8 +14,8 @@
  *                brackets;
  *   - star     — a ring with four kites to the corners and arms to the
  *                frame, over balusters;
- *   - circles  — a band of overlapping circles meeting in pointed ovals,
- *                between rails, a short top band and balusters below.
+ *   - circles  — two flowers of four overlapping circles, petals pointed
+ *                where they overlap, between rails over balusters.
  *
  * Not a sketch — it exports no `sketch`, so the gallery and archive skip it.
  */
@@ -229,33 +229,27 @@ function star(): Grill {
 
 function circles(): Grill {
   const w = 0.68;
-  const [t0, t1, b0, b1] = [0.07, 0.16, 0.54, 0.61];
+  // Four circles of radius r, centred on the diagonals r from the flower's
+  // centre, all passing through it: each neighbouring pair overlaps in a
+  // pointed petal, the four petals pointing up, down, left and right. The
+  // flower spans r(1 + 1/√2) each way, so two of them fill the width.
+  const r = w / 4 / (1 + Math.SQRT1_2);
+  const reach = r * (1 + Math.SQRT1_2);
+  // The flowers sit straight under the frame's top, a rail beneath them.
+  const [t1, b0, b1] = [0, 2 * reach, 2 * reach + 0.07];
   const cy = (t1 + b0) / 2;
-  const bars: Polyline[] = [t0, t1, b0, b1].map((y) => line([0, y], [w, y]));
-  bars.push(line([w * 0.36, t0], [w * 0.36, t1]), line([w * 0.61, t0], [w * 0.61, t1]));
-  // Overlapping circles along the band, centres one radius apart so each
-  // passes through its neighbours' centres: every neighbouring pair overlaps
-  // in a pointed oval (a vesica), and the ovals meet in a chain at the
-  // centres. The radius puts the ovals' points exactly on the rails; arcs
-  // beyond the band are cut.
-  const k = 1;
-  const r = (b0 - t1) / 2 / Math.sqrt(1 - (k * k) / 4);
-  const d = k * r;
-  // A centre — where two ovals meet — on the photograph's middle bar, about
-  // a third of the way across; a bar runs through every such meeting.
-  const first = w * 0.35 - Math.ceil((w * 0.35 + r) / d) * d;
-  for (let x = first; x - r < w; x += d) {
-    const ring = arc(x, cy, r, 0, 2 * Math.PI);
-    let run: Polyline = [];
-    for (const p of ring) {
-      if (p[1] >= t1 && p[1] <= b0) run.push(p);
-      else if (run.length) {
-        bars.push(run);
-        run = [];
-      }
+  const bars: Polyline[] = [b0, b1].map((y) => line([0, y], [w, y]));
+  const off = r * Math.SQRT1_2;
+  for (const cx of [w / 4, (3 * w) / 4]) {
+    for (const [sx, sy] of [
+      [-1, -1],
+      [1, -1],
+      [1, 1],
+      [-1, 1],
+    ]) {
+      bars.push(arc(cx + sx * off, cy + sy * off, r, 0, 2 * Math.PI));
     }
-    if (run.length) bars.push(run);
-    if (x > 0 && x < w) bars.push(line([x, t1], [x, b0]));
+    bars.push(line([cx, t1], [cx, b0]));
   }
   const n = 9;
   for (let i = 1; i <= n; i++) bars.push(line([(w * i) / (n + 1), b1], [(w * i) / (n + 1), 1]));
