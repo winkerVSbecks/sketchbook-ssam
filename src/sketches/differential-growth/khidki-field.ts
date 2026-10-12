@@ -326,14 +326,16 @@ export function createKhidkiField(o: FieldOptions, shape?: GrillShape): KhidkiFi
   if (o.pattern === 'stars' && !shape) assignStars(blocks, centres, o.starSet, o.starPick);
   else assignPatches(blocks, centres, o.growthShare, o.groupSize);
 
-  // Depth of every cell: steps to the nearest closed cell or the edge, so a
-  // curve can start where its block is widest and walks keep off the bars.
+  // Depth of every cell: steps to the nearest closed cell, so a curve can
+  // start where its block is widest and walks keep off the bars. The field's
+  // own edge is not a wall — it runs under the window frame — so walks may
+  // run right up to it.
   const depth = new Int32Array(cols * rows).fill(-1);
   const queue: number[] = [];
   for (let i = 0; i < depth.length; i++) {
     const x = i % cols;
     const y = Math.floor(i / cols);
-    if (mask.ids[i] < 0 || x === 0 || y === 0 || x === cols - 1 || y === rows - 1) {
+    if (mask.ids[i] < 0 || (shape?.frame && (x === 0 || y === 0 || x === cols - 1 || y === rows - 1))) {
       depth[i] = 0;
       queue.push(i);
     }
@@ -358,12 +360,16 @@ export function createKhidkiField(o: FieldOptions, shape?: GrillShape): KhidkiFi
 
   const confine = createConfiner(mask, o.radius * 0.5);
   const density = NODES_PER_AREA * (DEFAULT_RADIUS / o.radius);
-  const lc = Math.floor(g.w / o.walkPitch);
-  const lr = Math.floor(g.h / o.walkPitch);
-  // Walk nodes keep a radius clear of the grill, like the curves' margin.
-  const clear = Math.ceil(o.radius / RES);
-  const nodeCell = (u: number, v: number) =>
-    Math.floor(((v + 0.5) * o.walkPitch) / RES) * cols + Math.floor(((u + 0.5) * o.walkPitch) / RES);
+  // The lattice covers the whole field, its last column and row included.
+  const lc = Math.ceil(g.w / o.walkPitch);
+  const lr = Math.ceil(g.h / o.walkPitch);
+  // Walk nodes keep the same margin off the grill as the curves do.
+  const clear = Math.ceil((o.radius * 0.5) / RES);
+  const nodeCell = (u: number, v: number) => {
+    const x = Math.floor(((u + 0.5) * o.walkPitch) / RES);
+    const y = Math.floor(((v + 0.5) * o.walkPitch) / RES);
+    return x < cols && y < rows ? y * cols + x : -1;
+  };
 
   for (const block of blocks) {
     if (block.kind === 'growth') {
@@ -390,7 +396,7 @@ export function createKhidkiField(o: FieldOptions, shape?: GrillShape): KhidkiFi
         lr,
         (u, v) => {
           const n = nodeCell(u, v);
-          return mask.ids[n] === block.id && depth[n] >= clear;
+          return n >= 0 && mask.ids[n] === block.id && depth[n] >= clear;
         },
         () => Random.rangeFloor(2, Math.max(2, o.walkLength) + 1),
       );
