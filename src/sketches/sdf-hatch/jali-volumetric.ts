@@ -27,22 +27,29 @@ interface Config {
   lightHeight: number;
   camAngle: number;
   density: number;
+  haze: number;
+  dust: number;
+  grain: number;
   exposure: number;
 }
 
 const config: Config = {
   seed: 7,
   // truchet cells across the opening
-  cells: 8,
+  cells: 9,
   // bar half width, in cells
   barWidth: 0.07,
   // height of the arch's point above the springing line, in half widths
   archRise: 1.5,
-  lightAngle: 0.12,
-  lightHeight: 0.95,
-  camAngle: 0.15,
+  lightAngle: 0.5,
+  lightHeight: 0.62,
+  camAngle: 0.32,
   // in-scattered light per world unit of sunlit air
-  density: 0.9,
+  density: 0.75,
+  // haze texture: 0 is a uniform medium, 1 is fully broken into strata
+  haze: 0.85,
+  dust: 0.8,
+  grain: 0.07,
   exposure: 1.4,
 };
 
@@ -59,6 +66,9 @@ uniform vec2 uResolution;
 uniform vec3 uLightDir;
 uniform float uCamAngle;
 uniform float uSeed;
+uniform float uHaze;
+uniform float uDust;
+uniform float uGrain;
 uniform float uCells;
 uniform float uBar;
 uniform float uRise;
@@ -69,14 +79,14 @@ uniform vec3 uInk;
 
 out vec4 outColor;
 
-const float FOCAL = 2.2;
+const float FOCAL = 1.45;
 const float TMAX = 40.0;
 
 // The room side of the wall is its z = 0 face; the sun is outside (z < 0).
 const float WALL = 0.36;     // wall thickness
-const float HALF_W = 0.85;   // half width of the opening
-const float SILL = 0.7;      // sill height
-const float SPRING = 2.1;    // where the arch springs
+const float HALF_W = 1.05;   // half width of the opening
+const float SILL = 1.3;      // sill height
+const float SPRING = 3.0;    // where the arch springs
 const float SCREEN = 0.05;   // half thickness of the jali screen
 const float FRAME_W = 0.14;  // moulding width
 const float FRAME_D = 0.06;  // moulding projection into the room
@@ -94,8 +104,8 @@ const vec2 TILES[28] = vec2[28](
 vec3 ro, cu, cv, cw;
 
 void setupCamera() {
-  vec3 ta = vec3(0.0, 1.25, 0.0);
-  ro = ta + vec3(sin(uCamAngle) * 6.0, 1.9, cos(uCamAngle) * 6.0);
+  vec3 ta = vec3(-1.0, 2.15, 0.0);
+  ro = ta + vec3(sin(uCamAngle) * 8.5, 0.35, cos(uCamAngle) * 8.5);
   cw = normalize(ta - ro);
   cu = normalize(cross(cw, vec3(0.0, 1.0, 0.0)));
   cv = cross(cu, cw);
@@ -244,6 +254,73 @@ float sunVisible(vec3 q) {
 }
 
 // interleaved gradient noise, to dither the march start per pixel
+// white noise for grain
+float hash12(vec2 p) {
+  vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}
+
+float hash13(vec3 p) {
+  p = fract(p * 0.1031);
+  p += dot(p, p.zyx + 31.32);
+  return fract((p.x + p.y) * p.z);
+}
+
+float noise3(vec3 x) {
+  vec3 i = floor(x);
+  vec3 f = fract(x);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(mix(hash13(i), hash13(i + vec3(1, 0, 0)), f.x),
+        mix(hash13(i + vec3(0, 1, 0)), hash13(i + vec3(1, 1, 0)), f.x), f.y),
+    mix(mix(hash13(i + vec3(0, 0, 1)), hash13(i + vec3(1, 0, 1)), f.x),
+        mix(hash13(i + vec3(0, 1, 1)), hash13(i + vec3(1, 1, 1)), f.x), f.y),
+    f.z);
+}
+
+float fbm(vec3 p) {
+  float s = 0.0;
+  float a = 0.5;
+  for (int i = 0; i < 4; i++) {
+    s += a * noise3(p);
+    p = p * 2.03 + 1.7;
+    a *= 0.5;
+  }
+  return s / 0.9375;
+}
+
+// Haze is thicker and thinner in loose horizontal strata, the way smoke and
+// dust settle in still air; mean density stays near 1.
+float haze(vec3 q) {
+  float n = fbm(q * vec3(0.9, 2.4, 0.9) + uSeed * 0.37);
+  return mix(1.0, 2.2 * smoothstep(0.3, 0.75, n), uHaze);
+}
+
+// Dust motes: specks scattered on a stack of wall-parallel planes through the
+// room, each visible only where a shaft catches it. Specks are about a pixel
+// across at this distance; smoothstep keeps them from shimmering.
+const int DUST_LAYERS = 14;
+
+float dustMotes(vec3 rd, float tHit) {
+  if (rd.z >= 0.0) return 0.0;
+  float dust = 0.0;
+  for (int k = 0; k < DUST_LAYERS; k++) {
+    float t = (0.15 + float(k) * 0.45 - ro.z) / rd.z;
+    if (t <= 0.0 || t >= tHit) continue;
+    vec3 p = ro + rd * t;
+    vec2 g = p.xy * 9.0 + float(k) * 7.31;
+    vec2 id = floor(g);
+    float h = hash12(id + float(k) * 13.7 + uSeed);
+    if (h < 0.6) continue;
+    vec2 c = 0.15 + 0.7 * vec2(hash12(id + 3.1), hash12(id + 5.7));
+    float r = 0.04 + 0.08 * (h - 0.6) / 0.4;
+    float m = smoothstep(r, r * 0.25, length(g - id - c));
+    if (m > 0.0) dust += m * sunVisible(p);
+  }
+  return dust;
+}
+
 float ign(vec2 frag) {
   return fract(52.9829189 * fract(dot(frag, vec2(0.06711056, 0.00583715))));
 }
@@ -264,7 +341,9 @@ void main() {
   float jitter = ign(frag);
   float scatter = 0.0;
   for (int i = 0; i < SCATTER_STEPS; i++) {
-    scatter += sunVisible(ro + rd * (dt * (float(i) + jitter))) * dt;
+    vec3 q = ro + rd * (dt * (float(i) + jitter));
+    float lit = sunVisible(q);
+    if (lit > 0.0) scatter += lit * haze(q) * dt;
   }
 
   // sky through the holes is the brightest thing in the picture
@@ -278,12 +357,16 @@ void main() {
     sun *= pos.z > 0.001 ? sunVisible(pos) : softShadow(pos + n * 0.002, uLightDir);
     float occ = calcAO(pos, n);
     float fill = clamp(dot(n, normalize(vec3(0.2, 0.6, 1.0))), 0.0, 1.0);
-    surface = 1.6 * sun + (0.22 * fill + 0.03) * occ;
+    // limewashed stone: a little blotchy, never flat
+    float plaster = 0.82 + 0.3 * fbm(pos * vec3(5.0, 5.0, 5.0) + uSeed);
+    surface = plaster * (1.6 * sun + (0.22 * fill + 0.03) * occ);
   }
 
   // filmic-ish exposure, then a two-tone ramp from ink to paper
   float light = 1.0 - exp(-uExposure * (surface + uDensity * scatter));
-  light += (ign(frag + 17.0) - 0.5) / 255.0; // dither the gradient
+  light += uDust * dustMotes(rd, hit.y > 0.0 ? hit.x : TMAX);
+  // film grain, strongest in the mid-tones like silver halide
+  light += uGrain * (hash12(frag + uSeed * 91.0) - 0.5) * (0.4 + 2.4 * light * (1.0 - light));
   outColor = vec4(mix(uInk, uPaper, clamp(light, 0.0, 1.0)), 1.0);
 }`;
 
@@ -353,10 +436,13 @@ export const sketch: Sketch<'webgl2'> = ({ wrap, gl, render, ...props }) => {
   pane.addBinding(config, 'cells', { min: 3, max: 20, step: 1 });
   pane.addBinding(config, 'barWidth', { min: 0.02, max: 0.12, step: 0.005 });
   pane.addBinding(config, 'archRise', { min: 1, max: 2.2, step: 0.05 });
-  pane.addBinding(config, 'lightAngle', { min: -0.8, max: 0.8, step: 0.01 });
+  pane.addBinding(config, 'lightAngle', { min: -1, max: 1, step: 0.01 });
   pane.addBinding(config, 'lightHeight', { min: 0.2, max: 3, step: 0.01 });
   pane.addBinding(config, 'camAngle', { min: -1, max: 1, step: 0.01 });
   pane.addBinding(config, 'density', { min: 0, max: 2, step: 0.01 });
+  pane.addBinding(config, 'haze', { min: 0, max: 1, step: 0.01 });
+  pane.addBinding(config, 'dust', { min: 0, max: 2, step: 0.01 });
+  pane.addBinding(config, 'grain', { min: 0, max: 0.2, step: 0.005 });
   pane.addBinding(config, 'exposure', { min: 0.2, max: 4, step: 0.05 });
   pane.on('change', (ev: { last: boolean }) => {
     if (!ev.last) return;
@@ -382,6 +468,9 @@ export const sketch: Sketch<'webgl2'> = ({ wrap, gl, render, ...props }) => {
     gl.uniform1f(uniform('uRise'), config.archRise);
     gl.uniform1f(uniform('uDensity'), config.density);
     gl.uniform1f(uniform('uExposure'), config.exposure);
+    gl.uniform1f(uniform('uHaze'), config.haze);
+    gl.uniform1f(uniform('uDust'), config.dust);
+    gl.uniform1f(uniform('uGrain'), config.grain);
     gl.uniform3f(uniform('uPaper'), ...paper);
     gl.uniform3f(uniform('uInk'), ...ink);
     gl.enableVertexAttribArray(posLoc);
