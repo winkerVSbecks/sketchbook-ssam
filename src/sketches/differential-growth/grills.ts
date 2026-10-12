@@ -10,8 +10,9 @@
  *   - railing  — two stacked panels, each a small box hung on four diagonals;
  *   - scroll   — a square with its diagonals crossed, four petals ending in
  *                curls round a boss, between double stiles;
- *   - gate     — a round-shouldered gate of stiles and stepped, brick-bond
- *                brackets;
+ *   - gate     — a round-shouldered gate of stiles and interlocking steps:
+ *                centre bars and side bars alternating, ends dropped to the
+ *                row below like brick bond;
  *   - star     — a ring with four kites to the corners and arms to the
  *                frame, over balusters;
  *   - circles  — a three-section top row, then two medallions — a circle
@@ -164,7 +165,8 @@ function scroll(): Grill {
 }
 
 function gate(): Grill {
-  const w = 0.8;
+  // Proportions traced off the photograph: frame 675 × 855, so w ≈ 0.79.
+  const w = 0.79;
   // Round-shouldered frame: the top corners turned on a small radius.
   const rr = 0.06;
   const frame: Polyline = [
@@ -176,21 +178,40 @@ function gate(): Grill {
     [w, 1],
     [0, 1],
   ];
-  const bars: Polyline[] = [0.1, 0.38, 0.47, 0.73].map((x) => line([x, 0], [x, 1]));
-  bars.push(line([0, 0.1], [w, 0.1]), line([0, 0.25], [w, 0.25]));
-  // Brick-bond steps: a bracket — a rail with short drops at its ends — in
-  // the middle on even rows, and a pair hung from the stiles on odd rows.
-  const drop = 0.035;
-  const bracket = (x0: number, x1: number, y: number, left: boolean, right: boolean): Polyline => [
-    ...(left ? [[x0, y + drop] as Pt] : []),
-    [x0, y],
-    [x1, y],
-    ...(right ? [[x1, y + drop] as Pt] : []),
-  ];
-  for (let k = 0; k < 9; k++) {
-    const y = 0.32 + k * 0.075;
-    if (k % 2 === 0) bars.push(bracket(0.16, 0.64, y, true, true));
-    else bars.push(bracket(0, 0.29, y, false, true), bracket(0.56, w, y, true, false));
+  // Four full-height stiles and a rail across the top.
+  const bars: Polyline[] = [0.105, 0.368, 0.462, 0.719].map((x) => line([x, 0], [x, 1]));
+  bars.push(line([0, 0.058], [w, 0.058]));
+  // The steps interlock like brick bond. Rows alternate: a centre bar, then a
+  // pair of side bars run in from the frame. Every bar's free ends drop to
+  // the row below — the centre bar's ends land on the side bars, the side
+  // bars' inner ends on the next centre bar — so the steps zigzag down.
+  const [c0, c1] = [0.199, 0.632];
+  const [sl, sr] = [0.287, 0.55];
+  const rows = 10;
+  const y0 = 0.14;
+  const dy = (0.912 - y0) / (rows - 1);
+  for (let k = 0; k < rows; k++) {
+    const y = y0 + k * dy;
+    const below = k === rows - 1 ? 1 : y + dy;
+    if (k % 2 === 0) {
+      bars.push([
+        [c0, below],
+        [c0, y],
+        [c1, y],
+        [c1, below],
+      ]);
+    } else {
+      bars.push([
+        [0, y],
+        [sl, y],
+        [sl, below],
+      ]);
+      bars.push([
+        [w, y],
+        [sr, y],
+        [sr, below],
+      ]);
+    }
   }
   return { name: 'gate', w, h: 1, frame, bars, discs: [] };
 }
