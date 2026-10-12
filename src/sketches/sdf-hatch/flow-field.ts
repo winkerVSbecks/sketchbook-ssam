@@ -536,7 +536,8 @@ export const sketch = ({ wrap, context, width, height, render, ...props }: Sketc
     Random.setSeed(config.seed);
     const palette = randomPalette(7);
     bg = palette.bg;
-    ink = palette.ink();
+    // no riso ink may clear 7:1 on this paper; fall back to black
+    ink = palette.inkColors.length > 0 ? palette.ink() : '#000000';
     field = fieldRenderer.render();
     lines = traceStreamlines(field);
   }
