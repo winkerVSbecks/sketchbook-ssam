@@ -23,9 +23,11 @@ const config = {
   rootWidth: 60,
   tipWidth: 3,
   wobble: 0.35,
-  cupSize: 0.42,
-  cupSpacing: 3,
-  cupInset: 0.45,
+  cupRows: 2,
+  cupSize: 0.3,
+  cupSpacing: 4,
+  cupInset: 0.35,
+  cupRowGap: 0.5,
   cupStart: 0.12,
   cupEnd: 0.92,
   cupContrast: 3,
@@ -51,9 +53,11 @@ pane.addBinding(config, 'curlTightness', { min: 1, max: 8, step: 0.1 });
 pane.addBinding(config, 'rootWidth', { min: 4, max: 150, step: 1 });
 pane.addBinding(config, 'tipWidth', { min: 0, max: 40, step: 1 });
 pane.addBinding(config, 'wobble', { min: 0, max: 1, step: 0.01 });
+pane.addBinding(config, 'cupRows', { min: 1, max: 2, step: 1 });
 pane.addBinding(config, 'cupSize', { min: 0, max: 1, step: 0.01 });
 pane.addBinding(config, 'cupSpacing', { min: 1, max: 8, step: 1 });
 pane.addBinding(config, 'cupInset', { min: 0, max: 1, step: 0.01 });
+pane.addBinding(config, 'cupRowGap', { min: 0, max: 1, step: 0.01 });
 pane.addBinding(config, 'cupStart', { min: 0, max: 1, step: 0.01 });
 pane.addBinding(config, 'cupEnd', { min: 0, max: 1, step: 0.01 });
 pane.addBinding(config, 'cupContrast', { min: 1, max: 10, step: 0.1 });
@@ -273,10 +277,12 @@ function cupColor(tentacle: Tentacle, palette: string[]): string {
 }
 
 /**
- * A row of suction cups along the inside of the curl. Turning the heading by
- * +curlDir rotates toward heading + curlDir·90°, so that is the inner side.
- * Each cup is a rim disc with the tentacle colour as its hollow, sized off
- * the local width so the row shrinks toward the tip.
+ * Suction cups along the inside of the curl. Turning the heading by +curlDir
+ * rotates toward heading + curlDir·90°, so that is the inner side. With two
+ * rows, they sit either side of `cupInset` (as a fraction of the local
+ * half-width), `cupRowGap` apart, and the outer row is shifted half a
+ * spacing along the arm so the cups zigzag like a real octopus's. Cups are
+ * sized off the local width so the rows shrink toward the tip.
  */
 function drawCups(
   context: CanvasRenderingContext2D,
@@ -288,26 +294,43 @@ function drawCups(
   const last = spine.points.length - 1;
   const from = Math.round(config.cupStart * last);
   const to = Math.round(config.cupEnd * last);
+  const rows = config.cupRows >= 2 ? [-0.5, 0.5] : [0];
 
-  for (let idx = from; idx <= to; idx += config.cupSpacing) {
-    const [px, py] = spine.points[idx];
-    const inner = spine.headings[idx] + (tentacle.curlDir * Math.PI) / 2;
-    const half = spine.halfWidths[idx] + config.lineWidth / 2;
-    const r = half * config.cupSize;
-    if (r < 1) continue;
-    const cx = px + Math.cos(inner) * half * config.cupInset;
-    const cy = py + Math.sin(inner) * half * config.cupInset;
+  rows.forEach((row, rowIdx) => {
+    const inset = config.cupInset + row * config.cupRowGap;
+    const stagger = rowIdx * Math.floor(config.cupSpacing / 2);
 
-    context.fillStyle = rim;
-    context.beginPath();
-    context.arc(cx, cy, r, 0, Math.PI * 2);
-    context.fill();
+    for (let idx = from + stagger; idx <= to; idx += config.cupSpacing) {
+      drawCup(context, spine, idx, inset, tentacle, rim);
+    }
+  });
+}
 
-    context.fillStyle = tentacle.color;
-    context.beginPath();
-    context.arc(cx, cy, r * 0.5, 0, Math.PI * 2);
-    context.fill();
-  }
+function drawCup(
+  context: CanvasRenderingContext2D,
+  spine: Spine,
+  idx: number,
+  inset: number,
+  tentacle: Tentacle,
+  rim: string,
+) {
+  const [px, py] = spine.points[idx];
+  const inner = spine.headings[idx] + (tentacle.curlDir * Math.PI) / 2;
+  const half = spine.halfWidths[idx] + config.lineWidth / 2;
+  const r = half * config.cupSize;
+  if (r < 1) return;
+  const cx = px + Math.cos(inner) * half * inset;
+  const cy = py + Math.sin(inner) * half * inset;
+
+  context.fillStyle = rim;
+  context.beginPath();
+  context.arc(cx, cy, r, 0, Math.PI * 2);
+  context.fill();
+
+  context.fillStyle = tentacle.color;
+  context.beginPath();
+  context.arc(cx, cy, r * 0.5, 0, Math.PI * 2);
+  context.fill();
 }
 
 /** Fill + stroke a closed shape over an offset accent copy, like the source sketch. */
