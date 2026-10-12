@@ -1,6 +1,7 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
+import { wcagContrast } from 'culori';
 import { lerp, mapRange } from 'canvas-sketch-util/math';
 import getNormals from 'polyline-normals';
 import { drawPath } from '@daeinc/draw';
@@ -27,6 +28,7 @@ const config = {
   cupInset: 0.45,
   cupStart: 0.12,
   cupEnd: 0.92,
+  cupContrast: 3,
   bob: 0.02,
   eyeSize: 0.12,
   shadow: 10,
@@ -54,6 +56,7 @@ pane.addBinding(config, 'cupSpacing', { min: 1, max: 8, step: 1 });
 pane.addBinding(config, 'cupInset', { min: 0, max: 1, step: 0.01 });
 pane.addBinding(config, 'cupStart', { min: 0, max: 1, step: 0.01 });
 pane.addBinding(config, 'cupEnd', { min: 0, max: 1, step: 0.01 });
+pane.addBinding(config, 'cupContrast', { min: 1, max: 10, step: 0.1 });
 pane.addBinding(config, 'bob', { min: 0, max: 0.1, step: 0.005 });
 pane.addBinding(config, 'eyeSize', { min: 0, max: 0.3, step: 0.01 });
 pane.addBinding(config, 'shadow', { min: 0, max: 40, step: 1 });
@@ -74,8 +77,8 @@ interface Tentacle {
   curlDir: 1 | -1;
   color: string;
   accent: string;
-  /** Rim colour of the suction cups; always differs from `color`. */
-  cup: string;
+  /** Stable 0–1 pick among the colours that clear config.cupContrast. */
+  cupPick: number;
   side: 'left' | 'right';
   a: number;
   b: number;
@@ -120,7 +123,6 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   ).map((idx: number) => {
     const a = Random.pick([2, 3, 4]);
     const color = Random.pick(colors);
-    const others = colors.filter((c) => c !== color);
     const slot = config.count > 1 ? lerp(-1, 1, idx / (config.count - 1)) : 0;
 
     return {
@@ -130,7 +132,7 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
       curlDir: curlDirection(slot),
       color,
       accent: Random.pick(colors),
-      cup: others.length > 0 ? Random.pick(others) : bg,
+      cupPick: Random.value(),
       side: Random.pick(['left', 'right']),
       a,
       b: a,
@@ -154,7 +156,7 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
         idx,
       );
       drawWithShadow(context, outline(spine), tentacle.color, tentacle.accent, tentacle.side);
-      drawCups(context, spine, tentacle);
+      drawCups(context, spine, tentacle, cupColor(tentacle, [...colors, bg]));
     });
 
     drawWithShadow(context, headShape(head), headColor, headAccent, 'left');
@@ -256,12 +258,32 @@ function outline(spine: Spine): Point[] {
 }
 
 /**
+ * Rim colour for a tentacle's cups: any palette colour (ground included) whose
+ * WCAG contrast against the arm clears config.cupContrast, chosen by the
+ * tentacle's stable cupPick so it doesn't flicker. If none clear the bar, the
+ * most contrasting colour wins.
+ */
+function cupColor(tentacle: Tentacle, palette: string[]): string {
+  const ranked = palette
+    .map((c) => ({ c, contrast: wcagContrast(c, tentacle.color) }))
+    .sort((p, q) => q.contrast - p.contrast);
+  const passing = ranked.filter((p) => p.contrast >= config.cupContrast);
+  if (passing.length === 0) return ranked[0].c;
+  return passing[Math.floor(tentacle.cupPick * passing.length)].c;
+}
+
+/**
  * A row of suction cups along the inside of the curl. Turning the heading by
  * +curlDir rotates toward heading + curlDir·90°, so that is the inner side.
  * Each cup is a rim disc with the tentacle colour as its hollow, sized off
  * the local width so the row shrinks toward the tip.
  */
-function drawCups(context: CanvasRenderingContext2D, spine: Spine, tentacle: Tentacle) {
+function drawCups(
+  context: CanvasRenderingContext2D,
+  spine: Spine,
+  tentacle: Tentacle,
+  rim: string,
+) {
   if (config.cupSize <= 0) return;
   const last = spine.points.length - 1;
   const from = Math.round(config.cupStart * last);
@@ -276,7 +298,7 @@ function drawCups(context: CanvasRenderingContext2D, spine: Spine, tentacle: Ten
     const cx = px + Math.cos(inner) * half * config.cupInset;
     const cy = py + Math.sin(inner) * half * config.cupInset;
 
-    context.fillStyle = tentacle.cup;
+    context.fillStyle = rim;
     context.beginPath();
     context.arc(cx, cy, r, 0, Math.PI * 2);
     context.fill();
