@@ -10,6 +10,11 @@
  * lozenges and the darts between them — are grown, the rest walked; a noise
  * field gathering each kind into patches is the alternative.
  *
+ * Five more grills are pixel gates (./khidki-motifs) — turnstile, railing,
+ * fan, flower panels and sunrise — fitted inside the frame; the open space
+ * round and through them is blocked out and filled the same way, gathered
+ * into noise patches.
+ *
  * Colour: slate ground (paper when off), a fresh palette every load. The
  * fill keeps to two hues off the ring — the base for the growth, the next
  * for the walks — at one quiet contrast level (the mid tier), so the grill,
@@ -30,6 +35,7 @@ import {
   createKhidkiField,
   type FillPattern,
   type KhidkiField,
+  type Motif,
   type StarPick,
 } from './khidki-field';
 import { outline } from './region';
@@ -40,6 +46,10 @@ const WARMUP_MS = 6000;
 
 interface Params {
   seed: string;
+  /** The khidki grill or one of the pixel gates. */
+  motif: Motif;
+  /** Pixel gates: copies side by side. */
+  repeat: number;
   /** Bar thickness, in world units (bar pitch is 10). */
   bar: number;
   /** Circle and diamond size, relative to the reference. */
@@ -87,6 +97,8 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   Random.setSeed(seed);
   const params: Params = {
     seed,
+    motif: 'khidki',
+    repeat: 1,
     bar: 0.5,
     knot: 1,
     pattern: 'patches',
@@ -197,6 +209,20 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     });
 
   const layout = pane.addFolder({ title: 'Grill' });
+  onInput(
+    layout.addBinding(params, 'motif', {
+      options: {
+        khidki: 'khidki',
+        turnstile: 'turnstile',
+        railing: 'railing',
+        fan: 'fan',
+        flower: 'flower',
+        sunrise: 'sunrise',
+      },
+    }),
+    rebuild,
+  );
+  onInput(layout.addBinding(params, 'repeat', { min: 1, max: 4, step: 1 }), rebuild);
   onInput(layout.addBinding(params, 'bar', { min: 0.2, max: 3, step: 0.05 }), rebuild);
   onInput(layout.addBinding(params, 'knot', { min: 0, max: 2.5, step: 0.05, label: 'circles' }), rebuild);
   onInput(
@@ -327,6 +353,12 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
       context.lineTo(x1 * scale, y1 * scale);
     }
     context.stroke();
+
+    // Pixel gates: one path of pixel runs.
+    context.fillStyle = colors.bars;
+    context.beginPath();
+    for (const [x, y, w, h] of grill.pixels) context.rect(x * scale, y * scale, w * scale, h * scale);
+    context.fill();
 
     context.fillStyle = colors.circles;
     context.beginPath();

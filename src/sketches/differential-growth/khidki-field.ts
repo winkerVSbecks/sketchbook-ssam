@@ -17,11 +17,15 @@
  * cells is one block (region.ts confines growth to it). The grill is drawn
  * over the fills, so the raster's steps never show.
  *
+ * The other motifs swap the grill for a pixel bitmap (./khidki-motifs),
+ * fitted to the opening and centred: its set pixels close the mask instead.
+ *
  * Not a sketch — it exports no `sketch`, so the gallery and archive skip it.
  */
 import Random from 'canvas-sketch-util/random';
 
 import { createGrowth, type Growth } from '../terminal-ui/growth-sim';
+import { motifBitmap, type Bitmap, type PixelMotif } from './khidki-motifs';
 import { createConfiner, createMask, naleeWalks, type LatticePoint, type RegionMask } from './region';
 
 /** Bar pitch, in world units. */
@@ -30,6 +34,9 @@ export const APERTURE_W = 5.4 * PITCH;
 export const APERTURE_H = 7.1 * PITCH;
 /** Mask resolution, in world units per cell. */
 const RES = 0.25;
+/** Blocks larger than this (world units²) are always walked: one curve
+ * can't fill the open surround of a pixel gate in any sensible warm-up. */
+const MAX_GROWN_AREA = 4 * PITCH * PITCH;
 /** Node budget per world unit² of block at the default spacing. */
 const NODES_PER_AREA = 7.5;
 const DEFAULT_RADIUS = 0.9;
@@ -46,9 +53,17 @@ export interface Grill {
   /** Circle radius and diamond half-diagonal, in world units. */
   circleR: number;
   diamondR: number;
+  /** Pixel motifs: the bitmap's runs of set pixels as `[x, y, w, h]` world rects. */
+  pixels: [number, number, number, number][];
 }
 
+/** The khidki's bar-and-lozenge grill, or one of the pixel gates. */
+export type Motif = 'khidki' | PixelMotif;
+
 export interface GrillOptions {
+  motif: Motif;
+  /** Pixel motifs: copies side by side. */
+  repeat: number;
   /** Bar thickness, in world units. */
   bar: number;
   /** Circle and diamond size, as a fraction of the pitch. */
@@ -96,7 +111,46 @@ export function makeGrill(o: GrillOptions): Grill {
   const circles: Pt[] = [];
   const diamonds: Pt[] = [];
   ys.forEach((y, j) => xs.forEach((x, i) => ((i + j) % 2 === 0 ? circles : diamonds).push([x, y])));
-  return { bars, lozenges, circles, diamonds, circleR: o.knot * 0.17 * s, diamondR: o.knot * 0.19 * s };
+  return { bars, lozenges, circles, diamonds, circleR: o.knot * 0.17 * s, diamondR: o.knot * 0.19 * s, pixels: [] };
+}
+
+/** A pixel bitmap fitted to the opening, with half a pitch of margin all round. */
+interface FittedBitmap {
+  bitmap: Bitmap;
+  size: number;
+  x: number;
+  y: number;
+}
+
+function fitBitmap(bitmap: Bitmap): FittedBitmap {
+  const margin = 0.5 * PITCH;
+  const size = Math.min((APERTURE_W - 2 * margin) / bitmap.cols, (APERTURE_H - 2 * margin) / bitmap.rows);
+  return {
+    bitmap,
+    size,
+    x: (APERTURE_W - bitmap.cols * size) / 2,
+    y: (APERTURE_H - bitmap.rows * size) / 2,
+  };
+}
+
+function pixelGrill({ bitmap, size, x, y }: FittedBitmap): Grill {
+  const pixels: Grill['pixels'] = [];
+  for (let r = 0; r < bitmap.rows; r++) {
+    for (let c = 0; c < bitmap.cols; c++) {
+      if (!bitmap.on[r * bitmap.cols + c]) continue;
+      let end = c;
+      while (end + 1 < bitmap.cols && bitmap.on[r * bitmap.cols + end + 1]) end++;
+      pixels.push([x + c * size, y + r * size, (end - c + 1) * size, size]);
+      c = end;
+    }
+  }
+  return { bars: [], lozenges: [], circles: [], diamonds: [], circleR: 0, diamondR: 0, pixels };
+}
+
+function pixelAt({ bitmap, size, x, y }: FittedBitmap, [px, py]: Pt): boolean {
+  const c = Math.floor((px - x) / size);
+  const r = Math.floor((py - y) / size);
+  return c >= 0 && r >= 0 && c < bitmap.cols && r < bitmap.rows && bitmap.on[r * bitmap.cols + c] === 1;
 }
 
 function segDist([px, py]: Pt, [[ax, ay], [bx, by]]: Segment): number {
@@ -132,7 +186,8 @@ export interface KhidkiField {
 
 export interface FieldOptions extends GrillOptions {
   pattern: FillPattern;
-  /** Stars: centre on circles at odd or even grill positions. */
+  /** Stars (khidki motif only; pixel motifs fall back to patches): centre on
+   * circles at odd or even grill positions. */
   starSet: 'odd' | 'even';
   starPick: StarPick;
   /** Patches: share of blocks grown rather than walked. */
@@ -148,7 +203,8 @@ export interface FieldOptions extends GrillOptions {
 }
 
 export function createKhidkiField(o: FieldOptions): KhidkiField {
-  const grill = makeGrill(o);
+  const fitted = o.motif === 'khidki' ? undefined : fitBitmap(motifBitmap(o.motif, o.repeat));
+  const grill = fitted ? pixelGrill(fitted) : makeGrill(o);
   const cols = Math.ceil(APERTURE_W / RES);
   const rows = Math.ceil(APERTURE_H / RES);
   const mask = createMask(cols, rows, RES);
@@ -160,8 +216,9 @@ export function createKhidkiField(o: FieldOptions): KhidkiField {
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
       const p: Pt = [(x + 0.5) * RES, (y + 0.5) * RES];
-      const shut =
-        grill.bars.some((seg) => segDist(p, seg) < half) ||
+      const shut = fitted
+        ? pixelAt(fitted, p)
+        : grill.bars.some((seg) => segDist(p, seg) < half) ||
         grill.circles.some(([cx, cy]) => Math.hypot(p[0] - cx, p[1] - cy) < grill.circleR);
       open[y * cols + x] = shut ? 0 : 1;
     }
@@ -208,8 +265,9 @@ export function createKhidkiField(o: FieldOptions): KhidkiField {
     blocks.push({ id, kind: 'nalee', area: cells.length * RES * RES });
   }
 
-  if (o.pattern === 'stars') assignStars(blocks, centres, o.starSet, o.starPick);
+  if (o.pattern === 'stars' && !fitted) assignStars(blocks, centres, o.starSet, o.starPick);
   else assignPatches(blocks, centres, o.growthShare, o.groupSize);
+  for (const block of blocks) if (block.area > MAX_GROWN_AREA) block.kind = 'nalee';
 
   // Depth of every cell: steps to the nearest closed cell or the edge, so a
   // curve can start where its block is widest and walks keep off the bars.
