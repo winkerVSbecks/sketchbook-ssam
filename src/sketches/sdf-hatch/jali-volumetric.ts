@@ -24,6 +24,7 @@ interface Config {
   barWidth: number;
   archRise: number;
   lightAngle: number;
+  sweep: number;
   lightHeight: number;
   camAngle: number;
   density: number;
@@ -41,16 +42,18 @@ const config: Config = {
   barWidth: 0.07,
   // height of the arch's point above the springing line, in half widths
   archRise: 1.5,
-  lightAngle: 0.5,
+  // centre of the sun's swing, and how far either side of it the sun travels
+  lightAngle: 0,
+  sweep: 0.75,
   lightHeight: 0.62,
   camAngle: 0.32,
   // in-scattered light per world unit of sunlit air
   density: 0.75,
   // haze texture: 0 is a uniform medium, 1 is fully broken into strata
   haze: 0.85,
-  dust: 0.8,
+  dust: 0.28,
   grain: 0.07,
-  exposure: 1.4,
+  exposure: 0.3,
 };
 
 const VERT = /* glsl */ `#version 300 es
@@ -437,6 +440,7 @@ export const sketch: Sketch<'webgl2'> = ({ wrap, gl, render, ...props }) => {
   pane.addBinding(config, 'barWidth', { min: 0.02, max: 0.12, step: 0.005 });
   pane.addBinding(config, 'archRise', { min: 1, max: 2.2, step: 0.05 });
   pane.addBinding(config, 'lightAngle', { min: -1, max: 1, step: 0.01 });
+  pane.addBinding(config, 'sweep', { min: 0, max: 1, step: 0.01 });
   pane.addBinding(config, 'lightHeight', { min: 0.2, max: 3, step: 0.01 });
   pane.addBinding(config, 'camAngle', { min: -1, max: 1, step: 0.01 });
   pane.addBinding(config, 'density', { min: 0, max: 2, step: 0.01 });
@@ -450,11 +454,14 @@ export const sketch: Sketch<'webgl2'> = ({ wrap, gl, render, ...props }) => {
     render();
   });
 
-  wrap.render = () => {
+  wrap.render = ({ playhead }) => {
     const w = gl.drawingBufferWidth;
     const h = gl.drawingBufferHeight;
-    const lx = Math.sin(config.lightAngle);
-    const lz = -Math.cos(config.lightAngle);
+    // The sun swings from +x to −x, so the light it throws through the screen
+    // travels left to right across the room; cos eases in and out at the ends.
+    const angle = config.lightAngle + config.sweep * Math.cos(Math.PI * playhead);
+    const lx = Math.sin(angle);
+    const lz = -Math.cos(angle);
     const ll = Math.hypot(lx, config.lightHeight, lz);
 
     gl.viewport(0, 0, w, h);
@@ -484,7 +491,12 @@ export const settings: SketchSettings = {
   mode: 'webgl2',
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
-  animate: false,
+  // preserveDrawingBuffer so exportFrame can read pixels outside the draw tick
+  attributes: { preserveDrawingBuffer: true },
+  animate: true,
+  duration: 8_000,
+  playFps: 30,
+  exportFps: 30,
 };
 
 ssam(sketch, settings);
