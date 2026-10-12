@@ -10,15 +10,18 @@ import { generateColors } from '../../subtractive-color';
 const config = {
   count: 8,
   headX: 0.5,
-  headY: 0.5,
+  headY: 0.46,
   headWidth: 0.28,
   headHeight: 0.22,
   stretch: 3,
   rootSpan: 0.6,
-  fan: 0.35,
+  fan: 0.45,
+  length: 0.6,
+  curl: 0.8,
+  curlTightness: 3,
   rootWidth: 60,
-  tipWidth: 4,
-  wobble: 0.08,
+  tipWidth: 3,
+  wobble: 0.35,
   bob: 0.02,
   eyeSize: 0.12,
   shadow: 10,
@@ -34,10 +37,13 @@ pane.addBinding(config, 'headWidth', { min: 0.1, max: 0.8, step: 0.01 });
 pane.addBinding(config, 'headHeight', { min: 0.1, max: 0.6, step: 0.01 });
 pane.addBinding(config, 'stretch', { min: 1, max: 4, step: 0.05 });
 pane.addBinding(config, 'rootSpan', { min: 0, max: 1, step: 0.01 });
-pane.addBinding(config, 'fan', { min: 0, max: 1, step: 0.01 });
+pane.addBinding(config, 'fan', { min: 0, max: 1.5, step: 0.01 });
+pane.addBinding(config, 'length', { min: 0.1, max: 1, step: 0.01 });
+pane.addBinding(config, 'curl', { min: 0, max: 2, step: 0.01 });
+pane.addBinding(config, 'curlTightness', { min: 1, max: 8, step: 0.1 });
 pane.addBinding(config, 'rootWidth', { min: 4, max: 150, step: 1 });
 pane.addBinding(config, 'tipWidth', { min: 0, max: 40, step: 1 });
-pane.addBinding(config, 'wobble', { min: 0, max: 0.3, step: 0.005 });
+pane.addBinding(config, 'wobble', { min: 0, max: 1, step: 0.01 });
 pane.addBinding(config, 'bob', { min: 0, max: 0.1, step: 0.005 });
 pane.addBinding(config, 'eyeSize', { min: 0, max: 0.3, step: 0.01 });
 pane.addBinding(config, 'shadow', { min: 0, max: 40, step: 1 });
@@ -50,8 +56,12 @@ function wobbly(a: number, b: number, x: number, t: number) {
 interface Tentacle {
   /** Root position across the head's underside, -1 (left) … 1 (right). */
   slot: number;
-  /** Length as a fraction of canvas height. */
+  /** Length multiplier on config.length (per-tentacle jitter). */
   length: number;
+  /** Curl amount multiplier on config.curl (per-tentacle jitter). */
+  curl: number;
+  /** Which way the tip rolls: 1 = clockwise on screen, -1 = counter-clockwise. */
+  curlDir: 1 | -1;
   color: string;
   accent: string;
   side: 'left' | 'right';
@@ -90,10 +100,13 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     Array.from({ length: config.count }, (_, idx) => idx),
   ).map((idx: number) => {
     const a = Random.pick([2, 3, 4]);
+    const slot = config.count > 1 ? lerp(-1, 1, idx / (config.count - 1)) : 0;
 
     return {
-      slot: config.count > 1 ? lerp(-1, 1, idx / (config.count - 1)) : 0,
-      length: Random.range(0.7, 0.95),
+      slot,
+      length: Random.range(0.8, 1.15),
+      curl: Random.range(0.8, 1.25),
+      curlDir: curlDirection(slot),
       color: Random.pick(colors),
       accent: Random.pick(colors),
       side: Random.pick(['left', 'right']),
@@ -114,7 +127,6 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
       const shape = tentacleShape(
         tentacle,
         head,
-        width,
         height,
         playhead * Math.PI * 2 + (Math.PI / 2) * idx,
         idx,
@@ -154,32 +166,48 @@ function headShape(head: Head, steps: number = 96): Point[] {
   });
 }
 
+/** Outer tentacles roll outward; the middle ones pick a side at random. */
+function curlDirection(slot: number): 1 | -1 {
+  if (Math.abs(slot) < 0.2) return Random.pick([1, -1]);
+  return slot > 0 ? -1 : 1;
+}
+
 /**
- * Tentacles hang from the underside of the head, fanning outward. The wobble
- * is zero at the root (so they stay attached) and grows toward the tip, while
- * the width tapers from rootWidth to tipWidth.
+ * Tentacles hang from the underside of the head and curl up at the tips.
+ * The centreline is built by walking along it in equal steps and turning the
+ * heading as we go: the heading starts pointing down (tilted outward by
+ * `fan`) and accumulates `curl` turns, eased by u^curlTightness so the arm
+ * stays straight near the root and rolls into a spiral only near the tip.
+ * The wobble also bends the heading and grows from zero at the root, so the
+ * arms stay attached while the curls breathe. Width tapers root → tip.
  */
 function tentacleShape(
   tentacle: Tentacle,
   head: Head,
-  width: number,
   height: number,
   t: number,
   off: number,
-  steps: number = 24,
+  steps: number = 72,
 ): Point[] {
-  const rootX = head.x + tentacle.slot * head.rx * config.rootSpan;
-  const rootY = head.y;
-  const tipX = rootX + tentacle.slot * config.fan * width;
-  const tipY = rootY + tentacle.length * height;
-  const delta = width * config.wobble;
+  const length = config.length * tentacle.length * height;
+  const ds = length / (steps - 1);
+  const heading0 = Math.PI / 2 - tentacle.slot * config.fan;
+  const turns = config.curl * tentacle.curl * Math.PI * 2;
 
-  const points: Point[] = Array.from({ length: steps }, (_, idx) => {
+  let x = head.x + tentacle.slot * head.rx * config.rootSpan;
+  let y = head.y;
+  const points: Point[] = [];
+
+  for (let idx = 0; idx < steps; idx++) {
     const u = idx / (steps - 1);
-    const x = lerp(rootX, tipX, u * u);
-    const y = lerp(rootY, tipY, u);
-    return [x + delta * wobbly(tentacle.a, tentacle.b, off + u * 2, t) * u, y];
-  });
+    points.push([x, y]);
+    const heading =
+      heading0 +
+      tentacle.curlDir * turns * Math.pow(u, config.curlTightness) +
+      config.wobble * wobbly(tentacle.a, tentacle.b, off + u * 2, t) * u;
+    x += Math.cos(heading) * ds;
+    y += Math.sin(heading) * ds;
+  }
 
   const normals = getNormals(points);
   const shapeA: Point[] = [];
