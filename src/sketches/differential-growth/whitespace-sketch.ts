@@ -453,11 +453,11 @@ export const whitespaceSketch =
           );
         });
 
-        // Bars along the domain's outline, one cell side at a time, only
-        // between two kept knots: so a bar ends at the last knot instead of
-        // running on into the frame. Knots go on top — circles and diamonds
-        // alternating by grid position, as in khidki.
-        const kept = new Set(knots.map((k) => `${k.x},${k.y}`));
+        // Bars along the domain's outline, running on under the frame, but
+        // never along the field's border — those sides lie against the frame.
+        // Knots go on top — circles and diamonds alternating by grid
+        // position, as in khidki.
+        const onBorder = (a: number, b: number) => a === b && (a <= 0 || a >= extent);
         context.strokeStyle = colors.bars;
         context.lineWidth = params.bar * scale;
         // Square caps close the corners; the half-bar they overhang sits
@@ -466,7 +466,7 @@ export const whitespaceSketch =
         context.lineJoin = 'miter';
         context.beginPath();
         for (const [x0, y0, x1, y1] of layout.edges) {
-          if (!kept.has(`${x0},${y0}`) || !kept.has(`${x1},${y1}`)) continue;
+          if (onBorder(x0, x1) || onBorder(y0, y1)) continue;
           context.moveTo(x0 * scale, y0 * scale);
           context.lineTo(x1 * scale, y1 * scale);
         }
