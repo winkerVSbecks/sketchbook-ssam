@@ -10,10 +10,10 @@
  * lozenges and the darts between them — are grown, the rest walked; a noise
  * field gathering each kind into patches is the alternative.
  *
- * Five more grills are pixel gates (./khidki-motifs) — turnstile, railing,
- * fan, flower panels and sunrise — fitted inside the frame; the open space
- * round and through them is blocked out and filled the same way, gathered
- * into noise patches.
+ * Five more grills are gates (./khidki-motifs) — turnstile, railing, fan,
+ * flower panels and sunrise — fitted to the opening with their edge bars run
+ * on to the frame; the blocks they leave fill the same way, gathered into
+ * noise patches.
  *
  * Colour: slate ground (paper when off), a fresh palette every load. The
  * fill keeps to two hues off the ring — the base for the growth, the next
@@ -46,9 +46,9 @@ const WARMUP_MS = 6000;
 
 interface Params {
   seed: string;
-  /** The khidki grill or one of the pixel gates. */
+  /** The khidki grill or one of the gates. */
   motif: Motif;
-  /** Pixel gates: copies side by side. */
+  /** Gates: copies side by side. */
   repeat: number;
   /** Bar thickness, in world units (bar pitch is 10). */
   bar: number;
@@ -354,10 +354,31 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     }
     context.stroke();
 
-    // Pixel gates: one path of pixel runs.
-    context.fillStyle = colors.bars;
+    // Gates: heavy bars, outlines, then the hubs and bosses in the circles' colour.
+    context.lineWidth = params.bar * 2 * scale;
     context.beginPath();
-    for (const [x, y, w, h] of grill.pixels) context.rect(x * scale, y * scale, w * scale, h * scale);
+    for (const [[x0, y0], [x1, y1]] of grill.heavy) {
+      context.moveTo(x0 * scale, y0 * scale);
+      context.lineTo(x1 * scale, y1 * scale);
+    }
+    context.stroke();
+
+    context.lineWidth = params.bar * scale;
+    context.beginPath();
+    for (const path of grill.paths) {
+      path.forEach(([x, y], i) => (i === 0 ? context.moveTo(x * scale, y * scale) : context.lineTo(x * scale, y * scale)));
+      const [first, last] = [path[0], path[path.length - 1]];
+      if (first[0] === last[0] && first[1] === last[1]) context.closePath();
+    }
+    context.stroke();
+
+    context.fillStyle = colors.circles;
+    context.beginPath();
+    for (const [x, y, w, h] of grill.plates) context.rect(x * scale, y * scale, w * scale, h * scale);
+    for (const [x, y, r] of grill.discs) {
+      context.moveTo((x + r) * scale, y * scale);
+      context.arc(x * scale, y * scale, r * scale, 0, Math.PI * 2);
+    }
     context.fill();
 
     context.fillStyle = colors.circles;
