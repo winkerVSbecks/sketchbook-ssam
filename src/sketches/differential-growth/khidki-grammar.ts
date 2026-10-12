@@ -17,8 +17,9 @@
  *   - one material: walks run on a lattice tied to the curves' spacing
  *     (0.7 of it, where the curves actually settle), so maze and growth are
  *     two dialects at one scale;
- *   - close values: ground, fill and leading in one hue family at near
- *     contrasts — the event is texture against leading, not colour;
+ *   - colour as in khidki (./khidki-colours): a harmony scheme, quiet fills
+ *     in two neighbouring hues, the leading the highest contrast, the band
+ *     the frame hue's front shade, flat;
  *   - kinetic: a warm-up that settles the stills, then the growth keeps
  *     filling inside the fixed leading, the grille as the invariant aperture.
  */
@@ -26,12 +27,12 @@ import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 import { Pane } from 'tweakpane';
-import { formatCss, wcagContrast } from 'culori';
 
-import { cuspPalette } from '../../colors/cusphanger';
 import { createKhidkiField, type KhidkiField } from './khidki-field';
 import { SYMMETRIES, generateGrille, pickSymmetry, type Grille, type Symmetry } from './grille-grammar';
 import type { BlockKind } from './khidki-field';
+import { HARMONIES, khidkiColours, type Harmony } from './khidki-colours';
+import { GROUND_TONES } from './khidki-sketch';
 
 /** The opening, in world units: the canvas's 4:5. */
 const W = 54;
@@ -56,12 +57,13 @@ interface Params {
   speed: number;
   paletteSeed: string;
   hue: number;
+  /** How the hues sit round the wheel (./khidki-colours). */
+  harmony: Harmony;
   saturation: number;
   slate: boolean;
-  /** WCAG contrast of the fills and the leading against the ground. */
+  /** WCAG contrast against the ground: both fills, the punctum, the band. */
   fill: number;
-  lead: number;
-  /** WCAG contrast of the border band against the ground. */
+  knot: number;
   bandTone: number;
 }
 
@@ -81,11 +83,12 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     speed: 3,
     paletteSeed: Random.getRandomSeed(),
     hue: Math.round(Random.range(0, 360)),
-    saturation: 0.7,
-    slate: Random.chance(0.5),
-    fill: 2.2,
-    lead: 3.6,
-    bandTone: 2.8,
+    harmony: Random.pick(['analogous', 'complementary', 'split', 'triadic'] as Harmony[]),
+    saturation: 1,
+    slate: true,
+    fill: GROUND_TONES.slate.accent,
+    knot: GROUND_TONES.slate.ink,
+    bandTone: 6,
   };
 
   const inGallery = new URLSearchParams(location.search).has('gallery');
@@ -154,34 +157,26 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     for (let i = 0; i < params.warmup && performance.now() - t0 < WARMUP_MS; i++) field.step();
   };
 
-  // Close values: growth and walks in neighbouring hues at one contrast, the
-  // leading the same family a step further from the ground; the punctum the
-  // only far hue, opposite on the wheel.
+  // khidki's colour system (./khidki-colours): a harmony of four hues, the
+  // fills quiet in two of them, the leading the frame hue's far end, the band
+  // that hue's front shade, the punctum the knots' tone.
   const paint = () => {
     Random.setSeed(params.paletteSeed);
-    const p = cuspPalette({
+    const c = khidkiColours({
       hue: params.hue,
-      count: 12,
-      angle: 30,
-      shuffle: false,
-      jitter: 0,
+      harmony: params.harmony,
       saturation: params.saturation,
-      ground: params.slate ? 'dark' : 'light',
-      targets: { high: params.lead, mid: params.fill, low: 1.4 },
+      slate: params.slate,
+      fill: params.fill,
+      knot: params.knot,
+      frame: params.bandTone,
     });
-    const at = (step: number) => p.hues.indexOf(p.ring[step]);
-    colours.bg = p.bg.css;
-    colours.growth = p.tiers.mid[at(0)].css;
-    colours.walks = p.tiers.mid[at(1)].css;
-    colours.lead = p.tiers.high[at(0)].css;
-    // The band: the leading's own hue, the ramp sample nearest its contrast.
-    const ramp = p.ramps[at(0)];
-    const bg = p.bg.color;
-    const band = ramp.reduce((best, c) =>
-      Math.abs(wcagContrast(c, bg) - params.bandTone) < Math.abs(wcagContrast(best, bg) - params.bandTone) ? c : best,
-    );
-    colours.band = formatCss(band);
-    colours.punctum = p.tiers.high[at(6)].css;
+    colours.bg = c.bg;
+    colours.growth = c.growth;
+    colours.walks = c.walks;
+    colours.lead = c.bars;
+    colours.band = c.frame.front;
+    colours.punctum = c.circles;
   };
 
   const rebuild = () => {
@@ -223,12 +218,25 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   growth.addBinding(params, 'speed', { min: 0, max: 8, step: 1, label: 'steps / frame' });
 
   const colour = pane.addFolder({ title: 'Colour' });
-  onInput(colour.addBinding(params, 'slate'), repaint);
+  // Each ground keeps its own fill and knot tones, as in khidki.
+  const tones = { slate: { ...GROUND_TONES.slate }, paper: { ...GROUND_TONES.paper } };
+  onInput(colour.addBinding(params, 'slate'), () => {
+    tones[params.slate ? 'paper' : 'slate'] = { ink: params.knot, accent: params.fill };
+    const t = tones[params.slate ? 'slate' : 'paper'];
+    params.fill = t.accent;
+    params.knot = t.ink;
+    pane.refresh();
+    repaint();
+  });
   onInput(colour.addBinding(params, 'hue', { min: 0, max: 360, step: 1 }), repaint);
+  onInput(
+    colour.addBinding(params, 'harmony', { options: Object.fromEntries(Object.keys(HARMONIES).map((h) => [h, h])) }),
+    repaint,
+  );
   onInput(colour.addBinding(params, 'saturation', { min: 0, max: 1, step: 0.01 }), repaint);
-  onInput(colour.addBinding(params, 'fill', { min: 1.2, max: 5, step: 0.1, label: 'fill (:1)' }), repaint);
-  onInput(colour.addBinding(params, 'lead', { min: 1.5, max: 12, step: 0.1, label: 'leading (:1)' }), repaint);
-  onInput(colour.addBinding(params, 'bandTone', { min: 1.2, max: 12, step: 0.1, label: 'band (:1)' }), repaint);
+  onInput(colour.addBinding(params, 'fill', { min: 1.2, max: 6, step: 0.1, label: 'fill (:1)' }), repaint);
+  onInput(colour.addBinding(params, 'knot', { min: 2, max: 18, step: 0.1, label: 'punctum (:1)' }), repaint);
+  onInput(colour.addBinding(params, 'bandTone', { min: 2, max: 15, step: 0.1, label: 'band (:1)' }), repaint);
   colour.addButton({ title: 'New palette' }).on('click', () => {
     params.paletteSeed = Random.getRandomSeed();
     params.hue = Math.round(Random.range(0, 360));
@@ -304,9 +312,8 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     context.restore();
 
     if (params.band) {
-      // A flat band a step quieter than the leading, in its hue, filling
-      // everything between the opening and the canvas edge: an edge, not an
-      // object.
+      // A flat band in the frame hue's front shade, filling everything
+      // between the opening and the canvas edge: an edge, not an object.
       const band = new Path2D();
       band.rect(0, 0, width, height);
       band.rect(ox, oy, W * scale, H * scale);
