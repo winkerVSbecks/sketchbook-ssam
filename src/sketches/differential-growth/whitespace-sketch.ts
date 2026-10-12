@@ -271,7 +271,9 @@ export const whitespaceSketch =
       const at = (j: number) => order[j % n];
       const base = at(0);
       colors.bg = palette.bg.css;
-      colors.ink = high[base].css;
+      // With a grill the fills recede to one contrast level (the mid tier),
+      // leaving the high tier to the bars and knots so they stand out.
+      colors.ink = (o.grill ? mid : high)[base].css;
       colors.wash = low[base].css;
       colors.hairline = mid[base].css;
       // The grill stands out in the high tier, sharing hues with the frame.
@@ -347,8 +349,14 @@ export const whitespaceSketch =
     onInput(colour.addBinding(params, 'hues', { min: 1, max: 6, step: 1 }), repaint);
     onInput(colour.addBinding(params, 'angle', { min: 1, max: 180, step: 1, label: 'hue Δ' }), repaint);
     onInput(colour.addBinding(params, 'saturation', { min: 0, max: 1, step: 0.01 }), repaint);
-    onInput(colour.addBinding(params, 'ink', { min: 4.5, max: 18, step: 0.1, label: 'ink (:1)' }), repaint);
-    onInput(colour.addBinding(params, 'accent', { min: 1.5, max: 12, step: 0.1, label: 'walks (:1)' }), repaint);
+    onInput(
+      colour.addBinding(params, 'ink', { min: 4.5, max: 18, step: 0.1, label: o.grill ? 'grill (:1)' : 'ink (:1)' }),
+      repaint,
+    );
+    onInput(
+      colour.addBinding(params, 'accent', { min: 1.2, max: 12, step: 0.1, label: o.grill ? 'fill (:1)' : 'walks (:1)' }),
+      repaint,
+    );
     onInput(colour.addBinding(params, 'wash', { min: 1.05, max: 3, step: 0.05, label: 'wash (:1)' }), repaint);
     colour.addButton({ title: 'New palette' }).on('click', () => {
       params.paletteSeed = Random.getRandomSeed();

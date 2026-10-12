@@ -8,8 +8,9 @@
  * faces extruded and the tunnel's reveals inside — the way truchet's tiles
  * are only seen through its arch. The growth's domain is outlined in
  * ../khidki's grill: bars along every edge it shares with the walks, circles
- * and diamonds alternating on its vertices. Pane and drawing live in
- * ./whitespace-sketch.
+ * and diamonds alternating on its vertices. Growth and walks share one quiet
+ * contrast level so the grill, in the high tier, stands out over them. Pane
+ * and drawing live in ./whitespace-sketch.
  */
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
@@ -22,7 +23,7 @@ const draw = whitespaceSketch({
   title: 'jali',
   windowed: true,
   grill: true,
-  defaults: () => ({ window: Random.pick(WINDOW_STYLES), hues: 5 }),
+  defaults: () => ({ window: Random.pick(WINDOW_STYLES), hues: 5, accent: 3, bar: 0.5 }),
 });
 
 export const sketch = (props: SketchProps) => {
