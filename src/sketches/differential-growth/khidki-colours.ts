@@ -3,11 +3,13 @@
  * (paper or slate) and four hues off the ring in order from the base.
  *
  *   - fills  — growth in hue 0, walks in hue 1, both at one quiet contrast
- *              against the ground (`fill`), so neither outranks the other;
+ *              against the ground (`fill`, 1.8:1 by default), so neither
+ *              outranks the other;
  *   - bars   — the highest contrast in the picture: the far end of hue 2's
  *              ramp from the ground, near white on slate, near black on paper;
- *   - knots  — circles in hue 3, diamonds in hue 0, at the high tier
- *              (`knot`), well clear of the fills on the same ground;
+ *   - knots  — circles in hue 3, diamonds in hue 0, at a mid tone (`knot`)
+ *              between the two: by default bars stand ≥2.8:1 over the knots
+ *              and the knots ≥3:1 over the fills, on any palette;
  *   - frame  — one hue (2, the bars' own) in three shades off its ramp: the
  *              front at `frame` contrast, the top a step lighter and the side
  *              a step darker, as if lit from above left.
