@@ -238,6 +238,7 @@ export const whitespaceSketch =
       wash: '',
       hairline: '',
       bars: '',
+      barShadow: '',
       circles: '',
       diamonds: '',
       frame: { front: '', top: '', side: '' },
@@ -278,6 +279,10 @@ export const whitespaceSketch =
       colors.hairline = mid[base].css;
       // The grill stands out in the high tier, sharing hues with the frame.
       colors.bars = high[at(2)].css;
+      // The bars' depth face: their own colour at 60% lightness, darker on
+      // either ground, like the shaded sides of khidki's thick lines.
+      const b = high[at(2)].color;
+      colors.barShadow = `oklch(${(b.l * 0.6).toFixed(4)} ${b.c.toFixed(4)} ${b.h.toFixed(2)})`;
       colors.circles = high[at(3)].css;
       colors.diamonds = high[at(4)].css;
       colors.walks = [mid[at(1)].css];
@@ -458,19 +463,30 @@ export const whitespaceSketch =
         // Knots go on top — circles and diamonds alternating by grid
         // position, as in khidki.
         const onBorder = (a: number, b: number) => a === b && (a <= 0 || a >= extent);
-        context.strokeStyle = colors.bars;
+        const bars = new Path2D();
+        for (const [x0, y0, x1, y1] of layout.edges) {
+          if (onBorder(x0, x1) || onBorder(y0, y1)) continue;
+          bars.moveTo(x0 * scale, y0 * scale);
+          bars.lineTo(x1 * scale, y1 * scale);
+        }
         context.lineWidth = params.bar * scale;
         // Square caps close the corners; the half-bar they overhang sits
         // under the knot.
         context.lineCap = 'square';
         context.lineJoin = 'miter';
-        context.beginPath();
-        for (const [x0, y0, x1, y1] of layout.edges) {
-          if (onBorder(x0, x1) || onBorder(y0, y1)) continue;
-          context.moveTo(x0 * scale, y0 * scale);
-          context.lineTo(x1 * scale, y1 * scale);
+        // Depth first: the bars stamped a pixel at a time up and to the
+        // right, 45° as in khidki, so the shaded face meets the front exactly.
+        const depth = params.bar * scale;
+        const steps = Math.max(1, Math.ceil(depth));
+        context.strokeStyle = colors.barShadow;
+        for (let k = steps; k >= 1; k--) {
+          context.save();
+          context.translate((depth * k) / steps, (-depth * k) / steps);
+          context.stroke(bars);
+          context.restore();
         }
-        context.stroke();
+        context.strokeStyle = colors.bars;
+        context.stroke(bars);
 
         context.fillStyle = colors.circles;
         context.beginPath();
