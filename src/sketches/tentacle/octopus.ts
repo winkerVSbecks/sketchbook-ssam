@@ -22,6 +22,11 @@ const config = {
   rootWidth: 60,
   tipWidth: 3,
   wobble: 0.35,
+  cupSize: 0.42,
+  cupSpacing: 3,
+  cupInset: 0.45,
+  cupStart: 0.12,
+  cupEnd: 0.92,
   bob: 0.02,
   eyeSize: 0.12,
   shadow: 10,
@@ -44,6 +49,11 @@ pane.addBinding(config, 'curlTightness', { min: 1, max: 8, step: 0.1 });
 pane.addBinding(config, 'rootWidth', { min: 4, max: 150, step: 1 });
 pane.addBinding(config, 'tipWidth', { min: 0, max: 40, step: 1 });
 pane.addBinding(config, 'wobble', { min: 0, max: 1, step: 0.01 });
+pane.addBinding(config, 'cupSize', { min: 0, max: 1, step: 0.01 });
+pane.addBinding(config, 'cupSpacing', { min: 1, max: 8, step: 1 });
+pane.addBinding(config, 'cupInset', { min: 0, max: 1, step: 0.01 });
+pane.addBinding(config, 'cupStart', { min: 0, max: 1, step: 0.01 });
+pane.addBinding(config, 'cupEnd', { min: 0, max: 1, step: 0.01 });
 pane.addBinding(config, 'bob', { min: 0, max: 0.1, step: 0.005 });
 pane.addBinding(config, 'eyeSize', { min: 0, max: 0.3, step: 0.01 });
 pane.addBinding(config, 'shadow', { min: 0, max: 40, step: 1 });
@@ -64,9 +74,18 @@ interface Tentacle {
   curlDir: 1 | -1;
   color: string;
   accent: string;
+  /** Rim colour of the suction cups; always differs from `color`. */
+  cup: string;
   side: 'left' | 'right';
   a: number;
   b: number;
+}
+
+/** A tentacle's centreline with the heading and half-width at each sample. */
+interface Spine {
+  points: Point[];
+  headings: number[];
+  halfWidths: number[];
 }
 
 interface Head {
@@ -100,6 +119,8 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     Array.from({ length: config.count }, (_, idx) => idx),
   ).map((idx: number) => {
     const a = Random.pick([2, 3, 4]);
+    const color = Random.pick(colors);
+    const others = colors.filter((c) => c !== color);
     const slot = config.count > 1 ? lerp(-1, 1, idx / (config.count - 1)) : 0;
 
     return {
@@ -107,8 +128,9 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
       length: Random.range(0.8, 1.15),
       curl: Random.range(0.8, 1.25),
       curlDir: curlDirection(slot),
-      color: Random.pick(colors),
+      color,
       accent: Random.pick(colors),
+      cup: others.length > 0 ? Random.pick(others) : bg,
       side: Random.pick(['left', 'right']),
       a,
       b: a,
@@ -124,14 +146,15 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     const head = headAt(width, height, playhead);
 
     tentacles.forEach((tentacle, idx) => {
-      const shape = tentacleShape(
+      const spine = tentacleSpine(
         tentacle,
         head,
         height,
         playhead * Math.PI * 2 + (Math.PI / 2) * idx,
         idx,
       );
-      drawWithShadow(context, shape, tentacle.color, tentacle.accent, tentacle.side);
+      drawWithShadow(context, outline(spine), tentacle.color, tentacle.accent, tentacle.side);
+      drawCups(context, spine, tentacle);
     });
 
     drawWithShadow(context, headShape(head), headColor, headAccent, 'left');
@@ -181,14 +204,14 @@ function curlDirection(slot: number): 1 | -1 {
  * The wobble also bends the heading and grows from zero at the root, so the
  * arms stay attached while the curls breathe. Width tapers root → tip.
  */
-function tentacleShape(
+function tentacleSpine(
   tentacle: Tentacle,
   head: Head,
   height: number,
   t: number,
   off: number,
   steps: number = 72,
-): Point[] {
+): Spine {
   const length = config.length * tentacle.length * height;
   const ds = length / (steps - 1);
   const heading0 = Math.PI / 2 - tentacle.slot * config.fan;
@@ -197,32 +220,72 @@ function tentacleShape(
   let x = head.x + tentacle.slot * head.rx * config.rootSpan;
   let y = head.y;
   const points: Point[] = [];
+  const headings: number[] = [];
+  const halfWidths: number[] = [];
 
   for (let idx = 0; idx < steps; idx++) {
     const u = idx / (steps - 1);
-    points.push([x, y]);
     const heading =
       heading0 +
       tentacle.curlDir * turns * Math.pow(u, config.curlTightness) +
       config.wobble * wobbly(tentacle.a, tentacle.b, off + u * 2, t) * u;
+    points.push([x, y]);
+    headings.push(heading);
+    halfWidths.push(lerp(config.rootWidth, config.tipWidth, u) / 2);
     x += Math.cos(heading) * ds;
     y += Math.sin(heading) * ds;
   }
 
-  const normals = getNormals(points);
+  return { points, headings, halfWidths };
+}
+
+/** Offset the spine both ways along its normals into a closed outline. */
+function outline(spine: Spine): Point[] {
+  const normals = getNormals(spine.points);
   const shapeA: Point[] = [];
   const shapeB: Point[] = [];
 
-  for (let idx = 0; idx < points.length; idx++) {
+  spine.points.forEach((point, idx) => {
     const normal = normals[idx][0];
-    const point = points[idx];
-    const spread = mapRange(idx, 0, points.length - 1, config.rootWidth, config.tipWidth) / 2;
-
+    const spread = spine.halfWidths[idx];
     shapeA.push([point[0] + normal[0] * spread, point[1] + normal[1] * spread]);
     shapeB.push([point[0] - normal[0] * spread, point[1] - normal[1] * spread]);
-  }
+  });
 
   return [...shapeA, ...shapeB.reverse()];
+}
+
+/**
+ * A row of suction cups along the inside of the curl. Turning the heading by
+ * +curlDir rotates toward heading + curlDir·90°, so that is the inner side.
+ * Each cup is a rim disc with the tentacle colour as its hollow, sized off
+ * the local width so the row shrinks toward the tip.
+ */
+function drawCups(context: CanvasRenderingContext2D, spine: Spine, tentacle: Tentacle) {
+  if (config.cupSize <= 0) return;
+  const last = spine.points.length - 1;
+  const from = Math.round(config.cupStart * last);
+  const to = Math.round(config.cupEnd * last);
+
+  for (let idx = from; idx <= to; idx += config.cupSpacing) {
+    const [px, py] = spine.points[idx];
+    const inner = spine.headings[idx] + (tentacle.curlDir * Math.PI) / 2;
+    const half = spine.halfWidths[idx] + config.lineWidth / 2;
+    const r = half * config.cupSize;
+    if (r < 1) continue;
+    const cx = px + Math.cos(inner) * half * config.cupInset;
+    const cy = py + Math.sin(inner) * half * config.cupInset;
+
+    context.fillStyle = tentacle.cup;
+    context.beginPath();
+    context.arc(cx, cy, r, 0, Math.PI * 2);
+    context.fill();
+
+    context.fillStyle = tentacle.color;
+    context.beginPath();
+    context.arc(cx, cy, r * 0.5, 0, Math.PI * 2);
+    context.fill();
+  }
 }
 
 /** Fill + stroke a closed shape over an offset accent copy, like the source sketch. */
