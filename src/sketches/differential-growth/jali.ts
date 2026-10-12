@@ -6,8 +6,10 @@
  * window frame (./window-frame) and is clipped to it — the arched jali shell
  * of ../jali/truchet, or a deep rectangular frame with its top and right
  * faces extruded and the tunnel's reveals inside — the way truchet's tiles
- * are only seen through its arch. The frame's face takes the curve's ink, its
- * depth the two mid tiers. Pane and drawing live in ./whitespace-sketch.
+ * are only seen through its arch. The growth's domain is outlined in
+ * ../khidki's grill: bars along every edge it shares with the walks, circles
+ * and diamonds alternating on its vertices. Pane and drawing live in
+ * ./whitespace-sketch.
  */
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
@@ -19,7 +21,8 @@ import { WINDOW_STYLES } from './window-frame';
 const draw = whitespaceSketch({
   title: 'jali',
   windowed: true,
-  defaults: () => ({ window: Random.pick(WINDOW_STYLES), hues: 4 }),
+  grill: true,
+  defaults: () => ({ window: Random.pick(WINDOW_STYLES), hues: 5 }),
 });
 
 export const sketch = (props: SketchProps) => {

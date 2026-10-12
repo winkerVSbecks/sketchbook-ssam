@@ -12,10 +12,11 @@
  *
  * On a paper ground (slate when reversed) the domain is washed in the low
  * tier and its curve drawn in the high-tier ink, ≈7.5:1 apart; the walks take
- * the mid-tier accent. `windowed` covers a window frame's opening with the
- * field and clips it there (./window-frame). Every parameter lives in the
- * tweakpane: layout and growth rebuild from the same seed, colour only
- * redraws. Not a sketch file itself — it exports no `sketch`; the variant
+ * the mid-tier accent. `grill` outlines the domain with khidki's bars and
+ * puts circles and diamonds on its vertices; `windowed` covers a window
+ * frame's opening with the field and clips it there (./window-frame). Every
+ * parameter lives in the tweakpane: layout and growth rebuild from the same
+ * seed, colour only redraws. Not a sketch file itself — it exports no `sketch`; the variant
  * wires HMR and export, calling the returned cleanup on dispose.
  */
 import type { SketchProps } from 'ssam';
@@ -85,6 +86,10 @@ interface Params {
   debug: boolean;
   /** Windowed variants: the frame the field is seen through. */
   window: WindowStyle;
+  /** Bar thickness of the grill round the growth, in world units (cell is 6). */
+  bar: number;
+  /** Circle and diamond size on the grill's knots, relative to the cell. */
+  knot: number;
 }
 
 export interface WhitespaceSketchOptions {
@@ -93,6 +98,8 @@ export interface WhitespaceSketchOptions {
   windowed?: boolean;
   /** Overrides on the defaults, drawn after the layout seed is set. */
   defaults?: () => Partial<Params>;
+  /** Outline the growth's domain with khidki-style bars, circles and diamonds. */
+  grill?: boolean;
 }
 
 interface Layout {
@@ -100,6 +107,8 @@ interface Layout {
   walks: LatticePoint[][];
   rects: Rect[];
   edges: Edge[];
+  /** Every vertex of the domain's outline, in world units, with its grid parity. */
+  knots: { x: number; y: number; circle: boolean }[];
   step(): void;
 }
 
@@ -157,11 +166,26 @@ function buildLayout(p: Params): Layout {
     () => Random.rangeFloor(p.sub, p.sub * p.walkLength + 1),
   );
 
+  // The outline's vertices, each once, for the grill's knots.
+  const edges = outline(mask);
+  const seen = new Map<string, { x: number; y: number; circle: boolean }>();
+  for (const [x0, y0, x1, y1] of edges) {
+    for (const [x, y] of [
+      [x0, y0],
+      [x1, y1],
+    ]) {
+      const key = `${x},${y}`;
+      if (!seen.has(key)) seen.set(key, { x, y, circle: (Math.round(x / CELL) + Math.round(y / CELL)) % 2 === 0 });
+    }
+  }
+  const knots = [...seen.values()];
+
   return {
     growth,
     walks,
     rects: regionRects(mask).get(0) ?? [],
-    edges: outline(mask),
+    edges,
+    knots,
     step() {
       growth.step();
       for (const n of growth.state.nodes) confine(0, n);
@@ -196,6 +220,8 @@ export const whitespaceSketch =
       reverse: true,
       debug: false,
       window: 'arch',
+      bar: 0.35,
+      knot: 1,
       ...o.defaults?.(),
     };
 
@@ -211,6 +237,9 @@ export const whitespaceSketch =
       walks: [] as string[],
       wash: '',
       hairline: '',
+      bars: '',
+      circles: '',
+      diamonds: '',
       frame: { front: '', top: '', side: '' },
     };
 
@@ -245,6 +274,10 @@ export const whitespaceSketch =
       colors.ink = high[base].css;
       colors.wash = low[base].css;
       colors.hairline = mid[base].css;
+      // The grill stands out in the high tier, sharing hues with the frame.
+      colors.bars = high[at(2)].css;
+      colors.circles = high[at(3)].css;
+      colors.diamonds = high[at(4)].css;
       colors.walks = [mid[at(1)].css];
       // With one hue the side sits halfway down its ramp from mid to high.
       const [m, h] = [mid[base].color, high[base].color];
@@ -280,6 +313,13 @@ export const whitespaceSketch =
         layoutFolder.addBinding(params, 'window', {
           options: Object.fromEntries(WINDOW_STYLES.map((w) => [w, w])),
         }),
+        () => props.render(),
+      );
+    }
+    if (o.grill) {
+      onInput(layoutFolder.addBinding(params, 'bar', { min: 0, max: 2, step: 0.05 }), () => props.render());
+      onInput(
+        layoutFolder.addBinding(params, 'knot', { min: 0, max: 2.5, step: 0.05, label: 'circles' }),
         () => props.render(),
       );
     }
@@ -384,6 +424,44 @@ export const whitespaceSketch =
       });
       context.closePath();
       context.stroke();
+
+      if (o.grill) {
+        // Bars along the domain's outline, then a knot on every vertex:
+        // circles and diamonds alternate by grid position, as in khidki.
+        context.strokeStyle = colors.bars;
+        context.lineWidth = params.bar * scale;
+        context.lineCap = 'square';
+        context.lineJoin = 'miter';
+        context.beginPath();
+        for (const [x0, y0, x1, y1] of layout.edges) {
+          context.moveTo(x0 * scale, y0 * scale);
+          context.lineTo(x1 * scale, y1 * scale);
+        }
+        context.stroke();
+
+        const rc = params.knot * 0.17 * CELL * scale;
+        const rd = params.knot * 0.19 * CELL * scale;
+        context.fillStyle = colors.circles;
+        context.beginPath();
+        for (const k of layout.knots) {
+          if (!k.circle) continue;
+          context.moveTo(k.x * scale + rc, k.y * scale);
+          context.arc(k.x * scale, k.y * scale, rc, 0, Math.PI * 2);
+        }
+        context.fill();
+        context.fillStyle = colors.diamonds;
+        context.beginPath();
+        for (const k of layout.knots) {
+          if (k.circle) continue;
+          const [x, y] = [k.x * scale, k.y * scale];
+          context.moveTo(x, y - rd);
+          context.lineTo(x + rd, y);
+          context.lineTo(x, y + rd);
+          context.lineTo(x - rd, y);
+          context.closePath();
+        }
+        context.fill();
+      }
 
       if (params.debug) {
         context.strokeStyle = colors.hairline;
