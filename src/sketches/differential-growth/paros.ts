@@ -1,12 +1,13 @@
 /**
- * paṛos (neighbourhood) — khidki's windows side by side along a wide, short
- * street: each the same deep rectangular frame (./window-frame) round a
+ * paṛos (neighbourhood) — khidki's windows in rows, like a building's face
+ * on a 4:3 sheet: each the same deep rectangular frame (./window-frame) round a
  * different grill — khidki's own or one of the street gates and windows of
  * ./grills — every block it leaves open filled with nalee walks or
  * differential growth (./khidki-field).
  *
  * Each window is drawn by ./khidki-sketch's drawWindow in a square of its
- * own, the squares overlapped so the frames stand a set gap apart. All
+ * own, the squares overlapped so the frames stand a set gap apart in a grid
+ * of `rows` rows. All
  * share one ground and one set of tones (./khidki-colours); each house picks
  * its own hue and harmony, the way neighbours paint their own frames.
  */
@@ -20,14 +21,20 @@ import { khidkiColours, type Harmony, type KhidkiColours } from './khidki-colour
 import { GRILL_NAMES, GROUND_TONES, drawWindow, shapeOf } from './khidki-sketch';
 
 const WARMUP_MS = 8000;
-/** The frame's span across its square, and where it starts (./window-frame's rect). */
+/**
+ * The frame's extent inside its square (./window-frame's rect): across, the
+ * front plus its depth to the right; down, the depth above plus the front.
+ */
 const FRAME_SPAN = 0.555 + 0.024;
 const FRAME_LEFT = (1 - FRAME_SPAN) / 2;
+const FRAME_RISE = 0.6925 + 0.024;
+const FRAME_TOP = (1 - 0.6925 + 0.024) / 2 - 0.024;
 
 interface StreetParams {
   seed: string;
-  /** Windows along the street. */
+  /** Windows in all, laid out in `rows` rows. */
   count: number;
+  rows: number;
   /** Space between frames, as a fraction of a window's square. */
   gap: number;
   bar: number;
@@ -61,7 +68,8 @@ const SCHEMES: Harmony[] = ['analogous', 'complementary', 'split', 'triadic'];
 export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   const params: StreetParams = {
     seed: Random.getRandomSeed(),
-    count: 5,
+    count: 6,
+    rows: 2,
     gap: 0.1,
     bar: 0.5,
     growthShare: 0.5,
@@ -164,7 +172,8 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     });
 
   const street = pane.addFolder({ title: 'Street' });
-  onInput(street.addBinding(params, 'count', { min: 1, max: 9, step: 1, label: 'windows' }), rebuild);
+  onInput(street.addBinding(params, 'count', { min: 1, max: 12, step: 1, label: 'windows' }), rebuild);
+  street.addBinding(params, 'rows', { min: 1, max: 4, step: 1 });
   street.addBinding(params, 'gap', { min: 0, max: 0.5, step: 0.01 });
   onInput(street.addBinding(params, 'bar', { min: 0.2, max: 3, step: 0.05 }), rebuild);
   onInput(street.addBinding(params, 'growthShare', { min: 0, max: 1, step: 0.05, label: 'grown share' }), rebuild);
@@ -201,17 +210,26 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
 
-    // Each window gets a square of side s; frames sit `gap · s` apart, the
-    // row centred, s as large as fits the height and the width.
+    // Each window gets a square of side s; frames sit `gap · s` apart in a
+    // grid of `rows` rows, the block centred, s as large as fits both ways.
     const n = houses.length;
-    const span = n * FRAME_SPAN + (n - 1) * params.gap;
-    const s = Math.min(height, (width * 0.94) / span);
-    const x0 = (width - span * s) / 2;
-    const y0 = (height - s) / 2;
+    const rows = Math.min(params.rows, n);
+    const cols = Math.ceil(n / rows);
+    const spanX = cols * FRAME_SPAN + (cols - 1) * params.gap;
+    const spanY = rows * FRAME_RISE + (rows - 1) * params.gap;
+    const s = Math.min((height * 0.92) / spanY, (width * 0.92) / spanX);
 
     houses.forEach((h, i) => {
+      const row = Math.floor(i / cols);
+      // A short last row is centred under the full ones.
+      const inRow = row === rows - 1 ? n - row * cols : cols;
+      const rowSpan = inRow * FRAME_SPAN + (inRow - 1) * params.gap;
+      const col = i - row * cols;
       context.save();
-      context.translate(x0 + i * (FRAME_SPAN + params.gap) * s - FRAME_LEFT * s, y0);
+      context.translate(
+        (width - rowSpan * s) / 2 + col * (FRAME_SPAN + params.gap) * s - FRAME_LEFT * s,
+        (height - spanY * s) / 2 + row * (FRAME_RISE + params.gap) * s - FRAME_TOP * s,
+      );
       drawWindow(
         context,
         s,
@@ -228,7 +246,7 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
 
 export const settings: SketchSettings = {
   mode: '2d',
-  dimensions: [2560, 720],
+  dimensions: [1440, 1080],
   pixelRatio: window.devicePixelRatio,
   attributes: { colorSpace: 'display-p3' },
   animate: true,
