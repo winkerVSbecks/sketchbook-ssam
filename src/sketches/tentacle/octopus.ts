@@ -374,7 +374,7 @@ function drawEyes(
 
     context.fillStyle = pupil;
     context.beginPath();
-    context.ellipse(ex + look, ey, r * 0.55, r * 0.3, 0, 0, Math.PI * 2);
+    context.arc(ex + look, ey, r * 0.5, 0, Math.PI * 2);
     context.fill();
   });
 }
