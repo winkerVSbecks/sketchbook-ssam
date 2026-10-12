@@ -38,7 +38,7 @@ import { windowFrame } from './window-frame';
 /** Upper bound on the warm-up, however many steps are asked for. */
 const WARMUP_MS = 6000;
 
-interface Params {
+export interface Params {
   seed: string;
   /** Bar thickness, in world units (bar pitch is 10). */
   bar: number;
@@ -98,7 +98,7 @@ export const GRILL_NAMES = ['khidki', ...GRILL_BUILDERS.map((b) => b.name)];
  * scaled to the field's world, so it fills the same frame as khidki's own.
  * Its own frame is dropped: the window frame stands in for it.
  */
-function shapeOf(name: string): GrillShape | undefined {
+export function shapeOf(name: string): GrillShape | undefined {
   const builder = GRILL_BUILDERS.find((b) => b.name === name);
   if (!builder) return undefined;
   const g = builder.make(APERTURE_W / APERTURE_H);
@@ -118,7 +118,7 @@ function shapeOf(name: string): GrillShape | undefined {
  * (7:1); across 300 slate palettes bars still stand ≥2.4:1 over the knots
  * and the knots ≥2.3:1 over the fills.
  */
-const GROUND_TONES = {
+export const GROUND_TONES = {
   slate: { ink: 7, accent: 2.6 },
   paper: { ink: 6, accent: 1.8 },
 };
@@ -300,122 +300,159 @@ export const khidkiSketch =
     wrap.render = ({ width, height }: SketchProps) => {
       for (let i = 0; i < params.speed; i++) field.step();
 
-      const { grill, blocks, walkPitch } = field;
-      // Every grill sits in the same window frame, filling its opening.
-      const frame = windowFrame('rect', width, height);
-      const box = frame.bounds;
-      const scale = Math.min(box.w / field.w, box.h / field.h);
-
       context.fillStyle = colors.bg;
       context.fillRect(0, 0, width, height);
-
-      context.save();
-      context.clip(frame.aperture);
-      context.translate(box.x + (box.w - field.w * scale) / 2, box.y + (box.h - field.h * scale) / 2);
-
-      context.lineJoin = 'round';
-      context.lineCap = 'round';
-      context.lineWidth = params.radius * params.stroke * scale;
-
-      // Walked blocks: one path for every walk.
-      context.strokeStyle = colors.walks;
-      context.beginPath();
-      for (const b of blocks) {
-        for (const walk of b.walks ?? []) {
-          walk.forEach(([u, v], i) => {
-            const px = (u + 0.5) * walkPitch * scale;
-            const py = (v + 0.5) * walkPitch * scale;
-            if (i === 0) context.moveTo(px, py);
-            // A lone node still gets a mark: a zero-length segment with round caps.
-            if (i > 0 || walk.length === 1) context.lineTo(px, py);
-          });
-        }
-      }
-      context.stroke();
-
-      // Grown blocks.
-      context.strokeStyle = colors.ink;
-      context.beginPath();
-      for (const b of blocks) {
-        const nodes = b.growth?.state.nodes ?? [];
-        nodes.forEach((p, i) => {
-          if (i === 0) context.moveTo(p.x * scale, p.y * scale);
-          else context.lineTo(p.x * scale, p.y * scale);
-        });
-        if (nodes.length > 0) context.closePath();
-      }
-      context.stroke();
-
-      if (params.debug) {
-        context.strokeStyle = colors.hairline;
-        context.lineWidth = 1;
-        context.beginPath();
-        for (const [x0, y0, x1, y1] of edges) {
-          context.moveTo(x0 * scale, y0 * scale);
-          context.lineTo(x1 * scale, y1 * scale);
-        }
-        context.stroke();
-      }
-
-      if (!grill) {
-        // A street grill over the fills: its bars, then any discs.
-        context.strokeStyle = colors.bars;
-        context.lineWidth = params.bar * scale;
-        context.lineCap = 'round';
-        context.lineJoin = 'round';
-        context.beginPath();
-        for (const bar of shape?.bars ?? []) {
-          bar.forEach(([x, y], i) => (i === 0 ? context.moveTo(x * scale, y * scale) : context.lineTo(x * scale, y * scale)));
-        }
-        context.stroke();
-        context.fillStyle = colors.circles;
-        context.beginPath();
-        for (const d of shape?.closers ?? []) {
-          context.moveTo((d.x + d.r) * scale, d.y * scale);
-          context.arc(d.x * scale, d.y * scale, d.r * scale, 0, Math.PI * 2);
-        }
-        context.fill();
-        context.restore();
-        frame.draw(context, colors.frame);
-        return;
-      }
-
-      // The grill over the fills: bars and lozenges, then the knots.
-      context.strokeStyle = colors.bars;
-      context.lineWidth = params.bar * scale;
-      context.lineCap = 'butt';
-      context.lineJoin = 'miter';
-      context.beginPath();
-      for (const [[x0, y0], [x1, y1]] of grill.bars) {
-        context.moveTo(x0 * scale, y0 * scale);
-        context.lineTo(x1 * scale, y1 * scale);
-      }
-      context.stroke();
-
-      context.fillStyle = colors.circles;
-      context.beginPath();
-      for (const [x, y] of grill.circles) {
-        context.moveTo((x + grill.circleR) * scale, y * scale);
-        context.arc(x * scale, y * scale, grill.circleR * scale, 0, Math.PI * 2);
-      }
-      context.fill();
-
-      context.fillStyle = colors.diamonds;
-      context.beginPath();
-      for (const [x, y] of grill.diamonds) {
-        const r = grill.diamondR * scale;
-        context.moveTo(x * scale, y * scale - r);
-        context.lineTo(x * scale + r, y * scale);
-        context.lineTo(x * scale, y * scale + r);
-        context.lineTo(x * scale - r, y * scale);
-        context.closePath();
-      }
-      context.fill();
-
-      context.restore();
-
-      frame.draw(context, colors.frame);
+      drawWindow(context, width, height, field, shape, colors, { ...params, edges });
     };
 
     return () => pane.dispose();
   };
+
+/** Colours one window is drawn in. */
+export interface WindowColours {
+  ink: string;
+  walks: string;
+  bars: string;
+  circles: string;
+  diamonds: string;
+  hairline: string;
+  frame: { front: string; top: string; side: string };
+}
+
+/** What a window needs to know of the params to draw. */
+export interface WindowDrawOptions {
+  radius: number;
+  stroke: number;
+  bar: number;
+  debug: boolean;
+  edges: [number, number, number, number][];
+}
+
+/**
+ * One window: the frame laid out for a `width` × `height` canvas (as
+ * ./window-frame does), the field fitted to its opening, the fills, then the
+ * grill over them and the frame over all. Draws no background, so several
+ * can share one canvas, each under its own translate.
+ */
+export function drawWindow(
+  context: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  field: KhidkiField,
+  shape: GrillShape | undefined,
+  colors: WindowColours,
+  o: WindowDrawOptions,
+): void {
+  const { grill, blocks, walkPitch } = field;
+  // Every grill sits in the same window frame, filling its opening.
+  const frame = windowFrame('rect', width, height);
+  const box = frame.bounds;
+  const scale = Math.min(box.w / field.w, box.h / field.h);
+
+  context.save();
+  context.clip(frame.aperture);
+  context.translate(box.x + (box.w - field.w * scale) / 2, box.y + (box.h - field.h * scale) / 2);
+
+  context.lineJoin = 'round';
+  context.lineCap = 'round';
+  context.lineWidth = o.radius * o.stroke * scale;
+
+  // Walked blocks: one path for every walk.
+  context.strokeStyle = colors.walks;
+  context.beginPath();
+  for (const b of blocks) {
+    for (const walk of b.walks ?? []) {
+      walk.forEach(([u, v], i) => {
+        const px = (u + 0.5) * walkPitch * scale;
+        const py = (v + 0.5) * walkPitch * scale;
+        if (i === 0) context.moveTo(px, py);
+        // A lone node still gets a mark: a zero-length segment with round caps.
+        if (i > 0 || walk.length === 1) context.lineTo(px, py);
+      });
+    }
+  }
+  context.stroke();
+
+  // Grown blocks.
+  context.strokeStyle = colors.ink;
+  context.beginPath();
+  for (const b of blocks) {
+    const nodes = b.growth?.state.nodes ?? [];
+    nodes.forEach((p, i) => {
+      if (i === 0) context.moveTo(p.x * scale, p.y * scale);
+      else context.lineTo(p.x * scale, p.y * scale);
+    });
+    if (nodes.length > 0) context.closePath();
+  }
+  context.stroke();
+
+  if (o.debug) {
+    context.strokeStyle = colors.hairline;
+    context.lineWidth = 1;
+    context.beginPath();
+    for (const [x0, y0, x1, y1] of o.edges) {
+      context.moveTo(x0 * scale, y0 * scale);
+      context.lineTo(x1 * scale, y1 * scale);
+    }
+    context.stroke();
+  }
+
+  if (!grill) {
+    // A street grill over the fills: its bars, then any discs.
+    context.strokeStyle = colors.bars;
+    context.lineWidth = o.bar * scale;
+    context.lineCap = 'round';
+    context.lineJoin = 'round';
+    context.beginPath();
+    for (const bar of shape?.bars ?? []) {
+      bar.forEach(([x, y], i) => (i === 0 ? context.moveTo(x * scale, y * scale) : context.lineTo(x * scale, y * scale)));
+    }
+    context.stroke();
+    context.fillStyle = colors.circles;
+    context.beginPath();
+    for (const d of shape?.closers ?? []) {
+      context.moveTo((d.x + d.r) * scale, d.y * scale);
+      context.arc(d.x * scale, d.y * scale, d.r * scale, 0, Math.PI * 2);
+    }
+    context.fill();
+    context.restore();
+    frame.draw(context, colors.frame);
+    return;
+  }
+
+  // The grill over the fills: bars and lozenges, then the knots.
+  context.strokeStyle = colors.bars;
+  context.lineWidth = o.bar * scale;
+  context.lineCap = 'butt';
+  context.lineJoin = 'miter';
+  context.beginPath();
+  for (const [[x0, y0], [x1, y1]] of grill.bars) {
+    context.moveTo(x0 * scale, y0 * scale);
+    context.lineTo(x1 * scale, y1 * scale);
+  }
+  context.stroke();
+
+  context.fillStyle = colors.circles;
+  context.beginPath();
+  for (const [x, y] of grill.circles) {
+    context.moveTo((x + grill.circleR) * scale, y * scale);
+    context.arc(x * scale, y * scale, grill.circleR * scale, 0, Math.PI * 2);
+  }
+  context.fill();
+
+  context.fillStyle = colors.diamonds;
+  context.beginPath();
+  for (const [x, y] of grill.diamonds) {
+    const r = grill.diamondR * scale;
+    context.moveTo(x * scale, y * scale - r);
+    context.lineTo(x * scale + r, y * scale);
+    context.lineTo(x * scale, y * scale + r);
+    context.lineTo(x * scale - r, y * scale);
+    context.closePath();
+  }
+  context.fill();
+
+  context.restore();
+
+  frame.draw(context, colors.frame);
+}
