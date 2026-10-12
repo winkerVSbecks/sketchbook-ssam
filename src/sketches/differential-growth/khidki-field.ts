@@ -127,7 +127,12 @@ function segDist([px, py]: Pt, [[ax, ay], [bx, by]]: Segment): number {
 
 export type BlockKind = 'growth' | 'nalee';
 /** How blocks are assigned a kind: whole lozenge stars, or noise patches. */
-export type FillPattern = 'stars' | 'patches';
+/**
+ * How blocks are assigned a kind: whole lozenge stars, noise patches, or
+ * `alternate` — neighbours across a bar take opposite kinds wherever the
+ * leading allows, so every line marks a change of texture.
+ */
+export type FillPattern = 'stars' | 'patches' | 'alternate';
 /** Which stars of the chosen set are grown. */
 export type StarPick = 'all' | 'checker' | 'random';
 
@@ -168,6 +173,8 @@ export interface FieldOptions extends GrillOptions {
   walkPitch: number;
   /** Longest walk, in lattice steps. */
   walkLength: number;
+  /** Alternate: a block must be this many curve spacings deep to be grown. */
+  minGrowth?: number;
 }
 
 /** Even-odd point-in-polygon. */
@@ -324,7 +331,7 @@ export function createKhidkiField(o: FieldOptions, shape?: GrillShape): KhidkiFi
   }
 
   if (o.pattern === 'stars' && !shape) assignStars(blocks, centres, o.starSet, o.starPick);
-  else assignPatches(blocks, centres, o.growthShare, o.groupSize);
+  else if (o.pattern === 'patches' || o.pattern === 'stars') assignPatches(blocks, centres, o.growthShare, o.groupSize);
 
   // Depth of every cell: steps to the nearest closed cell, so a curve can
   // start where its block is widest and walks keep off the bars. The field's
@@ -357,6 +364,14 @@ export function createKhidkiField(o: FieldOptions, shape?: GrillShape): KhidkiFi
     const best = deepest.get(id);
     if (best === undefined || depth[i] > depth[best]) deepest.set(id, i);
   });
+
+  if (o.pattern === 'alternate') {
+    // A curve needs room to settle into one even texture: blocks nowhere
+    // `minGrowth` spacings deep are walked, whatever their neighbours.
+    const room = Math.ceil(((o.minGrowth ?? 0) * o.radius) / RES);
+    const thin = (b: Block) => depth[deepest.get(b.id)!] < room;
+    assignAlternate(blocks, neighbours(mask.ids, cols, rows, Math.ceil(o.bar / RES) + 2), thin);
+  }
 
   const confine = createConfiner(mask, o.radius * 0.5);
   const density = NODES_PER_AREA * (DEFAULT_RADIUS / o.radius);
@@ -520,4 +535,84 @@ function assignPatches(blocks: Block[], centres: Pt[], share: number, size: numb
     .sort((q, r) => q.n - r.n);
   const grown = Math.round(blocks.length * share);
   ranked.forEach(({ b }, i) => (b.kind = i < grown ? 'growth' : 'nalee'));
+}
+
+/**
+ * Blocks facing each other across a bar: from every cell, look along the
+ * four axes up to `reach` cells; past closed cells, the first open cell of
+ * another block is a neighbour (meeting the block's own cells first stops).
+ */
+function neighbours(ids: Int32Array, cols: number, rows: number, reach: number): Map<number, Set<number>> {
+  const out = new Map<number, Set<number>>();
+  const add = (a: number, b: number) => {
+    const set = out.get(a) ?? new Set<number>();
+    set.add(b);
+    out.set(a, set);
+  };
+  for (let c = 0; c < ids.length; c++) {
+    const a = ids[c];
+    if (a < 0) continue;
+    const cx = c % cols;
+    const cy = Math.floor(c / cols);
+    for (const [dx, dy] of [
+      [1, 0],
+      [0, 1],
+    ]) {
+      // Only cells on a block's edge can see across a bar.
+      const nx0 = cx + dx;
+      const ny0 = cy + dy;
+      if (nx0 >= cols || ny0 >= rows || ids[ny0 * cols + nx0] >= 0) continue;
+      for (let t = 2; t <= reach; t++) {
+        const nx = cx + dx * t;
+        const ny = cy + dy * t;
+        if (nx >= cols || ny >= rows) break;
+        const b = ids[ny * cols + nx];
+        if (b < 0) continue;
+        if (b !== a) {
+          add(a, b);
+          add(b, a);
+        }
+        break;
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Neighbours take opposite kinds: blocks are coloured largest first, each
+ * the kind fewer of its already-coloured neighbours have (a 2-colouring
+ * where the leading allows one, the fewest clashes where it doesn't). Thin
+ * blocks are walked from the start and the rest colour round them.
+ */
+function assignAlternate(blocks: Block[], adj: Map<number, Set<number>>, thin: (b: Block) => boolean): void {
+  const done = new Set<number>();
+  for (const b of blocks) {
+    if (thin(b)) {
+      b.kind = 'nalee';
+      done.add(b.id);
+    }
+  }
+  const byId = new Map(blocks.map((b) => [b.id, b]));
+  const order = [...blocks].filter((b) => !done.has(b.id)).sort((p, q) => q.area - p.area);
+  for (const start of order) {
+    if (done.has(start.id)) continue;
+    // Breadth first from each uncoloured block, so the colouring spreads
+    // through the leading rather than jumping about.
+    const queue = [start];
+    for (let k = 0; k < queue.length; k++) {
+      const b = queue[k];
+      if (done.has(b.id)) continue;
+      let grown = 0;
+      let walked = 0;
+      for (const n of adj.get(b.id) ?? []) {
+        if (!done.has(n)) continue;
+        if (byId.get(n)!.kind === 'growth') grown++;
+        else walked++;
+      }
+      b.kind = grown === walked ? (k === 0 ? (Random.chance(0.5) ? 'growth' : 'nalee') : 'growth') : grown > walked ? 'nalee' : 'growth';
+      done.add(b.id);
+      for (const n of adj.get(b.id) ?? []) if (!done.has(n)) queue.push(byId.get(n)!);
+    }
+  }
 }
