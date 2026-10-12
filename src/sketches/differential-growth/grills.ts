@@ -65,6 +65,30 @@ function spiral(cx: number, cy: number, r0: number, r1: number, a0: number, swee
 }
 
 /**
+ * `pts` with every interior corner turned on radius `r` — bent bar, not a
+ * mitred joint. Each corner is replaced by a curve from r before it to r
+ * after it, pulled toward the corner (a quarter circle, near enough, at 90°).
+ */
+function rounded(pts: Polyline, r: number): Polyline {
+  const out: Polyline = [pts[0]];
+  for (let i = 1; i < pts.length - 1; i++) {
+    const [p, c, n] = [pts[i - 1], pts[i], pts[i + 1]];
+    const lin = Math.hypot(c[0] - p[0], c[1] - p[1]);
+    const lout = Math.hypot(n[0] - c[0], n[1] - c[1]);
+    const k = Math.min(r, lin / 2, lout / 2);
+    const a: Pt = [c[0] - ((c[0] - p[0]) / lin) * k, c[1] - ((c[1] - p[1]) / lin) * k];
+    const b: Pt = [c[0] + ((n[0] - c[0]) / lout) * k, c[1] + ((n[1] - c[1]) / lout) * k];
+    for (let j = 0; j <= 8; j++) {
+      const t = j / 8;
+      const u = 1 - t;
+      out.push([u * u * a[0] + 2 * u * t * c[0] + t * t * b[0], u * u * a[1] + 2 * u * t * c[1] + t * t * b[1]]);
+    }
+  }
+  out.push(pts[pts.length - 1]);
+  return out;
+}
+
+/**
  * A framed panel: an inner rectangle (`rw` × `rh` of the cell) centred in
  * the cell, each corner tied by a diagonal to the cell's corner.
  */
@@ -192,29 +216,44 @@ function gate(): Grill {
   const [c0, c1] = mirror(0.215);
   const [sl, sr] = mirror(0.13);
   const rows = 10;
+  const bend = 0.025;
   const y0 = 0.14;
   const dy = (0.912 - y0) / (rows - 1);
   for (let k = 0; k < rows; k++) {
     const y = y0 + k * dy;
     const below = k === rows - 1 ? 1 : y + dy;
+    // The bends are rounded, as the bar was bent, not welded.
     if (k % 2 === 0) {
-      bars.push([
-        [c0, below],
-        [c0, y],
-        [c1, y],
-        [c1, below],
-      ]);
+      bars.push(
+        rounded(
+          [
+            [c0, below],
+            [c0, y],
+            [c1, y],
+            [c1, below],
+          ],
+          bend,
+        ),
+      );
     } else {
-      bars.push([
-        [0, y],
-        [sl, y],
-        [sl, below],
-      ]);
-      bars.push([
-        [w, y],
-        [sr, y],
-        [sr, below],
-      ]);
+      bars.push(
+        rounded(
+          [
+            [0, y],
+            [sl, y],
+            [sl, below],
+          ],
+          bend,
+        ),
+        rounded(
+          [
+            [w, y],
+            [sr, y],
+            [sr, below],
+          ],
+          bend,
+        ),
+      );
     }
   }
   return { name: 'gate', w, h: 1, frame, bars, discs: [] };
