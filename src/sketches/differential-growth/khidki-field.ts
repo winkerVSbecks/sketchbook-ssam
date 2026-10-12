@@ -17,6 +17,10 @@
  * cells is one block (region.ts confines growth to it). The grill is drawn
  * over the fills, so the raster's steps never show.
  *
+ * The same filling takes any grill from ./grills as a GrillShape: its bars
+ * and frame are stamped into the mask the same way and its blocks filled in
+ * noise patches.
+ *
  * Not a sketch — it exports no `sketch`, so the gallery and archive skip it.
  */
 import Random from 'canvas-sketch-util/random';
@@ -46,6 +50,21 @@ export interface Grill {
   /** Circle radius and diamond half-diagonal, in world units. */
   circleR: number;
   diamondR: number;
+}
+
+/**
+ * Any grill as the field needs it: a `w` × `h` box in world units, bars as
+ * polylines, discs that close the cells under them, and optionally the
+ * frame's outline — cells outside it are closed and the frame itself is a
+ * bar `frameBar` thick.
+ */
+export interface GrillShape {
+  w: number;
+  h: number;
+  bars: Pt[][];
+  closers: { x: number; y: number; r: number }[];
+  frame?: Pt[];
+  frameBar?: number;
 }
 
 export interface GrillOptions {
@@ -122,7 +141,11 @@ export interface Block {
 }
 
 export interface KhidkiField {
-  grill: Grill;
+  /** The khidki grill, when the field was built on it (not on a GrillShape). */
+  grill?: Grill;
+  /** The box the field fills, in world units. */
+  w: number;
+  h: number;
   mask: RegionMask;
   blocks: Block[];
   /** Walk lattice pitch, in world units. */
@@ -147,54 +170,146 @@ export interface FieldOptions extends GrillOptions {
   walkLength: number;
 }
 
-export function createKhidkiField(o: FieldOptions): KhidkiField {
-  const grill = makeGrill(o);
-  const cols = Math.ceil(APERTURE_W / RES);
-  const rows = Math.ceil(APERTURE_H / RES);
+/** Even-odd point-in-polygon. */
+function inside([px, py]: Pt, poly: Pt[]): boolean {
+  let hit = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, yi] = poly[i];
+    const [xj, yj] = poly[j];
+    if (yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) hit = !hit;
+  }
+  return hit;
+}
+
+/**
+ * Fill every block of a grill. Without `shape` the grill is khidki's own
+ * (bars, lozenges, circles and diamonds on the `PITCH` lattice, stars as a
+ * pattern); with one, any grill from ./grills, filled in noise patches.
+ */
+export function createKhidkiField(o: FieldOptions, shape?: GrillShape): KhidkiField {
+  const grill = shape ? undefined : makeGrill(o);
+  const g: GrillShape = shape ?? {
+    w: APERTURE_W,
+    h: APERTURE_H,
+    bars: grill!.bars,
+    closers: grill!.circles.map(([x, y]) => ({ x, y, r: grill!.circleR })),
+  };
+  const cols = Math.ceil(g.w / RES);
+  const rows = Math.ceil(g.h / RES);
   const mask = createMask(cols, rows, RES);
 
-  // Close every cell under the bars and circles. Diamonds close nothing: the
-  // fills run on underneath and the diamonds sit on top of them.
-  const open = new Uint8Array(cols * rows);
-  const half = o.bar / 2;
-  for (let y = 0; y < rows; y++) {
-    for (let x = 0; x < cols; x++) {
-      const p: Pt = [(x + 0.5) * RES, (y + 0.5) * RES];
-      const shut =
-        grill.bars.some((seg) => segDist(p, seg) < half) ||
-        grill.circles.some(([cx, cy]) => Math.hypot(p[0] - cx, p[1] - cy) < grill.circleR);
-      open[y * cols + x] = shut ? 0 : 1;
+  // Close every cell outside the frame, then every cell under a bar or a
+  // closing disc. Bars are stamped segment by segment over their own bounds
+  // only, so grills of finely sampled arcs stay quick. Khidki's diamonds
+  // close nothing: the fills run on underneath and they sit on top.
+  const open = new Uint8Array(cols * rows).fill(1);
+  const centre = (x: number, y: number): Pt => [(x + 0.5) * RES, (y + 0.5) * RES];
+  if (g.frame) {
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) if (!inside(centre(x, y), g.frame)) open[y * cols + x] = 0;
     }
+  }
+  const shut = (x0: number, y0: number, x1: number, y1: number, test: (p: Pt) => boolean) => {
+    const [cx0, cy0] = [Math.max(0, Math.floor(x0 / RES)), Math.max(0, Math.floor(y0 / RES))];
+    const [cx1, cy1] = [Math.min(cols - 1, Math.ceil(x1 / RES)), Math.min(rows - 1, Math.ceil(y1 / RES))];
+    for (let y = cy0; y <= cy1; y++) for (let x = cx0; x <= cx1; x++) if (test(centre(x, y))) open[y * cols + x] = 0;
+  };
+  const stamp = (pts: Pt[], half: number) => {
+    for (let i = 1; i < pts.length; i++) {
+      const seg: Segment = [pts[i - 1], pts[i]];
+      const [[ax, ay], [bx, by]] = seg;
+      shut(Math.min(ax, bx) - half, Math.min(ay, by) - half, Math.max(ax, bx) + half, Math.max(ay, by) + half, (p) =>
+        segDist(p, seg) < half,
+      );
+    }
+  };
+  for (const bar of g.bars) stamp(bar, o.bar / 2);
+  if (g.frame) stamp(g.frame, (g.frameBar ?? o.bar) / 2);
+  for (const d of g.closers) {
+    shut(d.x - d.r, d.y - d.r, d.x + d.r, d.y + d.r, ([px, py]) => Math.hypot(px - d.x, py - d.y) < d.r);
   }
 
   // Each 4-connected run of open cells is a block; slivers too small to hold
   // a loop of curve or a walk stay closed.
   const minCells = Math.ceil((2 * o.radius) ** 2 / (RES * RES));
-  const blocks: Block[] = [];
-  const centres: Pt[] = [];
-  const seen = new Uint8Array(cols * rows);
-  for (let start = 0; start < open.length; start++) {
-    if (!open[start] || seen[start]) continue;
-    const cells: number[] = [start];
-    seen[start] = 1;
-    for (let k = 0; k < cells.length; k++) {
-      const c = cells[k];
-      const cx = c % cols;
-      const cy = Math.floor(c / cols);
-      for (const [nx, ny] of [
-        [cx + 1, cy],
-        [cx - 1, cy],
-        [cx, cy + 1],
-        [cx, cy - 1],
-      ]) {
-        if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
-        const n = ny * cols + nx;
-        if (open[n] && !seen[n]) {
-          seen[n] = 1;
-          cells.push(n);
+  const steps = (c: number): number[] => {
+    const cx = c % cols;
+    const out: number[] = [];
+    if (cx + 1 < cols) out.push(c + 1);
+    if (cx > 0) out.push(c - 1);
+    if (c + cols < cols * rows) out.push(c + cols);
+    if (c >= cols) out.push(c - cols);
+    return out;
+  };
+  /** Label the 4-connected components of `inside`, starting at `next`. */
+  const components = (inside: (c: number) => boolean, label: Int32Array, next = 0): number => {
+    for (let start = 0; start < label.length; start++) {
+      if (!inside(start) || label[start] >= 0) continue;
+      label[start] = next;
+      const queue = [start];
+      for (let k = 0; k < queue.length; k++) {
+        for (const n of steps(queue[k])) {
+          if (inside(n) && label[n] < 0) {
+            label[n] = next;
+            queue.push(n);
+          }
+        }
+      }
+      next++;
+    }
+    return next;
+  };
+  const label = new Int32Array(cols * rows).fill(-1);
+  if (shape) {
+    // A street grill's open runs can join through narrow necks — a petal
+    // opening into the triangle beside it — and one curve can't fill both
+    // through the gap. Split at necks: the parts at least a curve wide (the
+    // cells `k` deep) are each a block, and the thin rim round them is shared
+    // out to the nearest part.
+    const k = Math.ceil(o.radius / RES);
+    const d0 = new Int32Array(cols * rows).fill(-1);
+    const queue: number[] = [];
+    for (let c = 0; c < d0.length; c++) {
+      if (!open[c]) {
+        d0[c] = 0;
+        queue.push(c);
+      }
+    }
+    for (let q = 0; q < queue.length; q++) {
+      for (const n of steps(queue[q])) {
+        if (d0[n] < 0) {
+          d0[n] = d0[queue[q]] + 1;
+          queue.push(n);
         }
       }
     }
+    const parts = components((c) => open[c] === 1 && d0[c] >= k, label);
+    const grow: number[] = [];
+    for (let c = 0; c < label.length; c++) if (label[c] >= 0) grow.push(c);
+    for (let q = 0; q < grow.length; q++) {
+      for (const n of steps(grow[q])) {
+        if (open[n] && label[n] < 0) {
+          label[n] = label[grow[q]];
+          grow.push(n);
+        }
+      }
+    }
+    // Runs with no part that wide keep their own label.
+    components((c) => open[c] === 1, label, parts);
+  } else {
+    components((c) => open[c] === 1, label);
+  }
+
+  const byLabel = new Map<number, number[]>();
+  label.forEach((l, c) => {
+    if (l < 0) return;
+    const list = byLabel.get(l) ?? [];
+    list.push(c);
+    byLabel.set(l, list);
+  });
+  const blocks: Block[] = [];
+  const centres: Pt[] = [];
+  for (const cells of byLabel.values()) {
     if (cells.length < minCells) continue;
     const id = blocks.length;
     let sx = 0;
@@ -208,7 +323,7 @@ export function createKhidkiField(o: FieldOptions): KhidkiField {
     blocks.push({ id, kind: 'nalee', area: cells.length * RES * RES });
   }
 
-  if (o.pattern === 'stars') assignStars(blocks, centres, o.starSet, o.starPick);
+  if (o.pattern === 'stars' && !shape) assignStars(blocks, centres, o.starSet, o.starPick);
   else assignPatches(blocks, centres, o.growthShare, o.groupSize);
 
   // Depth of every cell: steps to the nearest closed cell or the edge, so a
@@ -243,8 +358,8 @@ export function createKhidkiField(o: FieldOptions): KhidkiField {
 
   const confine = createConfiner(mask, o.radius * 0.5);
   const density = NODES_PER_AREA * (DEFAULT_RADIUS / o.radius);
-  const lc = Math.floor(APERTURE_W / o.walkPitch);
-  const lr = Math.floor(APERTURE_H / o.walkPitch);
+  const lc = Math.floor(g.w / o.walkPitch);
+  const lr = Math.floor(g.h / o.walkPitch);
   // Walk nodes keep a radius clear of the grill, like the curves' margin.
   const clear = Math.ceil(o.radius / RES);
   const nodeCell = (u: number, v: number) =>
@@ -261,6 +376,14 @@ export function createKhidkiField(o: FieldOptions): KhidkiField {
         repulsionRadius: o.radius,
         maxNodes: Math.max(32, Math.round(block.area * density)),
       });
+      // Street grills' blocks are big and long: a point would take too long
+      // to reach their ends, so the curve starts as the block's own outline,
+      // traced a little inside its walls, and buckles inward from there.
+      // khidki's own small blocks keep the branching look of a point seed.
+      if (shape) {
+        const loop = contourLoop(mask.ids, depth, cols, rows, block.id, Math.ceil((o.radius * 0.8) / RES));
+        if (loop.length >= 8 && loop.length / 0.35 < block.growth.params.maxNodes) block.growth.state.nodes = loop;
+      }
     } else {
       block.walks = naleeWalks(
         lc,
@@ -276,6 +399,8 @@ export function createKhidkiField(o: FieldOptions): KhidkiField {
 
   return {
     grill,
+    w: g.w,
+    h: g.h,
     mask,
     blocks,
     walkPitch: o.walkPitch,
@@ -287,6 +412,61 @@ export function createKhidkiField(o: FieldOptions): KhidkiField {
       }
     },
   };
+}
+
+/**
+ * The outline of block `id` eroded to cells at least `k` deep, as a closed
+ * loop in world units: boundary edges of that region run clockwise round
+ * each cell (internal ones cancel), are chained end to start, and the
+ * longest chain is kept. Every fourth vertex is enough — the growth
+ * resamples it. Empty when the block is nowhere `k` deep.
+ */
+function contourLoop(
+  ids: Int32Array,
+  depth: Int32Array,
+  cols: number,
+  rows: number,
+  id: number,
+  k: number,
+): { x: number; y: number }[] {
+  const inR = (x: number, y: number) =>
+    x >= 0 && y >= 0 && x < cols && y < rows && ids[y * cols + x] === id && depth[y * cols + x] >= k;
+  const next = new Map<number, number[]>();
+  const key = (x: number, y: number) => y * (cols + 1) + x;
+  const add = (x0: number, y0: number, x1: number, y1: number) => {
+    const a = key(x0, y0);
+    const list = next.get(a) ?? [];
+    list.push(key(x1, y1));
+    next.set(a, list);
+  };
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      if (!inR(x, y)) continue;
+      if (!inR(x, y - 1)) add(x, y, x + 1, y);
+      if (!inR(x + 1, y)) add(x + 1, y, x + 1, y + 1);
+      if (!inR(x, y + 1)) add(x + 1, y + 1, x, y + 1);
+      if (!inR(x - 1, y)) add(x, y + 1, x, y);
+    }
+  }
+  let best: number[] = [];
+  while (next.size > 0) {
+    const [start] = next.keys();
+    const chain: number[] = [start];
+    let at = start;
+    for (;;) {
+      const list = next.get(at);
+      if (!list || list.length === 0) break;
+      const to = list.pop()!;
+      if (list.length === 0) next.delete(at);
+      if (to === start) break;
+      chain.push(to);
+      at = to;
+    }
+    if (chain.length > best.length) best = chain;
+  }
+  return best
+    .filter((_, i) => i % 4 === 0)
+    .map((v) => ({ x: (v % (cols + 1)) * RES, y: Math.floor(v / (cols + 1)) * RES }));
 }
 
 /**
