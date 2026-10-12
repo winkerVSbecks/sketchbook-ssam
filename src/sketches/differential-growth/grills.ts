@@ -116,8 +116,7 @@ function toEdge([x, y]: Pt, dx: number, dy: number, x0: number, y0: number, x1: 
   return [x + dx * t, y + dy * t];
 }
 
-function sunburst(): Grill {
-  const w = 0.74;
+function sunburst(w = 0.74): Grill {
   const m = 0.49;
   const c: Pt = [w / 2, m];
   const r = 0.08;
@@ -132,8 +131,7 @@ function sunburst(): Grill {
   return { name: 'sunburst', w, h: 1, frame: rect(0, 0, w, 1), bars, discs: [] };
 }
 
-function railing(): Grill {
-  const w = 0.6;
+function railing(w = 0.6): Grill {
   return {
     name: 'railing',
     w,
@@ -144,13 +142,18 @@ function railing(): Grill {
   };
 }
 
-function scroll(): Grill {
-  const w = 1;
-  const [sx0, sx1, sy0, sy1] = [0.2, 0.8, 0.18, 0.78];
+function scroll(w = 1): Grill {
+  // Stiles at fixed fractions of the width; the inner square keeps square at
+  // any width (side 0.6w, centred a little above the middle) and the flower
+  // scales with it.
+  const side = 0.6 * w;
+  const k = side / 0.6;
+  const [sx0, sx1] = [0.2 * w, 0.8 * w];
+  const [sy0, sy1] = [0.48 - side / 2, 0.48 + side / 2];
   const c: Pt = [(sx0 + sx1) / 2, (sy0 + sy1) / 2];
   const bars: Polyline[] = [
-    line([0.1, 0], [0.1, 1]),
-    line([0.9, 0], [0.9, 1]),
+    line([0.1 * w, 0], [0.1 * w, 1]),
+    line([0.9 * w, 0], [0.9 * w, 1]),
     line([sx0, 0], [sx0, 1]),
     line([sx1, 0], [sx1, 1]),
     line([sx0, sy0], [sx1, sy0]),
@@ -160,9 +163,9 @@ function scroll(): Grill {
   ];
   // Four petals round the boss, each a circle open toward the centre whose
   // two ends curl inward into scrolls.
-  const d = 0.17;
-  const r = 0.11;
-  const rc = 0.045;
+  const d = 0.17 * k;
+  const r = 0.11 * k;
+  const rc = 0.045 * k;
   const gap = (50 * Math.PI) / 180;
   for (const [ux, uy] of [
     [0, -1],
@@ -185,12 +188,12 @@ function scroll(): Grill {
       bars.push(spiral(q[0], q[1], rc, rc * 0.3, a, sweep));
     }
   }
-  return { name: 'scroll', w, h: 1, frame: rect(0, 0, w, 1), bars, discs: [{ x: c[0], y: c[1], r: 0.035 }] };
+  return { name: 'scroll', w, h: 1, frame: rect(0, 0, w, 1), bars, discs: [{ x: c[0], y: c[1], r: 0.035 * k }] };
 }
 
-function gate(): Grill {
-  // Proportions traced off the photograph: frame 675 × 855, so w ≈ 0.79.
-  const w = 0.79;
+function gate(w = 0.79): Grill {
+  // Proportions traced off the photograph: frame 675 × 855, so w ≈ 0.79;
+  // horizontal offsets scale with the width asked for.
   // Round-shouldered frame: the top corners turned on a small radius.
   const rr = 0.06;
   const frame: Polyline = [
@@ -205,7 +208,7 @@ function gate(): Grill {
   // Everything mirrors about the centre line: the photograph's slight
   // lean is averaged out, offsets measured from the middle.
   const mid = w / 2;
-  const mirror = (d: number): [number, number] => [mid - d, mid + d];
+  const mirror = (d: number): [number, number] => [mid - (d * w) / 0.79, mid + (d * w) / 0.79];
   // Four full-height stiles and a rail across the top.
   const bars: Polyline[] = [...mirror(0.29), ...mirror(0.045)].map((x) => line([x, 0], [x, 1]));
   bars.push(line([0, 0.058], [w, 0.058]));
@@ -259,8 +262,7 @@ function gate(): Grill {
   return { name: 'gate', w, h: 1, frame, bars, discs: [] };
 }
 
-function star(): Grill {
-  const w = 0.55;
+function star(w = 0.55): Grill {
   const m = 0.56;
   const c: Pt = [w / 2, 0.29];
   const r = 0.045;
@@ -291,8 +293,7 @@ function star(): Grill {
   return { name: 'star', w, h: 1, frame: rect(0, 0, w, 1), bars, discs: [] };
 }
 
-function circles(): Grill {
-  const w = 0.68;
+function circles(w = 0.68): Grill {
   // One top row split into three sections by two short bars.
   const top = 0.08;
   // Two medallions across, touching: each a circle of radius r with four
@@ -324,4 +325,19 @@ function circles(): Grill {
   return { name: 'circles', w, h: 1, frame: rect(0, 0, w, 1), bars, discs: [] };
 }
 
-export const GRILLS: Grill[] = [sunburst(), railing(), scroll(), gate(), star(), circles()];
+/**
+ * Every grill as a builder of any width (height 1): left to its default, a
+ * grill keeps its photograph's proportions; given a width, it is laid out
+ * afresh for it — bars and panels as fractions of the width, round parts
+ * kept round — so it can fill an opening of another shape.
+ */
+export const GRILL_BUILDERS: { name: string; make: (w?: number) => Grill }[] = [
+  { name: 'sunburst', make: sunburst },
+  { name: 'railing', make: railing },
+  { name: 'scroll', make: scroll },
+  { name: 'gate', make: gate },
+  { name: 'star', make: star },
+  { name: 'circles', make: circles },
+];
+
+export const GRILLS: Grill[] = GRILL_BUILDERS.map((b) => b.make());

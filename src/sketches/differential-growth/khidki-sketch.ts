@@ -8,7 +8,7 @@
  * frame (./window-frame) with ../khidki's grill inside — bars, waisted
  * lozenges, circles and diamonds on the crossings — filled in noise patches
  * or by whole lozenge stars. Any other is a gate or window from ./grills,
- * its own frame drawn heavy round it, filled in noise patches.
+ * laid out afresh to fill the same window frame, in noise patches.
  *
  * Colour: slate ground (paper when off), a fresh palette every load. The
  * fill keeps to two hues off the ring — the base for the growth, the next
@@ -33,7 +33,7 @@ import {
   type KhidkiField,
   type StarPick,
 } from './khidki-field';
-import { GRILLS, type Grill } from './grills';
+import { GRILL_BUILDERS } from './grills';
 import { outline } from './region';
 import { windowFrame } from './window-frame';
 
@@ -93,24 +93,26 @@ export interface KhidkiSketchOptions {
 }
 
 /** Every grill the sketch can fill: khidki's own window first, then ./grills. */
-export const GRILL_NAMES = ['khidki', ...GRILLS.map((g) => g.name)];
+export const GRILL_NAMES = ['khidki', ...GRILL_BUILDERS.map((b) => b.name)];
 
-/** A unit grill from ./grills scaled to the field's world: as tall as khidki's opening. */
-function shapeOf(g: Grill, bar: number): GrillShape {
+/**
+ * A street grill laid out afresh at the window opening's proportions and
+ * scaled to the field's world, so it fills the same frame as khidki's own.
+ * Its own frame is dropped: the window frame stands in for it.
+ */
+function shapeOf(name: string): GrillShape | undefined {
+  const builder = GRILL_BUILDERS.find((b) => b.name === name);
+  if (!builder) return undefined;
+  const g = builder.make(APERTURE_W / APERTURE_H);
   const k = APERTURE_H / g.h;
   const pt = ([x, y]: [number, number]): [number, number] => [x * k, y * k];
   return {
-    w: g.w * k,
-    h: g.h * k,
+    w: APERTURE_W,
+    h: APERTURE_H,
     bars: g.bars.map((pl) => pl.map(pt)),
     closers: g.discs.map((d) => ({ x: d.x * k, y: d.y * k, r: d.r * k })),
-    frame: g.frame.map(pt),
-    frameBar: bar * FRAME_WEIGHT,
   };
 }
-
-/** The frame of a street grill, as a multiple of the bar. */
-const FRAME_WEIGHT = 2.5;
 
 export const khidkiSketch =
   (o: KhidkiSketchOptions) =>
@@ -146,8 +148,6 @@ export const khidkiSketch =
       grill: 'khidki',
       ...o.defaults?.(),
     };
-    /** The street grill in force, or undefined for khidki's own window. */
-    const street = () => GRILLS.find((g) => g.name === params.grill);
 
     // Collapsed in the gallery, where every cell would otherwise carry one.
     const inGallery = new URLSearchParams(location.search).has('gallery');
@@ -171,8 +171,7 @@ export const khidkiSketch =
     const build = () => {
       Random.setSeed(params.seed);
       console.log(params.seed);
-      const g = street();
-      shape = g ? shapeOf(g, params.bar) : undefined;
+      shape = shapeOf(params.grill);
       field = createKhidkiField(params, shape);
       edges = params.debug ? outline(field.mask) : [];
       const t0 = performance.now();
@@ -294,25 +293,17 @@ export const khidkiSketch =
       for (let i = 0; i < params.speed; i++) field.step();
 
       const { grill, blocks, walkPitch } = field;
-      // khidki's own grill sits in the window frame; a street grill is fitted
-      // to the canvas inside its own frame.
-      const frame = grill ? windowFrame('rect', width, height) : undefined;
-      const box = frame?.bounds ?? { x: width * 0.08, y: height * 0.08, w: width * 0.84, h: height * 0.84 };
+      // Every grill sits in the same window frame, filling its opening.
+      const frame = windowFrame('rect', width, height);
+      const box = frame.bounds;
       const scale = Math.min(box.w / field.w, box.h / field.h);
-      const ox = box.x + (box.w - field.w * scale) / 2;
-      const oy = box.y + (box.h - field.h * scale) / 2;
-      const outlinePath = new Path2D();
-      shape?.frame?.forEach(([x, y], i) =>
-        i === 0 ? outlinePath.moveTo(ox + x * scale, oy + y * scale) : outlinePath.lineTo(ox + x * scale, oy + y * scale),
-      );
-      outlinePath.closePath();
 
       context.fillStyle = colors.bg;
       context.fillRect(0, 0, width, height);
 
       context.save();
-      context.clip(frame ? frame.aperture : outlinePath);
-      context.translate(ox, oy);
+      context.clip(frame.aperture);
+      context.translate(box.x + (box.w - field.w * scale) / 2, box.y + (box.h - field.h * scale) / 2);
 
       context.lineJoin = 'round';
       context.lineCap = 'round';
@@ -377,11 +368,7 @@ export const khidkiSketch =
         }
         context.fill();
         context.restore();
-        // Its frame, heavy, straddling the outline.
-        context.strokeStyle = colors.frame.front;
-        context.lineWidth = params.bar * FRAME_WEIGHT * scale;
-        context.lineJoin = 'miter';
-        context.stroke(outlinePath);
+        frame.draw(context, colors.frame);
         return;
       }
 
@@ -419,7 +406,7 @@ export const khidkiSketch =
 
       context.restore();
 
-      frame?.draw(context, colors.frame);
+      frame.draw(context, colors.frame);
     };
 
     return () => pane.dispose();

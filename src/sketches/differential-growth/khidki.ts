@@ -4,8 +4,8 @@
  * picks one, at random on load: khidki's own window — the jali's
  * rectangular frame round ../khidki's grill, filled in noise patches or by
  * whole lozenge stars — or one of the street gates and windows of ./grills
- * (sunburst, railing, scroll, gate, star, circles) in its own frame. Pane and
- * drawing live in ./khidki-sketch.
+ * (sunburst, railing, scroll, gate, star, circles) in the same frame. Pane
+ * and drawing live in ./khidki-sketch.
  */
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
