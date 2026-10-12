@@ -23,7 +23,15 @@ const draw = whitespaceSketch({
   title: 'jali',
   windowed: true,
   grill: true,
-  defaults: () => ({ window: Random.pick(WINDOW_STYLES), hues: 5, accent: 3, bar: 0.5 }),
+  // A fresh palette every load: the palette seed is already new, so pick the hue too.
+  defaults: () => ({
+    window: Random.pick(WINDOW_STYLES),
+    hue: Math.round(Random.range(0, 360)),
+    hues: 5,
+    accent: 3,
+    bar: 0.5,
+    knot: 1.5,
+  }),
 });
 
 export const sketch = (props: SketchProps) => {
