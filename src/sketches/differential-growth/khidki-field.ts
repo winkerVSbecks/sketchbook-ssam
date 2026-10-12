@@ -175,6 +175,10 @@ export interface FieldOptions extends GrillOptions {
   walkLength: number;
   /** Alternate: a block must be this many curve spacings deep to be grown. */
   minGrowth?: number;
+  /** Alternate: a fixed kind for blocks centred at (x, y), or undefined to alternate. */
+  bias?: (x: number, y: number) => BlockKind | undefined;
+  /** Alternate: flip one block, chosen by the seed, against its rule. */
+  exception?: boolean;
 }
 
 /** Even-odd point-in-polygon. */
@@ -370,7 +374,15 @@ export function createKhidkiField(o: FieldOptions, shape?: GrillShape): KhidkiFi
     // `minGrowth` spacings deep are walked, whatever their neighbours.
     const room = Math.ceil(((o.minGrowth ?? 0) * o.radius) / RES);
     const thin = (b: Block) => depth[deepest.get(b.id)!] < room;
-    assignAlternate(blocks, neighbours(mask.ids, cols, rows, Math.ceil(o.bar / RES) + 2), thin);
+    const fixed = (b: Block) => o.bias?.(centres[b.id][0], centres[b.id][1]);
+    assignAlternate(blocks, neighbours(mask.ids, cols, rows, Math.ceil(o.bar / RES) + 2), thin, fixed);
+    if (o.exception) {
+      // One exception per work: a block that could grow, chosen by the seed
+      // among the larger half, takes the other texture.
+      const able = blocks.filter((b) => !thin(b)).sort((p, q) => q.area - p.area);
+      const pick = able.length ? able[Random.rangeFloor(0, Math.ceil(able.length / 2))] : undefined;
+      if (pick) pick.kind = pick.kind === 'growth' ? 'nalee' : 'growth';
+    }
   }
 
   const confine = createConfiner(mask, o.radius * 0.5);
@@ -585,11 +597,17 @@ function neighbours(ids: Int32Array, cols: number, rows: number, reach: number):
  * where the leading allows one, the fewest clashes where it doesn't). Thin
  * blocks are walked from the start and the rest colour round them.
  */
-function assignAlternate(blocks: Block[], adj: Map<number, Set<number>>, thin: (b: Block) => boolean): void {
+function assignAlternate(
+  blocks: Block[],
+  adj: Map<number, Set<number>>,
+  thin: (b: Block) => boolean,
+  fixed: (b: Block) => BlockKind | undefined = () => undefined,
+): void {
   const done = new Set<number>();
   for (const b of blocks) {
-    if (thin(b)) {
-      b.kind = 'nalee';
+    const f = thin(b) ? 'nalee' : fixed(b);
+    if (f) {
+      b.kind = f;
       done.add(b.id);
     }
   }

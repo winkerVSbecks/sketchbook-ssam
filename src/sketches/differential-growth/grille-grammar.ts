@@ -3,13 +3,15 @@
  *
  * A grille is built in three moves, each a rule with a few choices:
  *
- *   1. symmetry — `none`, `mirror` (left–right) or `quad` (both axes). Only
+ *   1. symmetry — `none`, `mirror` (left–right) or `quad` (both axes), rolled
+ *      with `none` most likely: mirroring is the exception, not the rule. Only
  *      the fundamental domain is designed; it is reflected to fill the
  *      opening, and every mirror line is a bar, as a fabricator would weld
  *      the halves.
- *   2. subdivision — the domain is split recursively into panels: across its
- *      longer side, into 2 or 3 parts, equal or in a 1:φ ratio, until a
- *      depth limit or a minimum panel size. Every split is a bar.
+ *   2. subdivision — the domain is split recursively into panels: first into
+ *      bands (mostly horizontal), then each across its longer side (now and
+ *      then the shorter), into parts in ratios from 1:1 to 1:3 and 1:φ,
+ *      until a depth limit or a minimum panel size. Every split is a bar.
  *   3. motif — each panel takes one figure from the vocabulary of street
  *      grilles: `rays` (a sunrise from an edge), `cross`, `diamond`,
  *      `medallion` (a circle round a four-pointed star of quarter arcs),
@@ -29,6 +31,8 @@ type Polyline = Pt[];
 
 export type Symmetry = 'none' | 'mirror' | 'quad';
 export const SYMMETRIES: Symmetry[] = ['none', 'mirror', 'quad'];
+/** Symmetry as a roll, not a default: mirroring is the exception. */
+export const pickSymmetry = (): Symmetry => SYMMETRIES[Random.weighted([6, 3, 1]) as number];
 export type Motif = 'rays' | 'cross' | 'diamond' | 'medallion' | 'circle' | 'steps' | 'bars' | 'asanoha' | 'plain';
 export const MOTIFS: Motif[] = ['rays', 'cross', 'diamond', 'medallion', 'circle', 'steps', 'bars', 'asanoha', 'plain'];
 
@@ -47,6 +51,8 @@ export interface GrammarOptions {
 
 export interface Grille {
   bars: Polyline[];
+  /** The first cut's pieces, reflected to cover the opening: the bands. */
+  bands: { x: number; y: number; w: number; h: number }[][];
   discs: { x: number; y: number; r: number }[];
   /** The rules as drawn, for the pane. */
   recipe: string;
@@ -80,23 +86,45 @@ function toEdge([x, y]: Pt, dx: number, dy: number, r: Rect): Pt {
   return [x + dx * t, y + dy * t];
 }
 
-/** Split `r` recursively; every cut is pushed to `bars`, every leaf returned. */
-function subdivide(r: Rect, depth: number, min: number, bars: Polyline[]): Rect[] {
-  const across = r.w >= r.h ? 'x' : 'y';
+/** Ratios a cut may divide a panel by; repeats weight the common ones. */
+const RATIOS: number[][] = [
+  [1, 1],
+  [1, 1],
+  [1, PHI],
+  [PHI, 1],
+  [1, 2],
+  [2, 1],
+  [1, 3],
+  [3, 1],
+  [1, 1, 1],
+  [1, 2, 1],
+  [2, 1, 1],
+  [1, 1, 2],
+  [1, 3, 1],
+];
+
+/**
+ * Split `r` recursively; every cut is pushed to `bars`, every leaf returned.
+ * The first cut (`top`) prefers to stack horizontal bands, as grilles are
+ * built; later cuts go across the longer side, now and then the shorter, so
+ * bands need not keep the verticals of the band above. Ratios are drawn from
+ * `RATIOS`, so band heights vary rather than repeat.
+ */
+function subdivide(r: Rect, depth: number, min: number, bars: Polyline[], top = false, bands?: Rect[]): Rect[] {
+  const longer = r.w >= r.h ? 'x' : 'y';
+  const across = top ? (Random.chance(0.8) ? 'y' : 'x') : Random.chance(0.8) ? longer : longer === 'x' ? 'y' : 'x';
   const side = across === 'x' ? r.w : r.h;
-  const parts = Random.pick([2, 2, 3]);
-  if (depth <= 0 || side / parts < min || (depth < 3 && Random.chance(0.25))) return [r];
-  // Equal parts, or two in a 1:φ ratio either way round.
-  const golden = parts === 2 && Random.chance(0.4);
-  const fractions = golden
-    ? Random.pick([
-        [1 / (1 + PHI), PHI / (1 + PHI)],
-        [PHI / (1 + PHI), 1 / (1 + PHI)],
-      ])
-    : Array.from({ length: parts }, () => 1 / parts);
+  const weights = Random.pick(RATIOS) as number[];
+  const total = weights.reduce((a, b) => a + b, 0);
+  const smallest = (Math.min(...weights) / total) * side;
+  if (depth <= 0 || smallest < min || (!top && depth < 3 && Random.chance(0.25))) {
+    bands?.push(r);
+    return [r];
+  }
   const leaves: Rect[] = [];
   let at = 0;
-  fractions.forEach((f: number, i: number) => {
+  weights.forEach((wt: number, i: number) => {
+    const f = wt / total;
     const piece: Rect =
       across === 'x'
         ? { x: r.x + at * r.w, y: r.y, w: f * r.w, h: r.h }
@@ -109,6 +137,8 @@ function subdivide(r: Rect, depth: number, min: number, bars: Polyline[]): Rect[
           : line([r.x, piece.y], [r.x + r.w, piece.y]),
       );
     }
+    // The pieces of the first cut are the work's bands.
+    if (top) bands?.push(piece);
     leaves.push(...subdivide(piece, depth - 1, min, bars));
   });
   return leaves;
@@ -301,7 +331,8 @@ export function generateGrille(o: GrammarOptions): Grille {
     h: symmetry === 'quad' ? h / 2 : h,
   };
   const bars: Polyline[] = [];
-  const panels = subdivide(domain, o.depth, o.minPanel, bars);
+  const top: Rect[] = [];
+  const panels = subdivide(domain, o.depth, o.minPanel, bars, true, top);
   // Motifs are drawn per panel, but panels of one shape share one motif, so
   // repeats read as a pattern rather than noise.
   const byShape = new Map<string, Motif>();
@@ -309,7 +340,8 @@ export function generateGrille(o: GrammarOptions): Grille {
   for (const p of panels) {
     const key = `${p.w.toFixed(2)}x${p.h.toFixed(2)}`;
     if (!byShape.has(key)) {
-      const m = MOTIFS[Random.weighted([3, 2, 2, 2, 1, 2, 2, 2, 2]) as number];
+      // Rays are rare: a sunrise reads as a picture, a landscape.
+      const m = MOTIFS[Random.weighted([0.5, 2, 2, 2, 1, 2, 2, 2, 3]) as number];
       byShape.set(key, m);
       used.push(m);
     }
@@ -318,7 +350,16 @@ export function generateGrille(o: GrammarOptions): Grille {
   const all = reflect(bars, symmetry, w, h);
   if (symmetry !== 'none') all.push(line([w / 2, 0], [w / 2, h]));
   if (symmetry === 'quad') all.push(line([0, h / 2], [w, h / 2]));
+  // Each band with its mirror images, so a band's texture rule holds
+  // across the reflection.
+  const images = (b: Rect): Rect[] => {
+    const out = [b];
+    if (symmetry !== 'none') out.push({ ...b, x: w - b.x - b.w });
+    if (symmetry === 'quad') out.push(...out.map((q) => ({ ...q, y: h - q.y - q.h })));
+    return out;
+  };
   return {
+    bands: top.map(images),
     bars: all,
     discs: o.punctum ? [{ x: w / 2, y: h / 2, r: Math.min(w, h) * 0.035 }] : [],
     recipe: `${symmetry} · ${panels.length} panels · ${used.join(', ')}`,

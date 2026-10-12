@@ -9,17 +9,18 @@
  *   - no illusion: the canvas edge is the frame, or a flat border band; no
  *     extrusion, no box-in-perspective motifs, no knots but one optional
  *     central disc, the only saturated mark;
- *   - one rule per layer: the texture follows the leading, and neighbours
- *     across a bar take opposite textures wherever the leading allows, so
- *     every line marks a change (./khidki-field `alternate`); blocks too thin
- *     for a curve to settle are walked;
+ *   - one rule per layer: the texture follows the leading. Each band takes a
+ *     rule — neighbours alternate across every bar (./khidki-field
+ *     `alternate`), or the whole band is grown, or walked — and one block per
+ *     work, chosen by the system, breaks its rule; blocks too thin for a
+ *     curve to settle are walked;
  *   - one material: walks run on a lattice tied to the curves' spacing
  *     (0.7 of it, where the curves actually settle), so maze and growth are
  *     two dialects at one scale;
  *   - close values: ground, fill and leading in one hue family at near
  *     contrasts — the event is texture against leading, not colour;
- *   - kinetic: a short warm-up, then the growth keeps filling inside the
- *     fixed leading, the grille as the invariant aperture.
+ *   - kinetic: a warm-up that settles the stills, then the growth keeps
+ *     filling inside the fixed leading, the grille as the invariant aperture.
  */
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
@@ -29,7 +30,8 @@ import { formatCss, wcagContrast } from 'culori';
 
 import { cuspPalette } from '../../colors/cusphanger';
 import { createKhidkiField, type KhidkiField } from './khidki-field';
-import { SYMMETRIES, generateGrille, type Grille, type Symmetry } from './grille-grammar';
+import { SYMMETRIES, generateGrille, pickSymmetry, type Grille, type Symmetry } from './grille-grammar';
+import type { BlockKind } from './khidki-field';
 
 /** The opening, in world units: the canvas's 4:5. */
 const W = 54;
@@ -41,6 +43,8 @@ interface Params {
   symmetry: Symmetry;
   depth: number;
   punctum: boolean;
+  /** One block, chosen by the system, takes the other texture. */
+  exception: boolean;
   /** Flat border band instead of the bare canvas edge. */
   band: boolean;
   bar: number;
@@ -64,15 +68,16 @@ interface Params {
 export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   const params: Params = {
     seed: Random.getRandomSeed(),
-    symmetry: Random.pick(SYMMETRIES),
+    symmetry: pickSymmetry(),
     depth: Random.rangeFloor(2, 5),
-    punctum: Random.chance(0.4),
+    punctum: false,
+    exception: true,
     band: true,
     bar: 0.6,
     radius: 1,
     walkDensity: 0.7,
     stroke: 0.35,
-    warmup: 150,
+    warmup: 600,
     speed: 3,
     paletteSeed: Random.getRandomSeed(),
     hue: Math.round(Random.range(0, 360)),
@@ -114,7 +119,17 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
       minPanel: 7,
       punctum: params.punctum,
     });
-    recipe.text = grille.recipe;
+    // Each band its own texture rule: mostly alternating, sometimes all one
+    // texture, so seeds of one layout differ in more than which cell is which.
+    const modes: (BlockKind | undefined)[] = grille.bands.map(
+      () => [undefined, 'growth', 'nalee'][Random.weighted([2, 1, 1]) as number] as BlockKind | undefined,
+    );
+    const bias = (x: number, y: number) => {
+      const i = grille.bands.findIndex((imgs) => imgs.some((b) => x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h));
+      return i >= 0 ? modes[i] : undefined;
+    };
+    const named = modes.map((m) => (m === 'growth' ? 'grown' : m === 'nalee' ? 'walked' : 'alt'));
+    recipe.text = `${grille.recipe} · bands ${named.join('/')}`;
     field = createKhidkiField(
       {
         bar: params.bar,
@@ -130,6 +145,8 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
         walkPitch: params.radius * params.walkDensity,
         walkLength: 80,
         minGrowth: 2.5,
+        bias,
+        exception: params.exception,
       },
       { w: W, h: H, bars: grille.bars, closers: grille.discs },
     );
@@ -183,6 +200,7 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   const g = pane.addFolder({ title: 'Grammar' });
   onInput(g.addBinding(params, 'symmetry', { options: Object.fromEntries(SYMMETRIES.map((s) => [s, s])) }), rebuild);
   onInput(g.addBinding(params, 'depth', { min: 0, max: 6, step: 1, label: 'subdivision' }), rebuild);
+  onInput(g.addBinding(params, 'exception'), rebuild);
   onInput(g.addBinding(params, 'punctum'), rebuild);
   onInput(g.addBinding(params, 'band', { label: 'border band' }), () => props.render());
   onInput(g.addBinding(params, 'bar', { min: 0.2, max: 2, step: 0.05 }), rebuild);
@@ -190,7 +208,7 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   g.addBinding(params, 'seed', { readonly: true });
   g.addButton({ title: 'New grille' }).on('click', () => {
     params.seed = Random.getRandomSeed();
-    params.symmetry = Random.pick(SYMMETRIES);
+    params.symmetry = pickSymmetry();
     params.depth = Random.rangeFloor(2, 5);
     pane.refresh();
     rebuild();
