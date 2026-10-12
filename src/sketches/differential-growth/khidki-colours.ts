@@ -1,6 +1,8 @@
 /**
  * The colour system of the `khidki` sketches, from cusphanger: a ground
- * (paper or slate) and four hues off the ring in order from the base.
+ * (paper or slate) and four hues placed round the wheel by a harmony scheme
+ * (`HARMONIES`): the fills as neighbours, the frame and knots set against
+ * them. Roles below count from 0 = growth, 1 = walks, 2 = frame, 3 = knots.
  *
  *   - fills  — growth in hue 0, walks in hue 1, both at one quiet contrast
  *              against the ground (`fill`, 1.8:1 by default), so neither
@@ -24,10 +26,29 @@ import type { OklchColor } from 'cusphanger';
 
 import { cuspPalette } from '../../colors/cusphanger';
 
+/**
+ * Where the four roles sit round the wheel, in 30° steps from the base hue:
+ * [growth, walks, frame, knots]. The fills are always neighbours (0 and
+ * +30°), so the field reads as one family; the scheme places the frame and
+ * the circles against it.
+ */
+export const HARMONIES = {
+  /** All four in a 90° arc: quiet, one family. */
+  analogous: [0, 1, 11, 2],
+  /** Frame and knots opposite the fills. */
+  complementary: [0, 1, 6, 7],
+  /** Frame and knots either side of the fills' complement. */
+  split: [0, 1, 5, 7],
+  /** Fills, frame and knots a third of the wheel apart. */
+  triadic: [0, 1, 4, 8],
+  /** One hue throughout, told apart by value alone. */
+  mono: [0, 0, 0, 0],
+} as const;
+export type Harmony = keyof typeof HARMONIES;
+
 export interface KhidkiColourOptions {
   hue: number;
-  /** Degrees between ring hues. */
-  angle: number;
+  harmony: Harmony;
   saturation: number;
   /** Slate ground instead of paper. */
   slate: boolean;
@@ -56,18 +77,21 @@ const SHADE = 0.12;
 const css = (c: OklchColor) => formatCss(c);
 
 export function khidkiColours(o: KhidkiColourOptions): KhidkiColours {
+  // The whole 30° ring off one palette, so every role shares its ground and
+  // its tier targets; the harmony picks four of the twelve.
   const palette = cuspPalette({
     hue: o.hue,
-    count: 4,
-    angle: o.angle,
+    count: 12,
+    angle: 30,
     shuffle: false,
+    jitter: 0,
     saturation: o.saturation,
     ground: o.slate ? 'dark' : 'light',
     targets: { high: o.knot, mid: o.fill, low: 1.4 },
   });
   const { high, mid, low } = palette.tiers;
-  const order = palette.ring.slice(0, palette.hues.length).map((h) => palette.hues.indexOf(h));
-  const at = (j: number) => order[j % order.length];
+  const steps = HARMONIES[o.harmony];
+  const at = (role: number) => palette.hues.indexOf(palette.ring[steps[role]]);
   const bg = palette.bg.color;
 
   // The frame's hue, as its full ramp from dark to light.

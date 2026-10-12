@@ -31,7 +31,7 @@ import {
   type StarPick,
 } from './khidki-field';
 import { GRILL_BUILDERS } from './grills';
-import { khidkiColours } from './khidki-colours';
+import { HARMONIES, khidkiColours, type Harmony } from './khidki-colours';
 import { outline } from './region';
 import { windowFrame } from './window-frame';
 
@@ -67,8 +67,8 @@ interface Params {
   speed: number;
   paletteSeed: string;
   hue: number;
-  /** Degrees between the four ring hues (growth, walks, frame, knots). */
-  angle: number;
+  /** How the four hues (growth, walks, frame, knots) sit round the wheel. */
+  harmony: Harmony;
   saturation: number;
   /** WCAG contrast against the ground: circles and diamonds (`ink`), both
    * fills (`accent`), the frame's front (`frameTone`). Bars always take the
@@ -135,7 +135,8 @@ export const khidkiSketch =
       // A new palette every load, as the pane's New palette button deals.
       paletteSeed: Random.getRandomSeed(),
       hue: Math.round(Random.range(0, 360)),
-      angle: 51,
+      // A scheme picked with the palette on every load; mono stays a pane choice.
+      harmony: Random.pick(['analogous', 'complementary', 'split', 'triadic'] as Harmony[]),
       saturation: 1,
       ink: 6,
       accent: 1.8,
@@ -182,7 +183,7 @@ export const khidkiSketch =
       Random.setSeed(params.paletteSeed);
       const c = khidkiColours({
         hue: params.hue,
-        angle: params.angle,
+        harmony: params.harmony,
         saturation: params.saturation,
         slate: params.reverse,
         fill: params.accent,
@@ -254,7 +255,10 @@ export const khidkiSketch =
     const colour = pane.addFolder({ title: 'Colour' });
     onInput(colour.addBinding(params, 'reverse', { label: 'slate' }), repaint);
     onInput(colour.addBinding(params, 'hue', { min: 0, max: 360, step: 1 }), repaint);
-    onInput(colour.addBinding(params, 'angle', { min: 1, max: 180, step: 1, label: 'hue Δ' }), repaint);
+    onInput(
+      colour.addBinding(params, 'harmony', { options: Object.fromEntries(Object.keys(HARMONIES).map((h) => [h, h])) }),
+      repaint,
+    );
     onInput(colour.addBinding(params, 'saturation', { min: 0, max: 1, step: 0.01 }), repaint);
     onInput(colour.addBinding(params, 'accent', { min: 1.2, max: 6, step: 0.1, label: 'fill (:1)' }), repaint);
     onInput(colour.addBinding(params, 'ink', { min: 4.5, max: 18, step: 0.1, label: 'knots (:1)' }), repaint);
