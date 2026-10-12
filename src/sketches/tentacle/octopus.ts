@@ -1,15 +1,16 @@
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
 import Random from 'canvas-sketch-util/random';
-import { wcagContrast } from 'culori';
 import { lerp, mapRange } from 'canvas-sketch-util/math';
 import getNormals from 'polyline-normals';
 import { drawPath } from '@daeinc/draw';
 import { Pane } from 'tweakpane';
-import { generateColors } from '../../subtractive-color';
+import { logColors } from '../../colors';
+import { cuspPalette } from '../../colors/cusphanger';
 
 const config = {
   count: 8,
+  hues: 4,
   headX: 0.5,
   headY: 0.46,
   headWidth: 0.28,
@@ -30,7 +31,6 @@ const config = {
   cupRowGap: 0.5,
   cupStart: 0.12,
   cupEnd: 0.92,
-  cupContrast: 3,
   bob: 0.02,
   eyeSize: 0.12,
   shadow: 10,
@@ -60,7 +60,6 @@ pane.addBinding(config, 'cupInset', { min: 0, max: 1, step: 0.01 });
 pane.addBinding(config, 'cupRowGap', { min: 0, max: 1, step: 0.01 });
 pane.addBinding(config, 'cupStart', { min: 0, max: 1, step: 0.01 });
 pane.addBinding(config, 'cupEnd', { min: 0, max: 1, step: 0.01 });
-pane.addBinding(config, 'cupContrast', { min: 1, max: 10, step: 0.1 });
 pane.addBinding(config, 'bob', { min: 0, max: 0.1, step: 0.005 });
 pane.addBinding(config, 'eyeSize', { min: 0, max: 0.3, step: 0.01 });
 pane.addBinding(config, 'shadow', { min: 0, max: 40, step: 1 });
@@ -81,8 +80,8 @@ interface Tentacle {
   curlDir: 1 | -1;
   color: string;
   accent: string;
-  /** Stable 0–1 pick among the colours that clear config.cupContrast. */
-  cupPick: number;
+  /** Suction-cup rim. */
+  cup: string;
   side: 'left' | 'right';
   a: number;
   b: number;
@@ -115,18 +114,25 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     props.exportFrame();
   });
 
-  const colors = generateColors();
-  const bg = colors.pop()!;
-  const headColor = Random.pick(colors);
-  const headAccent = Random.pick(colors);
-  const pupil = colors[0];
+  // cusphanger tiers are graded by contrast against the ground, so roles map
+  // straight onto them: arms are accent (mid ≈4.5:1), their offset shadows
+  // wash (low ≈1.6:1), the head and cup rims ink (high ≈9:1), and the cup
+  // hollows punch back through to the ground.
+  const palette = cuspPalette({ count: config.hues });
+  const { tiers } = palette;
+  const bg = palette.bg.css;
+  const base = Math.max(0, palette.baseIndex);
+  const headColor = tiers.high[base].css;
+  const headAccent = tiers.low[base].css;
+  const pupil = tiers.mid[base].css;
+  logColors(palette.colors);
 
   // Shuffle the slots so neighbouring tentacles don't share a draw order.
   const tentacles: Tentacle[] = Random.shuffle(
     Array.from({ length: config.count }, (_, idx) => idx),
   ).map((idx: number) => {
     const a = Random.pick([2, 3, 4]);
-    const color = Random.pick(colors);
+    const hue = Random.rangeFloor(0, palette.hues.length);
     const slot = config.count > 1 ? lerp(-1, 1, idx / (config.count - 1)) : 0;
 
     return {
@@ -134,9 +140,9 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
       length: Random.range(0.8, 1.15),
       curl: Random.range(0.8, 1.25),
       curlDir: curlDirection(slot),
-      color,
-      accent: Random.pick(colors),
-      cupPick: Random.value(),
+      color: tiers.mid[hue].css,
+      accent: tiers.low[hue].css,
+      cup: tiers.high[hue].css,
       side: Random.pick(['left', 'right']),
       a,
       b: a,
@@ -160,7 +166,7 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
         idx,
       );
       drawWithShadow(context, outline(spine), tentacle.color, tentacle.accent, tentacle.side);
-      drawCups(context, spine, tentacle, cupColor(tentacle, [...colors, bg]));
+      drawCups(context, spine, tentacle, bg);
     });
 
     drawWithShadow(context, headShape(head), headColor, headAccent, 'left');
@@ -262,33 +268,19 @@ function outline(spine: Spine): Point[] {
 }
 
 /**
- * Rim colour for a tentacle's cups: any palette colour (ground included) whose
- * WCAG contrast against the arm clears config.cupContrast, chosen by the
- * tentacle's stable cupPick so it doesn't flicker. If none clear the bar, the
- * most contrasting colour wins.
- */
-function cupColor(tentacle: Tentacle, palette: string[]): string {
-  const ranked = palette
-    .map((c) => ({ c, contrast: wcagContrast(c, tentacle.color) }))
-    .sort((p, q) => q.contrast - p.contrast);
-  const passing = ranked.filter((p) => p.contrast >= config.cupContrast);
-  if (passing.length === 0) return ranked[0].c;
-  return passing[Math.floor(tentacle.cupPick * passing.length)].c;
-}
-
-/**
  * Suction cups along the inside of the curl. Turning the heading by +curlDir
  * rotates toward heading + curlDir·90°, so that is the inner side. With two
  * rows, they sit either side of `cupInset` (as a fraction of the local
  * half-width), `cupRowGap` apart, and the outer row is shifted half a
  * spacing along the arm so the cups zigzag like a real octopus's. Cups are
- * sized off the local width so the rows shrink toward the tip.
+ * sized off the local width so the rows shrink toward the tip; each is an
+ * ink rim with a hollow of the ground showing through.
  */
 function drawCups(
   context: CanvasRenderingContext2D,
   spine: Spine,
   tentacle: Tentacle,
-  rim: string,
+  hollow: string,
 ) {
   if (config.cupSize <= 0) return;
   const last = spine.points.length - 1;
@@ -301,7 +293,7 @@ function drawCups(
     const stagger = rowIdx * Math.floor(config.cupSpacing / 2);
 
     for (let idx = from + stagger; idx <= to; idx += config.cupSpacing) {
-      drawCup(context, spine, idx, inset, tentacle, rim);
+      drawCup(context, spine, idx, inset, tentacle, hollow);
     }
   });
 }
@@ -312,7 +304,7 @@ function drawCup(
   idx: number,
   inset: number,
   tentacle: Tentacle,
-  rim: string,
+  hollow: string,
 ) {
   const [px, py] = spine.points[idx];
   const inner = spine.headings[idx] + (tentacle.curlDir * Math.PI) / 2;
@@ -322,12 +314,12 @@ function drawCup(
   const cx = px + Math.cos(inner) * half * inset;
   const cy = py + Math.sin(inner) * half * inset;
 
-  context.fillStyle = rim;
+  context.fillStyle = tentacle.cup;
   context.beginPath();
   context.arc(cx, cy, r, 0, Math.PI * 2);
   context.fill();
 
-  context.fillStyle = tentacle.color;
+  context.fillStyle = hollow;
   context.beginPath();
   context.arc(cx, cy, r * 0.5, 0, Math.PI * 2);
   context.fill();
@@ -396,6 +388,7 @@ export const settings: SketchSettings = {
   playFps: 60,
   exportFps: 60,
   framesFormat: ['mp4'],
+  attributes: { colorSpace: 'display-p3' },
 };
 
 ssam(sketch as Sketch<'2d'>, settings);
