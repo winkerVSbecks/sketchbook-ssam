@@ -434,19 +434,6 @@ export const whitespaceSketch =
       context.stroke();
 
       if (o.grill) {
-        // Bars along the domain's outline, then a knot on every vertex:
-        // circles and diamonds alternate by grid position, as in khidki.
-        context.strokeStyle = colors.bars;
-        context.lineWidth = params.bar * scale;
-        context.lineCap = 'square';
-        context.lineJoin = 'miter';
-        context.beginPath();
-        for (const [x0, y0, x1, y1] of layout.edges) {
-          context.moveTo(x0 * scale, y0 * scale);
-          context.lineTo(x1 * scale, y1 * scale);
-        }
-        context.stroke();
-
         const rc = params.knot * 0.17 * CELL * scale;
         const rd = params.knot * 0.19 * CELL * scale;
         // No knot on an edge: skip vertices on the grid's border, and any
@@ -465,6 +452,26 @@ export const whitespaceSketch =
             frame.contains(x, y + r)
           );
         });
+
+        // Bars along the domain's outline, one cell side at a time, only
+        // between two kept knots: so a bar ends at the last knot instead of
+        // running on into the frame. Knots go on top — circles and diamonds
+        // alternating by grid position, as in khidki.
+        const kept = new Set(knots.map((k) => `${k.x},${k.y}`));
+        context.strokeStyle = colors.bars;
+        context.lineWidth = params.bar * scale;
+        // Square caps close the corners; the half-bar they overhang sits
+        // under the knot.
+        context.lineCap = 'square';
+        context.lineJoin = 'miter';
+        context.beginPath();
+        for (const [x0, y0, x1, y1] of layout.edges) {
+          if (!kept.has(`${x0},${y0}`) || !kept.has(`${x1},${y1}`)) continue;
+          context.moveTo(x0 * scale, y0 * scale);
+          context.lineTo(x1 * scale, y1 * scale);
+        }
+        context.stroke();
+
         context.fillStyle = colors.circles;
         context.beginPath();
         for (const k of knots) {
