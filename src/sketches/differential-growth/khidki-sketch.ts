@@ -112,6 +112,17 @@ function shapeOf(name: string): GrillShape | undefined {
   };
 }
 
+/**
+ * Fill and knot contrast per ground. The same ratio reads dimmer on slate
+ * than on paper, so slate lifts its fills (2.6:1) and its knots with them
+ * (7:1); across 300 slate palettes bars still stand ≥2.4:1 over the knots
+ * and the knots ≥2.3:1 over the fills.
+ */
+const GROUND_TONES = {
+  slate: { ink: 7, accent: 2.6 },
+  paper: { ink: 6, accent: 1.8 },
+};
+
 export const khidkiSketch =
   (o: KhidkiSketchOptions) =>
   ({ wrap, context, ...props }: SketchProps): (() => void) => {
@@ -138,8 +149,8 @@ export const khidkiSketch =
       // A scheme picked with the palette on every load; mono stays a pane choice.
       harmony: Random.pick(['analogous', 'complementary', 'split', 'triadic'] as Harmony[]),
       saturation: 1,
-      ink: 6,
-      accent: 1.8,
+      ink: GROUND_TONES.slate.ink,
+      accent: GROUND_TONES.slate.accent,
       frameTone: 6,
       reverse: true,
       debug: false,
@@ -253,7 +264,15 @@ export const khidkiSketch =
     growth.addBinding(params, 'speed', { min: 0, max: 8, step: 1, label: 'steps / frame' });
 
     const colour = pane.addFolder({ title: 'Colour' });
-    onInput(colour.addBinding(params, 'reverse', { label: 'slate' }), repaint);
+    // Each ground keeps its own fill and knot tones: the sliders edit the
+    // ground in force, and switching ground swaps them.
+    const tones = { slate: { ...GROUND_TONES.slate }, paper: { ...GROUND_TONES.paper } };
+    onInput(colour.addBinding(params, 'reverse', { label: 'slate' }), () => {
+      tones[params.reverse ? 'paper' : 'slate'] = { ink: params.ink, accent: params.accent };
+      Object.assign(params, tones[params.reverse ? 'slate' : 'paper']);
+      pane.refresh();
+      repaint();
+    });
     onInput(colour.addBinding(params, 'hue', { min: 0, max: 360, step: 1 }), repaint);
     onInput(
       colour.addBinding(params, 'harmony', { options: Object.fromEntries(Object.keys(HARMONIES).map((h) => [h, h])) }),
