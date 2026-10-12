@@ -1,13 +1,13 @@
 /**
- * The sketch body shared by `khidki` and its street-grill variants: a grill
- * over an opening, every block it leaves open filled with nalee walks or a
- * differential-growth curve grown from the block's widest point and confined
- * to it (./khidki-field).
+ * The body of `khidki`: a grill over an opening, every block it leaves open
+ * filled with nalee walks or a differential-growth curve grown from the
+ * block's widest point and confined to it (./khidki-field). The pane's
+ * `grill` picks which.
  *
- * Without `grill` it is khidki's own window: the jali's deep rectangular
+ * `khidki` is its own window: the jali's deep rectangular
  * frame (./window-frame) with ../khidki's grill inside — bars, waisted
  * lozenges, circles and diamonds on the crossings — filled in noise patches
- * or by whole lozenge stars. With one of ./grills it is that gate or window,
+ * or by whole lozenge stars. Any other is a gate or window from ./grills,
  * its own frame drawn heavy round it, filled in noise patches.
  *
  * Colour: slate ground (paper when off), a fresh palette every load. The
@@ -33,7 +33,7 @@ import {
   type KhidkiField,
   type StarPick,
 } from './khidki-field';
-import type { Grill } from './grills';
+import { GRILLS, type Grill } from './grills';
 import { outline } from './region';
 import { windowFrame } from './window-frame';
 
@@ -82,13 +82,18 @@ interface Params {
   reverse: boolean;
   /** Hairline outline of every block. */
   debug: boolean;
+  /** Which grill: 'khidki' for its own window, or a name from ./grills. */
+  grill: string;
 }
 
 export interface KhidkiSketchOptions {
   title: string;
-  /** A grill from ./grills; khidki's own window when omitted. */
-  grill?: Grill;
+  /** Overrides on the defaults, drawn after the layout seed is set. */
+  defaults?: () => Partial<Params>;
 }
+
+/** Every grill the sketch can fill: khidki's own window first, then ./grills. */
+export const GRILL_NAMES = ['khidki', ...GRILLS.map((g) => g.name)];
 
 /** A unit grill from ./grills scaled to the field's world: as tall as khidki's opening. */
 function shapeOf(g: Grill, bar: number): GrillShape {
@@ -138,7 +143,11 @@ export const khidkiSketch =
       wash: 2,
       reverse: true,
       debug: false,
+      grill: 'khidki',
+      ...o.defaults?.(),
     };
+    /** The street grill in force, or undefined for khidki's own window. */
+    const street = () => GRILLS.find((g) => g.name === params.grill);
 
     // Collapsed in the gallery, where every cell would otherwise carry one.
     const inGallery = new URLSearchParams(location.search).has('gallery');
@@ -162,7 +171,8 @@ export const khidkiSketch =
     const build = () => {
       Random.setSeed(params.seed);
       console.log(params.seed);
-      shape = o.grill ? shapeOf(o.grill, params.bar) : undefined;
+      const g = street();
+      shape = g ? shapeOf(g, params.bar) : undefined;
       field = createKhidkiField(params, shape);
       edges = params.debug ? outline(field.mask) : [];
       const t0 = performance.now();
@@ -215,26 +225,25 @@ export const khidkiSketch =
       });
 
     const layout = pane.addFolder({ title: 'Grill' });
+    onInput(layout.addBinding(params, 'grill', { options: Object.fromEntries(GRILL_NAMES.map((n) => [n, n])) }), () => {
+      showOwn();
+      rebuild();
+    });
     onInput(layout.addBinding(params, 'bar', { min: 0.2, max: 3, step: 0.05 }), rebuild);
-    // Circles, diamonds and lozenge stars belong to khidki's own grill.
-    if (!o.grill) {
-      onInput(layout.addBinding(params, 'knot', { min: 0, max: 2.5, step: 0.05, label: 'circles' }), rebuild);
-      onInput(
-        layout.addBinding(params, 'pattern', { options: { 'lozenge stars': 'stars', 'noise patches': 'patches' } }),
-        rebuild,
-      );
-      onInput(
-        layout.addBinding(params, 'starSet', { options: { odd: 'odd', even: 'even' }, label: 'star set' }),
-        rebuild,
-      );
-      onInput(
-        layout.addBinding(params, 'starPick', {
-          options: { all: 'all', checker: 'checker', random: 'random' },
-          label: 'grown stars',
-        }),
-        rebuild,
-      );
-    }
+    // Circles, diamonds and lozenge stars belong to khidki's own grill: shown
+    // only while it is the one picked.
+    const ownOnly = [
+      layout.addBinding(params, 'knot', { min: 0, max: 2.5, step: 0.05, label: 'circles' }),
+      layout.addBinding(params, 'pattern', { options: { 'lozenge stars': 'stars', 'noise patches': 'patches' } }),
+      layout.addBinding(params, 'starSet', { options: { odd: 'odd', even: 'even' }, label: 'star set' }),
+      layout.addBinding(params, 'starPick', {
+        options: { all: 'all', checker: 'checker', random: 'random' },
+        label: 'grown stars',
+      }),
+    ];
+    for (const b of ownOnly) onInput(b, rebuild);
+    const showOwn = () => ownOnly.forEach((b) => (b.hidden = params.grill !== 'khidki'));
+    showOwn();
     onInput(
       layout.addBinding(params, 'growthShare', { min: 0, max: 1, step: 0.05, label: 'grown share' }),
       rebuild,
