@@ -13,8 +13,9 @@
  *     across a bar take opposite textures wherever the leading allows, so
  *     every line marks a change (./khidki-field `alternate`); blocks too thin
  *     for a curve to settle are walked;
- *   - one material: walks run at the curves' own spacing, so maze and growth
- *     are two dialects at one scale;
+ *   - one material: walks run on a lattice tied to the curves' spacing
+ *     (0.7 of it, where the curves actually settle), so maze and growth are
+ *     two dialects at one scale;
  *   - close values: ground, fill and leading in one hue family at near
  *     contrasts — the event is texture against leading, not colour;
  *   - kinetic: a short warm-up, then the growth keeps filling inside the
@@ -44,6 +45,8 @@ interface Params {
   band: boolean;
   bar: number;
   radius: number;
+  /** Walk lattice pitch as a fraction of the curves' spacing. */
+  walkDensity: number;
   stroke: number;
   warmup: number;
   speed: number;
@@ -67,6 +70,7 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     band: true,
     bar: 0.6,
     radius: 1,
+    walkDensity: 0.7,
     stroke: 0.35,
     warmup: 150,
     speed: 3,
@@ -121,8 +125,9 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
         growthShare: 0.5,
         groupSize: 1,
         radius: params.radius,
-        // One material: the maze at the curves' own spacing.
-        walkPitch: params.radius,
+        // One material: the maze tied to the curves' spacing, a little
+        // tighter, since the curves settle closer than their repulsion radius.
+        walkPitch: params.radius * params.walkDensity,
         walkLength: 80,
         minGrowth: 2.5,
       },
@@ -194,6 +199,7 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
 
   const growth = pane.addFolder({ title: 'Growth' });
   onInput(growth.addBinding(params, 'radius', { min: 0.6, max: 2, step: 0.05, label: 'spacing' }), rebuild);
+  onInput(growth.addBinding(params, 'walkDensity', { min: 0.4, max: 1.2, step: 0.05, label: 'walk pitch ×' }), rebuild);
   growth.addBinding(params, 'stroke', { min: 0.1, max: 1, step: 0.01 });
   onInput(growth.addBinding(params, 'warmup', { min: 0, max: 2000, step: 50 }), rebuild);
   growth.addBinding(params, 'speed', { min: 0, max: 8, step: 1, label: 'steps / frame' });
