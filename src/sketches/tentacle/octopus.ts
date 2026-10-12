@@ -10,9 +10,10 @@ import { generateColors } from '../../subtractive-color';
 const config = {
   count: 8,
   headX: 0.5,
-  headY: 0.3,
-  headWidth: 0.42,
-  headHeight: 0.36,
+  headY: 0.5,
+  headWidth: 0.28,
+  headHeight: 0.22,
+  stretch: 3,
   rootSpan: 0.6,
   fan: 0.35,
   rootWidth: 60,
@@ -31,6 +32,7 @@ pane.addBinding(config, 'headX', { min: 0.2, max: 0.8, step: 0.01 });
 pane.addBinding(config, 'headY', { min: 0.1, max: 0.6, step: 0.01 });
 pane.addBinding(config, 'headWidth', { min: 0.1, max: 0.8, step: 0.01 });
 pane.addBinding(config, 'headHeight', { min: 0.1, max: 0.6, step: 0.01 });
+pane.addBinding(config, 'stretch', { min: 1, max: 4, step: 0.05 });
 pane.addBinding(config, 'rootSpan', { min: 0, max: 1, step: 0.01 });
 pane.addBinding(config, 'fan', { min: 0, max: 1, step: 0.01 });
 pane.addBinding(config, 'rootWidth', { min: 4, max: 150, step: 1 });
@@ -135,16 +137,20 @@ function headAt(width: number, height: number, playhead: number): Head {
   };
 }
 
-/** A bulb: a full dome on top, pinched slightly where it meets the arms. */
-function headShape(head: Head, steps: number = 64): Point[] {
+/**
+ * An elongated mantle: the dome above the eyes is stretched upward by
+ * `stretch` and tapers slightly toward its crown; below, it pinches in
+ * where it meets the arms.
+ */
+function headShape(head: Head, steps: number = 96): Point[] {
   return Array.from({ length: steps }, (_, idx) => {
     const angle = (idx / steps) * Math.PI * 2;
-    const below = Math.max(0, Math.sin(angle));
-    const pinch = 1 - 0.25 * below;
-    return [
-      head.x + Math.cos(angle) * head.rx * pinch,
-      head.y + Math.sin(angle) * head.ry * (1 - 0.35 * below),
-    ] as Point;
+    const s = Math.sin(angle);
+    const above = Math.max(0, -s);
+    const below = Math.max(0, s);
+    const narrow = 1 - 0.1 * above * above - 0.25 * below;
+    const tall = s < 0 ? config.stretch : 1 - 0.35 * below;
+    return [head.x + Math.cos(angle) * head.rx * narrow, head.y + s * head.ry * tall] as Point;
   });
 }
 
