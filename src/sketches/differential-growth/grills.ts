@@ -178,15 +178,19 @@ function gate(): Grill {
     [w, 1],
     [0, 1],
   ];
+  // Everything mirrors about the centre line: the photograph's slight
+  // lean is averaged out, offsets measured from the middle.
+  const mid = w / 2;
+  const mirror = (d: number): [number, number] => [mid - d, mid + d];
   // Four full-height stiles and a rail across the top.
-  const bars: Polyline[] = [0.105, 0.368, 0.462, 0.719].map((x) => line([x, 0], [x, 1]));
+  const bars: Polyline[] = [...mirror(0.29), ...mirror(0.045)].map((x) => line([x, 0], [x, 1]));
   bars.push(line([0, 0.058], [w, 0.058]));
   // The steps interlock like brick bond. Rows alternate: a centre bar, then a
   // pair of side bars run in from the frame. Every bar's free ends drop to
   // the row below — the centre bar's ends land on the side bars, the side
   // bars' inner ends on the next centre bar — so the steps zigzag down.
-  const [c0, c1] = [0.199, 0.632];
-  const [sl, sr] = [0.287, 0.55];
+  const [c0, c1] = mirror(0.215);
+  const [sl, sr] = mirror(0.13);
   const rows = 10;
   const y0 = 0.14;
   const dy = (0.912 - y0) / (rows - 1);
