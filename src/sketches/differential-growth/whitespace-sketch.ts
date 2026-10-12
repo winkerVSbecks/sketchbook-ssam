@@ -449,9 +449,25 @@ export const whitespaceSketch =
 
         const rc = params.knot * 0.17 * CELL * scale;
         const rd = params.knot * 0.19 * CELL * scale;
+        // No knot on an edge: skip vertices on the grid's border, and any
+        // the window would cut — all four extremes must sit in the aperture.
+        const ox = cx - (extent * scale) / 2;
+        const oy = cy - (extent * scale) / 2;
+        const r = Math.max(rc, rd);
+        const knots = layout.knots.filter((k) => {
+          if (k.x <= 0 || k.y <= 0 || k.x >= extent || k.y >= extent) return false;
+          if (!frame) return true;
+          const [x, y] = [ox + k.x * scale, oy + k.y * scale];
+          return (
+            frame.contains(x - r, y) &&
+            frame.contains(x + r, y) &&
+            frame.contains(x, y - r) &&
+            frame.contains(x, y + r)
+          );
+        });
         context.fillStyle = colors.circles;
         context.beginPath();
-        for (const k of layout.knots) {
+        for (const k of knots) {
           if (!k.circle) continue;
           context.moveTo(k.x * scale + rc, k.y * scale);
           context.arc(k.x * scale, k.y * scale, rc, 0, Math.PI * 2);
@@ -459,7 +475,7 @@ export const whitespaceSketch =
         context.fill();
         context.fillStyle = colors.diamonds;
         context.beginPath();
-        for (const k of layout.knots) {
+        for (const k of knots) {
           if (k.circle) continue;
           const [x, y] = [k.x * scale, k.y * scale];
           context.moveTo(x, y - rd);

@@ -29,6 +29,8 @@ export interface FrameColors {
 export interface WindowFrame {
   /** The region the field is clipped to. */
   aperture: Path2D;
+  /** Whether canvas point (x, y) lies inside the aperture. */
+  contains(x: number, y: number): boolean;
   /** Bounding box of the aperture, to fit the field to. */
   bounds: { x: number; y: number; w: number; h: number };
   /** Whatever sits behind the field (the arch's depth); the caller then
@@ -49,7 +51,7 @@ const poly = (pts: [number, number][]): Path2D => {
  * The rectangular frame, proportioned after the reference: ≈55% of the width
  * by ≈69% of the height, a front ring ≈5% thick and ≈2.4% of depth.
  */
-function rectFrame(width: number, height: number): WindowFrame {
+function rectFrame(width: number, height: number): Omit<WindowFrame, 'contains'> {
   const fw = width * 0.555;
   const fh = height * 0.6925;
   const t = width * 0.0485;
@@ -116,7 +118,7 @@ function rectFrame(width: number, height: number): WindowFrame {
 }
 
 /** The arched jali shell of ../jali/truchet, with a thick front edge. */
-function archFrame(width: number, height: number): WindowFrame {
+function archFrame(width: number, height: number): Omit<WindowFrame, 'contains'> {
   const off = width * 0.046;
   const t = width * 0.024;
   // Shifted left by half the extrusion, as truchet does, to sit centred.
@@ -180,6 +182,16 @@ function archFrame(width: number, height: number): WindowFrame {
   };
 }
 
+/** An untransformed context to hit-test apertures against. */
+let scratch: CanvasRenderingContext2D | null = null;
+
 export function windowFrame(style: WindowStyle, width: number, height: number): WindowFrame {
-  return style === 'arch' ? archFrame(width, height) : rectFrame(width, height);
+  const frame = style === 'arch' ? archFrame(width, height) : rectFrame(width, height);
+  return {
+    ...frame,
+    contains(x, y) {
+      scratch ??= document.createElement('canvas').getContext('2d');
+      return scratch?.isPointInPath(frame.aperture, x, y) ?? true;
+    },
+  };
 }
