@@ -14,8 +14,8 @@
  *                brackets;
  *   - star     — a ring with four kites to the corners and arms to the
  *                frame, over balusters;
- *   - circles  — two flowers of four overlapping circles, petals pointed
- *                where they overlap, between rails over balusters.
+ *   - circles  — a three-section top row, then two medallions — a circle
+ *                round a four-pointed star of quarter arcs — over balusters.
  *
  * Not a sketch — it exports no `sketch`, so the gallery and archive skip it.
  */
@@ -229,27 +229,31 @@ function star(): Grill {
 
 function circles(): Grill {
   const w = 0.68;
-  // Four circles of radius r, centred on the diagonals r from the flower's
-  // centre, all passing through it: each neighbouring pair overlaps in a
-  // pointed petal, the four petals pointing up, down, left and right. The
-  // flower spans r(1 + 1/√2) each way, so two of them fill the width.
-  const r = w / 4 / (1 + Math.SQRT1_2);
-  const reach = r * (1 + Math.SQRT1_2);
-  // The flowers sit straight under the frame's top, a rail beneath them.
-  const [t1, b0, b1] = [0, 2 * reach, 2 * reach + 0.07];
-  const cy = (t1 + b0) / 2;
-  const bars: Polyline[] = [b0, b1].map((y) => line([0, y], [w, y]));
-  const off = r * Math.SQRT1_2;
+  // One top row split into three sections by two short bars.
+  const top = 0.08;
+  // Two medallions across, touching: each a circle of radius r with four
+  // quarter circles inside, centred on the corners of its bounding square,
+  // joining top, right, bottom and left into a four-pointed star; a bar runs
+  // down through the centre.
+  const r = w / 4;
+  const cy = top + r;
+  const [b0, b1] = [top + 2 * r, top + 2 * r + 0.07];
+  const bars: Polyline[] = [top, b0, b1].map((y) => line([0, y], [w, y]));
+  bars.push(line([w / 3, 0], [w / 3, top]), line([(2 * w) / 3, 0], [(2 * w) / 3, top]));
+  const q = Math.PI / 2;
   for (const cx of [w / 4, (3 * w) / 4]) {
-    for (const [sx, sy] of [
-      [-1, -1],
-      [1, -1],
-      [1, 1],
-      [-1, 1],
+    bars.push(arc(cx, cy, r, 0, 2 * Math.PI));
+    // Corner (sx, sy) of the bounding square; its quarter circle sweeps the
+    // quadrant facing the centre.
+    for (const [sx, sy, a0] of [
+      [1, -1, q],
+      [-1, -1, 0],
+      [-1, 1, -q],
+      [1, 1, Math.PI],
     ]) {
-      bars.push(arc(cx + sx * off, cy + sy * off, r, 0, 2 * Math.PI));
+      bars.push(arc(cx + sx * r, cy + sy * r, r, a0, a0 + q));
     }
-    bars.push(line([cx, t1], [cx, b0]));
+    bars.push(line([cx, top], [cx, b0]));
   }
   const n = 9;
   for (let i = 1; i <= n; i++) bars.push(line([(w * i) / (n + 1), b1], [(w * i) / (n + 1), 1]));
