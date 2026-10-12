@@ -20,7 +20,7 @@ import { createKhidkiField, type GrillShape, type KhidkiField } from './khidki-f
 import { khidkiColours, type Harmony, type KhidkiColours } from './khidki-colours';
 import { GRILL_NAMES, GROUND_TONES, drawWindow, shapeOf } from './khidki-sketch';
 
-const WARMUP_MS = 8000;
+const WARMUP_MS = 15000;
 /**
  * The frame's extent inside its square (./window-frame's rect): across, the
  * front plus its depth to the right; down, the depth above plus the front.
@@ -68,8 +68,8 @@ const SCHEMES: Harmony[] = ['analogous', 'complementary', 'split', 'triadic'];
 export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   const params: StreetParams = {
     seed: Random.getRandomSeed(),
-    count: 6,
-    rows: 2,
+    count: 12,
+    rows: 3,
     gap: 0.1,
     bar: 0.5,
     growthShare: 0.5,
@@ -78,7 +78,7 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     walkLength: 60,
     radius: 1,
     stroke: 0.3,
-    warmup: 400,
+    warmup: 700,
     speed: 2,
     paletteSeed: Random.getRandomSeed(),
     saturation: 1,
