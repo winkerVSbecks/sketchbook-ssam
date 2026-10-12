@@ -1,6 +1,8 @@
 /**
- * khidki-grammar-bare — khidki-grammar with the fills taken out: only the
- * generated leading (./grille-grammar) on its ground, inside the flat band.
+ * khidki-grammar-bare — khidki-grammar with the textures taken out: the
+ * generated leading (./grille-grammar) inside the flat band, each panel it
+ * encloses one flat colour — two fills and the bare ground, neighbours
+ * differing wherever three colours can separate them.
  *
  * The same rules make the grille — a symmetry rolled with `none` most
  * likely, bands cut in varied ratios, a street-grille motif per panel shape —
@@ -35,6 +37,10 @@ interface Params {
   slate: boolean;
   knot: number;
   bandTone: number;
+  /** Fill each panel the leading encloses with one flat colour. */
+  flat: boolean;
+  /** WCAG contrast of the flat fills against the ground. */
+  fill: number;
 }
 
 export const sketch = ({ wrap, context, ...props }: SketchProps) => {
@@ -52,6 +58,8 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     slate: true,
     knot: GROUND_TONES.slate.ink,
     bandTone: 6,
+    flat: true,
+    fill: 2.6,
   };
 
   const inGallery = new URLSearchParams(location.search).has('gallery');
@@ -71,7 +79,10 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
 
   let grille: Grille;
   const recipe = { text: '' };
-  const colours = { bg: '', lead: '', band: '', punctum: '' };
+  const colours = { bg: '', lead: '', band: '', punctum: '', fills: [] as string[] };
+  /** The flat fills as an image the size of the region grid, redrawn on repaint. */
+  let regions: Regions;
+  let fillImage: HTMLCanvasElement | undefined;
 
   const build = () => {
     Random.setSeed(params.seed);
@@ -85,6 +96,7 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
       punctum: params.punctum,
     });
     recipe.text = grille.recipe;
+    regions = findRegions(grille, params.bar);
   };
 
   const paint = () => {
@@ -94,7 +106,7 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
       harmony: params.harmony,
       saturation: params.saturation,
       slate: params.slate,
-      fill: GROUND_TONES[params.slate ? 'slate' : 'paper'].accent,
+      fill: params.fill,
       knot: params.knot,
       frame: params.bandTone,
     });
@@ -102,6 +114,10 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     colours.lead = c.bars;
     colours.band = c.frame.front;
     colours.punctum = c.circles;
+    // Two flat fills and the bare ground, so the panels read as fields of
+    // colour rather than a striped quilt.
+    colours.fills = [c.growth, c.walks, c.bg];
+    fillImage = paintRegions(regions, colours.fills);
   };
 
   const rebuild = () => {
@@ -122,7 +138,12 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   onInput(g.addBinding(params, 'depth', { min: 0, max: 6, step: 1, label: 'subdivision' }), rebuild);
   onInput(g.addBinding(params, 'punctum'), rebuild);
   onInput(g.addBinding(params, 'band', { label: 'border band' }), () => props.render());
-  g.addBinding(params, 'bar', { min: 0.1, max: 3, step: 0.05 }).on('change', () => props.render());
+  onInput(g.addBinding(params, 'flat', { label: 'flat fills' }), () => props.render());
+  onInput(g.addBinding(params, 'bar', { min: 0.1, max: 3, step: 0.05 }), () => {
+    build();
+    paint();
+    props.render();
+  });
   g.addBinding(recipe, 'text', { readonly: true, label: 'recipe' });
   g.addBinding(params, 'seed', { readonly: true });
   g.addButton({ title: 'New grille' }).on('click', () => {
@@ -141,6 +162,7 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     repaint,
   );
   onInput(colour.addBinding(params, 'saturation', { min: 0, max: 1, step: 0.01 }), repaint);
+  onInput(colour.addBinding(params, 'fill', { min: 1.2, max: 8, step: 0.1, label: 'fill (:1)' }), repaint);
   onInput(colour.addBinding(params, 'knot', { min: 2, max: 18, step: 0.1, label: 'punctum (:1)' }), repaint);
   onInput(colour.addBinding(params, 'bandTone', { min: 2, max: 15, step: 0.1, label: 'band (:1)' }), repaint);
   colour.addButton({ title: 'New palette' }).on('click', () => {
@@ -167,6 +189,10 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     context.rect(ox, oy, W * scale, H * scale);
     context.clip();
     context.translate(ox, oy);
+
+    if (params.flat && fillImage) {
+      context.drawImage(fillImage, 0, 0, W * scale, H * scale);
+    }
 
     context.strokeStyle = colours.lead;
     context.lineWidth = params.bar * scale;
@@ -197,6 +223,139 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     }
   };
 };
+
+/** World units per region cell: fine enough that its steps hide under the bars. */
+const RES = 0.15;
+
+interface Regions {
+  cols: number;
+  rows: number;
+  /** Region per cell, -1 under a bar. */
+  ids: Int32Array;
+  /** Fill index per region, neighbours differing where they can. */
+  colour: number[];
+}
+
+/**
+ * The panels the leading encloses: draw the bars (a little thinner than
+ * drawn, so fills run under them) into a grid, label its open 4-connected
+ * runs, and colour them so regions across a bar differ wherever they can —
+ * the same rule the textures follow in khidki-grammar, over three colours.
+ */
+function findRegions(g: Grille, bar: number): Regions {
+  const cols = Math.ceil(W / RES);
+  const rows = Math.ceil(H / RES);
+  const canvas = document.createElement('canvas');
+  canvas.width = cols;
+  canvas.height = rows;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+  ctx.scale(1 / RES, 1 / RES);
+  ctx.lineWidth = bar * 0.6;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  for (const pl of g.bars) pl.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
+  ctx.stroke();
+  for (const d of g.discs) {
+    ctx.beginPath();
+    ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  const alpha = ctx.getImageData(0, 0, cols, rows).data;
+
+  const ids = new Int32Array(cols * rows).fill(-1);
+  let count = 0;
+  for (let start = 0; start < ids.length; start++) {
+    if (ids[start] >= 0 || alpha[start * 4 + 3] > 96) continue;
+    ids[start] = count;
+    const queue = [start];
+    for (let k = 0; k < queue.length; k++) {
+      const c = queue[k];
+      const x = c % cols;
+      for (const n of [x + 1 < cols ? c + 1 : -1, x > 0 ? c - 1 : -1, c + cols, c - cols]) {
+        if (n < 0 || n >= ids.length || ids[n] >= 0 || alpha[n * 4 + 3] > 96) continue;
+        ids[n] = count;
+        queue.push(n);
+      }
+    }
+    count++;
+  }
+
+  // Regions facing each other across a bar: look past closed cells along
+  // the axes from every edge cell.
+  const reach = Math.ceil(bar / RES) + 3;
+  const adj: Set<number>[] = Array.from({ length: count }, () => new Set<number>());
+  for (let c = 0; c < ids.length; c++) {
+    const a = ids[c];
+    if (a < 0) continue;
+    const x = c % cols;
+    const y = Math.floor(c / cols);
+    for (const [dx, dy] of [
+      [1, 0],
+      [0, 1],
+    ]) {
+      if (x + dx >= cols || y + dy >= rows || ids[(y + dy) * cols + x + dx] >= 0) continue;
+      for (let t = 2; t <= reach; t++) {
+        const nx = x + dx * t;
+        const ny = y + dy * t;
+        if (nx >= cols || ny >= rows) break;
+        const b = ids[ny * cols + nx];
+        if (b < 0) continue;
+        if (b !== a) {
+          adj[a].add(b);
+          adj[b].add(a);
+        }
+        break;
+      }
+    }
+  }
+  // Greedy colouring over three colours, breadth first, the least-used
+  // free colour first; clashes only where three can't separate them.
+  const colour = new Array<number>(count).fill(-1);
+  const used = [0, 0, 0];
+  for (let s = 0; s < count; s++) {
+    if (colour[s] >= 0) continue;
+    const queue = [s];
+    for (let k = 0; k < queue.length; k++) {
+      const r = queue[k];
+      if (colour[r] >= 0) continue;
+      const taken = new Set([...adj[r]].map((n) => colour[n]));
+      const free = [0, 1, 2].filter((i) => !taken.has(i));
+      const pool = free.length ? free : [0, 1, 2];
+      const pick = pool.reduce((best, i) => (used[i] < used[best] || (used[i] === used[best] && Random.chance(0.5)) ? i : best));
+      colour[r] = pick;
+      used[pick]++;
+      for (const n of adj[r]) if (colour[n] < 0) queue.push(n);
+    }
+  }
+  return { cols, rows, ids, colour };
+}
+
+/** The regions painted in `fills`, as an image one pixel per region cell. */
+function paintRegions(r: Regions, fills: string[]): HTMLCanvasElement {
+  const canvas = document.createElement('canvas');
+  canvas.width = r.cols;
+  canvas.height = r.rows;
+  const ctx = canvas.getContext('2d')!;
+  // Resolve each fill to RGB through the canvas itself.
+  const rgb = fills.map((f) => {
+    ctx.fillStyle = f;
+    ctx.fillRect(0, 0, 1, 1);
+    return ctx.getImageData(0, 0, 1, 1).data.slice(0, 3);
+  });
+  const img = ctx.createImageData(r.cols, r.rows);
+  for (let c = 0; c < r.ids.length; c++) {
+    const id = r.ids[c];
+    // Cells under a bar take their left neighbour's colour, so fills run on
+    // under the leading without a seam.
+    const src = id >= 0 ? id : c > 0 ? r.ids[c - 1] : -1;
+    const k = src >= 0 ? rgb[r.colour[src]] : rgb[2];
+    img.data.set([k[0], k[1], k[2], 255], c * 4);
+    if (id < 0 && src >= 0) r.ids[c] = src;
+  }
+  ctx.putImageData(img, 0, 0);
+  return canvas;
+}
 
 export const settings: SketchSettings = {
   mode: '2d',
