@@ -14,7 +14,7 @@
  *      grilles: `rays` (a sunrise from an edge), `cross`, `diamond`,
  *      `medallion` (a circle round a four-pointed star of quarter arcs),
  *      `circle`, `steps` (interlocking key-step brackets), `bars`
- *      (balusters) or `plain`.
+ *      (balusters), `asanoha` (the hemp-leaf lattice) or `plain`.
  *
  * The motifs carry no pictorial depth: nothing is a box tied to its corners.
  * One optional disc at the opening's centre is the only knot — a punctum.
@@ -29,8 +29,8 @@ type Polyline = Pt[];
 
 export type Symmetry = 'none' | 'mirror' | 'quad';
 export const SYMMETRIES: Symmetry[] = ['none', 'mirror', 'quad'];
-export type Motif = 'rays' | 'cross' | 'diamond' | 'medallion' | 'circle' | 'steps' | 'bars' | 'plain';
-export const MOTIFS: Motif[] = ['rays', 'cross', 'diamond', 'medallion', 'circle', 'steps', 'bars', 'plain'];
+export type Motif = 'rays' | 'cross' | 'diamond' | 'medallion' | 'circle' | 'steps' | 'bars' | 'asanoha' | 'plain';
+export const MOTIFS: Motif[] = ['rays', 'cross', 'diamond', 'medallion', 'circle', 'steps', 'bars', 'asanoha', 'plain'];
 
 export interface GrammarOptions {
   /** The opening, in world units. */
@@ -205,9 +205,82 @@ function motif(m: Motif, r: Rect, bars: Polyline[]): void {
       }
       break;
     }
+    case 'asanoha': {
+      // The hemp leaf: a lattice of equilateral triangles, each split three
+      // ways by spokes from its corners to its centre. Centred on the panel
+      // so mirrored panels stay symmetric; triangles at least 16 units on a
+      // side, so the slivers are wide enough for a curve to settle in.
+      const t = Math.max(16, s / Random.pick([1, 1.5, 2]));
+      const th = (t * Math.sqrt(3)) / 2;
+      const rows = Math.ceil(r.h / th / 2) + 1;
+      const cols = Math.ceil(r.w / t / 2) + 1;
+      for (let j = -rows; j < rows; j++) {
+        const ya = cy + j * th;
+        const yb = ya + th;
+        const shift = (Math.abs(j) % 2) * (t / 2);
+        for (let i = -cols - 1; i <= cols; i++) {
+          const xa = cx + i * t + shift;
+          // An upward triangle and the downward one beside it.
+          const tris: Pt[][] = [
+            [
+              [xa, yb],
+              [xa + t / 2, ya],
+              [xa + t, yb],
+            ],
+            [
+              [xa + t / 2, ya],
+              [xa + t, yb],
+              [xa + (3 * t) / 2, ya],
+            ],
+          ];
+          for (const [a, b, c] of tris) {
+            const g: Pt = [(a[0] + b[0] + c[0]) / 3, (a[1] + b[1] + c[1]) / 3];
+            for (const [p, q] of [
+              [a, b],
+              [b, c],
+              [c, a],
+              [a, g],
+              [b, g],
+              [c, g],
+            ] as [Pt, Pt][]) {
+              const seg = clip(p, q, r);
+              if (seg) bars.push(seg);
+            }
+          }
+        }
+      }
+      break;
+    }
     case 'plain':
       break;
   }
+}
+
+/** Segment p–q clipped to rect `r` (Liang–Barsky); null when wholly outside. */
+function clip(p: Pt, q: Pt, r: Rect): Polyline | null {
+  const [dx, dy] = [q[0] - p[0], q[1] - p[1]];
+  let t0 = 0;
+  let t1 = 1;
+  for (const [pp, qq] of [
+    [-dx, p[0] - r.x],
+    [dx, r.x + r.w - p[0]],
+    [-dy, p[1] - r.y],
+    [dy, r.y + r.h - p[1]],
+  ]) {
+    if (pp === 0) {
+      if (qq < 0) return null;
+      continue;
+    }
+    const t = qq / pp;
+    if (pp < 0) t0 = Math.max(t0, t);
+    else t1 = Math.min(t1, t);
+    if (t0 > t1) return null;
+  }
+  if (t1 - t0 < 1e-6) return null;
+  return [
+    [p[0] + dx * t0, p[1] + dy * t0],
+    [p[0] + dx * t1, p[1] + dy * t1],
+  ];
 }
 
 /** Reflect polylines across the opening's mirror lines. */
@@ -236,7 +309,7 @@ export function generateGrille(o: GrammarOptions): Grille {
   for (const p of panels) {
     const key = `${p.w.toFixed(2)}x${p.h.toFixed(2)}`;
     if (!byShape.has(key)) {
-      const m = MOTIFS[Random.weighted([3, 2, 2, 2, 1, 2, 2, 2]) as number];
+      const m = MOTIFS[Random.weighted([3, 2, 2, 2, 1, 2, 2, 2, 2]) as number];
       byShape.set(key, m);
       used.push(m);
     }
