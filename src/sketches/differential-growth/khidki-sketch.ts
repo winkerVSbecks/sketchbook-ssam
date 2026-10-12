@@ -10,11 +10,9 @@
  * or by whole lozenge stars. Any other is a gate or window from ./grills,
  * laid out afresh to fill the same window frame, in noise patches.
  *
- * Colour: slate ground (paper when off), a fresh palette every load. The
- * fill keeps to two hues off the ring — the base for the growth, the next
- * for the walks — at one quiet contrast level (the mid tier), so the grill,
- * drawn in the high-contrast tier of the hues after those, stands out over
- * them. Every parameter lives in the tweakpane: layout and growth rebuild
+ * Colour (./khidki-colours): slate ground (paper when off), a fresh palette
+ * every load. Fills quiet in two hues, bars the highest contrast, circles
+ * and diamonds well clear of the fills, the frame one hue in three shades. Every parameter lives in the tweakpane: layout and growth rebuild
  * from the same seed, colour only redraws. Not a sketch file itself — it
  * exports no `sketch`; the variant wires HMR and export, calling the
  * returned cleanup on dispose.
@@ -23,7 +21,6 @@ import type { SketchProps } from 'ssam';
 import Random from 'canvas-sketch-util/random';
 import { Pane } from 'tweakpane';
 
-import { cuspPalette } from '../../colors/cusphanger';
 import {
   APERTURE_H,
   APERTURE_W,
@@ -34,6 +31,7 @@ import {
   type StarPick,
 } from './khidki-field';
 import { GRILL_BUILDERS } from './grills';
+import { khidkiColours } from './khidki-colours';
 import { outline } from './region';
 import { windowFrame } from './window-frame';
 
@@ -69,15 +67,15 @@ interface Params {
   speed: number;
   paletteSeed: string;
   hue: number;
-  /** Hues off the ring: growth, walks, then grill and frame. */
-  hues: number;
+  /** Degrees between the four ring hues (growth, walks, frame, knots). */
   angle: number;
   saturation: number;
-  /** WCAG targets against the ground: grill (high tier); `accent` is the
-   * fill's (mid tier), shared by growth and walks; `wash` the blocks' outlines. */
+  /** WCAG contrast against the ground: circles and diamonds (`ink`), both
+   * fills (`accent`), the frame's front (`frameTone`). Bars always take the
+   * most their hue can reach. See ./khidki-colours. */
   ink: number;
   accent: number;
-  wash: number;
+  frameTone: number;
   /** Slate ground instead of paper. */
   reverse: boolean;
   /** Hairline outline of every block. */
@@ -137,12 +135,11 @@ export const khidkiSketch =
       // A new palette every load, as the pane's New palette button deals.
       paletteSeed: Random.getRandomSeed(),
       hue: Math.round(Random.range(0, 360)),
-      hues: 5,
       angle: 51,
       saturation: 1,
       ink: 12,
-      accent: 3,
-      wash: 2,
+      accent: 2.5,
+      frameTone: 6,
       reverse: true,
       debug: false,
       grill: 'khidki',
@@ -178,33 +175,21 @@ export const khidkiSketch =
       for (let i = 0; i < params.warmup && performance.now() - t0 < WARMUP_MS; i++) field.step();
     };
 
-    // Hues off the ring in order from the base: growth, walks, then the grill
-    // and the frame, wrapping round when there are fewer hues than roles.
+    // The colour system lives in ./khidki-colours: fills quiet, bars the
+    // highest contrast, knots well clear of the fills, the frame one hue in
+    // three shades.
     const paint = () => {
       Random.setSeed(params.paletteSeed);
-      const palette = cuspPalette({
+      const c = khidkiColours({
         hue: params.hue,
-        count: params.hues,
         angle: params.angle,
-        shuffle: false,
         saturation: params.saturation,
-        ground: params.reverse ? 'dark' : 'light',
-        targets: { high: params.ink, mid: params.accent, low: params.wash },
+        slate: params.reverse,
+        fill: params.accent,
+        knot: params.ink,
+        frame: params.frameTone,
       });
-      const { high, mid, low } = palette.tiers;
-      const n = palette.hues.length;
-      const order = palette.ring.slice(0, n).map((h) => palette.hues.indexOf(h));
-      const at = (j: number) => order[j % n];
-      colors.bg = palette.bg.css;
-      // Fills recede to one contrast level (the mid tier) in their two hues;
-      // the grill takes the high tier.
-      colors.ink = mid[at(0)].css;
-      colors.walks = mid[at(1)].css;
-      colors.bars = high[at(2)].css;
-      colors.circles = high[at(3)].css;
-      colors.diamonds = high[at(4)].css;
-      colors.hairline = low[at(0)].css;
-      colors.frame = { front: high[at(2)].css, top: mid[at(3)].css, side: mid[at(4)].css };
+      Object.assign(colors, { ...c, ink: c.growth });
     };
 
     const rebuild = () => {
@@ -269,11 +254,11 @@ export const khidkiSketch =
     const colour = pane.addFolder({ title: 'Colour' });
     onInput(colour.addBinding(params, 'reverse', { label: 'slate' }), repaint);
     onInput(colour.addBinding(params, 'hue', { min: 0, max: 360, step: 1 }), repaint);
-    onInput(colour.addBinding(params, 'hues', { min: 1, max: 6, step: 1 }), repaint);
     onInput(colour.addBinding(params, 'angle', { min: 1, max: 180, step: 1, label: 'hue Δ' }), repaint);
     onInput(colour.addBinding(params, 'saturation', { min: 0, max: 1, step: 0.01 }), repaint);
-    onInput(colour.addBinding(params, 'ink', { min: 4.5, max: 18, step: 0.1, label: 'grill (:1)' }), repaint);
-    onInput(colour.addBinding(params, 'accent', { min: 1.2, max: 9, step: 0.1, label: 'fill (:1)' }), repaint);
+    onInput(colour.addBinding(params, 'accent', { min: 1.2, max: 6, step: 0.1, label: 'fill (:1)' }), repaint);
+    onInput(colour.addBinding(params, 'ink', { min: 4.5, max: 18, step: 0.1, label: 'knots (:1)' }), repaint);
+    onInput(colour.addBinding(params, 'frameTone', { min: 2, max: 15, step: 0.1, label: 'frame (:1)' }), repaint);
     colour.addButton({ title: 'New palette' }).on('click', () => {
       params.paletteSeed = Random.getRandomSeed();
       params.hue = Math.round(Random.range(0, 360));
