@@ -8,4 +8,4 @@ archive-app/*.json
 
 # Sketches are art code, formatted by hand. Everything else (src/ outside this
 # folder, scripts/, archive-app/src/) uses the repo .prettierrc.
-src/sketches
+# src/sketches
