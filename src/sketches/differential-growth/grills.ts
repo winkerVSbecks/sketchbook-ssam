@@ -14,8 +14,8 @@
  *                brackets;
  *   - star     — a ring with four kites to the corners and arms to the
  *                frame, over balusters;
- *   - circles  — a band of touching circles between rails, a short top band
- *                and balusters below.
+ *   - circles  — a band of overlapping circles meeting in pointed ovals,
+ *                between rails, a short top band and balusters below.
  *
  * Not a sketch — it exports no `sketch`, so the gallery and archive skip it.
  */
@@ -230,14 +230,32 @@ function star(): Grill {
 function circles(): Grill {
   const w = 0.68;
   const [t0, t1, b0, b1] = [0.07, 0.16, 0.54, 0.61];
-  const r = (b0 - t1) / 2;
   const cy = (t1 + b0) / 2;
   const bars: Polyline[] = [t0, t1, b0, b1].map((y) => line([0, y], [w, y]));
   bars.push(line([w * 0.36, t0], [w * 0.36, t1]), line([w * 0.61, t0], [w * 0.61, t1]));
-  // Touching circles along the band, a bar through every point they touch.
-  for (let x = r; x - r < w; x += 2 * r) {
-    bars.push(arc(x, cy, r, 0, 2 * Math.PI));
-    bars.push(line([x + r, t1], [x + r, b0]));
+  // Overlapping circles along the band, centres one radius apart so each
+  // passes through its neighbours' centres: every neighbouring pair overlaps
+  // in a pointed oval (a vesica), and the ovals meet in a chain at the
+  // centres. The radius puts the ovals' points exactly on the rails; arcs
+  // beyond the band are cut.
+  const k = 1;
+  const r = (b0 - t1) / 2 / Math.sqrt(1 - (k * k) / 4);
+  const d = k * r;
+  // A centre — where two ovals meet — on the photograph's middle bar, about
+  // a third of the way across; a bar runs through every such meeting.
+  const first = w * 0.35 - Math.ceil((w * 0.35 + r) / d) * d;
+  for (let x = first; x - r < w; x += d) {
+    const ring = arc(x, cy, r, 0, 2 * Math.PI);
+    let run: Polyline = [];
+    for (const p of ring) {
+      if (p[1] >= t1 && p[1] <= b0) run.push(p);
+      else if (run.length) {
+        bars.push(run);
+        run = [];
+      }
+    }
+    if (run.length) bars.push(run);
+    if (x > 0 && x < w) bars.push(line([x, t1], [x, b0]));
   }
   const n = 9;
   for (let i = 1; i <= n; i++) bars.push(line([(w * i) / (n + 1), b1], [(w * i) / (n + 1), 1]));
