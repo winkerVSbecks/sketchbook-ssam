@@ -20,7 +20,8 @@ import { createKhidkiField, type GrillShape, type KhidkiField } from './khidki-f
 import { khidkiColours, type Harmony, type KhidkiColours } from './khidki-colours';
 import { GRILL_NAMES, GROUND_TONES, drawWindow, shapeOf } from './khidki-sketch';
 
-const WARMUP_MS = 15000;
+/** Growth runs once, to completion, before the only frame: one and done. */
+const WARMUP_MS = 30000;
 /** Time each frame may spend growing, however many windows there are. */
 const FRAME_MS = 14;
 /**
@@ -80,8 +81,8 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     walkLength: 60,
     radius: 1,
     stroke: 0.3,
-    warmup: 700,
-    speed: 2,
+    warmup: 1000,
+    speed: 0,
     paletteSeed: Random.getRandomSeed(),
     saturation: 1,
     slate: true,
@@ -194,7 +195,6 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   onInput(growth.addBinding(params, 'radius', { min: 0.5, max: 2, step: 0.05, label: 'spacing' }), rebuild);
   growth.addBinding(params, 'stroke', { min: 0.1, max: 1, step: 0.01 });
   onInput(growth.addBinding(params, 'warmup', { min: 0, max: 2000, step: 50 }), rebuild);
-  growth.addBinding(params, 'speed', { min: 0, max: 8, step: 1, label: 'steps / frame' });
 
   const colour = pane.addFolder({ title: 'Colour' });
   onInput(colour.addBinding(params, 'slate'), repaint);
@@ -259,7 +259,7 @@ export const settings: SketchSettings = {
   dimensions: [1440, 1080],
   pixelRatio: window.devicePixelRatio,
   attributes: { colorSpace: 'display-p3' },
-  animate: true,
+  animate: false,
   duration: 20000,
   framesFormat: ['mp4'],
   playFps: 60,

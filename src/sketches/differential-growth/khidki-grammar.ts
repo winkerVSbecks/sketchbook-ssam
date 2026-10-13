@@ -20,8 +20,8 @@
  *   - colour as in khidki (./khidki-colours): a harmony scheme, quiet fills
  *     in two neighbouring hues, the leading the highest contrast, the band
  *     the frame hue's front shade, flat;
- *   - kinetic: a warm-up that settles the stills, then the growth keeps
- *     filling inside the fixed leading, the grille as the invariant aperture.
+ *   - one and done: any growth runs to completion before the only frame;
+ *     the sketch is a still.
  */
 import { ssam } from 'ssam';
 import type { Sketch, SketchProps, SketchSettings } from 'ssam';
@@ -37,7 +37,8 @@ import { GROUND_TONES } from './khidki-sketch';
 /** The opening, in world units: the canvas's 4:5. */
 const W = 54;
 const H = 67.5;
-const WARMUP_MS = 6000;
+/** Growth runs once, to completion, before the only frame: one and done. */
+const WARMUP_MS = 12000;
 
 interface Params {
   seed: string;
@@ -85,8 +86,8 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     radius: 1,
     walkDensity: 0.7,
     stroke: 0.35,
-    warmup: 600,
-    speed: 3,
+    warmup: 1000,
+    speed: 0,
     paletteSeed: Random.getRandomSeed(),
     hue: Math.round(Random.range(0, 360)),
     harmony: Random.pick(['analogous', 'complementary', 'split', 'triadic'] as Harmony[]),
@@ -224,7 +225,6 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   onInput(growth.addBinding(params, 'walkDensity', { min: 0.4, max: 1.2, step: 0.05, label: 'walk pitch ×' }), rebuild);
   growth.addBinding(params, 'stroke', { min: 0.1, max: 1, step: 0.01 });
   onInput(growth.addBinding(params, 'warmup', { min: 0, max: 2000, step: 50 }), rebuild);
-  growth.addBinding(params, 'speed', { min: 0, max: 8, step: 1, label: 'steps / frame' });
 
   const colour = pane.addFolder({ title: 'Colour' });
   // Each ground keeps its own fill and knot tones, as in khidki.
@@ -342,7 +342,7 @@ export const settings: SketchSettings = {
   dimensions: [1080, 1350],
   pixelRatio: window.devicePixelRatio,
   attributes: { colorSpace: 'display-p3' },
-  animate: true,
+  animate: false,
   duration: 20000,
   framesFormat: ['mp4'],
   playFps: 60,

@@ -36,7 +36,7 @@ export const settings: SketchSettings = {
   dimensions: [1080, 1080],
   pixelRatio: window.devicePixelRatio,
   attributes: { colorSpace: 'display-p3' },
-  animate: true,
+  animate: false,
   duration: 20000,
   framesFormat: ['mp4'],
   playFps: 60,

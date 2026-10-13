@@ -36,7 +36,8 @@ import { outline } from './region';
 import { windowFrame } from './window-frame';
 
 /** Upper bound on the warm-up, however many steps are asked for. */
-const WARMUP_MS = 6000;
+/** Growth runs once, to completion, before the only frame: one and done. */
+const WARMUP_MS = 12000;
 
 export interface Params {
   seed: string;
@@ -141,8 +142,8 @@ export const khidkiSketch =
       walkLength: 60,
       radius: 1,
       stroke: 0.3,
-      warmup: 600,
-      speed: 2,
+      warmup: 1000,
+      speed: 0,
       // A new palette every load, as the pane's New palette button deals.
       paletteSeed: Random.getRandomSeed(),
       hue: Math.round(Random.range(0, 360)),
@@ -261,7 +262,6 @@ export const khidkiSketch =
     onInput(growth.addBinding(params, 'radius', { min: 0.5, max: 2, step: 0.05, label: 'spacing' }), rebuild);
     growth.addBinding(params, 'stroke', { min: 0.1, max: 1, step: 0.01 });
     onInput(growth.addBinding(params, 'warmup', { min: 0, max: 2000, step: 50 }), rebuild);
-    growth.addBinding(params, 'speed', { min: 0, max: 8, step: 1, label: 'steps / frame' });
 
     const colour = pane.addFolder({ title: 'Colour' });
     // Each ground keeps its own fill and knot tones: the sliders edit the
