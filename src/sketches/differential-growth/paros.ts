@@ -7,7 +7,7 @@
  *
  * Each window is drawn by ./khidki-sketch's drawWindow in a square of its
  * own, the squares overlapped so the frames stand a set gap apart in a grid
- * of `rows` rows. All
+ * of `rows` × `cols`. All
  * share one ground and one set of tones (./khidki-colours); each house picks
  * its own hue and harmony, the way neighbours paint their own frames.
  */
@@ -21,6 +21,8 @@ import { khidkiColours, type Harmony, type KhidkiColours } from './khidki-colour
 import { GRILL_NAMES, GROUND_TONES, drawWindow, shapeOf } from './khidki-sketch';
 
 const WARMUP_MS = 15000;
+/** Time each frame may spend growing, however many windows there are. */
+const FRAME_MS = 14;
 /**
  * The frame's extent inside its square (./window-frame's rect): across, the
  * front plus its depth to the right; down, the depth above plus the front.
@@ -32,9 +34,9 @@ const FRAME_TOP = (1 - 0.6925 + 0.024) / 2 - 0.024;
 
 interface StreetParams {
   seed: string;
-  /** Windows in all, laid out in `rows` rows. */
-  count: number;
+  /** The grid of windows: `rows` × `cols` in all. */
   rows: number;
+  cols: number;
   /** Space between frames, as a fraction of a window's square. */
   gap: number;
   bar: number;
@@ -68,8 +70,8 @@ const SCHEMES: Harmony[] = ['analogous', 'complementary', 'split', 'triadic'];
 export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   const params: StreetParams = {
     seed: Random.getRandomSeed(),
-    count: 12,
     rows: 3,
+    cols: 4,
     gap: 0.1,
     bar: 0.5,
     growthShare: 0.5,
@@ -102,6 +104,8 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   });
 
   let houses: House[] = [];
+  /** Whose turn it is to grow, carried across frames. */
+  let turn = 0;
   let bg = '';
 
   /** Grills down the street: every one appears before any repeats. */
@@ -136,7 +140,7 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   const build = () => {
     Random.setSeed(params.seed);
     console.log(params.seed);
-    const grills = pickGrills(params.count);
+    const grills = pickGrills(params.rows * params.cols);
     houses = grills.map((grill) => {
       const shape = shapeOf(grill);
       const field = createKhidkiField(
@@ -172,8 +176,8 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     });
 
   const street = pane.addFolder({ title: 'Street' });
-  onInput(street.addBinding(params, 'count', { min: 1, max: 12, step: 1, label: 'windows' }), rebuild);
-  street.addBinding(params, 'rows', { min: 1, max: 4, step: 1 });
+  onInput(street.addBinding(params, 'rows', { min: 1, max: 8, step: 1 }), rebuild);
+  onInput(street.addBinding(params, 'cols', { min: 1, max: 12, step: 1, label: 'columns' }), rebuild);
   street.addBinding(params, 'gap', { min: 0, max: 0.5, step: 0.01 });
   onInput(street.addBinding(params, 'bar', { min: 0.2, max: 3, step: 0.05 }), rebuild);
   onInput(street.addBinding(params, 'growthShare', { min: 0, max: 1, step: 0.05, label: 'grown share' }), rebuild);
@@ -205,16 +209,22 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   build();
 
   wrap.render = ({ width, height }: SketchProps) => {
-    for (let i = 0; i < params.speed; i++) for (const h of houses) h.field.step();
+    // Step the houses in turn within a fixed budget per frame, so a large
+    // grid stays responsive: each gets `speed` steps when there is time, and
+    // the turn carries over to the next frame when there isn't.
+    const t0 = performance.now();
+    for (let k = 0; k < houses.length * params.speed && performance.now() - t0 < FRAME_MS; k++) {
+      houses[turn % houses.length].field.step();
+      turn++;
+    }
 
     context.fillStyle = bg;
     context.fillRect(0, 0, width, height);
 
     // Each window gets a square of side s; frames sit `gap · s` apart in a
-    // grid of `rows` rows, the block centred, s as large as fits both ways.
+    // grid of `rows` × `cols`, the block centred, s as large as fits both ways.
     const n = houses.length;
-    const rows = Math.min(params.rows, n);
-    const cols = Math.ceil(n / rows);
+    const { rows, cols } = params;
     const spanX = cols * FRAME_SPAN + (cols - 1) * params.gap;
     const spanY = rows * FRAME_RISE + (rows - 1) * params.gap;
     const s = Math.min((height * 0.92) / spanY, (width * 0.92) / spanX);
