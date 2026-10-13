@@ -46,6 +46,8 @@ interface Params {
   punctum: boolean;
   /** One block, chosen by the system, takes the other texture. */
   exception: boolean;
+  /** Differential growth in its blocks; off, every block is walked. */
+  growth: boolean;
   /** Flat border band instead of the bare canvas edge. */
   band: boolean;
   /** Draw the leading; off, the fills still follow it but it isn't drawn. */
@@ -76,6 +78,7 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     depth: Random.rangeFloor(2, 5),
     punctum: false,
     exception: true,
+    growth: false,
     band: true,
     showBars: true,
     bar: 0.6,
@@ -153,6 +156,7 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
         minGrowth: 2.5,
         bias,
         exception: params.exception,
+        walksOnly: !params.growth,
       },
       { w: W, h: H, bars: grille.bars, closers: grille.discs },
     );
@@ -199,6 +203,7 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   onInput(g.addBinding(params, 'symmetry', { options: Object.fromEntries(SYMMETRIES.map((s) => [s, s])) }), rebuild);
   onInput(g.addBinding(params, 'depth', { min: 0, max: 6, step: 1, label: 'subdivision' }), rebuild);
   onInput(g.addBinding(params, 'exception'), rebuild);
+  onInput(g.addBinding(params, 'growth', { label: 'diff growth' }), rebuild);
   onInput(g.addBinding(params, 'punctum'), rebuild);
   onInput(g.addBinding(params, 'band', { label: 'border band' }), () => props.render());
   onInput(g.addBinding(params, 'showBars', { label: 'show bars' }), () => props.render());
@@ -274,19 +279,24 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     context.lineCap = 'round';
     context.lineWidth = params.radius * params.stroke * scale;
 
-    context.strokeStyle = colours.walks;
-    context.beginPath();
-    for (const b of field.blocks) {
-      for (const walk of b.walks ?? []) {
-        walk.forEach(([u, v], i) => {
-          const px = (u + 0.5) * field.walkPitch * scale;
-          const py = (v + 0.5) * field.walkPitch * scale;
-          if (i === 0) context.moveTo(px, py);
-          if (i > 0 || walk.length === 1) context.lineTo(px, py);
-        });
+    // Walks in the walks' colour; with growth off, blocks of the growth kind
+    // are walked too, in the growth colour, so the kinds still alternate.
+    for (const kind of ['nalee', 'growth'] as const) {
+      context.strokeStyle = kind === 'nalee' ? colours.walks : colours.growth;
+      context.beginPath();
+      for (const b of field.blocks) {
+        if (b.kind !== kind) continue;
+        for (const walk of b.walks ?? []) {
+          walk.forEach(([u, v], i) => {
+            const px = (u + 0.5) * field.walkPitch * scale;
+            const py = (v + 0.5) * field.walkPitch * scale;
+            if (i === 0) context.moveTo(px, py);
+            if (i > 0 || walk.length === 1) context.lineTo(px, py);
+          });
+        }
       }
+      context.stroke();
     }
-    context.stroke();
 
     context.strokeStyle = colours.growth;
     context.beginPath();

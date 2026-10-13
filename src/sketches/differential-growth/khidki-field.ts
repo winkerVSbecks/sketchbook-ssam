@@ -179,6 +179,8 @@ export interface FieldOptions extends GrillOptions {
   bias?: (x: number, y: number) => BlockKind | undefined;
   /** Alternate: flip one block, chosen by the seed, against its rule. */
   exception?: boolean;
+  /** Walk every block, growth-kind ones too: the kinds still alternate, as colours. */
+  walksOnly?: boolean;
 }
 
 /** Even-odd point-in-polygon. */
@@ -399,7 +401,7 @@ export function createKhidkiField(o: FieldOptions, shape?: GrillShape): KhidkiFi
   };
 
   for (const block of blocks) {
-    if (block.kind === 'growth') {
+    if (block.kind === 'growth' && !o.walksOnly) {
       const c = deepest.get(block.id)!;
       const r = Math.max(RES, Math.min(1, depth[c] * RES * 0.5));
       block.growth = createGrowth({
