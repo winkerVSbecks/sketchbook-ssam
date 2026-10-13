@@ -16,7 +16,10 @@
  *      grilles: `rays` (a sunrise from an edge), `cross`, `diamond`,
  *      `medallion` (a circle round a four-pointed star of quarter arcs),
  *      `circle`, `steps` (interlocking key-step brackets), `bars`
- *      (balusters), `asanoha` (the hemp-leaf lattice) or `plain`.
+ *      (balusters), `asanoha` (the hemp-leaf lattice) or `plain`. All are
+ *      drawn at one module, the grille's scale: a figure tiles across a large
+ *      panel in cells of about one module, with bars between, rather than
+ *      growing to fill it.
  *
  * The motifs carry no pictorial depth: nothing is a box tied to its corners.
  * One optional disc at the opening's centre is the only knot — a punctum.
@@ -47,6 +50,9 @@ export interface GrammarOptions {
   minPanel: number;
   /** One disc at the centre. */
   punctum: boolean;
+  /** The grille's module: every motif is drawn at about this size, tiled
+   * across larger panels. Default a quarter of the opening's shorter side. */
+  module?: number;
   /** Motifs left out of the vocabulary. */
   exclude?: Motif[];
 }
@@ -147,7 +153,46 @@ function subdivide(r: Rect, depth: number, min: number, bars: Polyline[], top = 
 }
 
 /** One motif drawn into panel `r`. */
-function motif(m: Motif, r: Rect, bars: Polyline[]): void {
+/**
+ * Split `r` into whole cells of about `cw` × `ch`, pushing the lines between
+ * them as bars, so a tiled motif sits in its own frames like a lattice.
+ */
+function tiles(r: Rect, cw: number, ch: number, bars: Polyline[]): Rect[] {
+  const nx = Math.max(1, Math.round(r.w / cw));
+  const ny = Math.max(1, Math.round(r.h / ch));
+  const [w, h] = [r.w / nx, r.h / ny];
+  for (let i = 1; i < nx; i++) bars.push(line([r.x + i * w, r.y], [r.x + i * w, r.y + r.h]));
+  for (let j = 1; j < ny; j++) bars.push(line([r.x, r.y + j * h], [r.x + r.w, r.y + j * h]));
+  const out: Rect[] = [];
+  for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) out.push({ x: r.x + i * w, y: r.y + j * h, w, h });
+  return out;
+}
+
+/**
+ * Motif `m` in panel `r` at the grille's one scale, `u`: figures are drawn
+ * in cells of about u and tiled across the panel; balusters, steps and the
+ * asanoha lattice space themselves from u. So a medallion is one size
+ * wherever it falls, however the panels were cut.
+ */
+function motif(m: Motif, r: Rect, bars: Polyline[], u: number): void {
+  switch (m) {
+    case 'cross':
+    case 'diamond':
+    case 'circle':
+    case 'medallion':
+    case 'rays':
+      for (const c of tiles(r, u, u, bars)) motifCell(m, c, bars, u);
+      return;
+    case 'steps':
+      // One column of steps per ~1.3u, running the panel's full height.
+      for (const c of tiles(r, u * 1.3, Infinity, bars)) motifCell(m, c, bars, u);
+      return;
+    default:
+      motifCell(m, r, bars, u);
+  }
+}
+
+function motifCell(m: Motif, r: Rect, bars: Polyline[], u: number): void {
   const [x0, y0, x1, y1] = [r.x, r.y, r.x + r.w, r.y + r.h];
   const [cx, cy] = [(x0 + x1) / 2, (y0 + y1) / 2];
   const s = Math.min(r.w, r.h);
@@ -199,14 +244,14 @@ function motif(m: Motif, r: Rect, bars: Polyline[]): void {
       break;
     }
     case 'bars': {
-      const n = Math.max(2, Math.round(r.w / (s * 0.3)));
+      const n = Math.max(2, Math.round(r.w / (u * 0.3)));
       for (let i = 1; i < n; i++) bars.push(line([x0 + (r.w * i) / n, y0], [x0 + (r.w * i) / n, y1]));
       break;
     }
     case 'steps': {
       // Interlocking key steps: rows alternate a centre bracket and a pair
       // from the sides, each end dropping to the row below.
-      const rows = Math.max(3, Math.round(r.h / (r.w * 0.28)));
+      const rows = Math.max(3, Math.round(r.h / (u * 0.36)));
       const dy = r.h / rows;
       const [c0, c1] = [x0 + r.w * 0.22, x1 - r.w * 0.22];
       const [sl, sr] = [x0 + r.w * 0.38, x1 - r.w * 0.38];
@@ -242,7 +287,7 @@ function motif(m: Motif, r: Rect, bars: Polyline[]): void {
       // ways by spokes from its corners to its centre. Centred on the panel
       // so mirrored panels stay symmetric; triangles at least 16 units on a
       // side, so the slivers are wide enough for a curve to settle in.
-      const t = Math.max(16, s / Random.pick([1, 1.5, 2]));
+      const t = Math.max(16, u * 1.2);
       const th = (t * Math.sqrt(3)) / 2;
       const rows = Math.ceil(r.h / th / 2) + 1;
       const cols = Math.ceil(r.w / t / 2) + 1;
@@ -332,6 +377,7 @@ export function generateGrille(o: GrammarOptions): Grille {
     w: symmetry === 'none' ? w : w / 2,
     h: symmetry === 'quad' ? h / 2 : h,
   };
+  const unit = o.module ?? Math.min(w, h) / 4;
   const bars: Polyline[] = [];
   const top: Rect[] = [];
   const panels = subdivide(domain, o.depth, o.minPanel, bars, true, top);
@@ -348,7 +394,7 @@ export function generateGrille(o: GrammarOptions): Grille {
       byShape.set(key, m);
       used.push(m);
     }
-    motif(byShape.get(key)!, p, bars);
+    motif(byShape.get(key)!, p, bars, unit);
   }
   const all = reflect(bars, symmetry, w, h);
   if (symmetry !== 'none') all.push(line([w / 2, 0], [w / 2, h]));
