@@ -12,8 +12,9 @@ export default defineConfig({
   root: resolve(here, 'src/atlas'),
   plugins: [],
   server: {
-    // Own port: 5173 = sketch runner, 5180 = Light Table, 5181 = Atlas.
-    port: 5181,
+    // Own port: 5173 = sketch runner, 5180 = Light Table, 5182 = Atlas
+    // (5181 is taken by the Intent daemon).
+    port: 5182,
     open: true,
     fs: {
       // atlas.json lives two levels above the vite root.

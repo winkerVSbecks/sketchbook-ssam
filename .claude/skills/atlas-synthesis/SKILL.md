@@ -39,7 +39,7 @@ Bring `archive-app/atlas.json` up to date with the archive. Scripts do the mecha
 
 7. **Insights.** Dispatch two fresh agents in parallel, each with `scripts/atlas/tagging/insights-rules.md` and the digest path. Assign one the **curator** lens writing `scripts/atlas/data/synthesis/insights-curator.json`, and the other the **technician** lens writing `insights-technician.json`. When both report, run `npx tsx scripts/atlas/synthesis.ts check insights-curator.json insights-technician.json`. Then recompute a few of the counts each lens quotes from `archive-app/atlas.json`; correct a wrong number in place, since that is a fix, not a rewrite. Merge into `insights.json` yourself following the rules file's Merge section, and run `check` once more.
 
-8. **Assemble and verify.** Assemble again, then run `status` (exit 0) and `npm run test && npm run typecheck`. Spot-check the Atlas (`npm run atlas`, port 5181): the Threads and Insights folds list the new entries, and no cluster is named after a folder.
+8. **Assemble and verify.** Assemble again, then run `status` (exit 0) and `npm run test && npm run typecheck`. Spot-check the Atlas (`npm run atlas`, port 5182): the Threads and Insights folds list the new entries, and no cluster is named after a folder.
 
 9. **Commit in units**, each once it verifies: records, metrics and cluster membership; then threads; then insights. `atlas.json` goes with whichever unit rebuilt it.
 
