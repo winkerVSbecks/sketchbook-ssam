@@ -48,6 +48,8 @@ interface Params {
   exception: boolean;
   /** Flat border band instead of the bare canvas edge. */
   band: boolean;
+  /** Draw the leading; off, the fills still follow it but it isn't drawn. */
+  showBars: boolean;
   bar: number;
   radius: number;
   /** Walk lattice pitch as a fraction of the curves' spacing. */
@@ -75,6 +77,7 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     punctum: false,
     exception: true,
     band: true,
+    showBars: true,
     bar: 0.6,
     radius: 1,
     walkDensity: 0.7,
@@ -198,6 +201,7 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   onInput(g.addBinding(params, 'exception'), rebuild);
   onInput(g.addBinding(params, 'punctum'), rebuild);
   onInput(g.addBinding(params, 'band', { label: 'border band' }), () => props.render());
+  onInput(g.addBinding(params, 'showBars', { label: 'show bars' }), () => props.render());
   onInput(g.addBinding(params, 'bar', { min: 0.2, max: 2, step: 0.05 }), rebuild);
   g.addBinding(recipe, 'text', { readonly: true, label: 'recipe' });
   g.addBinding(params, 'seed', { readonly: true });
@@ -300,7 +304,7 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     for (const bar of grille.bars) {
       bar.forEach(([x, y], i) => (i === 0 ? context.moveTo(x * scale, y * scale) : context.lineTo(x * scale, y * scale)));
     }
-    context.stroke();
+    if (params.showBars) context.stroke();
 
     context.fillStyle = colours.punctum;
     context.beginPath();

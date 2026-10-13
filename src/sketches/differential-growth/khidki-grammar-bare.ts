@@ -29,6 +29,8 @@ interface Params {
   depth: number;
   punctum: boolean;
   band: boolean;
+  /** Draw the leading; off, the fills still follow it but it isn't drawn. */
+  showBars: boolean;
   bar: number;
   paletteSeed: string;
   hue: number;
@@ -50,6 +52,7 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     depth: Random.rangeFloor(2, 5),
     punctum: false,
     band: true,
+    showBars: true,
     bar: 0.6,
     paletteSeed: Random.getRandomSeed(),
     hue: Math.round(Random.range(0, 360)),
@@ -140,6 +143,7 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   onInput(g.addBinding(params, 'depth', { min: 0, max: 6, step: 1, label: 'subdivision' }), rebuild);
   onInput(g.addBinding(params, 'punctum'), rebuild);
   onInput(g.addBinding(params, 'band', { label: 'border band' }), () => props.render());
+  onInput(g.addBinding(params, 'showBars', { label: 'show bars' }), () => props.render());
   onInput(g.addBinding(params, 'flat', { label: 'flat fills' }), () => {
     build();
     paint();
@@ -208,7 +212,7 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
     for (const bar of grille.bars) {
       bar.forEach(([x, y], i) => (i === 0 ? context.moveTo(x * scale, y * scale) : context.lineTo(x * scale, y * scale)));
     }
-    context.stroke();
+    if (params.showBars) context.stroke();
 
     context.fillStyle = colours.punctum;
     context.beginPath();
@@ -230,8 +234,8 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   };
 };
 
-/** World units per region cell: fine enough that its steps hide under the bars. */
-const RES = 0.15;
+/** World units per region cell: fine enough that edges stay clean with the bars hidden. */
+const RES = 0.06;
 
 interface Regions {
   cols: number;
@@ -349,15 +353,25 @@ function paintRegions(r: Regions, fills: string[]): HTMLCanvasElement {
     ctx.fillRect(0, 0, 1, 1);
     return ctx.getImageData(0, 0, 1, 1).data.slice(0, 3);
   });
+  // Cells under a bar take the nearest region's colour (a breadth-first
+  // spread from every region at once), so the panels meet edge to edge
+  // under the leading, and cleanly when it is hidden.
+  const near = Int32Array.from(r.ids);
+  const queue: number[] = [];
+  for (let c = 0; c < near.length; c++) if (near[c] >= 0) queue.push(c);
+  for (let q = 0; q < queue.length; q++) {
+    const c = queue[q];
+    const x = c % r.cols;
+    for (const n of [x + 1 < r.cols ? c + 1 : -1, x > 0 ? c - 1 : -1, c + r.cols, c - r.cols]) {
+      if (n < 0 || n >= near.length || near[n] >= 0) continue;
+      near[n] = near[c];
+      queue.push(n);
+    }
+  }
   const img = ctx.createImageData(r.cols, r.rows);
-  for (let c = 0; c < r.ids.length; c++) {
-    const id = r.ids[c];
-    // Cells under a bar take their left neighbour's colour, so fills run on
-    // under the leading without a seam.
-    const src = id >= 0 ? id : c > 0 ? r.ids[c - 1] : -1;
-    const k = src >= 0 ? rgb[r.colour[src]] : rgb[2];
+  for (let c = 0; c < near.length; c++) {
+    const k = near[c] >= 0 ? rgb[r.colour[near[c]]] : rgb[2];
     img.data.set([k[0], k[1], k[2], 255], c * 4);
-    if (id < 0 && src >= 0) r.ids[c] = src;
   }
   ctx.putImageData(img, 0, 0);
   return canvas;
