@@ -47,6 +47,8 @@ export interface GrammarOptions {
   minPanel: number;
   /** One disc at the centre. */
   punctum: boolean;
+  /** Motifs left out of the vocabulary. */
+  exclude?: Motif[];
 }
 
 export interface Grille {
@@ -341,7 +343,8 @@ export function generateGrille(o: GrammarOptions): Grille {
     const key = `${p.w.toFixed(2)}x${p.h.toFixed(2)}`;
     if (!byShape.has(key)) {
       // Rays are rare: a sunrise reads as a picture, a landscape.
-      const m = MOTIFS[Random.weighted([0.5, 2, 2, 2, 1, 2, 2, 2, 3]) as number];
+      const weights = [0.5, 2, 2, 2, 1, 2, 2, 2, 3].map((w, i) => (o.exclude?.includes(MOTIFS[i]) ? 0 : w));
+      const m = MOTIFS[Random.weighted(weights) as number];
       byShape.set(key, m);
       used.push(m);
     }

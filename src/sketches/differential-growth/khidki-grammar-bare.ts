@@ -94,6 +94,8 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
       depth: params.depth,
       minPanel: 7,
       punctum: params.punctum,
+      // Asanoha's slivers turn to confetti in flat colour.
+      exclude: params.flat ? ['asanoha'] : [],
     });
     recipe.text = grille.recipe;
     regions = findRegions(grille, params.bar);
@@ -138,7 +140,11 @@ export const sketch = ({ wrap, context, ...props }: SketchProps) => {
   onInput(g.addBinding(params, 'depth', { min: 0, max: 6, step: 1, label: 'subdivision' }), rebuild);
   onInput(g.addBinding(params, 'punctum'), rebuild);
   onInput(g.addBinding(params, 'band', { label: 'border band' }), () => props.render());
-  onInput(g.addBinding(params, 'flat', { label: 'flat fills' }), () => props.render());
+  onInput(g.addBinding(params, 'flat', { label: 'flat fills' }), () => {
+    build();
+    paint();
+    props.render();
+  });
   onInput(g.addBinding(params, 'bar', { min: 0.1, max: 3, step: 0.05 }), () => {
     build();
     paint();
