@@ -1,6 +1,9 @@
 #!/bin/bash
 # Shared start/stop toggle for the Raycast script commands beside this file.
-# Usage: _service.sh <name> <port> <npm script>
+# Usage: _service.sh <name> <port> <npm script> [args for the script…]
+#
+# Any arguments after the script are passed on to it (`npm run <script> --
+# <args>`), e.g. to override the port the script's own config would use.
 #
 # Starts `npm run <script>` detached in its own process group, records the
 # group in .raycast/<name>.pid and logs to .raycast/<name>.log. Run again and
@@ -12,6 +15,7 @@ set -u
 name=$1
 port=$2
 script=$3
+shift 3
 
 repo="$(cd "$(dirname "$0")/.." && pwd)"
 state="$repo/.raycast"
@@ -50,7 +54,7 @@ fi
 # takes down npm, the shell it spawns and vite together.
 set -m
 cd "$repo"
-nohup npm run "$script" >"$logfile" 2>&1 </dev/null &
+nohup npm run "$script" -- "$@" >"$logfile" 2>&1 </dev/null &
 echo $! >"$pidfile"
 disown
 echo "Started $name on :$port"

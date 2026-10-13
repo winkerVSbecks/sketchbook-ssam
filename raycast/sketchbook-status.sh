@@ -35,4 +35,4 @@ status() {
   fi
 }
 
-echo "$(status 'Archive' archive 4173)   $(status 'Light Table' review 5180)   $(status 'Atlas' atlas 5181)"
+echo "$(status 'Archive' archive 4173)   $(status 'Light Table' review 5180)   $(status 'Atlas' atlas 5182)"
