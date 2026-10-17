@@ -21,7 +21,12 @@ import {
   type FileAttribution,
   type JevAnswer,
 } from '../archive-app/src/review/attribution.ts';
-import { parseName } from '../archive-app/src/review/model.ts';
+import {
+  buildLedger,
+  buildSketchTimeline,
+  parseName,
+  UNLABELLED,
+} from '../archive-app/src/review/model.ts';
 import {
   forwardRenames,
   parseGitLog,
@@ -799,6 +804,137 @@ test('rethreshold relabels without asking', () => {
   assert.equal(loose.files[name]?.method, 'jev');
   assert.equal(loose.files[name]?.sketch, 'sketches/a');
   assert.deepEqual(loose.thresholds, { default: 0.7 });
+});
+
+const SK_A = 'sketches/a/one';
+const SK_B = 'sketches/b/two';
+const skFiles: Record<string, string | null> = {
+  '2026.10.10-10.00.00.png': SK_A,
+  '2026.10.12-10.00.00.png': SK_A,
+  '2026.10.11-10.00.00.png': SK_B,
+  '2026.10.09-10.00.00.png': SK_B,
+  '2026.10.09-11.00.00.mp4': SK_B,
+  '2026.10.13-10.00.00.png': null,
+  'stray.png': SK_A,
+};
+const skNames = Object.keys(skFiles);
+const skOf = (n: string): string | null => skFiles[n] ?? null;
+
+test('groups by sketch with unlabelled last', () => {
+  const t = buildSketchTimeline(skNames, skOf, 'recent');
+  assert.deepEqual(
+    t.days.map((d) => d.key),
+    [SK_A, SK_B, UNLABELLED],
+  );
+  assert.deepEqual(
+    t.days.map((d) => d.label),
+    ['a/one', 'b/two', 'unlabelled'],
+  );
+  assert.deepEqual(
+    t.days.map((d) => d.number),
+    [1, 2, 3],
+  );
+  assert.deepEqual(
+    t.days[0]?.items.map((i) => i.name),
+    ['2026.10.10-10.00.00.png', '2026.10.12-10.00.00.png', 'stray.png'],
+  );
+});
+
+test('files missing from the JSON are unlabelled', () => {
+  const t = buildSketchTimeline(['2026.10.01-10.00.00.png', 'x.png'], () => null, 'count');
+  assert.equal(t.days.length, 1);
+  assert.equal(t.days[0]?.key, UNLABELLED);
+  assert.equal(t.days[0]?.items.length, 2);
+});
+
+test('recent and count orders', () => {
+  const recent = buildSketchTimeline(skNames, skOf, 'recent');
+  assert.deepEqual(
+    recent.days.map((d) => d.key),
+    [SK_A, SK_B, UNLABELLED],
+  );
+  // B has 3 items, A has 3 too: tie goes to recent. Drop one of B to see count differ.
+  const more = [...skNames, '2026.10.08-10.00.00.png'];
+  const of = (n: string) => (n === '2026.10.08-10.00.00.png' ? SK_B : skOf(n));
+  const count = buildSketchTimeline(more, of, 'count');
+  assert.deepEqual(
+    count.days.map((d) => d.key),
+    [SK_B, SK_A, UNLABELLED],
+  );
+  const tie = buildSketchTimeline(skNames, skOf, 'count');
+  assert.deepEqual(
+    tie.days.map((d) => d.key),
+    [SK_A, SK_B, UNLABELLED],
+  );
+  // a group with no dated items sorts after dated groups, before unlabelled
+  const undatedOnly = buildSketchTimeline(
+    ['z.png', ...skNames],
+    (n) => (n === 'z.png' ? 'sketches/z' : skOf(n)),
+    'recent',
+  );
+  assert.deepEqual(
+    undatedOnly.days.map((d) => d.key),
+    [SK_A, SK_B, 'sketches/z', UNLABELLED],
+  );
+});
+
+test('navigation indices are consistent', () => {
+  const t = buildSketchTimeline(skNames, skOf, 'recent');
+  assert.equal(t.items.length, skNames.length);
+  t.items.forEach((item, i) => {
+    assert.equal(item.index, i);
+    assert.ok(t.days[t.dayOf[i] ?? -1]?.items.includes(item));
+  });
+});
+
+test('ledger rows summarise each group', () => {
+  const t = buildSketchTimeline(skNames, skOf, 'recent');
+  const files = {
+    [skNames[0] as string]: { sketch: SK_A, path: 'src/sketches/a/one.ts', deleted: true },
+    [skNames[5] as string]: { sketch: null, path: null },
+  } as unknown as Parameters<typeof buildLedger>[2];
+  const rows = buildLedger(t, new Set(), files);
+  assert.deepEqual(
+    rows.map((r) => [r.key, r.count]),
+    [
+      [SK_A, 3],
+      [SK_B, 3],
+      [UNLABELLED, 1],
+    ],
+  );
+  const a = rows[0];
+  assert.equal(a?.path, 'src/sketches/a/one.ts');
+  assert.equal(a?.deleted, true);
+  assert.equal(a?.first, parseName('2026.10.10-10.00.00.png').ts);
+  assert.equal(a?.last, parseName('2026.10.12-10.00.00.png').ts);
+  assert.equal(rows[1]?.path, null);
+  const u = rows[2];
+  assert.equal(u?.path, null);
+  assert.equal(u?.deleted, false);
+});
+
+test('ledger image prefers a keeper', () => {
+  const t = buildSketchTimeline(skNames, skOf, 'recent');
+  const rows = buildLedger(t, new Set(['2026.10.10-10.00.00.png']), {});
+  assert.equal(rows[0]?.image.name, '2026.10.10-10.00.00.png');
+  // no keepers: newest item, i.e. the group's last (undated strays close the group)
+  assert.equal(rows[1]?.image.name, '2026.10.11-10.00.00.png');
+  assert.equal(rows[0]?.image.name === 'stray.png', false);
+  const none = buildLedger(t, new Set(), {});
+  assert.equal(none[0]?.image.name, 'stray.png');
+});
+
+test('keepers-only input drops empty sketches', () => {
+  const kept = new Set(['2026.10.10-10.00.00.png']);
+  const t = buildSketchTimeline(
+    skNames.filter((n) => kept.has(n)),
+    skOf,
+    'recent',
+  );
+  assert.deepEqual(
+    t.days.map((d) => d.key),
+    [SK_A],
+  );
 });
 
 console.log(`${passed} tests passed`);

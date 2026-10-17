@@ -10,6 +10,8 @@
  * in time. The app starts on the most recent day.
  */
 
+import type { AttributionFile, FileAttribution } from './attribution';
+
 export type Item = {
   name: string;
   /** lowercase extension without the dot, e.g. "png" */
@@ -64,7 +66,12 @@ export function parseName(name: string): Parsed {
   }
 
   const [y, mo, d, h, mi, s] = match.slice(1).map(Number) as [
-    number, number, number, number, number, number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
   ];
   const ts = new Date(y, mo - 1, d, h, mi, s).getTime();
 
@@ -83,14 +90,17 @@ export function parseName(name: string): Parsed {
   };
 }
 
+/** Chronological order; undated strays close the stream. */
+function byTime(a: Parsed, b: Parsed): number {
+  if (a.ts === null && b.ts === null) return a.name.localeCompare(b.name);
+  if (a.ts === null) return 1;
+  if (b.ts === null) return -1;
+  return a.ts - b.ts || a.name.localeCompare(b.name);
+}
+
 export function buildTimeline(names: string[]): Timeline {
   const parsed = names.map(parseName);
-  parsed.sort((a, b) => {
-    if (a.ts === null && b.ts === null) return a.name.localeCompare(b.name);
-    if (a.ts === null) return 1; // undated strays close the stream
-    if (b.ts === null) return -1;
-    return a.ts - b.ts || a.name.localeCompare(b.name);
-  });
+  parsed.sort(byTime);
 
   const items: Item[] = parsed.map((p, index) => ({ ...p, index }));
 
@@ -102,9 +112,7 @@ export function buildTimeline(names: string[]): Timeline {
       day = {
         key: item.dayKey,
         label:
-          item.ts === null
-            ? 'undated'
-            : `${item.dayKey} · ${WEEKDAYS[new Date(item.ts).getDay()]}`,
+          item.ts === null ? 'undated' : `${item.dayKey} · ${WEEKDAYS[new Date(item.ts).getDay()]}`,
         items: [],
         number: days.length + 1,
       };
@@ -115,6 +123,105 @@ export function buildTimeline(names: string[]): Timeline {
   }
 
   return { items, days, dayOf };
+}
+
+export const UNLABELLED = 'unlabelled';
+
+export type LedgerSort = 'recent' | 'count';
+
+/**
+ * Regroup the same stream by sketch: each `Day` is one sketch group (`key` is the sketch id or
+ * `UNLABELLED`), so day navigation, the contact sheet and the loupe work unchanged.
+ * Callers pass already-filtered names (keepers-only mode passes just the kept ones).
+ */
+export function buildSketchTimeline(
+  names: string[],
+  sketchOf: (name: string) => string | null,
+  sort: LedgerSort,
+): Timeline {
+  const groups = new Map<string, Parsed[]>();
+  for (const name of names) {
+    const key = sketchOf(name) ?? UNLABELLED;
+    const list = groups.get(key) ?? [];
+    list.push(parseName(name));
+    groups.set(key, list);
+  }
+
+  const labelOf = (key: string) =>
+    key === UNLABELLED ? UNLABELLED : key.replace(/^sketches\//, '');
+  const newest = (list: Parsed[]) =>
+    list.reduce<number | null>((m, p) => (p.ts === null ? m : Math.max(m ?? p.ts, p.ts)), null);
+
+  const entries = [...groups.entries()].map(([key, list]) => ({
+    key,
+    label: labelOf(key),
+    list: list.sort(byTime),
+    newest: newest(list),
+  }));
+  const recent = (a: (typeof entries)[number], b: (typeof entries)[number]) => {
+    if (a.newest === null && b.newest === null) return a.label.localeCompare(b.label);
+    if (a.newest === null) return 1;
+    if (b.newest === null) return -1;
+    return b.newest - a.newest || a.label.localeCompare(b.label);
+  };
+  entries.sort((a, b) => {
+    if ((a.key === UNLABELLED) !== (b.key === UNLABELLED)) return a.key === UNLABELLED ? 1 : -1;
+    if (sort === 'count' && a.list.length !== b.list.length) return b.list.length - a.list.length;
+    return recent(a, b);
+  });
+
+  const items: Item[] = [];
+  const days: Day[] = [];
+  const dayOf: number[] = [];
+  for (const e of entries) {
+    const day: Day = { key: e.key, label: e.label, items: [], number: days.length + 1 };
+    for (const p of e.list) {
+      const item: Item = { ...p, index: items.length };
+      items.push(item);
+      day.items.push(item);
+      dayOf.push(days.length);
+    }
+    days.push(day);
+  }
+  return { items, days, dayOf };
+}
+
+export type LedgerRow = {
+  key: string;
+  label: string;
+  path: string | null;
+  deleted: boolean;
+  count: number;
+  first: number | null;
+  last: number | null;
+  /** newest keeper in the group, else its newest item */
+  image: Item;
+};
+
+export function buildLedger(
+  timeline: Timeline,
+  keepers: Set<string>,
+  files: AttributionFile['files'],
+): LedgerRow[] {
+  const labelled = new Map<string, FileAttribution>();
+  for (const entry of Object.values(files)) {
+    if (entry.sketch !== null && !labelled.has(entry.sketch)) labelled.set(entry.sketch, entry);
+  }
+  return timeline.days.map((day) => {
+    const stamps = day.items.flatMap((i) => (i.ts === null ? [] : [i.ts]));
+    const hit = day.key === UNLABELLED ? undefined : labelled.get(day.key);
+    const image = [...day.items].reverse().find((i) => keepers.has(i.name)) ?? day.items.at(-1);
+    return {
+      key: day.key,
+      label: day.label,
+      path: hit?.path ?? null,
+      deleted: hit?.deleted ?? false,
+      count: day.items.length,
+      first: stamps.length ? Math.min(...stamps) : null,
+      last: stamps.length ? Math.max(...stamps) : null,
+      image: image as Item,
+    };
+  });
 }
 
 /** Time-of-day label for the header, from the filename stamp. */
