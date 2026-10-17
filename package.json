@@ -37,6 +37,7 @@
     "@types/pngjs": "^6.0.5",
     "@types/poisson-disk-sampling": "^2.2.4",
     "@types/proper-lockfile": "^4.1.4",
+    "@typesafe-ai/sdk": "0.7.0",
     "cloudinary": "^2.10.0",
     "dotenv": "^17.4.2",
     "playwright-core": "^1.49.0",

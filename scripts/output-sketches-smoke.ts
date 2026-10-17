@@ -3,6 +3,10 @@
  * Run: `npx tsx scripts/output-sketches-smoke.ts` — exits non-zero on the first failure.
  */
 import assert from 'node:assert/strict';
+import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import sharp from 'sharp';
 import {
   applyAccept,
   mergeFiles,
@@ -20,11 +24,19 @@ import {
   type Commit,
   type History,
 } from './output-sketches/history.ts';
+import { outputImageSource, prepareImage, referenceUrl } from './output-sketches/images.ts';
+import { askSketch, BATCH_SIZE, type AskFn } from './output-sketches/jev.ts';
 import { shortlist, WINDOW_AFTER_MS, WINDOW_BEFORE_MS } from './output-sketches/shortlist.ts';
 
 let passed = 0;
 function test(name: string, fn: () => void): void {
   fn();
+  passed += 1;
+  console.log(`  ✓ ${name}`);
+}
+
+async function atest(name: string, fn: () => Promise<void>): Promise<void> {
+  await fn();
   passed += 1;
   console.log(`  ✓ ${name}`);
 }
@@ -363,6 +375,118 @@ test('unknown prefix uses the window; known family without a timestamp is return
   );
   assert.equal(undated.source, 'prefix');
   assert.deepEqual(idsOf(undated), ['sketches/x', 'sketches/y']);
+});
+
+const solid = (width: number, height: number) =>
+  sharp({ create: { width, height, channels: 3, background: { r: 200, g: 60, b: 20 } } });
+const metaOf = (buf: Buffer) => sharp(buf).metadata();
+
+await atest('prepareImage fits large images', async () => {
+  const m = await metaOf(await prepareImage(await solid(3000, 2000).png().toBuffer()));
+  assert.equal(m.format, 'jpeg');
+  assert.deepEqual([m.width, m.height], [1568, 1045]);
+});
+
+await atest('prepareImage pads thin images', async () => {
+  const m = await metaOf(await prepareImage(await solid(1600, 200).png().toBuffer()));
+  assert.deepEqual([m.width, m.height], [1568, 280]);
+});
+
+await atest('prepareImage keeps a 320 webp at 320', async () => {
+  const m = await metaOf(await prepareImage(await solid(320, 320).webp().toBuffer()));
+  assert.equal(m.format, 'jpeg');
+  assert.deepEqual([m.width, m.height], [320, 320]);
+});
+
+test('referenceUrl inserts the transform', () => {
+  assert.equal(
+    referenceUrl('https://res.cloudinary.com/x/image/upload/v1/a.png'),
+    'https://res.cloudinary.com/x/image/upload/w_384,c_limit,f_jpg/v1/a.png',
+  );
+});
+
+test('outputImageSource handles videos without thumbs and svgs', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'osrc-'));
+  mkdirSync(join(dir, '.review', 'thumbs'), { recursive: true });
+  writeFileSync(join(dir, '.review', 'thumbs', 'a.mp4.webp'), 'x');
+  assert.deepEqual(outputImageSource('p.png', dir), { kind: 'file', path: join(dir, 'p.png') });
+  assert.deepEqual(outputImageSource('a.mp4', dir), {
+    kind: 'thumb',
+    path: join(dir, '.review', 'thumbs', 'a.mp4.webp'),
+  });
+  assert.deepEqual(outputImageSource('b.mov', dir), { kind: 'unsupported', path: null });
+  assert.deepEqual(outputImageSource('c.svg', dir), { kind: 'unsupported', path: null });
+});
+
+const mkOptions = (n: number) =>
+  Array.from({ length: n }, (_, i) => ({
+    key: `c${String(i).padStart(2, '0')}`,
+    candidate: {
+      id: `sketches/s${i}`,
+      path: `src/sketches/s${i}.ts`,
+      pathAtExport: `src/sketches/s${i}.ts`,
+      deleted: false,
+    },
+    reference: null,
+  }));
+const fakeAnswer = (choice: string, keys: string[], tokens: number) => ({
+  answers: {
+    sketch: {
+      type: 'choice' as const,
+      choice,
+      confidence: 0.9,
+      probabilities: Object.fromEntries(
+        [...keys, 'none'].map((k) => [k, k === choice ? 0.9 : 0.01]),
+      ),
+    },
+  },
+  usage: { input_tokens: tokens },
+});
+const keysOf = (req: Parameters<AskFn>[0]): string[] => {
+  const q = req.questions.sketch as { criteria: Record<string, unknown> };
+  return Object.keys(q.criteria).filter((k) => k !== 'none');
+};
+
+await atest('askSketch maps keys back to ids', async () => {
+  const options = mkOptions(3);
+  const ask: AskFn = async (req) => fakeAnswer('c01', keysOf(req), 10);
+  const { answer, inputTokens } = await askSketch(ask, Buffer.from('x'), '2023-12-13', options);
+  assert.equal(answer.choice, 'sketches/s1');
+  assert.deepEqual(Object.keys(answer.probabilities).sort(), [
+    'none',
+    'sketches/s0',
+    'sketches/s1',
+    'sketches/s2',
+  ]);
+  assert.equal(inputTokens, 10);
+});
+
+await atest('askSketch batches 30 candidates', async () => {
+  const options = mkOptions(30);
+  const calls: string[][] = [];
+  const ask: AskFn = async (req) => {
+    const keys = keysOf(req);
+    calls.push(keys);
+    return fakeAnswer(keys[0] ?? 'none', keys, 5);
+  };
+  const { answer, inputTokens } = await askSketch(ask, Buffer.from('x'), 't', options);
+  assert.equal(BATCH_SIZE, 12);
+  assert.equal(calls.length, 4);
+  assert.deepEqual(
+    calls.slice(0, 3).map((c) => c.length),
+    [12, 12, 6],
+  );
+  assert.equal(calls[3]?.length, 3);
+  assert.equal(inputTokens, 20);
+  assert.equal(answer.choice, 'sketches/s0');
+  assert.ok('none' in answer.probabilities);
+});
+
+await atest('askSketch returns none when every batch says none', async () => {
+  const ask: AskFn = async (req) => fakeAnswer('none', keysOf(req), 1);
+  const { answer, inputTokens } = await askSketch(ask, Buffer.from('x'), 't', mkOptions(30));
+  assert.equal(answer.choice, null);
+  assert.equal(inputTokens, 3);
 });
 
 console.log(`${passed} tests passed`);
