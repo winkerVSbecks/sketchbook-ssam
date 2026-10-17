@@ -690,6 +690,70 @@ await atest('saves atomically and resumes', async () => {
   assert.equal(asked, 0);
 });
 
+await atest('loadOutput throwing is recorded per file and the run continues', async () => {
+  const names = [stamp('multi', 1), stamp('multi', 2)];
+  const deps = mkDeps({
+    loadOutput: async (n) => {
+      if (n === names[0]) throw new Error('corrupt image');
+      return Buffer.from('img');
+    },
+  });
+  const { data, errors } = await tagFiles(names, emptyRun(), deps, runOpts);
+  assert.equal(data.files[names[0] as string]?.reason, 'unsupported');
+  assert.equal(data.files[names[1] as string]?.answer?.choice, 'sketches/a');
+  assert.equal(errors, 1);
+});
+
+await atest('malformed response is a per-file error', async () => {
+  const names = [stamp('multi', 1), stamp('multi', 2)];
+  let calls = 0;
+  const deps = mkDeps({
+    ask: async (req: SystemOneRequest) => {
+      calls += 1;
+      return calls === 1 ? fakeAnswer('c99', keysOf(req), 1) : fakeAnswer('c00', keysOf(req), 1);
+    },
+  });
+  const { data } = await tagFiles(names, emptyRun(), deps, runOpts);
+  assert.equal(data.files[names[0] as string]?.reason, 'error');
+  assert.equal(data.files[names[1] as string]?.method, 'unlabelled');
+  assert.equal(data.files[names[1] as string]?.reason, 'pending');
+});
+
+await atest('reference fetch failure skips Jev and records error without an answer', async () => {
+  let asked = 0;
+  const name = stamp('multi', 1);
+  const deps = mkDeps({
+    ask: async (req: SystemOneRequest) => {
+      asked += 1;
+      return fakeAnswer('c00', keysOf(req), 1);
+    },
+    loadRef: async () => {
+      throw new Error('HTTP 503');
+    },
+  });
+  const { data, errors, refFailures } = await tagFiles([name], emptyRun(), deps, runOpts);
+  assert.equal(asked, 0);
+  assert.equal(data.files[name]?.reason, 'error');
+  assert.equal(data.files[name]?.answer, undefined);
+  assert.equal(errors, 1);
+  assert.equal(refFailures, 1);
+});
+
+test('readAttributions refuses a wrong shape', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'tag-'));
+  const file = join(dir, 'shape.json');
+  writeFileSync(file, '{"version":1}');
+  assert.throws(
+    () => readAttributions(file),
+    (e: Error) => e.message.includes(file),
+  );
+  writeFileSync(file, '{"version":2,"files":{}}');
+  assert.throws(
+    () => readAttributions(file),
+    (e: Error) => e.message.includes(file),
+  );
+});
+
 test('readAttributions refuses malformed JSON', () => {
   const dir = mkdtempSync(join(tmpdir(), 'tag-'));
   const file = join(dir, 'bad.json');

@@ -4,9 +4,12 @@
  */
 import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import {
+  APIConnectionError,
+  APIError,
   AuthenticationError,
   BadRequestError,
   PermissionDeniedError,
+  RateLimitError,
   UnprocessableEntityError,
 } from '@typesafe-ai/sdk';
 import {
@@ -21,7 +24,7 @@ import {
 import { parseName } from '../../archive-app/src/review/model.ts';
 import type { SketchEntry } from '../archive-types.ts';
 import type { History } from './history.ts';
-import { askSketch, MODEL, type AskFn } from './jev.ts';
+import { askSketch, MODEL, type AskFn, type SketchOption } from './jev.ts';
 import { shortlist, type Candidate } from './shortlist.ts';
 
 export const SKETCHES_JSON = 'output/.review/sketches.json';
@@ -30,11 +33,17 @@ export const COST_PER_MTOK = 0.042;
 
 export function readAttributions(path: string): AttributionFile {
   if (!existsSync(path)) return emptyAttributionFile(MODEL);
+  let parsed: unknown;
   try {
-    return JSON.parse(readFileSync(path, 'utf8')) as AttributionFile;
+    parsed = JSON.parse(readFileSync(path, 'utf8'));
   } catch (err) {
     throw new Error(`Cannot parse ${path}: ${(err as Error).message}`);
   }
+  const shaped = parsed as Partial<AttributionFile> | null;
+  if (shaped?.version !== 1 || typeof shaped.files !== 'object' || shaped.files === null) {
+    throw new Error(`Unexpected shape in ${path}: need version 1 and a files object`);
+  }
+  return shaped as AttributionFile;
 }
 
 export function writeAttributions(path: string, data: AttributionFile): void {
@@ -55,7 +64,14 @@ export type RunDeps = {
 
 export type RunOptions = { concurrency: number; withhold?: boolean; saveEvery: number };
 
-export type RunResult = { data: AttributionFile; tokens: number; errors: number };
+export type RunResult = {
+  data: AttributionFile;
+  tokens: number;
+  /** Files recorded as a per-file failure (error, or an output that could not be read). */
+  errors: number;
+  /** Of those, files skipped because an archive reference could not be fetched. */
+  refFailures: number;
+};
 
 const pad = (n: number): string => String(n).padStart(2, '0');
 
@@ -90,7 +106,22 @@ function unlabelled(
   };
 }
 
-type One = { entry: FileAttribution; tokens: number };
+type One = { entry: FileAttribution; tokens: number; failure?: 'file' | 'ref' };
+
+/** Failures that say nothing about one file: stop (after a save) and let a rerun resume. */
+function isFatal(err: unknown): boolean {
+  if (err instanceof BadRequestError || err instanceof UnprocessableEntityError) return false;
+  if (
+    err instanceof AuthenticationError ||
+    err instanceof PermissionDeniedError ||
+    err instanceof RateLimitError ||
+    err instanceof APIConnectionError
+  ) {
+    return true;
+  }
+  if (err instanceof APIError) return !(err.status >= 400 && err.status < 500);
+  return false;
+}
 
 async function tagOne(
   name: string,
@@ -124,17 +155,29 @@ async function tagOne(
     return { tokens: 0, entry: unlabelled('no-candidates', ids, taggedAt) };
   }
 
-  const output = await deps.loadOutput(name);
+  let output: Buffer | null;
+  try {
+    output = await deps.loadOutput(name);
+  } catch {
+    return { tokens: 0, failure: 'file', entry: unlabelled('unsupported', ids, taggedAt) };
+  }
   if (!output) return { tokens: 0, entry: unlabelled('unsupported', ids, taggedAt) };
 
+  // null means "no reference exists"; a rejection means the fetch failed, so do not ask.
+  let options: SketchOption[];
   try {
-    const options = await Promise.all(
+    options = await Promise.all(
       candidates.map(async (candidate, i) => ({
         key: `c${i}`,
         candidate,
-        reference: await deps.loadRef(candidate).catch(() => null),
+        reference: await deps.loadRef(candidate),
       })),
     );
+  } catch {
+    return { tokens: 0, failure: 'ref', entry: unlabelled('error', ids, taggedAt) };
+  }
+
+  try {
     const round = await askSketch(deps.ask, output, formatExportedAt(parsed.ts), options);
     const pending: FileAttribution = {
       ...unlabelled('pending', ids, taggedAt),
@@ -145,10 +188,9 @@ async function tagOne(
       : pending;
     return { entry, tokens: round.inputTokens };
   } catch (err) {
-    if (err instanceof BadRequestError || err instanceof UnprocessableEntityError) {
-      return { tokens: 0, entry: unlabelled('error', ids, taggedAt) };
-    }
-    throw err; // auth, permission and anything unexpected abort the run after a save
+    if (isFatal(err)) throw err;
+    // 4xx for this file, or a malformed response: record it so a rerun does not stall on it.
+    return { tokens: 0, failure: 'file', entry: unlabelled('error', ids, taggedAt) };
   }
 }
 
@@ -162,6 +204,7 @@ export async function tagFiles(
   const updates: Record<string, FileAttribution> = {};
   let tokens = 0;
   let errors = 0;
+  let refFailures = 0;
   let finished = 0;
   let next = 0;
   let fatal: unknown;
@@ -177,7 +220,8 @@ export async function tagFiles(
         const one = await tagOne(name, data, deps, opts.withhold ?? false);
         updates[name] = one.entry;
         tokens += one.tokens;
-        if (one.entry.reason === 'error') errors += 1;
+        if (one.failure) errors += 1;
+        if (one.failure === 'ref') refFailures += 1;
         finished += 1;
         if (finished % opts.saveEvery === 0) deps.save(snapshot());
       } catch (err) {
@@ -191,7 +235,7 @@ export async function tagFiles(
   const result = snapshot();
   deps.save(result);
   if (failed) throw fatal;
-  return { data: result, tokens, errors };
+  return { data: result, tokens, errors, refFailures };
 }
 
 /** Re-derive every stored label from its stored answer. No API calls. */

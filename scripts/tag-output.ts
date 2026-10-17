@@ -72,9 +72,11 @@ function resolveThresholds(stored: Thresholds | null): Thresholds | null {
   return { default: base, ...(Object.keys(byYear).length ? { byYear } : {}) };
 }
 
+const MEDIA_EXT = /\.(png|jpe?g|webp|gif|svg|mp4|mov|webm)$/i;
+
 const listMedia = (): string[] =>
   readdirSync(OUTPUT_DIR, { withFileTypes: true })
-    .filter((e) => e.isFile() && !e.name.startsWith('.'))
+    .filter((e) => e.isFile() && !e.name.startsWith('.') && MEDIA_EXT.test(e.name))
     .map((e) => e.name)
     .sort();
 
@@ -143,6 +145,7 @@ async function main(): Promise<void> {
   });
   console.log(summarize(result.data, result.tokens));
   if (result.errors) console.log(`errors recorded: ${result.errors}`);
+  console.log(`reference fetch failures: ${result.refFailures}`);
 }
 
 main().catch((err) => {
