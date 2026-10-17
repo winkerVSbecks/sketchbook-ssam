@@ -13,6 +13,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "tsx scripts/run-smoke-suites.ts",
+    "tag:output": "tsx scripts/tag-output.ts",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write",
     "format:check": "prettier --check",

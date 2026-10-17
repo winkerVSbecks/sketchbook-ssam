@@ -3,9 +3,10 @@
  * Run: `npx tsx scripts/output-sketches-smoke.ts` — exits non-zero on the first failure.
  */
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { AuthenticationError, BadRequestError, type SystemOneRequest } from '@typesafe-ai/sdk';
 import sharp from 'sharp';
 import {
   applyAccept,
@@ -31,6 +32,13 @@ import {
   referenceUrl,
 } from './output-sketches/images.ts';
 import { askSketch, BATCH_SIZE, type AskFn } from './output-sketches/jev.ts';
+import {
+  readAttributions,
+  rethreshold,
+  tagFiles,
+  writeAttributions,
+  type RunDeps,
+} from './output-sketches/run.ts';
 import { shortlist, WINDOW_AFTER_MS, WINDOW_BEFORE_MS } from './output-sketches/shortlist.ts';
 
 let passed = 0;
@@ -528,6 +536,183 @@ await atest(
 await atest('askSketch throws on an unknown choice label', async () => {
   const ask: AskFn = async () => fakeAnswer('c99', ['c00'], 1);
   await assert.rejects(askSketch(ask, Buffer.from('x'), 't', mkOptions(2)), /unknown choice/);
+});
+
+// ---- run loop ----------------------------------------------------------------------------
+const fam = (id: string) => `src/sketches/${id}.ts`;
+const runHistory: History = {
+  commits: [],
+  current: (p) => p,
+  existsAtHead: () => true,
+  entryFilesAt: () => new Set(),
+  importersAt: () => [],
+  prefixFamilies: new Map([
+    ['solo', new Set([fam('a')])],
+    ['multi', new Set([fam('a'), fam('b')])],
+  ]),
+};
+const stamp = (prefix: string, i: number) => `${prefix}-2024.03.01-10.00.0${i}.png`;
+const emptyRun = () => emptyAttributionFile('jev-1.14.0');
+const mkDeps = (over: Partial<RunDeps> = {}): RunDeps & { saves: string[][] } => {
+  const saves: string[][] = [];
+  const deps: RunDeps = {
+    ask: async (req) => fakeAnswer('c00', keysOf(req), 7),
+    history: runHistory,
+    archive: new Map(),
+    loadOutput: async () => Buffer.from('img'),
+    loadRef: async () => null,
+    now: () => '2026-10-17T00:00:00.000Z',
+    save: (d) => saves.push(Object.keys(d.files)),
+    ...over,
+  };
+  return Object.assign(deps, { saves });
+};
+const runOpts = { concurrency: 1, saveEvery: 10 };
+const apiError = <T extends object>(ctor: new (...a: never[]) => T): T =>
+  Object.create(ctor.prototype) as T;
+
+await atest('single-member prefix family skips Jev', async () => {
+  let asked = 0;
+  const deps = mkDeps({
+    ask: async (req: SystemOneRequest) => {
+      asked += 1;
+      return fakeAnswer('c00', keysOf(req), 1);
+    },
+  });
+  const name = stamp('solo', 1);
+  const { data, tokens } = await tagFiles([name], emptyRun(), deps, runOpts);
+  const f = data.files[name];
+  assert.equal(asked, 0);
+  assert.equal(tokens, 0);
+  assert.equal(f?.method, 'prefix');
+  assert.equal(f?.sketch, 'sketches/a');
+  assert.equal(f?.confidence, null);
+  assert.deepEqual(f?.candidates, ['sketches/a']);
+});
+
+await atest('withhold sends a one-member family to Jev path (no prefix method)', async () => {
+  const name = stamp('solo', 1);
+  const deps = mkDeps();
+  const { data } = await tagFiles([name], emptyRun(), deps, { ...runOpts, withhold: true });
+  assert.equal(data.files[name]?.reason, 'no-candidates');
+});
+
+await atest('empty shortlist is unlabelled and never asks', async () => {
+  let asked = 0;
+  const deps = mkDeps({
+    ask: async (req: SystemOneRequest) => {
+      asked += 1;
+      return fakeAnswer('c00', keysOf(req), 1);
+    },
+  });
+  const name = stamp('nobody', 1);
+  const { data } = await tagFiles([name], emptyRun(), deps, runOpts);
+  assert.equal(asked, 0);
+  assert.equal(data.files[name]?.method, 'unlabelled');
+  assert.equal(data.files[name]?.reason, 'no-candidates');
+});
+
+await atest('unsupported output is recorded', async () => {
+  const name = stamp('multi', 1);
+  const deps = mkDeps({ loadOutput: async () => null });
+  const { data } = await tagFiles([name], emptyRun(), deps, runOpts);
+  assert.equal(data.files[name]?.reason, 'unsupported');
+});
+
+await atest('jev answer is held pending without thresholds, accepted with them', async () => {
+  const name = stamp('multi', 1);
+  const pending = await tagFiles([name], emptyRun(), mkDeps(), runOpts);
+  assert.equal(pending.data.files[name]?.reason, 'pending');
+  assert.equal(pending.data.files[name]?.answer?.choice, 'sketches/a');
+  assert.equal(pending.tokens, 7);
+  const accepted = await tagFiles(
+    [name],
+    { ...emptyRun(), thresholds: { default: 0.8 } },
+    mkDeps(),
+    runOpts,
+  );
+  const f = accepted.data.files[name];
+  assert.equal(f?.method, 'jev');
+  assert.equal(f?.sketch, 'sketches/a');
+  assert.equal(f?.path, 'src/sketches/a.ts');
+});
+
+await atest('api 400 is recorded and the run continues', async () => {
+  let calls = 0;
+  const deps = mkDeps({
+    ask: async (req: SystemOneRequest) => {
+      calls += 1;
+      if (calls === 1) throw apiError(BadRequestError);
+      return fakeAnswer('c00', keysOf(req), 1);
+    },
+  });
+  const names = [stamp('multi', 1), stamp('multi', 2)];
+  const { data, errors } = await tagFiles(names, emptyRun(), deps, runOpts);
+  assert.equal(errors, 1);
+  assert.equal(data.files[names[0] as string]?.reason, 'error');
+  assert.equal(data.files[names[1] as string]?.answer?.choice, 'sketches/a');
+});
+
+await atest('auth error aborts after saving', async () => {
+  let calls = 0;
+  const deps = mkDeps({
+    ask: async (req: SystemOneRequest) => {
+      calls += 1;
+      if (calls === 2) throw apiError(AuthenticationError);
+      return fakeAnswer('c00', keysOf(req), 1);
+    },
+  });
+  const names = [stamp('multi', 1), stamp('multi', 2), stamp('multi', 3)];
+  await assert.rejects(
+    tagFiles(names, emptyRun(), deps, runOpts),
+    (e) => e instanceof AuthenticationError,
+  );
+  assert.equal(calls, 2);
+  assert.deepEqual(deps.saves.at(-1), [names[0]]);
+});
+
+await atest('saves atomically and resumes', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'tag-'));
+  const file = join(dir, 'sketches.json');
+  const names = [stamp('multi', 1), stamp('multi', 2)];
+  const first = await tagFiles(names, emptyRun(), mkDeps(), runOpts);
+  writeAttributions(file, first.data);
+  assert.equal(existsSync(`${file}.tmp`), false);
+  assert.deepEqual(JSON.parse(readFileSync(file, 'utf8')), first.data);
+  let asked = 0;
+  const deps = mkDeps({
+    ask: async (req: SystemOneRequest) => {
+      asked += 1;
+      return fakeAnswer('c00', keysOf(req), 1);
+    },
+  });
+  await tagFiles(names, readAttributions(file), deps, runOpts);
+  assert.equal(asked, 0);
+});
+
+test('readAttributions refuses malformed JSON', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'tag-'));
+  const file = join(dir, 'bad.json');
+  writeFileSync(file, '{ nope');
+  assert.throws(
+    () => readAttributions(file),
+    (e: Error) => e.message.includes(file),
+  );
+  assert.equal(readAttributions(join(dir, 'missing.json')).version, 1);
+});
+
+test('rethreshold relabels without asking', () => {
+  const name = stamp('multi', 1);
+  const base = {
+    ...emptyRun(),
+    files: { [name]: entry(answer('sketches/a', 0.8), { reason: 'pending' }) },
+  };
+  const strict = rethreshold(base, runHistory, { default: 0.9 });
+  assert.equal(strict.files[name]?.reason, 'low-confidence');
+  const loose = rethreshold(strict, runHistory, { default: 0.7 });
+  assert.equal(loose.files[name]?.method, 'jev');
+  assert.equal(loose.files[name]?.sketch, 'sketches/a');
+  assert.deepEqual(loose.thresholds, { default: 0.7 });
 });
 
 console.log(`${passed} tests passed`);
