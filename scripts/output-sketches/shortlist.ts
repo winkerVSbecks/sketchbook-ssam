@@ -72,26 +72,25 @@ export function shortlist(file: Parsed, history: History, opts: Options = {}): S
     candidates.length ? { candidates, source } : { candidates: [], source: 'none' };
 
   if (!opts.withhold) {
-    if (file.hash) {
-      const commit = history.commits.find((c) => c.sha.startsWith(file.hash as string));
-      const own = commit ? byId(commitCandidates(history, commit)) : [];
-      if (own.length) {
-        const both = hasTs ? intersect(own, win) : [];
-        return both.length ? { candidates: both, source: 'hash+window' } : result(own, 'hash');
-      }
-    }
-    const family = file.prefix ? history.prefixFamilies.get(file.prefix) : undefined;
-    if (family?.size) {
-      const own = byId(
-        [...family]
-          .map((p) => makeCandidate(history, p))
-          .map((c) => ({
-            ...c,
-            pathAtExport: c.path,
-          })),
+    const { hash } = file;
+    const commit = hash ? history.commits.find((c) => c.sha.startsWith(hash)) : undefined;
+    const hashed = commit ? byId(commitCandidates(history, commit)) : [];
+    const familyPaths = file.prefix ? history.prefixFamilies.get(file.prefix) : undefined;
+    if (familyPaths?.size) {
+      const family = byId(
+        [...familyPaths].map((p) => {
+          const c = makeCandidate(history, p);
+          return { ...c, pathAtExport: c.path };
+        }),
       );
-      const both = hasTs ? intersect(own, win) : [];
-      return both.length ? { candidates: both, source: 'prefix+window' } : result(own, 'prefix');
+      const narrow = intersect(family, hashed);
+      const base = narrow.length ? narrow : family;
+      const both = hasTs ? intersect(base, win) : [];
+      return both.length ? { candidates: both, source: 'prefix+window' } : result(base, 'prefix');
+    }
+    if (hashed.length) {
+      const both = hasTs ? intersect(hashed, win) : [];
+      return both.length ? { candidates: both, source: 'hash+window' } : result(hashed, 'hash');
     }
   }
   return result(win, 'window');

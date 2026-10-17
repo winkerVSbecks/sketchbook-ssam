@@ -283,4 +283,86 @@ test('renamed candidate reports both paths', () => {
   });
 });
 
+test('hash narrows the prefix family; family alone when they do not intersect', () => {
+  const h = fakeHistory({
+    commits: [commitAt('abcdef0123', EXPORT_TS, P('a'), P('out'))],
+    prefixFamilies: new Map([['arcs', new Set([P('a'), P('b')])]]),
+  });
+  const s = shortlist(parseName(`arcs-${exportName}-abcdef0.png`), h);
+  assert.equal(s.source, 'prefix+window');
+  assert.deepEqual(idsOf(s), ['sketches/a']);
+  const miss = fakeHistory({
+    commits: [commitAt('abcdef0123', EXPORT_TS - 30 * DAY, P('out'))],
+    prefixFamilies: new Map([['arcs', new Set([P('b'), P('c')])]]),
+  });
+  const alone = shortlist(parseName(`arcs-${exportName}-abcdef0.png`), miss);
+  assert.equal(alone.source, 'prefix');
+  assert.deepEqual(idsOf(alone), ['sketches/b', 'sketches/c']);
+});
+
+test('hash alone when the hash commit misses the window', () => {
+  const h = fakeHistory({
+    commits: [
+      commitAt('abcdef0123', EXPORT_TS - 30 * DAY, P('old')),
+      commitAt('w', EXPORT_TS, P('new')),
+    ],
+  });
+  const s = shortlist(parseName(`${exportName}-abcdef0.png`), h);
+  assert.equal(s.source, 'hash');
+  assert.deepEqual(idsOf(s), ['sketches/old']);
+});
+
+test('hash commit with no entry files falls back to the window', () => {
+  const h = fakeHistory({
+    commits: [commitAt('abcdef0123', EXPORT_TS, P('lib/x')), commitAt('w', EXPORT_TS, P('new'))],
+    entryFilesAt: (sha) => new Set(sha === 'w' ? [P('new')] : []),
+  });
+  const s = shortlist(parseName(`${exportName}-abcdef0.png`), h);
+  assert.equal(s.source, 'window');
+  assert.deepEqual(idsOf(s), ['sketches/new']);
+});
+
+test('deletions are excluded and missing HEAD paths are flagged deleted', () => {
+  const h = fakeHistory({
+    commits: [
+      { sha: 'c1', time: EXPORT_TS, changes: [{ status: 'D', path: P('gone') }] },
+      commitAt('c2', EXPORT_TS, P('kept'), P('removed')),
+    ],
+    existsAtHead: (p) => p !== P('removed'),
+  });
+  const s = shortlist(parseName(`${exportName}.png`), h);
+  assert.deepEqual(
+    s.candidates.map((c) => [c.id, c.deleted]),
+    [
+      ['sketches/kept', false],
+      ['sketches/removed', true],
+    ],
+  );
+});
+
+test('de-dup by HEAD id keeps the pathAtExport closest to the export', () => {
+  const h = fakeHistory({
+    commits: [
+      commitAt('far', EXPORT_TS - DAY, P('old')),
+      commitAt('near', EXPORT_TS + 1000, P('mid')),
+    ],
+    current: () => P('new'),
+  });
+  const s = shortlist(parseName(`${exportName}.png`), h);
+  assert.equal(s.candidates.length, 1);
+  assert.equal(s.candidates[0]?.pathAtExport, P('mid'));
+});
+
+test('unknown prefix uses the window; known family without a timestamp is returned', () => {
+  const unknown = shortlist(parseName(`compressO-${exportName}.png`), familyHistory(['x']));
+  assert.equal(unknown.source, 'window');
+  assert.deepEqual(idsOf(unknown), ['sketches/a', 'sketches/c']);
+  const undated = shortlist(
+    { ...parseName('arcs-notes.png'), prefix: 'arcs', ts: null },
+    familyHistory(['x', 'y']),
+  );
+  assert.equal(undated.source, 'prefix');
+  assert.deepEqual(idsOf(undated), ['sketches/x', 'sketches/y']);
+});
+
 console.log(`${passed} tests passed`);
