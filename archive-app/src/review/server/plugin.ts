@@ -287,12 +287,21 @@ export function reviewServer(): Plugin {
     }
   }
 
-  async function readPilotTruth(): Promise<Record<string, string | null>> {
+  /** Hand labels are irreplaceable: a missing file is empty, but an unparseable
+   * one is `null` so callers refuse to overwrite it. */
+  async function readPilotTruth(): Promise<Record<string, string | null> | null> {
+    let text: string;
     try {
-      const parsed = JSON.parse(await readFile(pilotTruthPath, 'utf8'));
-      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+      text = await readFile(pilotTruthPath, 'utf8');
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') return {};
+      throw err;
+    }
+    try {
+      const parsed = JSON.parse(text);
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
     } catch {
-      return {};
+      return null;
     }
   }
 
@@ -373,7 +382,9 @@ export function reviewServer(): Plugin {
           }
 
           if (route === '/api/pilot-truth' && req.method === 'GET') {
-            sendJson(res, await readPilotTruth());
+            const truth = await readPilotTruth();
+            if (truth) sendJson(res, truth);
+            else sendJson(res, { error: 'malformed' }, 503);
             return;
           }
 
@@ -388,11 +399,17 @@ export function reviewServer(): Plugin {
               return;
             }
             const truth = await readPilotTruth();
+            if (!truth) {
+              sendJson(res, { error: 'malformed' }, 503);
+              return;
+            }
             truth[name] = sketch;
             const sorted = Object.fromEntries(
               Object.entries(truth).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
             );
-            await writeFile(pilotTruthPath, JSON.stringify(sorted, null, 2));
+            const tmp = `${pilotTruthPath}.tmp`;
+            await writeFile(tmp, JSON.stringify(sorted, null, 2));
+            await rename(tmp, pilotTruthPath);
             sendJson(res, { ok: true });
             return;
           }
