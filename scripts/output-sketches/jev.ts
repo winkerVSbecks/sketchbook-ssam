@@ -72,9 +72,11 @@ async function askOnce(
   const idOf = new Map(keyed.map((o) => [o.key, o.candidate.id]));
   const probabilities: Record<string, number> = {};
   for (const [k, p] of Object.entries(r.probabilities)) probabilities[idOf.get(k) ?? k] = p;
+  const picked = r.choice === 'none' ? null : idOf.get(r.choice);
+  if (picked === undefined) throw new Error(`unknown choice label: ${r.choice}`);
   return {
     answer: {
-      choice: r.choice === 'none' ? null : (idOf.get(r.choice) ?? null),
+      choice: picked,
       confidence: r.confidence,
       probabilities,
     },

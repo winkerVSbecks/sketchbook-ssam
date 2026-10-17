@@ -92,13 +92,28 @@ export function referenceUrl(cloudinaryUrl: string): string {
   return cloudinaryUrl.replace('/upload/', '/upload/w_384,c_limit,f_jpg/');
 }
 
-/** Fetch an archive reference once into `cacheDir/<id with / → __>.jpg`, then read from disk. */
-export async function loadReference(id: string, url: string, cacheDir: string): Promise<Buffer> {
+export type FetchFn = (url: string) => Promise<{
+  ok: boolean;
+  status: number;
+  arrayBuffer: () => Promise<ArrayBuffer>;
+}>;
+
+/**
+ * Fetch an archive reference once into `cacheDir/<id with / → __>.jpg`, then read from disk.
+ * The rendition is run through `prepareImage` before caching: `c_limit` never enlarges, so a small
+ * or thin archive image can arrive under the API's 280 px minimum.
+ */
+export async function loadReference(
+  id: string,
+  url: string,
+  cacheDir: string,
+  fetchFn: FetchFn = fetch,
+): Promise<Buffer> {
   const file = join(cacheDir, `${id.replaceAll('/', '__')}.jpg`);
   if (existsSync(file)) return readFile(file);
-  const res = await fetch(referenceUrl(url));
+  const res = await fetchFn(referenceUrl(url));
   if (!res.ok) throw new Error(`reference ${id}: HTTP ${res.status}`);
-  const buf = Buffer.from(await res.arrayBuffer());
+  const buf = await prepareImage(Buffer.from(await res.arrayBuffer()));
   await mkdir(cacheDir, { recursive: true });
   await writeFile(file, buf);
   return buf;

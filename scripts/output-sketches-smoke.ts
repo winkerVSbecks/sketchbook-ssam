@@ -24,7 +24,12 @@ import {
   type Commit,
   type History,
 } from './output-sketches/history.ts';
-import { outputImageSource, prepareImage, referenceUrl } from './output-sketches/images.ts';
+import {
+  loadReference,
+  outputImageSource,
+  prepareImage,
+  referenceUrl,
+} from './output-sketches/images.ts';
 import { askSketch, BATCH_SIZE, type AskFn } from './output-sketches/jev.ts';
 import { shortlist, WINDOW_AFTER_MS, WINDOW_BEFORE_MS } from './output-sketches/shortlist.ts';
 
@@ -467,7 +472,7 @@ await atest('askSketch batches 30 candidates', async () => {
   const ask: AskFn = async (req) => {
     const keys = keysOf(req);
     calls.push(keys);
-    return fakeAnswer(keys[0] ?? 'none', keys, 5);
+    return fakeAnswer(keys[1] ?? 'none', keys, 5);
   };
   const { answer, inputTokens } = await askSketch(ask, Buffer.from('x'), 't', options);
   assert.equal(BATCH_SIZE, 12);
@@ -478,7 +483,7 @@ await atest('askSketch batches 30 candidates', async () => {
   );
   assert.equal(calls[3]?.length, 3);
   assert.equal(inputTokens, 20);
-  assert.equal(answer.choice, 'sketches/s0');
+  assert.equal(answer.choice, 'sketches/s13');
   assert.ok('none' in answer.probabilities);
 });
 
@@ -487,6 +492,42 @@ await atest('askSketch returns none when every batch says none', async () => {
   const { answer, inputTokens } = await askSketch(ask, Buffer.from('x'), 't', mkOptions(30));
   assert.equal(answer.choice, null);
   assert.equal(inputTokens, 3);
+});
+
+await atest(
+  'loadReference pads small renditions to 280 and caches the prepared image',
+  async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'ref-'));
+    const tiny = await solid(120, 90).jpeg().toBuffer();
+    let fetched = 0;
+    const fakeFetch = async (url: string) => {
+      fetched += 1;
+      assert.ok(url.includes('/upload/w_384,c_limit,f_jpg/'));
+      return { ok: true, status: 200, arrayBuffer: async () => new Uint8Array(tiny).buffer };
+    };
+    const buf = await loadReference(
+      'sketches/a/b',
+      'https://x/image/upload/v1/a.png',
+      dir,
+      fakeFetch,
+    );
+    const m = await metaOf(buf);
+    assert.equal(m.format, 'jpeg');
+    assert.deepEqual([m.width, m.height], [280, 280]);
+    const again = await loadReference(
+      'sketches/a/b',
+      'https://x/image/upload/v1/a.png',
+      dir,
+      fakeFetch,
+    );
+    assert.equal(fetched, 1);
+    assert.deepEqual([(await metaOf(again)).width, (await metaOf(again)).height], [280, 280]);
+  },
+);
+
+await atest('askSketch throws on an unknown choice label', async () => {
+  const ask: AskFn = async () => fakeAnswer('c99', ['c00'], 1);
+  await assert.rejects(askSketch(ask, Buffer.from('x'), 't', mkOptions(2)), /unknown choice/);
 });
 
 console.log(`${passed} tests passed`);
