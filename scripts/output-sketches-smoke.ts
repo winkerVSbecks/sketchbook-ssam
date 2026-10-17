@@ -12,6 +12,12 @@ import {
   type JevAnswer,
 } from '../archive-app/src/review/attribution.ts';
 import { parseName } from '../archive-app/src/review/model.ts';
+import {
+  forwardRenames,
+  parseGitLog,
+  resolveImport,
+  sketchIdOf,
+} from './output-sketches/history.ts';
 
 let passed = 0;
 function test(name: string, fn: () => void): void {
@@ -103,6 +109,63 @@ test('parseName reads prefix, hash and stamp', () => {
   assert.equal(a.hash, 'b46dc92');
   assert.notEqual(parseName('CleanShot 2022-04-15 at 17.31.04.mp4').ts, null);
   assert.equal(parseName('w9-verify-torsions-palette0.png').ts, null);
+});
+
+const LOG = [
+  '@aaa111 1700000000',
+  'A\tsrc/sketches/x/one.ts',
+  'M\tsrc/sketches/x/two.ts',
+  '',
+  '@bbb222 1700003600',
+  'R087\tsrc/sketches/differential-growth/windows.ts\tsrc/sketches/differential-growth/jali.ts',
+  'D\tsrc/sketches/x/gone.ts',
+  '',
+].join('\n');
+
+test('parseGitLog reads adds, edits and renames', () => {
+  const commits = parseGitLog(LOG);
+  assert.equal(commits.length, 2);
+  assert.equal(commits[0]?.sha, 'aaa111');
+  assert.equal(commits[0]?.time, 1700000000 * 1000);
+  assert.deepEqual(commits[0]?.changes, [
+    { status: 'A', path: 'src/sketches/x/one.ts' },
+    { status: 'M', path: 'src/sketches/x/two.ts' },
+  ]);
+  assert.equal(commits[1]?.sha, 'bbb222');
+  assert.deepEqual(commits[1]?.changes[0], {
+    status: 'R',
+    from: 'src/sketches/differential-growth/windows.ts',
+    path: 'src/sketches/differential-growth/jali.ts',
+  });
+  assert.deepEqual(commits[1]?.changes[1], { status: 'D', path: 'src/sketches/x/gone.ts' });
+});
+
+test('forwardRenames follows chains', () => {
+  const mk = (sha: string, time: number, from: string, path: string) => ({
+    sha,
+    time,
+    changes: [{ status: 'R' as const, from, path }],
+  });
+  const cur = forwardRenames([mk('1', 1, 'A', 'B'), mk('2', 2, 'B', 'C')]);
+  assert.equal(cur('A'), 'C');
+  assert.equal(cur('B'), 'C');
+  assert.equal(cur('Z'), 'Z');
+  const back = forwardRenames([mk('1', 1, 'A', 'B'), mk('2', 2, 'B', 'A')]);
+  assert.equal(back('A'), 'A');
+  assert.equal(back('B'), 'A');
+});
+
+test('sketchIdOf strips src and .ts', () => {
+  assert.equal(sketchIdOf('src/sketches/x/y.ts'), 'sketches/x/y');
+});
+
+test('resolveImport handles ./, ../ and bare', () => {
+  assert.equal(
+    resolveImport('src/sketches/nalee/a.ts', './walker'),
+    'src/sketches/nalee/walker.ts',
+  );
+  assert.equal(resolveImport('src/sketches/nalee/a.ts', '../lib/x.ts'), 'src/sketches/lib/x.ts');
+  assert.equal(resolveImport('src/sketches/nalee/a.ts', 'd3'), null);
 });
 
 console.log(`${passed} tests passed`);
