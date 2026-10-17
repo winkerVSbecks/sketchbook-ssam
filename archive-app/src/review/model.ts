@@ -50,9 +50,9 @@ const CLEANSHOT = /(\d{4})-(\d{2})-(\d{2}) at (\d{2})\.(\d{2})\.(\d{2})/;
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-type Parsed = Omit<Item, 'index'>;
+export type Parsed = Omit<Item, 'index'>;
 
-function parseName(name: string): Parsed {
+export function parseName(name: string): Parsed {
   const dot = name.lastIndexOf('.');
   const ext = dot === -1 ? '' : name.slice(dot + 1).toLowerCase();
   const base = dot === -1 ? name : name.slice(0, dot);
