@@ -65,6 +65,15 @@
         ],
         "createdAt": "2026-10-10T18:20:55.244Z",
         "reason": "Claude: Atlas set heading, one per view; display clamp is masthead-only"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "*",
+        "files": [
+          ".superpowers/brainstorm/7574-1792264629/content/by-sketch.html"
+        ],
+        "createdAt": "2026-10-17T19:18:02.202Z",
+        "reason": "Claude: throwaway brainstorm mockup outside the product, not shipped UI"
       }
     ]
   }
