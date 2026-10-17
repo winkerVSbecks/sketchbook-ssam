@@ -5,9 +5,24 @@
  * full size) and the contact sheet (`g` — the current day as a minimap).
  * `s` stars keepers; `S` filters the stream to them. The URL hash tracks
  * the focused file so a refresh resumes in place.
+ *
+ * `v` regroups the same stream by sketch (labels from `/api/sketches`): the
+ * Ledger lists one row per sketch, and each sketch then stands in for a day,
+ * so `[`/`]`, the sheet and the loupe work unchanged inside it.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { buildTimeline, type Day, type Item, type Timeline } from './model.ts';
+import type { AttributionFile } from './attribution.ts';
+import {
+  buildLedger,
+  buildSketchTimeline,
+  buildTimeline,
+  UNLABELLED,
+  type Day,
+  type Item,
+  type LedgerRow,
+  type LedgerSort,
+  type Timeline,
+} from './model.ts';
 
 const fileUrl = (name: string) => `/output/${encodeURIComponent(name)}`;
 const thumbUrl = (name: string) => `/thumbs/${encodeURIComponent(name)}`;
@@ -16,6 +31,27 @@ const PRELOAD_OFFSETS = [1, -1, 2, -2, 3, -3];
 const PRELOAD_CACHE_MAX = 16;
 
 type Progress = { done: number; total: number };
+
+/** `null` while loading; `'missing'` when there is no usable sketches.json. */
+type Attributions = AttributionFile | null | 'missing';
+
+/** Defensive read of `/api/sketches`: anything without an object `files` counts as missing. */
+function asAttributions(body: unknown): AttributionFile | 'missing' {
+  if (typeof body !== 'object' || body === null) return 'missing';
+  const files = (body as { files?: unknown }).files;
+  return typeof files === 'object' && files !== null && !Array.isArray(files)
+    ? (body as AttributionFile)
+    : 'missing';
+}
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+const stampDate = (ts: number) => {
+  const d = new Date(ts);
+  return `${d.getFullYear()}.${pad2(d.getMonth() + 1)}.${pad2(d.getDate())}`;
+};
+const formatCount = (n: number) => n.toLocaleString('en-US');
+
+const SORT_LABEL: Record<LedgerSort, string> = { recent: 'most recent', count: 'count' };
 
 /** [keys, action] rows for the `?` overlay. */
 const SHORTCUTS: [string[], string][] = [
@@ -31,6 +67,8 @@ const SHORTCUTS: [string[], string][] = [
   [['space'], 'play / pause video'],
   [['s'], 'star as keeper'],
   [['S'], 'keepers only'],
+  [['v'], 'group by day / by sketch'],
+  [['n'], 'sort ledger: recent / count'],
   [['c'], 'copy file path'],
   [['o'], 'reveal in Finder'],
   [['?'], 'shortcuts'],
@@ -141,8 +179,7 @@ function Loupe({
           onError={(e) => {
             // A stale error from an already-replaced src must not mark the
             // export we've since moved on to.
-            if (e.currentTarget.src.endsWith(encodeURIComponent(item.name)))
-              onBroken(item.name);
+            if (e.currentTarget.src.endsWith(encodeURIComponent(item.name))) onBroken(item.name);
           }}
         />
       )}
@@ -226,7 +263,12 @@ function Sheet({
 }) {
   return (
     <div className="sheet">
-      <div className="sheet-grid" ref={gridRef} role="listbox" aria-label={`Contact sheet · ${day.label}`}>
+      <div
+        className="sheet-grid"
+        ref={gridRef}
+        role="listbox"
+        aria-label={`Contact sheet · ${day.label}`}
+      >
         {day.items.map((item) => (
           <SheetCell
             key={item.name}
@@ -235,6 +277,86 @@ function Sheet({
             kept={keepers.has(item.name)}
             onSelect={() => onSelect(item.name)}
             onOpen={() => onOpen(item.name)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function LedgerEntry({
+  row,
+  selected,
+  onOpen,
+}: {
+  row: LedgerRow;
+  selected: boolean;
+  onOpen: () => void;
+}) {
+  const ref = useRef<HTMLButtonElement>(null);
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    if (selected) ref.current?.scrollIntoView({ block: 'nearest' });
+  }, [selected]);
+  const sub = [row.path, row.deleted ? 'deleted' : null].filter(Boolean).join(' · ');
+  return (
+    <button
+      ref={ref}
+      type="button"
+      className={`ledger-row${selected ? ' is-selected' : ''}${row.key === UNLABELLED ? ' is-unlabelled' : ''}`}
+      aria-current={selected || undefined}
+      tabIndex={-1}
+      onClick={onOpen}
+    >
+      <img
+        src={`${thumbUrl(row.image.name)}${attempt > 0 ? `?retry=${attempt}` : ''}`}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        onError={() => {
+          // The cache may still be building; try again shortly, twice.
+          if (attempt < 2) setTimeout(() => setAttempt(attempt + 1), 5000);
+        }}
+      />
+      <span className="ledger-name">
+        <span className="ledger-label">{row.label}</span>
+        {sub && <span className="ledger-path">{sub}</span>}
+      </span>
+      <span className="ledger-count">{formatCount(row.count)}</span>
+      <span className="ledger-dates">
+        {row.first !== null && row.last !== null
+          ? `${stampDate(row.first)} → ${stampDate(row.last)}`
+          : ''}
+      </span>
+    </button>
+  );
+}
+
+/** One row per sketch group; the selected row is the focused file's group. */
+function Ledger({
+  rows,
+  sort,
+  selectedKey,
+  onOpen,
+}: {
+  rows: LedgerRow[];
+  sort: LedgerSort;
+  selectedKey: string | null;
+  onOpen: (key: string) => void;
+}) {
+  return (
+    <div className="ledger">
+      <div
+        className="ledger-list"
+        role="listbox"
+        aria-label={`Sketches · sorted by ${SORT_LABEL[sort]}`}
+      >
+        {rows.map((row) => (
+          <LedgerEntry
+            key={row.key}
+            row={row}
+            selected={row.key === selectedKey}
+            onOpen={() => onOpen(row.key)}
           />
         ))}
       </div>
@@ -254,6 +376,10 @@ export function App() {
   const [progress, setProgress] = useState<Progress | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
   const [broken, setBroken] = useState<Set<string>>(new Set());
+  const [mode, setMode] = useState<'day' | 'sketch'>('day');
+  const [ledgerOpen, setLedgerOpen] = useState(false);
+  const [sort, setSort] = useState<LedgerSort>('recent');
+  const [attributions, setAttributions] = useState<Attributions>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
@@ -268,13 +394,25 @@ export function App() {
     Promise.all([
       fetch('/api/index').then((r) => (r.ok ? r.json() : Promise.reject(new Error(`${r.status}`)))),
       fetch('/api/keepers').then((r) => (r.ok ? r.json() : [])),
+      // 404 (no file yet) and 503 (malformed) both read as missing; never fatal.
+      fetch('/api/sketches')
+        .then((r) => (r.ok ? r.json() : 'missing'))
+        .then(asAttributions)
+        .catch(() => 'missing' as const),
     ])
-      .then(([index, kept]: [{ root: string; files: string[] }, string[]]) => {
-        if (cancelled) return;
-        setRoot(index.root);
-        setNames(index.files);
-        setKeepers(new Set(kept));
-      })
+      .then(
+        ([index, kept, sketches]: [
+          { root: string; files: string[] },
+          string[],
+          AttributionFile | 'missing',
+        ]) => {
+          if (cancelled) return;
+          setRoot(index.root);
+          setNames(index.files);
+          setKeepers(new Set(kept));
+          setAttributions(sketches);
+        },
+      )
       .catch((err) => !cancelled && setLoadError(String(err)));
     return () => {
       cancelled = true;
@@ -282,11 +420,33 @@ export function App() {
   }, []);
 
   const full = useMemo(() => (names ? buildTimeline(names) : null), [names]);
-  const kept = useMemo(
-    () => (full ? buildTimeline(full.items.filter((i) => keepers.has(i.name)).map((i) => i.name)) : null),
+  const keptNames = useMemo(
+    () => (full ? full.items.filter((i) => keepers.has(i.name)).map((i) => i.name) : null),
     [full, keepers],
   );
-  const active: Timeline | null = keepersOnly ? kept : full;
+  const kept = useMemo(() => (keptNames ? buildTimeline(keptNames) : null), [keptNames]);
+
+  // By-sketch mode: the same names regrouped, one `Day` per sketch.
+  const files = attributions && attributions !== 'missing' ? attributions.files : null;
+  const sketchView = mode === 'sketch' && files !== null;
+  const sketchMissing = mode === 'sketch' && files === null;
+  const sketchTimeline = useMemo(() => {
+    if (!files || !names || !keptNames) return null;
+    return buildSketchTimeline(
+      keepersOnly ? keptNames : names,
+      (name) => files[name]?.sketch ?? null,
+      sort,
+    );
+  }, [files, names, keptNames, keepersOnly, sort]);
+
+  const dayTimeline: Timeline | null = keepersOnly ? kept : full;
+  const active: Timeline | null = sketchView ? sketchTimeline : dayTimeline;
+  const ledgerRows = useMemo(
+    () =>
+      sketchView && sketchTimeline && files ? buildLedger(sketchTimeline, keepers, files) : [],
+    [sketchView, sketchTimeline, keepers, files],
+  );
+  const showLedger = sketchView && ledgerOpen;
 
   const byName = useMemo(
     () => new Map((active?.items ?? []).map((i) => [i.name, i.index])),
@@ -402,6 +562,28 @@ export function App() {
     setSheetOpen(open);
   };
 
+  const toggleMode = () => {
+    if (mode === 'day') {
+      setMode('sketch');
+      setLedgerOpen(true);
+      setSheetOpen(false);
+    } else {
+      setMode('day');
+      setLedgerOpen(false);
+    }
+  };
+
+  /** Open one sketch group in the contact sheet, cursor on its first export. */
+  const openGroup = (key: string) => {
+    const group = active?.days.find((d) => d.key === key);
+    const first = group?.items[0];
+    if (!first) return;
+    setCursorName(first.name);
+    sheetAnchor.current = first.name;
+    setSheetOpen(true);
+    setLedgerOpen(false);
+  };
+
   const toggleKeeper = (name: string) => {
     const nowKept = !keepers.has(name);
     const next = new Set(keepers);
@@ -434,13 +616,15 @@ export function App() {
   const toggleKeepersOnly = () => {
     if (!keepersOnly) {
       if (current && !keepers.has(current.name) && keepers.size > 0 && full) {
-        // Snap to the nearest keeper, searching outward from here.
-        const idx = current.index;
+        // Snap to the nearest keeper, searching outward from here. By name, not
+        // `current.index`: in sketch mode that indexes the regrouped stream.
+        const idx = full.items.findIndex((i) => i.name === current.name);
         for (let d = 1; d < full.items.length; d++) {
           const fwd = full.items[idx + d];
           const back = full.items[idx - d];
-          if (fwd && keepers.has(fwd.name)) return setKeepersOnly(true), setCursorName(fwd.name);
-          if (back && keepers.has(back.name)) return setKeepersOnly(true), setCursorName(back.name);
+          if (fwd && keepers.has(fwd.name)) return (setKeepersOnly(true), setCursorName(fwd.name));
+          if (back && keepers.has(back.name))
+            return (setKeepersOnly(true), setCursorName(back.name));
         }
       }
       setKeepersOnly(true);
@@ -478,6 +662,58 @@ export function App() {
       return;
     }
     const handled = () => e.preventDefault();
+    if (e.key === 'v') {
+      handled();
+      toggleMode();
+      return;
+    }
+    if (sketchMissing) {
+      if (e.key === '?') {
+        handled();
+        setHelpOpen(true);
+      }
+      return;
+    }
+    if (showLedger) {
+      // The ledger's selection is the focused file's group, so moving a row
+      // is moving to the first export of the neighbouring sketch.
+      switch (e.key) {
+        case 'ArrowDown':
+        case 'j':
+          handled();
+          stepDay(1);
+          break;
+        case 'ArrowUp':
+        case 'k':
+          handled();
+          stepDay(-1);
+          break;
+        case 'Home':
+        case 'End': {
+          handled();
+          const target = e.key === 'Home' ? active?.days[0] : active?.days.at(-1);
+          if (target?.items[0]) setCursorName(target.items[0].name);
+          break;
+        }
+        case 'Enter':
+          handled();
+          if (day) openGroup(day.key);
+          break;
+        case 'n':
+          handled();
+          setSort(sort === 'recent' ? 'count' : 'recent');
+          break;
+        case 'S':
+          handled();
+          toggleKeepersOnly();
+          break;
+        case '?':
+          handled();
+          setHelpOpen(true);
+          break;
+      }
+      return;
+    }
     switch (e.key) {
       case 'ArrowRight':
         handled();
@@ -530,7 +766,12 @@ export function App() {
         }
         break;
       case 'Escape':
-        if (sheetOpen) {
+        if (sketchView) {
+          // From the sheet or the loupe, back to the ledger on this group.
+          handled();
+          setSheetOpen(false);
+          setLedgerOpen(true);
+        } else if (sheetOpen) {
           handled();
           if (sheetAnchor.current) setCursorName(sheetAnchor.current);
           setSheetOpen(false);
@@ -593,12 +834,18 @@ export function App() {
   const keepersEmpty = keepersOnly && (!kept || kept.items.length === 0);
   const idxInDay = current && day ? day.items.findIndex((i) => i.name === current.name) : 0;
   const thumbsBuilding = progress && progress.total > 0 && progress.done < progress.total;
+  // Ledger and the missing-labels note replace the per-file chrome.
+  const listView = showLedger || sketchMissing;
+  const sketchCount = ledgerRows.filter((r) => r.key !== UNLABELLED).length;
+  const unlabelledCount = ledgerRows.find((r) => r.key === UNLABELLED)?.count ?? 0;
 
   return (
     <div className="app">
       <header className="bar">
-        <div className="bar-day" aria-label="Day">
-          {day && !keepersEmpty ? (
+        <div className="bar-day" aria-label={sketchView ? 'Sketch' : 'Day'}>
+          {listView ? (
+            'by sketch'
+          ) : day && !keepersEmpty ? (
             <>
               {day.label}
               <span className="quiet">
@@ -611,7 +858,13 @@ export function App() {
           )}
         </div>
         <div className="bar-file">
-          {current && !keepersEmpty && (
+          {showLedger && !keepersEmpty && (
+            <span>
+              {formatCount(sketchCount)} {sketchCount === 1 ? 'sketch' : 'sketches'}
+              <span className="quiet"> · sort: {SORT_LABEL[sort]}</span>
+            </span>
+          )}
+          {current && !keepersEmpty && !listView && (
             <>
               <button
                 type="button"
@@ -636,9 +889,10 @@ export function App() {
               building thumbnails · {progress.done}/{progress.total}
             </span>
           )}
-          {active && day && !keepersEmpty && (
+          {showLedger && !keepersEmpty && <span>{formatCount(unlabelledCount)} unlabelled</span>}
+          {active && day && !keepersEmpty && !listView && (
             <span>
-              day {day.number}/{active.days.length}
+              {sketchView ? 'sketch' : 'day'} {day.number}/{active.days.length}
             </span>
           )}
           {keepersOnly && <span>keepers · {kept?.items.length ?? 0}</span>}
@@ -657,7 +911,7 @@ export function App() {
         className="scrubber"
         aria-hidden="true"
         onClick={(e) => {
-          if (!day) return;
+          if (!day || listView) return;
           const rect = e.currentTarget.getBoundingClientRect();
           const frac = (e.clientX - rect.left) / rect.width;
           const target = Math.min(
@@ -667,7 +921,7 @@ export function App() {
           setCursorName(day.items[target]!.name);
         }}
       >
-        {day && day.items.length > 0 && (
+        {day && day.items.length > 0 && !listView && (
           <span
             className="scrubber-mark"
             style={{ left: `${((idxInDay + 0.5) / day.items.length) * 100}%` }}
@@ -678,10 +932,16 @@ export function App() {
       <main className="stage">
         {keepersEmpty ? (
           <p className="empty">
-            No keepers yet — press <code>s</code> on anything worth keeping.
-            {' '}
-            <code>S</code> returns to everything.
+            No keepers yet — press <code>s</code> on anything worth keeping. <code>S</code> returns
+            to everything.
           </p>
+        ) : sketchMissing ? (
+          <p className="empty">
+            No sketch labels yet — run <code>npm run tag:output</code>. <code>v</code> returns to
+            days.
+          </p>
+        ) : showLedger ? (
+          <Ledger rows={ledgerRows} sort={sort} selectedKey={day?.key ?? null} onOpen={openGroup} />
         ) : sheetOpen && day && current ? (
           <Sheet
             day={day}

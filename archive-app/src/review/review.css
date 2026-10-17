@@ -10,15 +10,21 @@
   --img-bg: #f4f4f3;
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
 }
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-html, body, #root { height: 100%; }
+html,
+body,
+#root {
+  height: 100%;
+}
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   background: var(--bg);
   color: var(--fg);
   line-height: 1.5;
@@ -81,7 +87,9 @@ body {
   font-weight: 400;
   white-space: nowrap;
 }
-.flash:empty { display: none; }
+.flash:empty {
+  display: none;
+}
 .bar-meta {
   display: flex;
   justify-content: flex-end;
@@ -121,7 +129,9 @@ body {
 .star[aria-pressed='true'] {
   color: var(--fg);
 }
-.star svg { display: block; }
+.star svg {
+  display: block;
+}
 .help-button {
   font-size: 0.8125rem;
   line-height: 1;
@@ -181,7 +191,9 @@ body {
   font-size: 0.9375rem;
   font-weight: 500;
 }
-.loupe-broken .quiet { font-size: 0.8125rem; }
+.loupe-broken .quiet {
+  font-size: 0.8125rem;
+}
 /* Pointer path for prev/next; keyboard users have the arrows. */
 .step-zone {
   position: absolute;
@@ -192,8 +204,14 @@ body {
   border: none;
   background: none;
 }
-.step-prev { left: 0; cursor: w-resize; }
-.step-next { right: 0; cursor: e-resize; }
+.step-prev {
+  left: 0;
+  cursor: w-resize;
+}
+.step-next {
+  right: 0;
+  cursor: e-resize;
+}
 
 /* ---------- contact sheet ---------- */
 .sheet {
@@ -263,6 +281,77 @@ body {
   border: 2px solid #fff;
 }
 
+/* ---------- ledger (by sketch) ---------- */
+/* One row per sketch, a drawer label in the plan chest. Rows share the list's
+   column tracks (subgrid) so counts and date spans line up down the page. */
+.ledger {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  padding: 0.25rem 1.25rem 2.5rem;
+  animation: sheet-in 160ms var(--ease-out-quart);
+}
+.ledger-list {
+  display: grid;
+  grid-template-columns: 56px 1fr auto auto;
+  column-gap: 16px;
+}
+.ledger-row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+  align-items: center;
+  padding: 8px 0;
+  border: none;
+  border-bottom: 1px solid var(--hairline);
+  background: none;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg);
+  text-align: left;
+  cursor: pointer;
+}
+.ledger-row.is-selected {
+  background: var(--img-bg);
+}
+.ledger-row img {
+  display: block;
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  background: var(--img-bg);
+}
+.ledger-row.is-unlabelled img {
+  opacity: 0.45;
+}
+.ledger-name {
+  display: grid;
+  min-width: 0;
+}
+.ledger-label,
+.ledger-path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ledger-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.ledger-path {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.ledger-count {
+  text-align: right;
+}
+.ledger-dates {
+  text-align: right;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
 /* ---------- shortcuts overlay ---------- */
 .help {
   border: 1px solid var(--hairline);
@@ -282,14 +371,18 @@ body {
   backdrop-filter: blur(8px) saturate(180%);
   -webkit-backdrop-filter: blur(8px) saturate(180%);
 }
-.help table { border-collapse: collapse; }
+.help table {
+  border-collapse: collapse;
+}
 .help th {
   text-align: left;
   font-weight: 400;
   padding: 0.25rem 2rem 0.25rem 0;
   white-space: nowrap;
 }
-.help td { padding: 0.25rem 0; }
+.help td {
+  padding: 0.25rem 0;
+}
 kbd {
   font: inherit;
   font-size: 0.75rem;
@@ -298,7 +391,9 @@ kbd {
   padding: 0.1em 0.5em;
   border-radius: 3px;
 }
-.kbd-alt { margin-left: 0.375rem; }
+.kbd-alt {
+  margin-left: 0.375rem;
+}
 
 /* ---------- empty & error states ---------- */
 .empty {
@@ -321,7 +416,10 @@ kbd {
   outline-offset: 2px;
 }
 @media (prefers-reduced-motion: reduce) {
-  .sheet { animation: none; }
+  .sheet,
+  .ledger {
+    animation: none;
+  }
   .scrubber-mark,
   .star,
   .help-button {
@@ -340,8 +438,21 @@ kbd {
     grid-row: 2;
     justify-content: flex-start;
   }
-  .loupe { padding: 1rem 1rem 1.5rem; }
-  .sheet { padding: 1rem 1rem 2rem; }
+  .loupe {
+    padding: 1rem 1rem 1.5rem;
+  }
+  .sheet {
+    padding: 1rem 1rem 2rem;
+  }
+  .ledger {
+    padding: 0 1rem 2rem;
+  }
+  .ledger-list {
+    grid-template-columns: 56px 1fr auto;
+  }
+  .ledger-dates {
+    display: none;
+  }
   .sheet-grid {
     grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
   }
