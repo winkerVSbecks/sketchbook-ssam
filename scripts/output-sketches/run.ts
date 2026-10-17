@@ -6,10 +6,7 @@ import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import {
   APIConnectionError,
   APIError,
-  AuthenticationError,
   BadRequestError,
-  PermissionDeniedError,
-  RateLimitError,
   UnprocessableEntityError,
 } from '@typesafe-ai/sdk';
 import {
@@ -111,16 +108,8 @@ type One = { entry: FileAttribution; tokens: number; failure?: 'file' | 'ref' };
 /** Failures that say nothing about one file: stop (after a save) and let a rerun resume. */
 function isFatal(err: unknown): boolean {
   if (err instanceof BadRequestError || err instanceof UnprocessableEntityError) return false;
-  if (
-    err instanceof AuthenticationError ||
-    err instanceof PermissionDeniedError ||
-    err instanceof RateLimitError ||
-    err instanceof APIConnectionError
-  ) {
-    return true;
-  }
-  if (err instanceof APIError) return !(err.status >= 400 && err.status < 500);
-  return false;
+  // Any other API error (401, 403, 404, 429, 5xx, ...) may be request-wide: abort, resume later.
+  return err instanceof APIError || err instanceof APIConnectionError;
 }
 
 async function tagOne(
@@ -189,7 +178,7 @@ async function tagOne(
     return { entry, tokens: round.inputTokens };
   } catch (err) {
     if (isFatal(err)) throw err;
-    // 4xx for this file, or a malformed response: record it so a rerun does not stall on it.
+    // 400/422 for this file, or a malformed response: record it so a rerun does not stall on it.
     return { tokens: 0, failure: 'file', entry: unlabelled('error', ids, taggedAt) };
   }
 }

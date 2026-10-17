@@ -6,7 +6,12 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { AuthenticationError, BadRequestError, type SystemOneRequest } from '@typesafe-ai/sdk';
+import {
+  AuthenticationError,
+  BadRequestError,
+  NotFoundError,
+  type SystemOneRequest,
+} from '@typesafe-ai/sdk';
 import sharp from 'sharp';
 import {
   applyAccept,
@@ -668,6 +673,23 @@ await atest('auth error aborts after saving', async () => {
     (e) => e instanceof AuthenticationError,
   );
   assert.equal(calls, 2);
+  assert.deepEqual(deps.saves.at(-1), [names[0]]);
+});
+
+await atest('404 aborts after saving and is not recorded as error', async () => {
+  let calls = 0;
+  const deps = mkDeps({
+    ask: async (req: SystemOneRequest) => {
+      calls += 1;
+      if (calls === 2) throw apiError(NotFoundError);
+      return fakeAnswer('c00', keysOf(req), 1);
+    },
+  });
+  const names = [stamp('multi', 1), stamp('multi', 2), stamp('multi', 3)];
+  await assert.rejects(
+    tagFiles(names, emptyRun(), deps, runOpts),
+    (e) => e instanceof NotFoundError,
+  );
   assert.deepEqual(deps.saves.at(-1), [names[0]]);
 });
 
