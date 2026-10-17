@@ -11,7 +11,7 @@
  * so `[`/`]`, the sheet and the loupe work unchanged inside it.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { AttributionFile } from './attribution.ts';
+import type { AttributionFile, FileAttribution } from './attribution.ts';
 import {
   buildLedger,
   buildSketchTimeline,
@@ -35,13 +35,30 @@ type Progress = { done: number; total: number };
 /** `null` while loading; `'missing'` when there is no usable sketches.json. */
 type Attributions = AttributionFile | null | 'missing';
 
-/** Defensive read of `/api/sketches`: anything without an object `files` counts as missing. */
+const isStringOrNull = (v: unknown) => v === null || typeof v === 'string';
+
+/** A readable entry: an object whose `sketch` (and `path`, if present) is a string or null. */
+function isUsableEntry(entry: unknown): entry is FileAttribution {
+  if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) return false;
+  const { sketch, path } = entry as { sketch?: unknown; path?: unknown };
+  return isStringOrNull(sketch) && (path === undefined || isStringOrNull(path));
+}
+
+/**
+ * Defensive read of `/api/sketches`. The server only rejects unparseable JSON, so the shape is
+ * checked here: no object `files` counts as missing, and unusable entries are dropped (those
+ * files then read as unlabelled).
+ */
 function asAttributions(body: unknown): AttributionFile | 'missing' {
   if (typeof body !== 'object' || body === null) return 'missing';
-  const files = (body as { files?: unknown }).files;
-  return typeof files === 'object' && files !== null && !Array.isArray(files)
-    ? (body as AttributionFile)
-    : 'missing';
+  const raw = (body as { files?: unknown }).files;
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return 'missing';
+  // No prototype, so a filename like `constructor` never resolves to an inherited member.
+  const files: AttributionFile['files'] = Object.create(null);
+  for (const [name, entry] of Object.entries(raw)) {
+    if (isUsableEntry(entry)) files[name] = entry;
+  }
+  return { ...(body as AttributionFile), files };
 }
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
@@ -63,7 +80,7 @@ const SHORTCUTS: [string[], string][] = [
   [['Home', 'End'], 'first / last of the day'],
   [['g'], 'toggle contact sheet'],
   [['↵'], 'open selection in loupe'],
-  [['esc'], 'close sheet without moving'],
+  [['esc'], 'close sheet · back to ledger in sketch mode'],
   [['space'], 'play / pause video'],
   [['s'], 'star as keeper'],
   [['S'], 'keepers only'],
@@ -430,14 +447,19 @@ export function App() {
   const files = attributions && attributions !== 'missing' ? attributions.files : null;
   const sketchView = mode === 'sketch' && files !== null;
   const sketchMissing = mode === 'sketch' && files === null;
-  const sketchTimeline = useMemo(() => {
-    if (!files || !names || !keptNames) return null;
-    return buildSketchTimeline(
-      keepersOnly ? keptNames : names,
-      (name) => files[name]?.sketch ?? null,
-      sort,
-    );
-  }, [files, names, keptNames, keepersOnly, sort]);
+  const sketchOf = useMemo(
+    () => (files ? (name: string) => files[name]?.sketch ?? null : null),
+    [files],
+  );
+  const sketchNames = keepersOnly ? keptNames : names;
+  // Only regroup while in sketch mode: day mode shouldn't pay for it on every star.
+  const sketchTimeline = useMemo(
+    () =>
+      mode === 'sketch' && sketchOf && sketchNames
+        ? buildSketchTimeline(sketchNames, sketchOf, sort)
+        : null,
+    [mode, sketchOf, sketchNames, sort],
+  );
 
   const dayTimeline: Timeline | null = keepersOnly ? kept : full;
   const active: Timeline | null = sketchView ? sketchTimeline : dayTimeline;
@@ -567,6 +589,13 @@ export function App() {
       setMode('sketch');
       setLedgerOpen(true);
       setSheetOpen(false);
+      // R9: most exports are unlabelled, so entering from one would open the ledger on its last
+      // row. Start on the first sketch instead, whenever a labelled group exists (Unlabelled
+      // always sorts last, so the first group is labelled if any is).
+      if (current && sketchOf && sketchNames && sketchOf(current.name) === null) {
+        const first = buildSketchTimeline(sketchNames, sketchOf, sort).days[0];
+        if (first && first.key !== UNLABELLED && first.items[0]) setCursorName(first.items[0].name);
+      }
     } else {
       setMode('day');
       setLedgerOpen(false);
@@ -671,6 +700,10 @@ export function App() {
       if (e.key === '?') {
         handled();
         setHelpOpen(true);
+      } else if (e.key === 'S') {
+        // The keepers-empty note (shown over this one) promises `S` returns to everything.
+        handled();
+        toggleKeepersOnly();
       }
       return;
     }
