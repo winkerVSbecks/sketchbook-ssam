@@ -5,6 +5,10 @@
  *   GET  /api/index          — top-level media files in <repo>/output
  *   GET  /api/keepers        — starred filenames (persisted JSON)
  *   POST /api/keepers        — { name, kept } toggle
+ *   GET  /api/sketches       — output file → sketch attribution (sketches.json)
+ *   GET  /api/pilot          — pilot labelling set (pilot.json)
+ *   GET  /api/pilot-truth    — hand labels { name: sketch | null }
+ *   POST /api/pilot-truth    — { name, sketch: string | null } set one label
  *   POST /api/reveal         — { name } → reveal the file in Finder
  *   GET  /api/progress       — thumbnail cache progress { done, total }
  *   GET  /output/<name>      — original file, with Range support for video
@@ -34,6 +38,9 @@ const reviewDir = join(outputDir, '.review');
 const thumbsDir = join(reviewDir, 'thumbs');
 const keepersPath = join(reviewDir, 'keepers.json');
 const failedPath = join(reviewDir, 'failed.json');
+const sketchesPath = join(reviewDir, 'sketches.json');
+const pilotPath = join(reviewDir, 'pilot.json');
+const pilotTruthPath = join(reviewDir, 'pilot-truth.json');
 
 const THUMB_SIZE = 320;
 const PREWARM_CONCURRENCY = 3;
@@ -58,8 +65,7 @@ const extOf = (name: string) => {
   return dot === -1 ? '' : name.slice(dot).toLowerCase();
 };
 
-const isMedia = (name: string) =>
-  IMAGE_EXT.has(extOf(name)) || VIDEO_EXT.has(extOf(name));
+const isMedia = (name: string) => IMAGE_EXT.has(extOf(name)) || VIDEO_EXT.has(extOf(name));
 
 async function listMedia(): Promise<string[]> {
   const entries = await readdir(outputDir, { withFileTypes: true });
@@ -145,7 +151,20 @@ async function generateThumb(name: string, dest: string): Promise<void> {
     // don't depend on the bundled ffmpeg having libwebp.
     const { stdout } = await execFileAsync(
       ffmpeg.path,
-      ['-hide_banner', '-loglevel', 'error', '-i', src, '-frames:v', '1', '-f', 'image2pipe', '-vcodec', 'png', 'pipe:1'],
+      [
+        '-hide_banner',
+        '-loglevel',
+        'error',
+        '-i',
+        src,
+        '-frames:v',
+        '1',
+        '-f',
+        'image2pipe',
+        '-vcodec',
+        'png',
+        'pipe:1',
+      ],
       { encoding: 'buffer', maxBuffer: 256 * 1024 * 1024 },
     );
     if (stdout.length === 0) throw new Error('ffmpeg produced no frame');
@@ -239,9 +258,7 @@ export function reviewServer(): Plugin {
   async function prewarm(): Promise<void> {
     const names = await listMedia();
     progress.total = names.length;
-    const cached = new Set(
-      (await readdir(thumbsDir)).filter((n) => n.endsWith('.webp')),
-    );
+    const cached = new Set((await readdir(thumbsDir)).filter((n) => n.endsWith('.webp')));
     const missing = names.filter((n) => !cached.has(`${n}.webp`));
     progress.done = names.length - missing.length;
 
@@ -267,6 +284,34 @@ export function reviewServer(): Plugin {
       return Array.isArray(parsed) ? parsed.filter((n) => typeof n === 'string') : [];
     } catch {
       return [];
+    }
+  }
+
+  async function readPilotTruth(): Promise<Record<string, string | null>> {
+    try {
+      const parsed = JSON.parse(await readFile(pilotTruthPath, 'utf8'));
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+
+  /** Send a JSON file from .review/ as-is: 404 when absent, 503 when unparseable. */
+  async function sendReviewJson(res: ServerResponse, path: string): Promise<void> {
+    let text: string;
+    try {
+      text = await readFile(path, 'utf8');
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+        sendJson(res, { error: 'missing' }, 404);
+        return;
+      }
+      throw err;
+    }
+    try {
+      sendJson(res, JSON.parse(text));
+    } catch {
+      sendJson(res, { error: 'malformed' }, 503);
     }
   }
 
@@ -313,6 +358,41 @@ export function reviewServer(): Plugin {
             if (kept) keepers.add(name);
             else keepers.delete(name);
             await writeFile(keepersPath, JSON.stringify([...keepers].sort(), null, 2));
+            sendJson(res, { ok: true });
+            return;
+          }
+
+          if (route === '/api/sketches' && req.method === 'GET') {
+            await sendReviewJson(res, sketchesPath);
+            return;
+          }
+
+          if (route === '/api/pilot' && req.method === 'GET') {
+            await sendReviewJson(res, pilotPath);
+            return;
+          }
+
+          if (route === '/api/pilot-truth' && req.method === 'GET') {
+            sendJson(res, await readPilotTruth());
+            return;
+          }
+
+          if (route === '/api/pilot-truth' && req.method === 'POST') {
+            const { name, sketch } = JSON.parse(await readBody(req));
+            if (typeof name !== 'string' || !safeOutputPath(name)) {
+              sendJson(res, { error: 'bad name' }, 400);
+              return;
+            }
+            if (sketch !== null && typeof sketch !== 'string') {
+              sendJson(res, { error: 'bad sketch' }, 400);
+              return;
+            }
+            const truth = await readPilotTruth();
+            truth[name] = sketch;
+            const sorted = Object.fromEntries(
+              Object.entries(truth).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
+            );
+            await writeFile(pilotTruthPath, JSON.stringify(sorted, null, 2));
             sendJson(res, { ok: true });
             return;
           }
