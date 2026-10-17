@@ -43,6 +43,12 @@ import {
 } from './output-sketches/images.ts';
 import { askSketch, BATCH_SIZE, type AskFn } from './output-sketches/jev.ts';
 import {
+  buildPilotSheet,
+  samplePilot,
+  scorePilot,
+  type PilotItem,
+} from './output-sketches/pilot.ts';
+import {
   readAttributions,
   rethreshold,
   tagFiles,
@@ -935,6 +941,154 @@ test('keepers-only input drops empty sketches', () => {
     t.days.map((d) => d.key),
     [SK_A],
   );
+});
+
+const fileStamp = (d: Date) =>
+  `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}-12.00.00`;
+
+function pilotFixture() {
+  const names: string[] = [];
+  for (let i = 1; i <= 60; i += 1) {
+    names.push(`arcs-reduction-${fileStamp(new Date(2025, 9, 1 + (i % 28)))}-${i}.png`);
+  }
+  for (let i = 1; i <= 5; i += 1)
+    names.push(`arcs-reduction-${fileStamp(new Date(2025, 10, i))}.png`);
+  for (let i = 1; i <= 50; i += 1)
+    names.push(`${fileStamp(new Date(2023, i % 12, 1 + (i % 28)))}.png`);
+  for (let i = 1; i <= 20; i += 1)
+    names.push(`${fileStamp(new Date(2024, i % 12, 1 + (i % 28)))}.png`);
+  for (let i = 1; i <= 40; i += 1)
+    names.push(`${fileStamp(new Date(2026, i % 9, 1 + (i % 28)))}.png`);
+  names.push(`${fileStamp(new Date(2025, 2, 3))}-abc1234.png`); // one entry file: hash group
+  names.push(`${fileStamp(new Date(2025, 2, 4))}-def5678.png`); // two entry files: random
+  const history = fakeHistory({
+    commits: [
+      commitAt('abc1234ffff', EXPORT_TS, P('solo')),
+      commitAt('def5678ffff', EXPORT_TS, P('one'), P('two')),
+    ],
+    prefixFamilies: new Map([['arcs-reduction', new Set([P('arcs/reduction')])]]),
+  });
+  return { names, history };
+}
+
+test('samplePilot is deterministic and capped', () => {
+  const { names, history } = pilotFixture();
+  const a = samplePilot(names, history, 150, 7);
+  const b = samplePilot(names, history, 150, 7);
+  assert.deepEqual(a, b);
+  const october = a.filter(
+    (i) => i.group === 'prefix' && i.name.startsWith('arcs-reduction-2025.10.'),
+  );
+  assert.ok(october.length > 0 && october.length <= 30, `october arcs ${october.length}`);
+  const hand = a.filter((i) => i.group === 'hand');
+  assert.equal(hand.length, 30);
+  assert.ok(hand.every((i) => /^202[34]\./.test(i.name)));
+  assert.equal(new Set(a.map((i) => i.name)).size, a.length);
+  assert.equal(a.filter((i) => i.group === 'prefix').length, 30 + 5);
+  const hash = a.filter((i) => i.group === 'hash');
+  assert.equal(hash.length, 1);
+  assert.deepEqual(hash[0]?.truth, ['sketches/solo']);
+  assert.equal(
+    a.filter((i) => i.group === 'random').length,
+    150 - a.filter((i) => i.group !== 'random').length,
+  );
+  assert.notDeepEqual(
+    samplePilot(names, history, 150, 8).filter((i) => i.group === 'random'),
+    a.filter((i) => i.group === 'random'),
+  );
+  // mandatory groups exceed n
+  assert.ok(samplePilot(names, history, 10, 7).length > 10);
+});
+
+const pItem = (name: string, group: PilotItem['group'], truth: string[] | null): PilotItem => ({
+  name,
+  group,
+  truth,
+});
+const withAnswer = (choice: string | null, confidence: number) => entry(answer(choice, confidence));
+
+test('scorePilot counts family picks as correct', () => {
+  const items = [pItem('f1.png', 'prefix', ['sketches/a', 'sketches/b'])];
+  const r = scorePilot(items, { 'f1.png': withAnswer('sketches/b', 0.9) }, {}, [0.5]);
+  assert.equal(r.prefix.rows[0]?.correct, 1);
+  assert.equal(r.prefix.rows[0]?.precision, 1);
+});
+
+test('scorePilot precision and coverage by threshold', () => {
+  const items = ['1', '2', '3'].map((n) => pItem(`${n}.png`, 'hash', ['sketches/a']));
+  const results = {
+    '1.png': withAnswer('sketches/a', 0.95),
+    '2.png': withAnswer('sketches/a', 0.75),
+    '3.png': withAnswer('sketches/x', 0.45),
+  };
+  const r = scorePilot(items, results, {}, [0.3, 0.7, 0.9]);
+  const [t3, t7, t9] = r.hash.rows;
+  assert.deepEqual([t7?.labelled, t7?.correct, t7?.precision, t7?.coverage], [2, 2, 1, 2 / 3]);
+  assert.deepEqual([t3?.labelled, t3?.correct, t3?.precision], [3, 2, 2 / 3]);
+  assert.deepEqual([t9?.labelled, t9?.precision], [1, 1]);
+  assert.equal(r.hash.scored, 3);
+});
+
+test('scorePilot counts files without an answer as scored and unlabelled', () => {
+  const items = [
+    pItem('1.png', 'prefix', ['sketches/a']),
+    pItem('2.png', 'prefix', ['sketches/a']),
+  ];
+  const results = { '1.png': withAnswer('sketches/a', 0.9), '2.png': entry(undefined) };
+  const row = scorePilot(items, results, {}, [0.5]).prefix.rows[0];
+  assert.deepEqual([row?.labelled, row?.coverage], [1, 0.5]);
+});
+
+test('random group is not scored for precision', () => {
+  const r = scorePilot(
+    [pItem('r.png', 'random', null)],
+    { 'r.png': withAnswer('sketches/a', 0.9) },
+    {},
+    [0.5],
+  );
+  assert.deepEqual([r.random.rows[0]?.labelled, r.random.rows[0]?.precision], [1, null]);
+});
+
+test('hand none truth rewards abstaining', () => {
+  const items = [
+    pItem('h1.png', 'hand', null),
+    pItem('h2.png', 'hand', null),
+    pItem('h3.png', 'hand', null),
+  ];
+  const results = {
+    'h1.png': withAnswer('sketches/a', 0.9),
+    'h2.png': withAnswer('sketches/a', 0.4),
+    'h3.png': withAnswer('sketches/a', 0.9),
+  };
+  const truth = { 'h1.png': null, 'h2.png': null, 'h3.png': 'sketches/a' };
+  const r = scorePilot(items, results, truth, [0.7]);
+  // h1 accepted against none: wrong; h2 abstained against none: right; h3 accepted and right.
+  assert.equal(r.hand.rows[0]?.correct, 2);
+  assert.equal(r.hand.rows[0]?.labelled, 2);
+  assert.equal(r.hand.rows[0]?.precision, 0.5);
+  // an item the human has not labelled yet is not scored
+  assert.equal(scorePilot(items, results, { 'h1.png': null }, [0.7]).hand.scored, 1);
+});
+
+test('buildPilotSheet lists candidates with reference urls', () => {
+  const h = fakeHistory({
+    commits: [commitAt('c1', EXPORT_TS, P('a'), P('b'))],
+    existsAtHead: (p) => p !== P('b'),
+  });
+  const archive = new Map([
+    ['sketches/a', { id: 'sketches/a', cloudinary: { url: 'https://x/image/upload/v1/a.png' } }],
+    ['sketches/b', { id: 'sketches/b', cloudinary: { url: 'https://x/image/upload/v1/b.png' } }],
+  ]) as unknown as Parameters<typeof buildPilotSheet>[2];
+  const sheet = buildPilotSheet(
+    [pItem(`${exportName}.png`, 'hand', null), pItem('other.png', 'random', null)],
+    h,
+    archive,
+  );
+  assert.equal(sheet.files.length, 1);
+  assert.deepEqual(sheet.files[0]?.candidates, [
+    { id: 'sketches/a', path: P('a'), ref: referenceUrl('https://x/image/upload/v1/a.png') },
+    { id: 'sketches/b', path: P('b'), ref: null },
+  ]);
 });
 
 console.log(`${passed} tests passed`);

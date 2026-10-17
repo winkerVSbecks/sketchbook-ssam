@@ -16,6 +16,7 @@ import {
   buildLedger,
   buildSketchTimeline,
   buildTimeline,
+  parseName,
   UNLABELLED,
   type Day,
   type Item,
@@ -381,7 +382,7 @@ function Ledger({
   );
 }
 
-export function App() {
+function LightTable() {
   const [names, setNames] = useState<string[] | null>(null);
   const [root, setRoot] = useState('');
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -1001,4 +1002,124 @@ export function App() {
       <Help open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   );
+}
+
+/* ---------- /pilot: hand-label files so the attribution pilot has known answers ---------- */
+
+type PilotCandidate = { id: string; path: string; ref: string | null };
+type PilotFile = { name: string; candidates: PilotCandidate[] };
+type PilotState = { files: PilotFile[]; truth: Record<string, string | null> };
+
+const PILOT_NONE_NOTE = 'No pilot yet — run `npm run tag:output -- --pilot 300`.';
+
+/** An image with a placeholder when it will not load. */
+function PilotImage({ src, alt, size }: { src: string; alt: string; size: number }) {
+  const [failed, setFailed] = useState(false);
+  return failed ? (
+    <span className="pilot-missing" style={{ width: size, height: size }}>
+      no image
+    </span>
+  ) : (
+    <img src={src} alt={alt} width={size} onError={() => setFailed(true)} />
+  );
+}
+
+function PilotSheet() {
+  const [state, setState] = useState<PilotState | 'missing' | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let live = true;
+    (async () => {
+      const [pilot, truth] = await Promise.all([fetch('/api/pilot'), fetch('/api/pilot-truth')]);
+      if (pilot.status === 404) return live && setState('missing');
+      if (!pilot.ok || !truth.ok) throw new Error('could not read the pilot files');
+      const body = (await pilot.json()) as { files?: PilotFile[] };
+      if (live) setState({ files: body.files ?? [], truth: await truth.json() });
+    })().catch((err) => live && setError(String(err instanceof Error ? err.message : err)));
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  const choose = async (name: string, sketch: string | null) => {
+    const res = await fetch('/api/pilot-truth', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name, sketch }),
+    });
+    if (!res.ok) {
+      setError(`could not save the label for ${name}`);
+      return;
+    }
+    setError(null);
+    setState((cur) =>
+      cur && cur !== 'missing' ? { ...cur, truth: { ...cur.truth, [name]: sketch } } : cur,
+    );
+  };
+
+  if (state === null) return <div className="pilot empty">{error ?? 'Loading…'}</div>;
+  if (state === 'missing') return <div className="pilot empty">{PILOT_NONE_NOTE}</div>;
+
+  const { files, truth } = state;
+  const done = files.filter((f) => f.name in truth).length;
+  return (
+    <div className="pilot">
+      <header className="pilot-bar">
+        <span className="pilot-title">Pilot — which sketch made this?</span>
+        <span className="pilot-progress">
+          {done}/{files.length} labelled
+        </span>
+        {error ? <span className="pilot-error">{error}</span> : null}
+      </header>
+      {files.map((file) => {
+        const picked = file.name in truth ? truth[file.name] : undefined;
+        const item = parseName(file.name);
+        return (
+          <section key={file.name} className="pilot-file">
+            <div className="pilot-output">
+              <PilotImage
+                src={item.kind === 'video' ? thumbUrl(file.name) : fileUrl(file.name)}
+                alt={file.name}
+                size={320}
+              />
+              <span className="fname">{file.name}</span>
+            </div>
+            <div className="pilot-choices">
+              {file.candidates.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className={`pilot-choice${picked === c.id ? ' is-picked' : ''}`}
+                  aria-pressed={picked === c.id}
+                  onClick={() => choose(file.name, c.id)}
+                >
+                  {c.ref ? (
+                    <PilotImage src={c.ref} alt={c.id} size={160} />
+                  ) : (
+                    <span className="pilot-missing" style={{ width: 160, height: 160 }}>
+                      no reference
+                    </span>
+                  )}
+                  <span className="pilot-path">{c.path}</span>
+                </button>
+              ))}
+              <button
+                type="button"
+                className={`pilot-none${picked === null ? ' is-picked' : ''}`}
+                aria-pressed={picked === null}
+                onClick={() => choose(file.name, null)}
+              >
+                none of these / can't tell
+              </button>
+            </div>
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
+export function App() {
+  return window.location.pathname === '/pilot' ? <PilotSheet /> : <LightTable />;
 }
