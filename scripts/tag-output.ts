@@ -24,6 +24,7 @@ import { loadReference, outputImageSource, prepareImage } from './output-sketche
 import { makeAsk, MODEL } from './output-sketches/jev.ts';
 import {
   buildPilotSheet,
+  formatCost,
   formatReport,
   projectCost,
   samplePilot,
@@ -121,6 +122,9 @@ function printPilotReport(): void {
   const results = readAttributions(pilotPath('pilot-results.json'));
   const truth = readJson<Record<string, string | null>>(pilotPath('pilot-truth.json'), {});
   console.log(formatReport(scorePilot(items, results.files, truth, THRESHOLDS)));
+  const media = listMedia().length;
+  const names = items.map((i) => i.name);
+  console.log(`\n${formatCost(projectCost(results, names, media), media)}`);
 }
 
 function makeDeps(
@@ -188,11 +192,7 @@ async function runPilot(raw: string): Promise<void> {
   console.log(
     formatReport(scorePilot(items, result.data.files, truth, THRESHOLDS), ['prefix', 'hash']),
   );
-  const cost = projectCost(result.data, names, result.tokens, media.length);
-  console.log(
-    `\nmean input tokens per file: ${Math.round(cost.meanTokens)} (${cost.asked} file(s) asked)`,
-  );
-  console.log(`projected cost of the full run (${media.length} files): $${cost.cost.toFixed(2)}`);
+  console.log(`\n${formatCost(projectCost(result.data, names, media.length), media.length)}`);
   if (result.errors) console.log(`errors recorded: ${result.errors}`);
   console.log(
     'Label the 2023–24 files at http://localhost:5180/pilot (npm run review), then run npm run tag:output -- --pilot-report',

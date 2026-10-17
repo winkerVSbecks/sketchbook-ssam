@@ -44,6 +44,9 @@ import {
 import { askSketch, BATCH_SIZE, type AskFn } from './output-sketches/jev.ts';
 import {
   buildPilotSheet,
+  formatCost,
+  formatReport,
+  projectCost,
   samplePilot,
   scorePilot,
   type PilotItem,
@@ -641,6 +644,7 @@ await atest('jev answer is held pending without thresholds, accepted with them',
   assert.equal(pending.data.files[name]?.reason, 'pending');
   assert.equal(pending.data.files[name]?.answer?.choice, 'sketches/a');
   assert.equal(pending.tokens, 7);
+  assert.equal(pending.data.files[name]?.inputTokens, 7);
   const accepted = await tagFiles(
     [name],
     { ...emptyRun(), thresholds: { default: 0.8 } },
@@ -651,6 +655,7 @@ await atest('jev answer is held pending without thresholds, accepted with them',
   assert.equal(f?.method, 'jev');
   assert.equal(f?.sketch, 'sketches/a');
   assert.equal(f?.path, 'src/sketches/a.ts');
+  assert.equal(f?.inputTokens, 7);
 });
 
 await atest('api 400 is recorded and the run continues', async () => {
@@ -1047,6 +1052,42 @@ test('random group is not scored for precision', () => {
     [0.5],
   );
   assert.deepEqual([r.random.rows[0]?.labelled, r.random.rows[0]?.precision], [1, null]);
+});
+
+test('applyAccept preserves inputTokens', () => {
+  const base = { ...entry(answer('sketches/a', 0.9)), inputTokens: 1234 };
+  assert.equal(applyAccept(base, Date.now(), { default: 0.7 }, paths).inputTokens, 1234);
+  assert.equal(applyAccept(base, Date.now(), { default: 0.95 }, paths).inputTokens, 1234);
+});
+
+test('projectCost reads stored tokens, so a resumed run is right', () => {
+  const data = {
+    ...emptyAttributionFile('m'),
+    files: {
+      'a.png': { ...entry(answer('sketches/a', 0.9)), inputTokens: 1000 },
+      'b.png': { ...entry(answer('sketches/a', 0.9)), inputTokens: 3000 },
+      'c.png': entry(undefined),
+    },
+  };
+  const c = projectCost(data, ['a.png', 'b.png', 'c.png'], 1000);
+  assert.deepEqual([c.asked, c.meanTokens], [2, 2000]);
+  assert.ok(Math.abs(c.cost - (2000 * 1000 * 0.042) / 1e6) < 1e-12);
+  assert.match(formatCost(c, 1000), /tokens per file: 2000 .*\n.*\$0\.08/);
+  assert.equal(projectCost(data, ['c.png'], 1000).meanTokens, 0);
+});
+
+test('scorePilot reports the none share per group', () => {
+  const items = ['1', '2', '3', '4'].map((n) => pItem(`${n}.png`, 'hash', ['sketches/a']));
+  const results = {
+    '1.png': withAnswer(null, 0.9),
+    '2.png': withAnswer(null, 0.2),
+    '3.png': withAnswer('sketches/a', 0.9),
+    '4.png': entry(undefined),
+  };
+  const r = scorePilot(items, results, {}, [0.5]);
+  assert.equal(r.hash.noneShare, 0.5);
+  assert.equal(r.prefix.noneShare, 0);
+  assert.match(formatReport(r, ['hash']), /hash \(4 scored, none 50\.0%\)/);
 });
 
 test('hand none truth rewards abstaining', () => {

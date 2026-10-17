@@ -126,7 +126,12 @@ export type ReportRow = {
   coverage: number;
 };
 
-export type GroupReport = { scored: number; rows: ReportRow[] };
+export type GroupReport = {
+  scored: number;
+  /** Share of scored files Jev answered `none` (choice null); independent of threshold. */
+  noneShare: number;
+  rows: ReportRow[];
+};
 export type Report = Record<PilotGroup, GroupReport>;
 
 export function scorePilot(
@@ -164,7 +169,14 @@ export function scorePilot(
         coverage: scoredItems.length ? labelled / scoredItems.length : 0,
       };
     });
-    report[group] = { scored: scoredItems.length, rows };
+    const nones = scoredItems.filter(
+      (s) => s.entry.answer && s.entry.answer.choice === null,
+    ).length;
+    report[group] = {
+      scored: scoredItems.length,
+      noneShare: scoredItems.length ? nones / scoredItems.length : 0,
+      rows,
+    };
   }
   return report;
 }
@@ -175,7 +187,7 @@ const pct = (v: number | null): string => (v === null ? '-' : `${(v * 100).toFix
 export function formatReport(report: Report, groups: PilotGroup[] = GROUPS): string {
   return groups
     .map((g) => {
-      const head = `${g} (${report[g].scored} scored)\nthreshold  labelled  correct  precision  coverage`;
+      const head = `${g} (${report[g].scored} scored, none ${pct(report[g].noneShare)})\nthreshold  labelled  correct  precision  coverage`;
       const rows = report[g].rows.map(
         (r) =>
           `${r.threshold.toFixed(2).padEnd(9)}  ${String(r.labelled).padStart(8)}  ${
@@ -187,16 +199,26 @@ export function formatReport(report: Report, groups: PilotGroup[] = GROUPS): str
     .join('\n\n');
 }
 
-/** Mean input tokens per file that reached Jev, and the projected cost over `mediaCount` files. */
+/**
+ * Mean input tokens per file that reached Jev (a file's tokens cover all its requests), and the
+ * projected cost over `mediaCount` files. Read from the stored entries, so it survives a resume.
+ */
 export function projectCost(
   data: AttributionFile,
   names: string[],
-  tokens: number,
   mediaCount: number,
 ): { asked: number; meanTokens: number; cost: number } {
-  const asked = names.filter((n) => data.files[n]?.answer).length;
-  const meanTokens = asked ? tokens / asked : 0;
-  return { asked, meanTokens, cost: (meanTokens * mediaCount * COST_PER_MTOK) / 1e6 };
+  const spent = names.flatMap((n) => data.files[n]?.inputTokens ?? []);
+  const meanTokens = spent.length ? spent.reduce((a, b) => a + b, 0) / spent.length : 0;
+  return { asked: spent.length, meanTokens, cost: (meanTokens * mediaCount * COST_PER_MTOK) / 1e6 };
+}
+
+/** The two cost lines printed by --pilot and --pilot-report. */
+export function formatCost(cost: ReturnType<typeof projectCost>, mediaCount: number): string {
+  return [
+    `mean input tokens per file: ${Math.round(cost.meanTokens)} (${cost.asked} file(s) asked)`,
+    `projected cost of the full run (${mediaCount} files): $${cost.cost.toFixed(2)}`,
+  ].join('\n');
 }
 
 export type PilotSheetFile = {
@@ -216,7 +238,7 @@ export function buildPilotSheet(
       .filter((i) => i.group === 'hand')
       .map((i) => ({
         name: i.name,
-        candidates: shortlist(parseName(i.name), history, { withhold: false }).candidates.map(
+        candidates: shortlist(parseName(i.name), history, { withhold: true }).candidates.map(
           (c) => {
             const url = archive.get(c.id)?.cloudinary?.url;
             return { id: c.id, path: c.path, ref: url && !c.deleted ? referenceUrl(url) : null };

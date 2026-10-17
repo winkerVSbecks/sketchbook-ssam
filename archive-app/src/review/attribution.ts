@@ -29,6 +29,8 @@ export type FileAttribution = {
   confidence: number | null;
   candidates: string[];
   answer?: JevAnswer;
+  /** input tokens spent asking Jev about this file (all rounds); absent when it never reached Jev */
+  inputTokens?: number;
   taggedAt: string;
 };
 

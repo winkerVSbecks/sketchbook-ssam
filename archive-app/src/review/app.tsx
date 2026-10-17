@@ -1043,12 +1043,14 @@ function PilotSheet() {
   }, []);
 
   const choose = async (name: string, sketch: string | null) => {
-    const res = await fetch('/api/pilot-truth', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ name, sketch }),
-    });
-    if (!res.ok) {
+    try {
+      const res = await fetch('/api/pilot-truth', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ name, sketch }),
+      });
+      if (!res.ok) throw new Error('rejected');
+    } catch {
       setError(`could not save the label for ${name}`);
       return;
     }

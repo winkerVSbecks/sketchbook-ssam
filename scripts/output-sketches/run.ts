@@ -171,6 +171,7 @@ async function tagOne(
     const pending: FileAttribution = {
       ...unlabelled('pending', ids, taggedAt),
       answer: round.answer,
+      inputTokens: round.inputTokens,
     };
     const entry = data.thresholds
       ? applyAccept(pending, parsed.ts, data.thresholds, pathsOf(candidates))
