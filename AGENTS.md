@@ -94,9 +94,17 @@ Follow them instead of reconstructing the steps:
 - Requires `.env` at repo root with `CLOUDINARY_URL=cloudinary://<api_key>:<api_secret>@<cloud_name>`.
 - Rendering runs its own detached Vite on :6173 — see [Rendering has side effects outside the working tree](#rendering-has-side-effects-outside-the-working-tree).
 
+## Output attribution (`tag:output`)
+
+- `npm run tag:output` — incremental: labels each `output/` file with the sketch series that rendered it (git history shortlist, then TypeSafe's Jev picks from the archive renders) into `output/.review/sketches.json`. Skips stored files except `error` ones; exports younger than 3 days and videos without a thumbnail wait for a later run.
+- Requires `TYPESAFE_API_KEY=<key>` in the repo-root `.env`. Calls a paid API: never run it (or `--pilot N`) without being asked.
+- Flags: `--threshold 0.x` and `--threshold-year YYYY=0.x` (stored; the run refuses without one), `--rethreshold` (re-apply to stored answers, no API), `--force` (re-tag everything), `--limit N`, `--pilot N` (scored sample into `pilot-*.json`, never `sketches.json`), `--pilot-report` (re-print it, no API).
+- Pilot workflow: `--pilot N`, hand-label at `/pilot` on the Light Table, `--pilot-report`, look at `/?pilot=<t>`, then the full run with the chosen `--threshold`.
+
 ## Light Table (output review)
 
-- `npm run review` — local-only, keyboard-first review of everything in `output/`, grouped by day (port 5180; `?` shows shortcuts). Loupe + `g` contact sheet; `s` stars keepers, `S` filters to them.
+- `npm run review` — local-only, keyboard-first review of everything in `output/`, grouped by day (port 5180; `?` shows shortcuts). Loupe + `g` contact sheet; `s` stars keepers, `S` filters to them; `v` by day / by series (labels from `sketches.json`), `n` sorts the series ledger.
+- `/pilot` hand-labels the attribution pilot; `/?pilot=<t>` shows the stored pilot answers labelled at threshold `t` instead of `sketches.json`.
 - Source: `archive-app/src/review/` (client app + Vite dev-server plugin). Never part of the deployed archive build.
 - Cache/state: `output/.review/` (thumbnails + `keepers.json`, gitignored with `output/`). Thumbnails prewarm on server start (sharp for images, repo ffmpeg for video first-frames).
 
