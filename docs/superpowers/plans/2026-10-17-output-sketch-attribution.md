@@ -442,3 +442,93 @@
   - the projected cost of the full run
 
   The full run (`npm run tag:output -- --threshold … [--threshold-year 2023=… --threshold-year 2024=…]`) happens only after he labels the files, `--pilot-report` has been reviewed, and he signs off on the thresholds.
+
+---
+
+## Addendum (2026-10-18): label by series
+
+Implements the spec's "Addendum: label by series, not by file". Global
+Constraints above still apply. Raw Jev answers in stored JSON are unchanged,
+so no task calls the API.
+
+### Task 11: Series in the attribution model, accept rule and pilot scoring
+
+**Files:**
+
+- Modify: `archive-app/src/review/attribution.ts`, `scripts/output-sketches/run.ts`, `scripts/output-sketches/pilot.ts`, `scripts/tag-output.ts` (only if a call site changes)
+- Test: `scripts/output-sketches-smoke.ts`
+
+**Interfaces:**
+
+- Produces (all in `attribution.ts`):
+  - `seriesOf(id: string): string`
+    - `sketches/a/b/c` → `sketches/a`
+    - `sketches/a` → `sketches/a`
+  - `FileAttribution` gains `series: string | null`.
+  - `seriesProbabilities(answer: JevAnswer): Record<string, number>`
+    - Sums `answer.probabilities` by `seriesOf(id)`.
+    - The key `'none'` stays `'none'`.
+- `applyAccept`, re-defined for answered `jev`/`unlabelled` entries:
+  - Take the top bucket of `seriesProbabilities(answer)`. Break ties by key.
+  - Accept when the top bucket isn't `'none'` and its sum ≥ `thresholdFor(t, ts)`.
+  - When accepted:
+    - `method` is `'jev'`, `series` is the bucket, and `confidence` is the bucket sum.
+    - `sketch` is the highest-probability id inside that series.
+    - `path`, `pathAtExport` and `deleted` come from `paths[sketch]`.
+  - Otherwise the file is unlabelled:
+    - `series`, `sketch`, `path` and `pathAtExport` are `null`.
+    - `reason` is `'none'` when the top bucket is `'none'`, else `'low-confidence'`.
+    - `confidence` is the top bucket's sum.
+  - `prefix` and settled entries are untouched, except that a `prefix` entry missing `series` gets `seriesOf(sketch)`.
+- `run.ts`: the `prefix` path sets `series: seriesOf(sketch)`. Pending and error entries set `series: null`.
+- `pilot.ts` `scorePilot`: accepted at t and correct are judged on series:
+  - accepted ⇔ the top series bucket isn't `'none'` and its sum ≥ t
+  - correct ⇔ the bucket ∈ `truth.map(seriesOf)`
+  - The hand-label rules are otherwise unchanged.
+  - `noneShare` is still `choice === null` over scored.
+
+- [ ] **Step 1: Write the failing tests:**
+  - `seriesOf maps nested and one-off ids`:
+    - `sketches/nalee/sketches/bipolar` → `sketches/nalee`
+    - `sketches/gravura/basic` → `sketches/gravura`
+    - `sketches/42-loc` → `sketches/42-loc`
+  - `seriesProbabilities sums siblings`: `{ 'sketches/g/a': 0.4, 'sketches/g/b': 0.35, 'sketches/x': 0.15, none: 0.1 }` → `{ 'sketches/g': 0.75, 'sketches/x': 0.15, none: 0.1 }`.
+  - `applyAccept labels the series and hints the top file`:
+    - With that answer, choice `sketches/g/a`, confidence 0.4 and threshold 0.7: `method 'jev'`, `series 'sketches/g'`, `sketch 'sketches/g/a'`, `confidence 0.75`.
+    - At threshold 0.8 the file is unlabelled, with `reason 'low-confidence'`.
+  - `applyAccept none bucket wins → unlabelled none`.
+  - `prefix entry gains series`.
+  - `scorePilot scores at series level`: a pick of sibling `sketches/g/b` against truth `sketches/g/a` counts as correct.
+  - Update any existing test whose expectations assumed file-level acceptance; say which in the report.
+- [ ] **Step 2: Run the suite.** Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run the suite and the verify pair.** Then run `npm run tag:output -- --pilot-report`, which makes no API call and reads the real stored pilot. Paste its output into the report: precision at 0.5 should match the spec addendum's table (97.7% prefixed, 100% hash).
+- [ ] **Step 5: Commit:** `feat(review): label output files by series`.
+
+### Task 12: The Ledger groups by series
+
+**Files:**
+
+- Modify: `archive-app/src/review/model.ts`, `archive-app/src/review/app.tsx`
+- Test: `scripts/output-sketches-smoke.ts`
+
+**Interfaces:**
+
+- Consumes: `seriesOf` and `FileAttribution.series` (Task 11).
+- `app.tsx`:
+  - `sketchOf` becomes `name => files[name]?.series ?? (files[name]?.sketch ? seriesOf(files[name].sketch) : null)`. Old files without `series` still group.
+  - `isUsableEntry` also accepts `series` as a string, null, or absent.
+- `buildLedger`, for a labelled row:
+  - `path` is `src/sketches/<series without sketches/>/` when any file in the group has a `sketch` deeper than the series.
+  - Otherwise it is the file path (a one-off).
+  - `deleted` is true only when every labelled file in the group is deleted.
+- The UI copy says "series" where it counted sketches: the centre header reads `{K} series`, and the right slot in sheet mode reads `series k/K`. The help row for `v` reads `group by day / by series`.
+
+- [ ] **Step 1: Write the failing tests:**
+  - `ledger path is the folder for a series`.
+  - `ledger path is the file for a one-off`.
+  - `old entries without series still group via seriesOf(sketch)`. This tests the exported helper the app uses; export it from `model.ts` as `seriesKeyOf(entry)`.
+- [ ] **Step 2: Run the suite.** Expected: FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Verify in the browser** on the throwaway :5190 server, with the same rules as Task 8. Use a temporary `sketches.json` labelling about 20 recent files across 2 series, plus one one-off. Then delete it, clean up `output/.review/`, and kill only your own PID. Take screenshots of the ledger and of a filtered sheet. Run the verify pair and the archive-app tsc.
+- [ ] **Step 5: Commit:** `feat(review): ledger groups by series`.
