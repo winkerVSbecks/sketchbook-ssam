@@ -11,6 +11,7 @@ import {
 } from '@typesafe-ai/sdk';
 import {
   applyAccept,
+  seriesOf,
   emptyAttributionFile,
   mergeFiles,
   type AttributionFile,
@@ -92,6 +93,7 @@ function unlabelled(
   taggedAt: string,
 ): FileAttribution {
   return {
+    series: null,
     sketch: null,
     path: null,
     pathAtExport: null,
@@ -129,6 +131,7 @@ async function tagOne(
     return {
       tokens: 0,
       entry: {
+        series: seriesOf(only.id),
         sketch: only.id,
         path: only.path,
         pathAtExport: only.pathAtExport,

@@ -15,6 +15,8 @@ import {
 import sharp from 'sharp';
 import {
   applyAccept,
+  seriesOf,
+  seriesProbabilities,
   mergeFiles,
   emptyAttributionFile,
   thresholdFor,
@@ -89,6 +91,7 @@ function entry(
     sketch: null,
     path: null,
     pathAtExport: null,
+    series: null,
     method: 'unlabelled',
     confidence: null,
     candidates: ['sketches/a'],
@@ -99,8 +102,74 @@ function entry(
 }
 
 function answer(choice: string | null, confidence: number): JevAnswer {
-  return { choice, confidence, probabilities: { 'sketches/a': confidence, none: 1 - confidence } };
+  const probabilities =
+    choice === null
+      ? { none: confidence, 'sketches/a': 1 - confidence }
+      : { [choice]: confidence, none: 1 - confidence };
+  return { choice, confidence, probabilities };
 }
+
+const siblings: JevAnswer = {
+  choice: 'sketches/g/a',
+  confidence: 0.4,
+  probabilities: { 'sketches/g/a': 0.4, 'sketches/g/b': 0.35, 'sketches/x': 0.15, none: 0.1 },
+};
+const seriesPaths = {
+  'sketches/g/a': { path: 'src/sketches/g/a.ts', pathAtExport: null, deleted: false },
+  'sketches/g/b': { path: 'src/sketches/g/b.ts', pathAtExport: null, deleted: false },
+  'sketches/x': { path: 'src/sketches/x.ts', pathAtExport: null, deleted: false },
+};
+
+test('seriesOf maps nested and one-off ids', () => {
+  assert.equal(seriesOf('sketches/nalee/sketches/bipolar'), 'sketches/nalee');
+  assert.equal(seriesOf('sketches/gravura/basic'), 'sketches/gravura');
+  assert.equal(seriesOf('sketches/42-loc'), 'sketches/42-loc');
+});
+
+test('seriesProbabilities sums siblings', () => {
+  const sums = seriesProbabilities(siblings);
+  assert.deepEqual(Object.keys(sums).sort(), ['none', 'sketches/g', 'sketches/x']);
+  assert.ok(Math.abs((sums['sketches/g'] ?? 0) - 0.75) < 1e-9);
+  assert.equal(sums['sketches/x'], 0.15);
+  assert.equal(sums.none, 0.1);
+});
+
+test('applyAccept labels the series and hints the top file', () => {
+  const out = applyAccept(entry(siblings), Date.now(), { default: 0.7 }, seriesPaths);
+  assert.equal(out.method, 'jev');
+  assert.equal(out.series, 'sketches/g');
+  assert.equal(out.sketch, 'sketches/g/a');
+  assert.equal(out.path, 'src/sketches/g/a.ts');
+  assert.ok(Math.abs((out.confidence ?? 0) - 0.75) < 1e-9);
+  assert.equal(siblings.confidence, 0.4);
+  assert.equal(out.answer?.confidence, 0.4);
+  const low = applyAccept(entry(siblings), Date.now(), { default: 0.8 }, seriesPaths);
+  assert.equal(low.method, 'unlabelled');
+  assert.equal(low.reason, 'low-confidence');
+  assert.equal(low.series, null);
+  assert.equal(low.sketch, null);
+  assert.ok(Math.abs((low.confidence ?? 0) - 0.75) < 1e-9);
+});
+
+test('applyAccept none bucket wins and is unlabelled none', () => {
+  const none: JevAnswer = {
+    choice: null,
+    confidence: 0.6,
+    probabilities: { 'sketches/g/a': 0.2, 'sketches/g/b': 0.2, none: 0.6 },
+  };
+  const out = applyAccept(entry(none), Date.now(), { default: 0.5 }, seriesPaths);
+  assert.equal(out.method, 'unlabelled');
+  assert.equal(out.reason, 'none');
+  assert.equal(out.series, null);
+  assert.equal(out.confidence, 0.6);
+});
+
+test('prefix entry gains series', () => {
+  const prefix = entry(undefined, { method: 'prefix', sketch: 'sketches/g/a', confidence: null });
+  const out = applyAccept(prefix, Date.now(), { default: 0.7 }, seriesPaths);
+  assert.equal(out.series, 'sketches/g');
+  assert.equal(out.sketch, 'sketches/g/a');
+});
 
 test('thresholdFor uses the year override', () => {
   const t = { default: 0.7, byYear: { '2024': 0.85 } };
@@ -135,7 +204,12 @@ test('applyAccept treats none as unlabelled', () => {
 });
 
 test('applyAccept keeps prefix entries', () => {
-  const prefix = entry(undefined, { method: 'prefix', sketch: 'sketches/a', confidence: null });
+  const prefix = entry(undefined, {
+    method: 'prefix',
+    sketch: 'sketches/a',
+    series: 'sketches/a',
+    confidence: null,
+  });
   assert.deepEqual(applyAccept(prefix, Date.now(), { default: 0.7 }, paths), prefix);
 });
 
@@ -1019,12 +1093,26 @@ test('scorePilot counts family picks as correct', () => {
   assert.equal(r.prefix.rows[0]?.precision, 1);
 });
 
+test('scorePilot scores at series level', () => {
+  const items = [pItem('f1.png', 'prefix', ['sketches/g/a'])];
+  const picked = entry(siblings, {});
+  const sibling = { ...picked, answer: { ...siblings, choice: 'sketches/g/b' } };
+  const r = scorePilot(items, { 'f1.png': sibling }, {}, [0.7, 0.8]);
+  assert.deepEqual([r.prefix.rows[0]?.labelled, r.prefix.rows[0]?.precision], [1, 1]);
+  assert.deepEqual([r.prefix.rows[1]?.labelled, r.prefix.rows[1]?.precision], [0, null]);
+});
+
 test('scorePilot precision and coverage by threshold', () => {
   const items = ['1', '2', '3'].map((n) => pItem(`${n}.png`, 'hash', ['sketches/a']));
   const results = {
     '1.png': withAnswer('sketches/a', 0.95),
     '2.png': withAnswer('sketches/a', 0.75),
-    '3.png': withAnswer('sketches/x', 0.45),
+    // the wrong pick must out-weigh none for it to be accepted at 0.3
+    '3.png': entry({
+      choice: 'sketches/x',
+      confidence: 0.45,
+      probabilities: { 'sketches/x': 0.45, 'sketches/a': 0.25, none: 0.3 },
+    }),
   };
   const r = scorePilot(items, results, {}, [0.3, 0.7, 0.9]);
   const [t3, t7, t9] = r.hash.rows;

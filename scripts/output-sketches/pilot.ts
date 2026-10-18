@@ -3,7 +3,12 @@
  * score Jev's stored answers against that truth at each threshold, and describe the hand-labelling
  * sheet. Pure functions; the CLI (`scripts/tag-output.ts`) owns the files and the API.
  */
-import type { AttributionFile, FileAttribution } from '../../archive-app/src/review/attribution.ts';
+import {
+  seriesOf,
+  topSeries,
+  type AttributionFile,
+  type FileAttribution,
+} from '../../archive-app/src/review/attribution.ts';
 import { parseName } from '../../archive-app/src/review/model.ts';
 import type { SketchEntry } from '../archive-types.ts';
 import { sketchIdOf, type History } from './history.ts';
@@ -116,7 +121,7 @@ export function samplePilot(
 
 export type ReportRow = {
   threshold: number;
-  /** Accepted: a choice at or above the threshold. */
+  /** Accepted: the top series bucket (not none) at or above the threshold. */
   labelled: number;
   /** Items judged right: accepted into the truth, or (hand, null truth) left unlabelled. */
   correct: number;
@@ -154,11 +159,12 @@ export function scorePilot(
       let abstainedRight = 0;
       for (const s of scoredItems) {
         const a = s.entry.answer;
-        const accepted = !!a && a.choice !== null && a.confidence >= threshold;
+        const top = a ? topSeries(a) : null;
+        const accepted = !!top && top.series !== 'none' && top.probability >= threshold;
         if (accepted) labelled += 1;
         if (group === 'random') continue;
-        const want = typeof s.want === 'string' ? [s.want] : s.want;
-        if (accepted && a?.choice && want?.includes(a.choice)) hits += 1;
+        const want = (typeof s.want === 'string' ? [s.want] : s.want)?.map(seriesOf);
+        if (accepted && top && want?.includes(top.series)) hits += 1;
         else if (!accepted && 'hand' in s && s.want === null) abstainedRight += 1;
       }
       return {
