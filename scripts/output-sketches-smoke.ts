@@ -698,6 +698,30 @@ await atest(
   },
 );
 
+await atest('the reference cache is keyed by Cloudinary version', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'ref-'));
+  const png = await solid(400, 400).png().toBuffer();
+  const urls: string[] = [];
+  const fakeFetch = async (url: string) => {
+    urls.push(url);
+    return { ok: true, status: 200, arrayBuffer: async () => new Uint8Array(png).buffer };
+  };
+  // A cache file from before versioned keys is a miss, not a stale hit.
+  writeFileSync(join(dir, 'sketches__a__b.jpg'), 'stale');
+  const v1 = 'https://x/image/upload/v111/a.png';
+  const v2 = 'https://x/image/upload/v222/a.png';
+  await loadReference('sketches/a/b', v1, dir, fakeFetch);
+  await loadReference('sketches/a/b', v1, dir, fakeFetch);
+  assert.equal(urls.length, 1);
+  assert.ok(existsSync(join(dir, 'sketches__a__b@v111.jpg')));
+  // Re-archived: a new version fetches the new picture.
+  const buf = await loadReference('sketches/a/b', v2, dir, fakeFetch);
+  assert.equal(urls.length, 2);
+  assert.ok(urls[1]?.includes('/v222/'));
+  assert.ok(existsSync(join(dir, 'sketches__a__b@v222.jpg')));
+  assert.equal((await metaOf(buf)).format, 'jpeg');
+});
+
 await atest('askSketch throws on an unknown choice label', async () => {
   const ask: AskFn = async () => fakeAnswer('c99', ['c00'], 1);
   await assert.rejects(askSketch(ask, Buffer.from('x'), 't', mkOptions(2)), /unknown choice/);

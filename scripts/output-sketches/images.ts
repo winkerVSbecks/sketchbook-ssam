@@ -100,9 +100,19 @@ export type FetchFn = (url: string) => Promise<{
 }>;
 
 /**
- * Fetch an archive reference once into `cacheDir/<id with / → __>.jpg`, then read from disk.
+ * Cache file name for a reference: `<id with / → __>@v<version>.jpg`, the version read from the
+ * Cloudinary URL's `/v<digits>/` segment, so a re-archived sketch fetches its new picture.
+ */
+export function referenceCacheName(id: string, url: string): string {
+  const version = url.match(/\/v(\d+)\//)?.[1];
+  return `${id.replaceAll('/', '__')}@${version ? `v${version}` : 'unversioned'}.jpg`;
+}
+
+/**
+ * Fetch an archive reference once into `cacheDir/<referenceCacheName>`, then read from disk.
  * The rendition is run through `prepareImage` before caching: `c_limit` never enlarges, so a small
- * or thin archive image can arrive under the API's 280 px minimum.
+ * or thin archive image can arrive under the API's 280 px minimum. Cache files from before the
+ * version was in the name are never read: they are misses.
  */
 export async function loadReference(
   id: string,
@@ -110,7 +120,7 @@ export async function loadReference(
   cacheDir: string,
   fetchFn: FetchFn = fetch,
 ): Promise<Buffer> {
-  const file = join(cacheDir, `${id.replaceAll('/', '__')}.jpg`);
+  const file = join(cacheDir, referenceCacheName(id, url));
   if (existsSync(file)) return readFile(file);
   const res = await fetchFn(referenceUrl(url));
   if (!res.ok) throw new Error(`reference ${id}: HTTP ${res.status}`);
