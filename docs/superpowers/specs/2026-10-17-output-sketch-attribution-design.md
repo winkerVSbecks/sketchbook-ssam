@@ -252,3 +252,53 @@ to spot). He signs off on the threshold before the ~6,400-file run.
 - How the git history is cached during one run.
 - Concurrency level and batch-split mechanics.
 - Exact Cloudinary transform for references, within the 280 px minimum.
+
+## Addendum (2026-10-18): label by series, not by file
+
+The live pilot (`--pilot 300`) showed Jev identifies a sketch's **series**
+reliably but confuses sibling variants inside it. Example misses:
+`red-and-black/spring` picked as `spring-anticipation` at 0.96, and
+`gravura/pro-color` picked as `basic` at 0.94.
+
+|                                    | File level, at 0.7           | Series level, at 0.5          |
+| ---------------------------------- | ---------------------------- | ----------------------------- |
+| Prefixed files (prefix hidden)     | 100% precision, 11% coverage | 97.7% precision, 69% coverage |
+| Commit-stamped files (hash hidden) | 85% precision, 18% coverage  | 100% precision, 39% coverage  |
+
+Both series-level rows were re-scored from the stored answers, with no new
+API calls. Varun chose series-level labels.
+
+What changes:
+
+- **Series** (Claude's call: the archive's existing rule, in
+  `archive-app/src/model.ts`):
+  - the first path segment under `sketches/`, so
+    `sketches/nalee/sketches/bipolar` → `sketches/nalee`
+  - a top-level one-off file such as `sketches/42-loc` is its own series
+- **The label is the series.**
+  - Each `FileAttribution` gains `series: string | null`, the label the
+    Ledger groups by.
+  - `sketch` keeps the most specific file known:
+    - the file itself, for `method: 'prefix'`
+    - for a Jev-accepted file, Jev's most probable file inside the accepted
+      series, shown as a hint
+    - `null` when unlabelled
+- **Accept rule.**
+  - Sum Jev's probabilities by series. `none` stays its own bucket.
+  - The top bucket is accepted when it isn't `none` and its summed
+    probability is ≥ the threshold.
+  - `confidence` stores that summed probability.
+  - Raw answers are unchanged, so `--rethreshold` and the pilot report
+    re-score without API calls.
+- **Pilot scoring** is at series level: a pick counts as correct when its
+  series matches the truth's series. Hand labels stay per file and are
+  mapped to series for scoring.
+- **The Ledger** has one row per series.
+  - The name is the series without its `sketches/` prefix.
+  - The muted line under the name is `src/sketches/<series>/` for a folder
+    series, or the file path for a one-off.
+  - Everything else in Part 2 stands: the count, date span, image rule,
+    Unlabelled last, sorting and navigation.
+
+The threshold is still not guessed. It is set from `--pilot-report` after
+Varun's hand labels, with stricter years allowed through `byYear`.
