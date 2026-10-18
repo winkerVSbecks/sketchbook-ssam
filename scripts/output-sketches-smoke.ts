@@ -596,8 +596,23 @@ await atest('askSketch maps keys back to ids', async () => {
   assert.equal(inputTokens, 10);
 });
 
-await atest('askSketch batches 30 candidates', async () => {
-  const options = mkOptions(30);
+await atest('askSketch asks up to 40 candidates at once', async () => {
+  const calls: string[][] = [];
+  const ask: AskFn = async (req) => {
+    calls.push(keysOf(req));
+    return fakeAnswer('c39', keysOf(req), 5);
+  };
+  const { answer } = await askSketch(ask, Buffer.from('x'), 't', mkOptions(40));
+  assert.equal(BATCH_SIZE, 40);
+  assert.deepEqual(
+    calls.map((c) => c.length),
+    [40],
+  );
+  assert.equal(answer.choice, 'sketches/s39');
+});
+
+await atest('askSketch batches 90 candidates', async () => {
+  const options = mkOptions(90);
   const calls: string[][] = [];
   const ask: AskFn = async (req) => {
     const keys = keysOf(req);
@@ -605,23 +620,51 @@ await atest('askSketch batches 30 candidates', async () => {
     return fakeAnswer(keys[1] ?? 'none', keys, 5);
   };
   const { answer, inputTokens } = await askSketch(ask, Buffer.from('x'), 't', options);
-  assert.equal(BATCH_SIZE, 12);
-  assert.equal(calls.length, 4);
   assert.deepEqual(
-    calls.slice(0, 3).map((c) => c.length),
-    [12, 12, 6],
+    calls.map((c) => c.length),
+    [40, 40, 10, 3],
   );
-  assert.equal(calls[3]?.length, 3);
   assert.equal(inputTokens, 20);
-  assert.equal(answer.choice, 'sketches/s13');
+  // The final round is over the three batch winners (s1, s41, s81); it picks the second.
+  assert.equal(answer.choice, 'sketches/s41');
   assert.ok('none' in answer.probabilities);
 });
 
-await atest('askSketch returns none when every batch says none', async () => {
-  const ask: AskFn = async (req) => fakeAnswer('none', keysOf(req), 1);
-  const { answer, inputTokens } = await askSketch(ask, Buffer.from('x'), 't', mkOptions(30));
-  assert.equal(answer.choice, null);
+await atest('askSketch keeps every batch when every batch says none', async () => {
+  const confidences = [0.6, 0.8, 0.7];
+  let call = 0;
+  // Each batch answers none with its own confidence; the rest spread evenly over its keys.
+  const ask: AskFn = async (req) => {
+    const keys = keysOf(req);
+    const none = confidences[call++] ?? 0;
+    return {
+      answers: {
+        sketch: {
+          type: 'choice' as const,
+          choice: 'none',
+          confidence: none,
+          probabilities: {
+            none,
+            ...Object.fromEntries(keys.map((k) => [k, (1 - none) / keys.length])),
+          },
+        },
+      },
+      usage: { input_tokens: 1 },
+    };
+  };
+  const { answer, inputTokens } = await askSketch(ask, Buffer.from('x'), 't', mkOptions(90));
+  assert.equal(call, 3);
   assert.equal(inputTokens, 3);
+  assert.equal(answer.choice, null);
+  assert.ok(Math.abs(answer.confidence - 0.7) < 1e-9);
+  const ids = Object.keys(answer.probabilities);
+  assert.equal(ids.length, 91);
+  assert.ok(ids.includes('sketches/s0') && ids.includes('sketches/s89') && ids.includes('none'));
+  const sum = Object.values(answer.probabilities).reduce((a, b) => a + b, 0);
+  assert.ok(Math.abs(sum - 1) < 1e-9, `sum ${sum}`);
+  assert.ok(Math.abs((answer.probabilities.none ?? 0) - 0.7) < 1e-9);
+  // Batch 1 (40 ids) left 0.4 to spread, scaled by a third.
+  assert.ok(Math.abs((answer.probabilities['sketches/s0'] ?? 0) - 0.4 / 40 / 3) < 1e-12);
 });
 
 await atest(

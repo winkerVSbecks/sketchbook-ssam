@@ -14,7 +14,11 @@ import type { Candidate } from './shortlist.ts';
 
 export const MODEL = 'jev-1.14.0';
 export const IMAGE_HEADER = { 'TypeSafe-Danger-Zone-Images': 'true' };
-export const BATCH_SIZE = 12;
+/**
+ * Split a shortlist only when it would crowd the context window: the largest pilot shortlist (58)
+ * is about 23k tokens with w_384 references, and the p90 is 34.
+ */
+export const BATCH_SIZE = 40;
 
 export type AskFn = (req: SystemOneRequest) => Promise<{
   answers: Record<string, ChoiceResponse>;
@@ -94,15 +98,27 @@ export async function askSketch(
 
   let inputTokens = 0;
   const winners: SketchOption[] = [];
+  const rounds: Round[] = [];
   for (let i = 0; i < options.length; i += BATCH_SIZE) {
     const batch = options.slice(i, i + BATCH_SIZE);
     const round = await askOnce(ask, output, exportedAt, batch);
+    rounds.push(round);
     inputTokens += round.inputTokens;
     const won = batch.find((o) => o.candidate.id === round.answer.choice);
     if (won) winners.push(won);
   }
   if (winners.length === 0) {
-    return { answer: { choice: null, confidence: 0, probabilities: { none: 1 } }, inputTokens };
+    // Every batch said none: keep what each batch said, each weighted by 1 / batches, so the map
+    // still sums to about 1 and names the real candidates.
+    const share = 1 / rounds.length;
+    const probabilities: Record<string, number> = {};
+    for (const r of rounds) {
+      for (const [id, p] of Object.entries(r.answer.probabilities)) {
+        probabilities[id] = (probabilities[id] ?? 0) + p * share;
+      }
+    }
+    const confidence = rounds.reduce((sum, r) => sum + r.answer.confidence, 0) * share;
+    return { answer: { choice: null, confidence, probabilities }, inputTokens };
   }
   const final = await askOnce(ask, output, exportedAt, winners);
   return { answer: final.answer, inputTokens: inputTokens + final.inputTokens };
