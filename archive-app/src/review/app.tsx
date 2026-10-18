@@ -6,8 +6,8 @@
  * `s` stars keepers; `S` filters the stream to them. The URL hash tracks
  * the focused file so a refresh resumes in place.
  *
- * `v` regroups the same stream by sketch (labels from `/api/sketches`): the
- * Ledger lists one row per sketch, and each sketch then stands in for a day,
+ * `v` regroups the same stream by series (labels from `/api/sketches`): the
+ * Ledger lists one row per series, and each series then stands in for a day,
  * so `[`/`]`, the sheet and the loupe work unchanged inside it.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -17,6 +17,7 @@ import {
   buildSketchTimeline,
   buildTimeline,
   parseName,
+  seriesKeyOf,
   UNLABELLED,
   type Day,
   type Item,
@@ -38,11 +39,15 @@ type Attributions = AttributionFile | null | 'missing';
 
 const isStringOrNull = (v: unknown) => v === null || typeof v === 'string';
 
-/** A readable entry: an object whose `sketch` (and `path`, if present) is a string or null. */
+/**
+ * A readable entry: an object whose `sketch` is a string or null, and whose `path` and `series`
+ * are each a string, null or absent (entries written before series labels have no `series`).
+ */
 function isUsableEntry(entry: unknown): entry is FileAttribution {
   if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) return false;
-  const { sketch, path } = entry as { sketch?: unknown; path?: unknown };
-  return isStringOrNull(sketch) && (path === undefined || isStringOrNull(path));
+  const { sketch, path, series } = entry as { sketch?: unknown; path?: unknown; series?: unknown };
+  const optional = (v: unknown) => v === undefined || isStringOrNull(v);
+  return isStringOrNull(sketch) && optional(path) && optional(series);
 }
 
 /**
@@ -81,11 +86,11 @@ const SHORTCUTS: [string[], string][] = [
   [['Home', 'End'], 'first / last of the day'],
   [['g'], 'toggle contact sheet'],
   [['↵'], 'open selection in loupe'],
-  [['esc'], 'close sheet · back to ledger in sketch mode'],
+  [['esc'], 'close sheet · back to ledger in series mode'],
   [['space'], 'play / pause video'],
   [['s'], 'star as keeper'],
   [['S'], 'keepers only'],
-  [['v'], 'group by day / by sketch'],
+  [['v'], 'group by day / by series'],
   [['n'], 'sort ledger: recent / count'],
   [['c'], 'copy file path'],
   [['o'], 'reveal in Finder'],
@@ -350,7 +355,7 @@ function LedgerEntry({
   );
 }
 
-/** One row per sketch group; the selected row is the focused file's group. */
+/** One row per series group; the selected row is the focused file's group. */
 function Ledger({
   rows,
   sort,
@@ -367,7 +372,7 @@ function Ledger({
       <div
         className="ledger-list"
         role="listbox"
-        aria-label={`Sketches · sorted by ${SORT_LABEL[sort]}`}
+        aria-label={`Series · sorted by ${SORT_LABEL[sort]}`}
       >
         {rows.map((row) => (
           <LedgerEntry
@@ -444,12 +449,18 @@ function LightTable() {
   );
   const kept = useMemo(() => (keptNames ? buildTimeline(keptNames) : null), [keptNames]);
 
-  // By-sketch mode: the same names regrouped, one `Day` per sketch.
+  // By-series mode: the same names regrouped, one `Day` per series.
   const files = attributions && attributions !== 'missing' ? attributions.files : null;
   const sketchView = mode === 'sketch' && files !== null;
   const sketchMissing = mode === 'sketch' && files === null;
   const sketchOf = useMemo(
-    () => (files ? (name: string) => files[name]?.sketch ?? null : null),
+    () =>
+      files
+        ? (name: string) => {
+            const entry = files[name];
+            return entry ? seriesKeyOf(entry) : null;
+          }
+        : null,
     [files],
   );
   const sketchNames = keepersOnly ? keptNames : names;
@@ -591,7 +602,7 @@ function LightTable() {
       setLedgerOpen(true);
       setSheetOpen(false);
       // R9: most exports are unlabelled, so entering from one would open the ledger on its last
-      // row. Start on the first sketch instead, whenever a labelled group exists (Unlabelled
+      // row. Start on the first series instead, whenever a labelled group exists (Unlabelled
       // always sorts last, so the first group is labelled if any is).
       if (current && sketchOf && sketchNames && sketchOf(current.name) === null) {
         const first = buildSketchTimeline(sketchNames, sketchOf, sort).days[0];
@@ -603,7 +614,7 @@ function LightTable() {
     }
   };
 
-  /** Open one sketch group in the contact sheet, cursor on its first export. */
+  /** Open one series group in the contact sheet, cursor on its first export. */
   const openGroup = (key: string) => {
     const group = active?.days.find((d) => d.key === key);
     const first = group?.items[0];
@@ -710,7 +721,7 @@ function LightTable() {
     }
     if (showLedger) {
       // The ledger's selection is the focused file's group, so moving a row
-      // is moving to the first export of the neighbouring sketch.
+      // is moving to the first export of the neighbouring series.
       switch (e.key) {
         case 'ArrowDown':
         case 'j':
@@ -870,15 +881,15 @@ function LightTable() {
   const thumbsBuilding = progress && progress.total > 0 && progress.done < progress.total;
   // Ledger and the missing-labels note replace the per-file chrome.
   const listView = showLedger || sketchMissing;
-  const sketchCount = ledgerRows.filter((r) => r.key !== UNLABELLED).length;
+  const seriesCount = ledgerRows.filter((r) => r.key !== UNLABELLED).length;
   const unlabelledCount = ledgerRows.find((r) => r.key === UNLABELLED)?.count ?? 0;
 
   return (
     <div className="app">
       <header className="bar">
-        <div className="bar-day" aria-label={sketchView ? 'Sketch' : 'Day'}>
+        <div className="bar-day" aria-label={sketchView ? 'Series' : 'Day'}>
           {listView ? (
-            'by sketch'
+            'by series'
           ) : day && !keepersEmpty ? (
             <>
               {day.label}
@@ -894,7 +905,7 @@ function LightTable() {
         <div className="bar-file">
           {showLedger && !keepersEmpty && (
             <span>
-              {formatCount(sketchCount)} {sketchCount === 1 ? 'sketch' : 'sketches'}
+              {formatCount(seriesCount)} series
               <span className="quiet"> · sort: {SORT_LABEL[sort]}</span>
             </span>
           )}
@@ -926,7 +937,7 @@ function LightTable() {
           {showLedger && !keepersEmpty && <span>{formatCount(unlabelledCount)} unlabelled</span>}
           {active && day && !keepersEmpty && !listView && (
             <span>
-              {sketchView ? 'sketch' : 'day'} {day.number}/{active.days.length}
+              {sketchView ? 'series' : 'day'} {day.number}/{active.days.length}
             </span>
           )}
           {keepersOnly && <span>keepers · {kept?.items.length ?? 0}</span>}

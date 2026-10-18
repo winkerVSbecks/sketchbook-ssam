@@ -10,7 +10,7 @@
  * in time. The app starts on the most recent day.
  */
 
-import type { AttributionFile, FileAttribution } from './attribution';
+import { seriesOf, type AttributionFile, type FileAttribution } from './attribution';
 
 export type Item = {
   name: string;
@@ -127,11 +127,20 @@ export function buildTimeline(names: string[]): Timeline {
 
 export const UNLABELLED = 'unlabelled';
 
+/**
+ * The series a file is grouped under, or null when unlabelled. Entries written before series
+ * labels have no `series` field, so fall back to the series of their `sketch`.
+ */
+export function seriesKeyOf(entry: Pick<FileAttribution, 'series' | 'sketch'>): string | null {
+  return entry.series ?? (entry.sketch ? seriesOf(entry.sketch) : null);
+}
+
 export type LedgerSort = 'recent' | 'count';
 
 /**
- * Regroup the same stream by sketch: each `Day` is one sketch group (`key` is the sketch id or
- * `UNLABELLED`), so day navigation, the contact sheet and the loupe work unchanged.
+ * Regroup the same stream by label: each `Day` is one group (`key` is the series, as
+ * `seriesKeyOf` gives it, or `UNLABELLED`), so day navigation, the contact sheet and the loupe
+ * work unchanged.
  * Callers pass already-filtered names (keepers-only mode passes just the kept ones).
  */
 export function buildSketchTimeline(
@@ -198,24 +207,32 @@ export type LedgerRow = {
   image: Item;
 };
 
+/**
+ * One row per series group. A folder series shows its folder (`src/sketches/<series>/`); a
+ * one-off shows its file. A row reads as deleted only when every labelled file in it is.
+ */
 export function buildLedger(
   timeline: Timeline,
   keepers: Set<string>,
   files: AttributionFile['files'],
 ): LedgerRow[] {
-  const labelled = new Map<string, FileAttribution>();
-  for (const entry of Object.values(files)) {
-    if (entry.sketch !== null && !labelled.has(entry.sketch)) labelled.set(entry.sketch, entry);
-  }
   return timeline.days.map((day) => {
     const stamps = day.items.flatMap((i) => (i.ts === null ? [] : [i.ts]));
-    const hit = day.key === UNLABELLED ? undefined : labelled.get(day.key);
     const image = [...day.items].reverse().find((i) => keepers.has(i.name)) ?? day.items.at(-1);
+    const labelled =
+      day.key === UNLABELLED
+        ? []
+        : day.items.flatMap((i) => {
+            const entry = files[i.name];
+            return entry && seriesKeyOf(entry) !== null ? [entry] : [];
+          });
+    const folder = labelled.some((e) => e.sketch?.startsWith(`${day.key}/`));
+    const path = folder ? `src/${day.key}/` : (labelled.find((e) => e.path !== null)?.path ?? null);
     return {
       key: day.key,
       label: day.label,
-      path: hit?.path ?? null,
-      deleted: hit?.deleted ?? false,
+      path,
+      deleted: labelled.length > 0 && labelled.every((e) => e.deleted === true),
       count: day.items.length,
       first: stamps.length ? Math.min(...stamps) : null,
       last: stamps.length ? Math.max(...stamps) : null,

@@ -27,6 +27,7 @@ import {
   buildLedger,
   buildSketchTimeline,
   parseName,
+  seriesKeyOf,
   UNLABELLED,
 } from '../archive-app/src/review/model.ts';
 import {
@@ -1020,6 +1021,87 @@ test('keepers-only input drops empty sketches', () => {
     t.days.map((d) => d.key),
     [SK_A],
   );
+});
+
+/** Labelled entries keyed by filename, for the series-ledger tests. */
+function seriesFiles(
+  rows: [name: string, sketch: string, path: string, deleted?: boolean][],
+): Parameters<typeof buildLedger>[2] {
+  return Object.fromEntries(
+    rows.map(([name, sketch, path, deleted]) => [
+      name,
+      entry(undefined, {
+        series: seriesOf(sketch),
+        sketch,
+        path,
+        method: 'jev',
+        ...(deleted ? { deleted: true } : {}),
+      }),
+    ]),
+  );
+}
+
+test('ledger path is the folder for a series', () => {
+  const files = seriesFiles([
+    ['2026.10.10-10.00.00.png', 'sketches/gravura/basic', 'src/sketches/gravura/basic.ts', true],
+    ['2026.10.11-10.00.00.png', 'sketches/gravura/pro-color', 'src/sketches/gravura/pro-color.ts'],
+    ['2026.10.12-10.00.00.png', 'sketches/nalee/sketches/bipolar', 'src/sketches/nalee/x.ts', true],
+  ]);
+  const names = [...Object.keys(files), '2026.10.13-10.00.00.png'];
+  const of = (n: string) => (files[n] ? seriesKeyOf(files[n]) : null);
+  const rows = buildLedger(buildSketchTimeline(names, of, 'recent'), new Set(), files);
+  assert.deepEqual(
+    rows.map((r) => [r.key, r.label, r.path, r.deleted, r.count]),
+    [
+      ['sketches/nalee', 'nalee', 'src/sketches/nalee/', true, 1],
+      ['sketches/gravura', 'gravura', 'src/sketches/gravura/', false, 2],
+      [UNLABELLED, UNLABELLED, null, false, 1],
+    ],
+  );
+});
+
+test('ledger path is the file for a one-off', () => {
+  const files = seriesFiles([
+    ['2026.10.10-10.00.00.png', 'sketches/42-loc', 'src/sketches/42-loc.ts'],
+    ['2026.10.11-10.00.00.png', 'sketches/42-loc', 'src/sketches/42-loc.ts'],
+  ]);
+  const of = (n: string) => (files[n] ? seriesKeyOf(files[n]) : null);
+  const rows = buildLedger(buildSketchTimeline(Object.keys(files), of, 'recent'), new Set(), files);
+  assert.deepEqual(
+    rows.map((r) => [r.key, r.label, r.path, r.deleted, r.count]),
+    [['sketches/42-loc', '42-loc', 'src/sketches/42-loc.ts', false, 2]],
+  );
+});
+
+test('old entries without series still group via seriesOf(sketch)', () => {
+  const { series: _series, ...old } = entry(undefined, {
+    sketch: 'sketches/gravura/basic',
+    path: 'src/sketches/gravura/basic.ts',
+    method: 'prefix',
+  });
+  const legacy = old as FileAttribution;
+  assert.equal(legacy.series, undefined);
+  assert.equal(seriesKeyOf(legacy), 'sketches/gravura');
+  assert.equal(seriesKeyOf(entry(undefined)), null);
+  assert.equal(seriesKeyOf(entry(undefined, { series: 'sketches/x', sketch: null })), 'sketches/x');
+
+  const files = {
+    ...seriesFiles([
+      [
+        '2026.10.11-10.00.00.png',
+        'sketches/gravura/pro-color',
+        'src/sketches/gravura/pro-color.ts',
+      ],
+    ]),
+    '2026.10.10-10.00.00.png': legacy,
+  };
+  const of = (n: string) => (files[n] ? seriesKeyOf(files[n]) : null);
+  const t = buildSketchTimeline(Object.keys(files), of, 'recent');
+  assert.deepEqual(
+    t.days.map((d) => [d.key, d.items.length]),
+    [['sketches/gravura', 2]],
+  );
+  assert.equal(buildLedger(t, new Set(), files)[0]?.path, 'src/sketches/gravura/');
 });
 
 const fileStamp = (d: Date) =>
