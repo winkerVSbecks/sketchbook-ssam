@@ -24,6 +24,7 @@ import {
   type FileAttribution,
   type JevAnswer,
 } from '../archive-app/src/review/attribution.ts';
+import { readPilotTruth, setPilotTruth } from '../archive-app/src/review/server/pilot-truth.ts';
 import {
   buildLedger,
   buildSketchTimeline,
@@ -1564,6 +1565,27 @@ test('buildPilotSheet lists candidates with reference urls', () => {
     { id: 'sketches/a', path: P('a'), ref: referenceUrl('https://x/image/upload/v1/a.png') },
     { id: 'sketches/b', path: P('b'), ref: null },
   ]);
+});
+
+await atest('pilot-truth writes are serialised: fast clicks never drop a label', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'truth-'));
+  const file = join(dir, 'pilot-truth.json');
+  writeFileSync(file, JSON.stringify({ 'kept.png': 'sketches/a' }));
+  const names = Array.from({ length: 20 }, (_, i) => `f${String(i).padStart(2, '0')}.png`);
+  const ok = await Promise.all(
+    names.map((n, i) => setPilotTruth(file, n, i % 2 ? null : 'sketches/b')),
+  );
+  assert.ok(ok.every(Boolean));
+  const truth = JSON.parse(readFileSync(file, 'utf8')) as Record<string, string | null>;
+  assert.equal(Object.keys(truth).length, 21);
+  assert.equal(truth['kept.png'], 'sketches/a');
+  assert.deepEqual([truth['f00.png'], truth['f01.png']], ['sketches/b', null]);
+  // An unparseable file is never overwritten.
+  writeFileSync(file, '{ nope');
+  assert.equal(await setPilotTruth(file, 'x.png', null), false);
+  assert.equal(readFileSync(file, 'utf8'), '{ nope');
+  assert.equal(await readPilotTruth(file), null);
+  assert.deepEqual(await readPilotTruth(join(dir, 'missing.json')), {});
 });
 
 console.log(`${passed} tests passed`);

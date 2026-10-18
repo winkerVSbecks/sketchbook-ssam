@@ -28,6 +28,7 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import sharp from 'sharp';
 import ffmpeg from '@ffmpeg-installer/ffmpeg';
+import { readPilotTruth, setPilotTruth } from './pilot-truth.ts';
 
 const execFileAsync = promisify(execFile);
 
@@ -287,24 +288,6 @@ export function reviewServer(): Plugin {
     }
   }
 
-  /** Hand labels are irreplaceable: a missing file is empty, but an unparseable
-   * one is `null` so callers refuse to overwrite it. */
-  async function readPilotTruth(): Promise<Record<string, string | null> | null> {
-    let text: string;
-    try {
-      text = await readFile(pilotTruthPath, 'utf8');
-    } catch (err) {
-      if ((err as NodeJS.ErrnoException).code === 'ENOENT') return {};
-      throw err;
-    }
-    try {
-      const parsed = JSON.parse(text);
-      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
-    } catch {
-      return null;
-    }
-  }
-
   /** Send a JSON file from .review/ as-is: 404 when absent, 503 when unparseable. */
   async function sendReviewJson(res: ServerResponse, path: string): Promise<void> {
     let text: string;
@@ -382,7 +365,7 @@ export function reviewServer(): Plugin {
           }
 
           if (route === '/api/pilot-truth' && req.method === 'GET') {
-            const truth = await readPilotTruth();
+            const truth = await readPilotTruth(pilotTruthPath);
             if (truth) sendJson(res, truth);
             else sendJson(res, { error: 'malformed' }, 503);
             return;
@@ -398,19 +381,9 @@ export function reviewServer(): Plugin {
               sendJson(res, { error: 'bad sketch' }, 400);
               return;
             }
-            const truth = await readPilotTruth();
-            if (!truth) {
-              sendJson(res, { error: 'malformed' }, 503);
-              return;
-            }
-            truth[name] = sketch;
-            const sorted = Object.fromEntries(
-              Object.entries(truth).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
-            );
-            const tmp = `${pilotTruthPath}.tmp`;
-            await writeFile(tmp, JSON.stringify(sorted, null, 2));
-            await rename(tmp, pilotTruthPath);
-            sendJson(res, { ok: true });
+            // Serialised read-modify-write: two fast clicks never drop a label.
+            if (await setPilotTruth(pilotTruthPath, name, sketch)) sendJson(res, { ok: true });
+            else sendJson(res, { error: 'malformed' }, 503);
             return;
           }
 
