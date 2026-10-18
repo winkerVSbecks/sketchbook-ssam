@@ -1399,6 +1399,15 @@ test('scorePilot counts family picks as correct', () => {
   const r = scorePilot(items, { 'f1.png': withAnswer('sketches/b', 0.9) }, {}, [0.5]);
   assert.equal(r.prefix.rows[0]?.correct, 1);
   assert.equal(r.prefix.rows[0]?.precision, 1);
+  assert.match(formatReport(r, ['prefix']).split('\n')[2] ?? '', /^0\.50\s+1\s+1\s+-\s+100\.0%/);
+});
+
+test('correct never exceeds labelled, even when hand items abstain', () => {
+  const items = ['h1', 'h2', 'h3'].map((n) => pItem(`${n}.png`, 'hand', null));
+  const results = Object.fromEntries(items.map((i) => [i.name, withAnswer('sketches/a', 0.4)]));
+  const truth = Object.fromEntries(items.map((i) => [i.name, null]));
+  const [row] = scorePilot(items, results, truth, [0.7]).hand.rows;
+  assert.deepEqual([row?.labelled, row?.correct, row?.abstained], [0, 0, 3]);
 });
 
 test('scorePilot scores at series level', () => {
@@ -1500,9 +1509,14 @@ test('hand none truth rewards abstaining', () => {
   const truth = { 'h1.png': null, 'h2.png': null, 'h3.png': 'sketches/a' };
   const r = scorePilot(items, results, truth, [0.7]);
   // h1 accepted against none: wrong; h2 abstained against none: right; h3 accepted and right.
-  assert.equal(r.hand.rows[0]?.correct, 2);
+  // Abstaining is its own column: `correct` counts accepted-and-right only.
+  assert.equal(r.hand.rows[0]?.correct, 1);
+  assert.equal(r.hand.rows[0]?.abstained, 1);
   assert.equal(r.hand.rows[0]?.labelled, 2);
   assert.equal(r.hand.rows[0]?.precision, 0.5);
+  const lines = formatReport(r, ['hand']).split('\n');
+  assert.match(lines[1] ?? '', /labelled\s+correct\s+abstained\s+precision/);
+  assert.match(lines[2] ?? '', /^0\.70\s+2\s+1\s+1\s+50\.0%/);
   // an item the human has not labelled yet is not scored
   assert.equal(scorePilot(items, results, { 'h1.png': null }, [0.7]).hand.scored, 1);
 });

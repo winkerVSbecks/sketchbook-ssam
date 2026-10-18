@@ -123,8 +123,10 @@ export type ReportRow = {
   threshold: number;
   /** Accepted: the top series bucket (not none) at or above the threshold. */
   labelled: number;
-  /** Items judged right: accepted into the truth, or (hand, null truth) left unlabelled. */
+  /** Accepted and right: the top series is in the truth. Never more than `labelled`. */
   correct: number;
+  /** Hand items labelled "none of these" that were left unlabelled: abstained correctly. */
+  abstained: number;
   /** Accepted-and-right over accepted; null when nothing was accepted. */
   precision: number | null;
   /** Accepted over scored. */
@@ -170,7 +172,8 @@ export function scorePilot(
       return {
         threshold,
         labelled,
-        correct: hits + abstainedRight,
+        correct: hits,
+        abstained: abstainedRight,
         precision: labelled && group !== 'random' ? hits / labelled : null,
         coverage: scoredItems.length ? labelled / scoredItems.length : 0,
       };
@@ -189,16 +192,16 @@ export function scorePilot(
 
 const pct = (v: number | null): string => (v === null ? '-' : `${(v * 100).toFixed(1)}%`);
 
-/** One table per group: threshold | labelled | correct | precision | coverage. */
+/** One table per group: threshold | labelled | correct | abstained | precision | coverage. */
 export function formatReport(report: Report, groups: PilotGroup[] = GROUPS): string {
   return groups
     .map((g) => {
-      const head = `${g} (${report[g].scored} scored, none ${pct(report[g].noneShare)})\nthreshold  labelled  correct  precision  coverage`;
+      const head = `${g} (${report[g].scored} scored, none ${pct(report[g].noneShare)})\nthreshold  labelled  correct  abstained  precision  coverage`;
       const rows = report[g].rows.map(
         (r) =>
           `${r.threshold.toFixed(2).padEnd(9)}  ${String(r.labelled).padStart(8)}  ${
             g === 'random' ? '-'.padStart(7) : String(r.correct).padStart(7)
-          }  ${pct(r.precision).padStart(9)}  ${pct(r.coverage).padStart(8)}`,
+          }  ${(g === 'hand' ? String(r.abstained) : '-').padStart(9)}  ${pct(r.precision).padStart(9)}  ${pct(r.coverage).padStart(8)}`,
       );
       return [head, ...rows].join('\n');
     })
