@@ -142,7 +142,12 @@ export function loadHistory(repoRoot: string): History {
     return hit;
   };
 
+  // One `git grep` plus a `git show` per hit: the dominant cost of shortlisting, so cache it.
+  const importerCache = new Map<string, string[]>();
   const importersAt = (sha: string, helperPath: string): string[] => {
+    const key = `${sha}\0${helperPath}`;
+    const hit = importerCache.get(key);
+    if (hit) return hit;
     const base = path.posix.basename(helperPath).replace(/\.ts$/, '');
     const entries = entryFilesAt(sha);
     const out: string[] = [];
@@ -150,11 +155,12 @@ export function loadHistory(repoRoot: string): History {
       if (!entries.has(file)) continue;
       const src = gitShow(repoRoot, sha, file);
       if (src === null) continue;
-      const hit = [...src.matchAll(IMPORT_RE)].some(
+      const imports = [...src.matchAll(IMPORT_RE)].some(
         (m) => resolveImport(file, m[1] as string) === helperPath,
       );
-      if (hit) out.push(file);
+      if (imports) out.push(file);
     }
+    importerCache.set(key, out);
     return out;
   };
 

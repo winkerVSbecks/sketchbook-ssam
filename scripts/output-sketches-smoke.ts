@@ -3,6 +3,7 @@
  * Run: `npx tsx scripts/output-sketches-smoke.ts` — exits non-zero on the first failure.
  */
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -32,6 +33,7 @@ import {
 } from '../archive-app/src/review/model.ts';
 import {
   forwardRenames,
+  loadHistory,
   parseGitLog,
   resolveImport,
   sketchIdOf,
@@ -288,6 +290,30 @@ test('resolveImport handles ./, ../ and bare', () => {
   );
   assert.equal(resolveImport('src/sketches/nalee/a.ts', '../lib/x.ts'), 'src/sketches/lib/x.ts');
   assert.equal(resolveImport('src/sketches/nalee/a.ts', 'd3'), null);
+});
+
+test('importersAt is memoised per commit and helper', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'hist-'));
+  mkdirSync(join(dir, 'src', 'sketches'), { recursive: true });
+  writeFileSync(join(dir, 'src', 'sketches', 'helper.ts'), 'export const x = 1;\n');
+  writeFileSync(
+    join(dir, 'src', 'sketches', 'a.ts'),
+    "import { x } from './helper';\nssam(sketch as never, { x });\n",
+  );
+  const git = (...args: string[]) =>
+    execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...args], {
+      cwd: dir,
+      stdio: 'ignore',
+    });
+  git('init', '-q');
+  git('add', '.');
+  git('commit', '-q', '--no-verify', '-m', 'one');
+  const h = loadHistory(dir);
+  const sha = h.commits[0]?.sha ?? '';
+  const first = h.importersAt(sha, 'src/sketches/helper.ts');
+  assert.deepEqual(first, ['src/sketches/a.ts']);
+  // Same array back: the second call never re-runs git grep / git show.
+  assert.equal(h.importersAt(sha, 'src/sketches/helper.ts'), first);
 });
 
 const DAY = 86_400_000;
@@ -731,6 +757,14 @@ await atest('jev answer is held pending without thresholds, accepted with them',
   assert.equal(f?.sketch, 'sketches/a');
   assert.equal(f?.path, 'src/sketches/a.ts');
   assert.equal(f?.inputTokens, 7);
+  // The shortlist's paths travel with the answer, so a rethreshold never re-shortlists.
+  for (const stored of [pending.data.files[name], f]) {
+    assert.deepEqual(Object.keys(stored?.candidatePaths ?? {}).sort(), [
+      'sketches/a',
+      'sketches/b',
+    ]);
+    assert.equal(stored?.candidatePaths?.['sketches/b']?.path, 'src/sketches/b.ts');
+  }
 });
 
 await atest('api 400 is recorded and the run continues', async () => {
@@ -884,12 +918,83 @@ test('rethreshold relabels without asking', () => {
     ...emptyRun(),
     files: { [name]: entry(answer('sketches/a', 0.8), { reason: 'pending' }) },
   };
-  const strict = rethreshold(base, runHistory, { default: 0.9 });
+  const strict = rethreshold(base, () => runHistory, { default: 0.9 });
   assert.equal(strict.files[name]?.reason, 'low-confidence');
-  const loose = rethreshold(strict, runHistory, { default: 0.7 });
+  const loose = rethreshold(strict, () => runHistory, { default: 0.7 });
   assert.equal(loose.files[name]?.method, 'jev');
   assert.equal(loose.files[name]?.sketch, 'sketches/a');
   assert.deepEqual(loose.thresholds, { default: 0.7 });
+});
+
+/** A history whose every property read is counted (and a getter that counts loads). */
+function countingHistory() {
+  const counts = { loads: 0, reads: 0 };
+  const proxy = new Proxy(runHistory, {
+    get(target, key, receiver) {
+      counts.reads += 1;
+      return Reflect.get(target, key, receiver);
+    },
+  });
+  const get = () => {
+    counts.loads += 1;
+    return proxy;
+  };
+  return { counts, get };
+}
+
+test('rethreshold uses stored candidatePaths and never loads history', () => {
+  const { counts, get } = countingHistory();
+  const stored = {
+    'sketches/a': {
+      path: 'src/sketches/a.ts',
+      pathAtExport: 'src/sketches/old-a.ts',
+      deleted: false,
+    },
+  };
+  const files = {
+    [stamp('multi', 1)]: entry(answer('sketches/a', 0.8), {
+      reason: 'pending',
+      candidatePaths: stored,
+    }),
+    [stamp('multi', 2)]: entry(undefined, { reason: 'no-candidates' }),
+    [stamp('multi', 3)]: entry(answer('sketches/a', 0.8), { reason: 'error' }),
+    [stamp('multi', 4)]: entry(undefined, { reason: 'unsupported' }),
+    [stamp('solo', 1)]: entry(undefined, {
+      method: 'prefix',
+      sketch: 'sketches/a',
+      path: 'src/sketches/a.ts',
+    }),
+  };
+  const out = rethreshold({ ...emptyRun(), files }, get, { default: 0.7 });
+  assert.deepEqual(counts, { loads: 0, reads: 0 });
+  const f = out.files[stamp('multi', 1)];
+  assert.deepEqual(
+    [f?.method, f?.path, f?.pathAtExport],
+    ['jev', 'src/sketches/a.ts', 'src/sketches/old-a.ts'],
+  );
+  assert.equal(out.files[stamp('solo', 1)]?.series, 'sketches/a');
+  assert.equal(out.files[stamp('multi', 3)]?.reason, 'error');
+});
+
+test('rethreshold shortlists only older answered entries, and stores their paths', () => {
+  const { counts, get } = countingHistory();
+  const legacy = stamp('multi', 1);
+  const files = {
+    [legacy]: entry(answer('sketches/a', 0.8), { reason: 'pending' }),
+    [stamp('multi', 2)]: entry(answer('sketches/a', 0.8), { reason: 'pending' }),
+  };
+  const out = rethreshold({ ...emptyRun(), files }, get, { default: 0.7 });
+  assert.equal(counts.loads, 1);
+  assert.equal(out.files[legacy]?.path, 'src/sketches/a.ts');
+  assert.deepEqual(out.files[legacy]?.candidatePaths?.['sketches/a'], {
+    path: 'src/sketches/a.ts',
+    pathAtExport: 'src/sketches/a.ts',
+    deleted: false,
+  });
+  // A second pass finds the stored paths and loads nothing.
+  const again = countingHistory();
+  rethreshold(out, again.get, { default: 0.5 });
+  assert.equal(again.counts.loads, 0);
 });
 
 const SK_A = 'sketches/a/one';

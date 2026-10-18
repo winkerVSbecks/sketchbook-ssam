@@ -13,6 +13,7 @@ import {
   applyAccept,
   seriesOf,
   emptyAttributionFile,
+  SETTLED_REASONS,
   mergeFiles,
   type AttributionFile,
   type FileAttribution,
@@ -171,13 +172,15 @@ async function tagOne(
 
   try {
     const round = await askSketch(deps.ask, output, formatExportedAt(parsed.ts), options);
+    const candidatePaths = pathsOf(candidates);
     const pending: FileAttribution = {
       ...unlabelled('pending', ids, taggedAt),
       answer: round.answer,
+      candidatePaths,
       inputTokens: round.inputTokens,
     };
     const entry = data.thresholds
-      ? applyAccept(pending, parsed.ts, data.thresholds, pathsOf(candidates))
+      ? applyAccept(pending, parsed.ts, data.thresholds, candidatePaths)
       : pending;
     return { entry, tokens: round.inputTokens };
   } catch (err) {
@@ -231,17 +234,34 @@ export async function tagFiles(
   return { data: result, tokens, errors, refFailures };
 }
 
-/** Re-derive every stored label from its stored answer. No API calls. */
+/**
+ * Re-derive every stored label from its stored answer. No API calls. Paths come from each
+ * entry's `candidatePaths`; only an older answered entry without them is shortlisted again (and
+ * gains them), so `getHistory` is called at most once, and not at all when nothing needs it.
+ */
 export function rethreshold(
   data: AttributionFile,
-  history: History,
+  getHistory: () => History,
   t: Thresholds,
 ): AttributionFile {
+  let history: History | undefined;
   const files: Record<string, FileAttribution> = {};
   for (const [name, entry] of Object.entries(data.files)) {
-    const parsed = parseName(name);
-    const { candidates } = shortlist(parsed, history);
-    files[name] = applyAccept(entry, parsed.ts, t, pathsOf(candidates));
+    const { ts } = parseName(name);
+    if (entry.method === 'prefix') {
+      files[name] = applyAccept(entry, ts, t, {});
+      continue;
+    }
+    if (!entry.answer || (entry.reason && SETTLED_REASONS.includes(entry.reason))) {
+      files[name] = entry;
+      continue;
+    }
+    let candidatePaths = entry.candidatePaths;
+    if (!candidatePaths) {
+      history ??= getHistory();
+      candidatePaths = pathsOf(shortlist(parseName(name), history).candidates);
+    }
+    files[name] = applyAccept({ ...entry, candidatePaths }, ts, t, candidatePaths);
   }
   return { ...data, thresholds: t, files };
 }

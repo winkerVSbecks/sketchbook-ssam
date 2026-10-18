@@ -32,6 +32,8 @@ export type FileAttribution = {
   confidence: number | null;
   candidates: string[];
   answer?: JevAnswer;
+  /** each candidate's paths, stored with the answer so re-thresholding never re-shortlists */
+  candidatePaths?: SketchPaths;
   /** input tokens spent asking Jev about this file (all rounds); absent when it never reached Jev */
   inputTokens?: number;
   taggedAt: string;
@@ -60,7 +62,8 @@ export function thresholdFor(t: Thresholds, ts: number | null): number {
   return t.byYear?.[String(new Date(ts).getFullYear())] ?? t.default;
 }
 
-const SETTLED_REASONS: UnlabelledReason[] = ['error', 'unsupported', 'no-candidates'];
+/** Unlabelled reasons a threshold can never change. */
+export const SETTLED_REASONS: UnlabelledReason[] = ['error', 'unsupported', 'no-candidates'];
 
 /** Series of a sketch id: the first path segment under `sketches/` (a one-off file is its own). */
 export function seriesOf(id: string): string {

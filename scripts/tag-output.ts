@@ -212,7 +212,12 @@ async function main(): Promise<void> {
 
   if (flags.rethreshold) {
     if (!thresholds) fail('No thresholds set. Pass --threshold 0.x [--threshold-year 2024=0.y].');
-    const next = rethreshold({ ...stored, model: MODEL }, loadHistory(process.cwd()), thresholds);
+    // History loads only if an older entry lacks stored candidate paths.
+    const next = rethreshold(
+      { ...stored, model: MODEL },
+      () => loadHistory(process.cwd()),
+      thresholds,
+    );
     save(next);
     console.log(summarize(next, 0));
     return;
@@ -226,7 +231,7 @@ async function main(): Promise<void> {
 
   const history = loadHistory(process.cwd());
   let data: AttributionFile = { ...stored, model: MODEL, files: flags.force ? {} : stored.files };
-  data = rethreshold(data, history, thresholds);
+  data = rethreshold(data, () => history, thresholds);
 
   let names = listMedia().filter((n) => !(n in data.files));
   if (flags.limit !== undefined) {
