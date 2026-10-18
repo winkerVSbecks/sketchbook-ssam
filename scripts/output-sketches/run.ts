@@ -24,7 +24,7 @@ import { parseName } from '../../archive-app/src/review/model.ts';
 import type { SketchEntry } from '../archive-types.ts';
 import type { History } from './history.ts';
 import { askSketch, MODEL, type AskFn, type SketchOption } from './jev.ts';
-import { shortlist, type Candidate } from './shortlist.ts';
+import { shortlist, WINDOW_AFTER_MS, type Candidate } from './shortlist.ts';
 
 export const SKETCHES_JSON = 'output/.review/sketches.json';
 /** Dollars per million input tokens. */
@@ -55,8 +55,13 @@ export type RunDeps = {
   ask: AskFn;
   history: History;
   archive: Map<string, SketchEntry>;
-  loadOutput: (name: string) => Promise<Buffer | null>;
+  /**
+   * The output as an API-ready image; `null` when it can never be read (recorded unsupported),
+   * `'later'` when it cannot be read yet (a video without its thumbnail: skipped, not recorded).
+   */
+  loadOutput: (name: string) => Promise<Buffer | null | 'later'>;
   loadRef: (c: Candidate) => Promise<Buffer | null>;
+  /** ISO time; also decides which exports' git windows are still open. */
   now: () => string;
   save: (data: AttributionFile) => void;
 };
@@ -70,7 +75,15 @@ export type RunResult = {
   errors: number;
   /** Of those, files skipped because an archive reference could not be fetched. */
   refFailures: number;
+  /** Files left unrecorded for a later run: git window still open, or no video thumbnail yet. */
+  skipped: number;
 };
+
+/** New files, plus `error` entries (a failed reference fetch, an API 400/422): retried. */
+export function needsTagging(data: AttributionFile, name: string): boolean {
+  const entry = data.files[name];
+  return !entry || entry.reason === 'error';
+}
 
 const pad = (n: number): string => String(n).padStart(2, '0');
 
@@ -106,7 +119,8 @@ function unlabelled(
   };
 }
 
-type One = { entry: FileAttribution; tokens: number; failure?: 'file' | 'ref' };
+/** `entry: null` leaves the file unrecorded, to be picked up by a later run. */
+type One = { entry: FileAttribution | null; tokens: number; failure?: 'file' | 'ref' };
 
 /** Failures that say nothing about one file: stop (after a save) and let a rerun resume. */
 function isFatal(err: unknown): boolean {
@@ -148,12 +162,13 @@ async function tagOne(
     return { tokens: 0, entry: unlabelled('no-candidates', ids, taggedAt) };
   }
 
-  let output: Buffer | null;
+  let output: Buffer | null | 'later';
   try {
     output = await deps.loadOutput(name);
   } catch {
     return { tokens: 0, failure: 'file', entry: unlabelled('unsupported', ids, taggedAt) };
   }
+  if (output === 'later') return { tokens: 0, entry: null };
   if (!output) return { tokens: 0, entry: unlabelled('unsupported', ids, taggedAt) };
 
   // null means "no reference exists"; a rejection means the fetch failed, so do not ask.
@@ -196,7 +211,15 @@ export async function tagFiles(
   deps: RunDeps,
   opts: RunOptions,
 ): Promise<RunResult> {
-  const todo = names.filter((n) => !(n in data.files));
+  // An export's candidates can be committed up to WINDOW_AFTER_MS later: wait for its window.
+  const nowMs = Date.parse(deps.now());
+  const windowOpen = (name: string): boolean => {
+    const { ts } = parseName(name);
+    return ts !== null && ts + WINDOW_AFTER_MS > nowMs;
+  };
+  const due = names.filter((n) => needsTagging(data, n));
+  const todo = due.filter((n) => !windowOpen(n));
+  let skipped = due.length - todo.length;
   const updates: Record<string, FileAttribution> = {};
   let tokens = 0;
   let errors = 0;
@@ -214,7 +237,8 @@ export async function tagFiles(
       if (name === undefined) return;
       try {
         const one = await tagOne(name, data, deps, opts.withhold ?? false);
-        updates[name] = one.entry;
+        if (one.entry) updates[name] = one.entry;
+        else skipped += 1;
         tokens += one.tokens;
         if (one.failure) errors += 1;
         if (one.failure === 'ref') refFailures += 1;
@@ -231,7 +255,7 @@ export async function tagFiles(
   const result = snapshot();
   deps.save(result);
   if (failed) throw fatal;
-  return { data: result, tokens, errors, refFailures };
+  return { data: result, tokens, errors, refFailures, skipped };
 }
 
 /**

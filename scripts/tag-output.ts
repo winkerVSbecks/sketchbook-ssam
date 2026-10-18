@@ -33,6 +33,7 @@ import {
   type PilotItem,
 } from './output-sketches/pilot.ts';
 import {
+  needsTagging,
   readAttributions,
   rethreshold,
   SKETCHES_JSON,
@@ -138,6 +139,7 @@ function makeDeps(
     archive,
     loadOutput: async (name) => {
       const src = outputImageSource(name, OUTPUT_DIR);
+      if (src.kind === 'later') return 'later';
       if (src.kind === 'unsupported' || !src.path) return null;
       return prepareImage(readFileSync(src.path));
     },
@@ -233,7 +235,7 @@ async function main(): Promise<void> {
   let data: AttributionFile = { ...stored, model: MODEL, files: flags.force ? {} : stored.files };
   data = rethreshold(data, () => history, thresholds);
 
-  let names = listMedia().filter((n) => !(n in data.files));
+  let names = listMedia().filter((n) => needsTagging(data, n));
   if (flags.limit !== undefined) {
     const n = Number(flags.limit);
     if (!Number.isInteger(n) || n < 1)
@@ -251,6 +253,9 @@ async function main(): Promise<void> {
   console.log(summarize(result.data, result.tokens));
   if (result.errors) console.log(`errors recorded: ${result.errors}`);
   console.log(`reference fetch failures: ${result.refFailures}`);
+  if (result.skipped) {
+    console.log(`left for a later run: ${result.skipped} (git window open or no video thumbnail)`);
+  }
 }
 
 main().catch((err) => {

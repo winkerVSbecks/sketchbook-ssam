@@ -57,6 +57,7 @@ import {
   type PilotItem,
 } from './output-sketches/pilot.ts';
 import {
+  needsTagging,
   readAttributions,
   rethreshold,
   tagFiles,
@@ -547,7 +548,8 @@ test('outputImageSource handles videos without thumbs and svgs', () => {
     kind: 'thumb',
     path: join(dir, '.review', 'thumbs', 'a.mp4.webp'),
   });
-  assert.deepEqual(outputImageSource('b.mov', dir), { kind: 'unsupported', path: null });
+  // No thumbnail yet: try again on a later run rather than storing it as unsupported.
+  assert.deepEqual(outputImageSource('b.mov', dir), { kind: 'later', path: null });
   assert.deepEqual(outputImageSource('c.svg', dir), { kind: 'unsupported', path: null });
 });
 
@@ -884,6 +886,82 @@ await atest('reference fetch failure skips Jev and records error without an answ
   assert.equal(data.files[name]?.answer, undefined);
   assert.equal(errors, 1);
   assert.equal(refFailures, 1);
+});
+
+await atest('a video without a thumbnail leaves no entry', async () => {
+  let asked = 0;
+  const [video, image] = [stamp('multi', 1).replace('.png', '.mp4'), stamp('multi', 2)];
+  const deps = mkDeps({
+    ask: async (req: SystemOneRequest) => {
+      asked += 1;
+      return fakeAnswer('c00', keysOf(req), 1);
+    },
+    loadOutput: async (n) => (n === video ? 'later' : Buffer.from('img')),
+  });
+  const { data, skipped, errors } = await tagFiles([video, image], emptyRun(), deps, runOpts);
+  assert.equal(video in data.files, false);
+  assert.equal(data.files[image]?.reason, 'pending');
+  assert.deepEqual([asked, skipped, errors], [1, 1, 0]);
+});
+
+await atest('a rerun re-asks error entries and skips every other stored entry', async () => {
+  const asked: string[] = [];
+  const deps = mkDeps({
+    ask: async (req: SystemOneRequest) => fakeAnswer('c00', keysOf(req), 1),
+    loadOutput: async (n) => {
+      asked.push(n);
+      return Buffer.from('img');
+    },
+  });
+  const [err, pending, jev, unsupported] = [1, 2, 3, 4].map((i) => stamp('multi', i)) as [
+    string,
+    string,
+    string,
+    string,
+  ];
+  const stored = {
+    ...emptyRun(),
+    files: {
+      [err]: entry(undefined, { reason: 'error' }),
+      [pending]: entry(answer('sketches/a', 0.5), { reason: 'pending' }),
+      [jev]: entry(answer('sketches/a', 0.9), { method: 'jev', series: 'sketches/a' }),
+      [unsupported]: entry(undefined, { reason: 'unsupported' }),
+    },
+  };
+  assert.deepEqual(
+    [err, pending, jev, unsupported].map((n) => needsTagging(stored, n)),
+    [true, false, false, false],
+  );
+  assert.equal(needsTagging(stored, stamp('multi', 5)), true);
+  const { data } = await tagFiles([err, pending, jev, unsupported], stored, deps, runOpts);
+  assert.deepEqual(asked, [err]);
+  assert.equal(data.files[err]?.reason, 'pending');
+  assert.equal(data.files[err]?.answer?.choice, 'sketches/a');
+  assert.equal(data.files[unsupported]?.reason, 'unsupported');
+});
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+/** A `multi-` export name stamped at `ms`, local time, as the dev runner writes it. */
+const stampAt = (ms: number) => {
+  const d = new Date(ms);
+  return `multi-${d.getFullYear()}.${pad2(d.getMonth() + 1)}.${pad2(d.getDate())}-${pad2(d.getHours())}.${pad2(d.getMinutes())}.${pad2(d.getSeconds())}.png`;
+};
+
+await atest('exports whose git window is still open are skipped, not recorded', async () => {
+  const now = '2026-10-17T00:00:00.000Z';
+  const [fresh, settled] = [stampAt(Date.parse(now) - DAY), stampAt(Date.parse(now) - 4 * DAY)];
+  let asked = 0;
+  const deps = mkDeps({
+    now: () => now,
+    ask: async (req: SystemOneRequest) => {
+      asked += 1;
+      return fakeAnswer('c00', keysOf(req), 1);
+    },
+  });
+  const { data, skipped } = await tagFiles([fresh, settled], emptyRun(), deps, runOpts);
+  assert.equal(fresh in data.files, false);
+  assert.equal(data.files[settled]?.reason, 'pending');
+  assert.deepEqual([asked, skipped], [1, 1]);
 });
 
 test('readAttributions refuses a wrong shape', () => {

@@ -11,7 +11,8 @@ export const MAX_SIDE = 1568;
 export const MIN_SIDE = 280;
 
 export type ImageSource = {
-  kind: 'file' | 'thumb' | 'unsupported';
+  /** `later`: a video whose Light Table thumbnail is not built yet; try again next run. */
+  kind: 'file' | 'thumb' | 'later' | 'unsupported';
   path: string | null;
 };
 
@@ -76,13 +77,13 @@ const VIDEO_EXTS = new Set(['.mp4', '.mov', '.webm']);
 // webp/gif are accepted: prepareImage converts everything to JPEG.
 const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif']);
 
-/** Which file to read for an output: itself, a review video thumbnail, or nothing usable. */
+/** Which file to read for an output: itself, a review video thumbnail, not yet, or never. */
 export function outputImageSource(name: string, outputDir: string): ImageSource {
   const ext = extname(name).toLowerCase();
   if (IMAGE_EXTS.has(ext)) return { kind: 'file', path: join(outputDir, name) };
   if (VIDEO_EXTS.has(ext)) {
     const thumb = join(outputDir, '.review', 'thumbs', `${name}.webp`);
-    return existsSync(thumb) ? { kind: 'thumb', path: thumb } : { kind: 'unsupported', path: null };
+    return existsSync(thumb) ? { kind: 'thumb', path: thumb } : { kind: 'later', path: null };
   }
   return { kind: 'unsupported', path: null };
 }
