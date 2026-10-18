@@ -10,7 +10,7 @@
  * in time. The app starts on the most recent day.
  */
 
-import { seriesOf, type AttributionFile, type FileAttribution } from './attribution';
+import { applyAccept, seriesOf, type AttributionFile, type FileAttribution } from './attribution';
 
 export type Item = {
   name: string;
@@ -132,7 +132,33 @@ export const UNLABELLED = 'unlabelled';
  * labels have no `series` field, so fall back to the series of their `sketch`.
  */
 export function seriesKeyOf(entry: Pick<FileAttribution, 'series' | 'sketch'>): string | null {
-  return entry.series ?? (entry.sketch ? seriesOf(entry.sketch) : null);
+  // `||`, not `??`: an empty-string series falls back too.
+  return entry.series || (entry.sketch ? seriesOf(entry.sketch) : null);
+}
+
+/**
+ * `?pilot=<t>` on the Light Table URL: view the stored pilot labelled at threshold `t`.
+ * Null when absent or not a number in [0, 1].
+ */
+export function pilotParam(search: string): number | null {
+  const raw = new URLSearchParams(search).get('pilot');
+  if (raw === null || raw.trim() === '') return null;
+  const t = Number(raw);
+  return Number.isFinite(t) && t >= 0 && t <= 1 ? t : null;
+}
+
+/**
+ * The stored pilot answers (`pilot-results.json`, kept raw) labelled by the shared accept rule
+ * at one threshold, client-side. Older entries without `candidatePaths` still get their series;
+ * they just have no path.
+ */
+export function pilotAttributions(data: AttributionFile, t: number): AttributionFile {
+  const thresholds = { default: t };
+  const files: AttributionFile['files'] = Object.create(null);
+  for (const [name, entry] of Object.entries(data.files)) {
+    files[name] = applyAccept(entry, parseName(name).ts, thresholds, entry.candidatePaths ?? {});
+  }
+  return { ...data, thresholds, files };
 }
 
 export type LedgerSort = 'recent' | 'count';
@@ -227,6 +253,7 @@ export function buildLedger(
             return entry && seriesKeyOf(entry) !== null ? [entry] : [];
           });
     const folder = labelled.some((e) => e.sketch?.startsWith(`${day.key}/`));
+    // Series keys always start with `sketches/`, so this is the folder under src/.
     const path = folder ? `src/${day.key}/` : (labelled.find((e) => e.path !== null)?.path ?? null);
     return {
       key: day.key,

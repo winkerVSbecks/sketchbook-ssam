@@ -9,6 +9,9 @@
  * `v` regroups the same stream by series (labels from `/api/sketches`): the
  * Ledger lists one row per series, and each series then stands in for a day,
  * so `[`/`]`, the sheet and the loupe work unchanged inside it.
+ *
+ * `/?pilot=<t>` shows the stored pilot answers instead, labelled client-side at threshold `t`
+ * (marked `pilot · ≥ t` in the header); sketches.json is never read.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { AttributionFile, FileAttribution } from './attribution.ts';
@@ -17,6 +20,8 @@ import {
   buildSketchTimeline,
   buildTimeline,
   parseName,
+  pilotAttributions,
+  pilotParam,
   seriesKeyOf,
   UNLABELLED,
   type Day,
@@ -36,6 +41,9 @@ type Progress = { done: number; total: number };
 
 /** `null` while loading; `'missing'` when there is no usable sketches.json. */
 type Attributions = AttributionFile | null | 'missing';
+
+/** `?pilot=<t>`: the threshold the stored pilot is viewed at, or null for the real labels. */
+const PILOT_THRESHOLD = pilotParam(window.location.search);
 
 const isStringOrNull = (v: unknown) => v === null || typeof v === 'string';
 
@@ -418,9 +426,12 @@ function LightTable() {
       fetch('/api/index').then((r) => (r.ok ? r.json() : Promise.reject(new Error(`${r.status}`)))),
       fetch('/api/keepers').then((r) => (r.ok ? r.json() : [])),
       // 404 (no file yet) and 503 (malformed) both read as missing; never fatal.
-      fetch('/api/sketches')
+      fetch(PILOT_THRESHOLD === null ? '/api/sketches' : '/api/sketches?source=pilot')
         .then((r) => (r.ok ? r.json() : 'missing'))
         .then(asAttributions)
+        .then((a) =>
+          a === 'missing' || PILOT_THRESHOLD === null ? a : pilotAttributions(a, PILOT_THRESHOLD),
+        )
         .catch(() => 'missing' as const),
     ])
       .then(
@@ -941,6 +952,11 @@ function LightTable() {
             </span>
           )}
           {keepersOnly && <span>keepers · {kept?.items.length ?? 0}</span>}
+          {PILOT_THRESHOLD !== null && (
+            <span className="quiet" title="Pilot answers, not the real labels">
+              pilot · ≥ {PILOT_THRESHOLD}
+            </span>
+          )}
           <button
             type="button"
             className="help-button"
@@ -982,8 +998,16 @@ function LightTable() {
           </p>
         ) : sketchMissing ? (
           <p className="empty">
-            No sketch labels yet — run <code>npm run tag:output</code>. <code>v</code> returns to
-            days.
+            {PILOT_THRESHOLD === null ? (
+              <>
+                No sketch labels yet — run <code>npm run tag:output</code>.
+              </>
+            ) : (
+              <>
+                No pilot yet — run <code>npm run tag:output -- --pilot 300</code>.
+              </>
+            )}{' '}
+            <code>v</code> returns to days.
           </p>
         ) : showLedger ? (
           <Ledger rows={ledgerRows} sort={sort} selectedKey={day?.key ?? null} onOpen={openGroup} />

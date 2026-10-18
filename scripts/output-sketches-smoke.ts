@@ -29,6 +29,8 @@ import {
   buildLedger,
   buildSketchTimeline,
   parseName,
+  pilotAttributions,
+  pilotParam,
   seriesKeyOf,
   UNLABELLED,
 } from '../archive-app/src/review/model.ts';
@@ -1353,6 +1355,49 @@ test('old entries without series still group via seriesOf(sketch)', () => {
     [['sketches/gravura', 2]],
   );
   assert.equal(buildLedger(t, new Set(), files)[0]?.path, 'src/sketches/gravura/');
+});
+
+test('pilotParam reads a threshold in [0, 1] from the query string', () => {
+  assert.equal(pilotParam('?pilot=0.5'), 0.5);
+  assert.equal(pilotParam('?x=1&pilot=0'), 0);
+  assert.equal(pilotParam('?pilot=1'), 1);
+  for (const bad of ['', '?pilot=', '?pilot=1.2', '?pilot=-0.1', '?pilot=abc', '?other=0.5']) {
+    assert.equal(pilotParam(bad), null, bad);
+  }
+});
+
+test('pilotAttributions applies the accept rule at one threshold, by series', () => {
+  const stored = {
+    'sketches/g/a': { path: 'src/sketches/g/a.ts', pathAtExport: null, deleted: false },
+  };
+  const data = {
+    ...emptyAttributionFile('jev-1.14.0'),
+    files: {
+      // siblings: series g at 0.75, top file g/a
+      'g-2025.06.10-12.00.00.png': entry(siblings, { reason: 'pending', candidatePaths: stored }),
+      '2025.06.11-12.00.00.png': entry(siblings, { reason: 'pending' }),
+      '2025.06.12-12.00.00.png': entry(undefined, { reason: 'no-candidates' }),
+    },
+  };
+  const loose = pilotAttributions(data, 0.5);
+  assert.deepEqual(loose.thresholds, { default: 0.5 });
+  const [withPaths, without, none] = Object.values(loose.files);
+  assert.deepEqual(
+    [withPaths?.series, withPaths?.sketch, withPaths?.path],
+    ['sketches/g', 'sketches/g/a', 'src/sketches/g/a.ts'],
+  );
+  // No stored paths: still labelled by series, with no path to show.
+  assert.deepEqual([without?.series, without?.path], ['sketches/g', null]);
+  assert.equal(none?.reason, 'no-candidates');
+  const strict = pilotAttributions(data, 0.8);
+  assert.equal(Object.values(strict.files)[0]?.reason, 'low-confidence');
+  // The stored pilot is never touched.
+  assert.equal(data.files['g-2025.06.10-12.00.00.png']?.series, null);
+});
+
+test('seriesKeyOf falls back past an empty-string series', () => {
+  assert.equal(seriesKeyOf({ series: '', sketch: 'sketches/g/a' }), 'sketches/g');
+  assert.equal(seriesKeyOf({ series: null, sketch: null }), null);
 });
 
 const fileStamp = (d: Date) =>

@@ -5,7 +5,8 @@
  *   GET  /api/index          — top-level media files in <repo>/output
  *   GET  /api/keepers        — starred filenames (persisted JSON)
  *   POST /api/keepers        — { name, kept } toggle
- *   GET  /api/sketches       — output file → sketch attribution (sketches.json)
+ *   GET  /api/sketches       — output file → sketch attribution (sketches.json);
+ *                              ?source=pilot serves the raw pilot answers (pilot-results.json)
  *   GET  /api/pilot          — pilot labelling set (pilot.json)
  *   GET  /api/pilot-truth    — hand labels { name: sketch | null }
  *   POST /api/pilot-truth    — { name, sketch: string | null } set one label
@@ -41,6 +42,7 @@ const keepersPath = join(reviewDir, 'keepers.json');
 const failedPath = join(reviewDir, 'failed.json');
 const sketchesPath = join(reviewDir, 'sketches.json');
 const pilotPath = join(reviewDir, 'pilot.json');
+const pilotResultsPath = join(reviewDir, 'pilot-results.json');
 const pilotTruthPath = join(reviewDir, 'pilot-truth.json');
 
 const THUMB_SIZE = 320;
@@ -355,7 +357,12 @@ export function reviewServer(): Plugin {
           }
 
           if (route === '/api/sketches' && req.method === 'GET') {
-            await sendReviewJson(res, sketchesPath);
+            const source = url.searchParams.get('source');
+            if (source !== null && source !== 'pilot') {
+              sendJson(res, { error: 'unknown source' }, 400);
+              return;
+            }
+            await sendReviewJson(res, source === 'pilot' ? pilotResultsPath : sketchesPath);
             return;
           }
 
