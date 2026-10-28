@@ -22,7 +22,7 @@ const config = {
   maxR: 160,
   driftFactor: 0.025,
   hullSamples: 360,
-  strokeWidth: 2,
+  strokeWidth: 5,
   layers: 4,
   layerSpacing: 14,
   hullLayerSpacing: 14,
@@ -46,13 +46,7 @@ pane.addBinding(config, 'centerRingRadius', { min: 2, max: 30, step: 0.5 });
 pane.addBinding(config, 'connectionsPerInside', { min: 1, max: 6, step: 1 });
 pane.addBinding(config, 'relaxIterations', { min: 0, max: 24, step: 1 });
 
-export const sketch = ({
-  wrap,
-  context,
-  width,
-  height,
-  ...props
-}: SketchProps) => {
+export const sketch = ({ wrap, context, width, height, ...props }: SketchProps) => {
   if (import.meta.hot) {
     import.meta.hot.dispose(() => wrap.dispose());
     import.meta.hot.accept(() => wrap.hotReload());
@@ -76,18 +70,18 @@ export const sketch = ({
       }
     }
   }
-  const [bg, ink] =
-    (wcagLuminance(colors[bestI]) ?? 0) >= (wcagLuminance(colors[bestJ]) ?? 0)
-      ? [colors[bestI], colors[bestJ]]
-      : [colors[bestJ], colors[bestI]];
-  const strokeColor = `hsl(from ${ink} h s l / 0.5)`;
+  // const [bg, ink] =
+  //   (wcagLuminance(colors[bestI]) ?? 0) >= (wcagLuminance(colors[bestJ]) ?? 0)
+  //     ? [colors[bestI], colors[bestJ]]
+  //     : [colors[bestJ], colors[bestI]];
+  // const strokeColor = `hsl(from ${ink} h s l / 0.5)`;
+  const bg = '#007b4a';
+  const ink = '#000';
+  const strokeColor = ink;
 
   const noise = (x: number, y: number, t: number): number => {
     const angle = Math.PI * 2 * t * 2;
-    const polarT = [
-      mapRange(Math.sin(angle), -1, 1, 0, 2),
-      mapRange(Math.cos(angle), -1, 1, 0, 2),
-    ];
+    const polarT = [mapRange(Math.sin(angle), -1, 1, 0, 2), mapRange(Math.cos(angle), -1, 1, 0, 2)];
     return Random.noise4D(x / 100, y / 100, polarT[0], polarT[1], 0.25, 1);
   };
 
@@ -110,9 +104,7 @@ export const sketch = ({
         x: Random.range(margin, width - margin),
         y: Random.range(margin, height - margin),
       };
-      if (
-        !positions.some((p) => Math.hypot(p.x - pt.x, p.y - pt.y) < minDist)
-      ) {
+      if (!positions.some((p) => Math.hypot(p.x - pt.x, p.y - pt.y) < minDist)) {
         positions.push(pt);
       }
     }
@@ -132,14 +124,8 @@ export const sketch = ({
     edges = [];
     for (const j of insideIndices) {
       const sorted = [...boundaryIndices].sort((a, b) => {
-        const da = Math.hypot(
-          positions[a].x - positions[j].x,
-          positions[a].y - positions[j].y,
-        );
-        const db = Math.hypot(
-          positions[b].x - positions[j].x,
-          positions[b].y - positions[j].y,
-        );
+        const da = Math.hypot(positions[a].x - positions[j].x, positions[a].y - positions[j].y);
+        const db = Math.hypot(positions[b].x - positions[j].x, positions[b].y - positions[j].y);
         return da - db;
       });
       const k = Math.min(config.connectionsPerInside, sorted.length);
@@ -191,9 +177,7 @@ export const sketch = ({
       }
     }
 
-    const hullCircles = hullIndices(circles, config.hullSamples).map(
-      (i) => circles[i],
-    );
+    const hullCircles = hullIndices(circles, config.hullSamples).map((i) => circles[i]);
     if (hullCircles.length < 2) return;
 
     context.strokeStyle = strokeColor;
@@ -242,10 +226,7 @@ export const sketch = ({
       context.arc(c.x, c.y, c.r, 0, Math.PI * 2);
       context.fill();
 
-      const maxRings = Math.min(
-        config.layers,
-        Math.floor(c.r / config.layerSpacing),
-      );
+      const maxRings = Math.min(config.layers, Math.floor(c.r / config.layerSpacing));
       for (let k = 0; k < maxRings; k++) {
         const rk = c.r - k * config.layerSpacing;
         if (rk <= 0) break;
@@ -306,14 +287,9 @@ function getTangentPoints(c1: Circle, c2: Circle): { t1: Vec2; t2: Vec2 } {
   };
 }
 
-function rubberBandPath(
-  ctx: CanvasRenderingContext2D,
-  circles: Circle[],
-): void {
+function rubberBandPath(ctx: CanvasRenderingContext2D, circles: Circle[]): void {
   const n = circles.length;
-  const edges = circles.map((c, i) =>
-    getTangentPoints(c, circles[(i + 1) % n]),
-  );
+  const edges = circles.map((c, i) => getTangentPoints(c, circles[(i + 1) % n]));
 
   ctx.beginPath();
   const firstArrival = edges[n - 1].t2;
