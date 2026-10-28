@@ -21,8 +21,8 @@ Random.setSeed(Random.getRandomSeed());
 console.log(`Seed: ${Random.getSeed()}`);
 
 const config = {
-  // res: [5, 3] as [number, number],
-  res: [4, 4] as [number, number],
+  res: [5, 3] as [number, number],
+  // res: [4, 4] as [number, number],
   debug: 0, // 0 = none, 1 = area cells, 2 = outline cells, 3 = all cells
   edgeAwareReduction: true,
   margin: 20,
@@ -350,9 +350,7 @@ function reduce(grid: GridCell[], bgColor: string) {
           colorCounts[n.color] = (colorCounts[n.color] || 0) + 1;
         }
       });
-      const sortedColors = Object.entries(colorCounts).sort(
-        (a, b) => b[1] - a[1],
-      );
+      const sortedColors = Object.entries(colorCounts).sort((a, b) => b[1] - a[1]);
       if (sortedColors.length > 0) {
         cell.color = sortedColors[0][0];
         if (cell.color === bgColor) {
@@ -378,12 +376,9 @@ function roundCorners(grid: GridCell[]) {
       return grid[xyToIndex(nx, ny)];
     });
 
-    const isNeighbourOpen = (
-      neighbour: GridCell | undefined,
-      edge: keyof Edge,
-    ) => !(neighbour && edges[neighbour.type][edge]);
-    const isCellOpen = (cell: GridCell, edge: keyof Edge) =>
-      !edges[cell.type][edge];
+    const isNeighbourOpen = (neighbour: GridCell | undefined, edge: keyof Edge) =>
+      !(neighbour && edges[neighbour.type][edge]);
+    const isCellOpen = (cell: GridCell, edge: keyof Edge) => !edges[cell.type][edge];
 
     const tl =
       (isNeighbourOpen(top, '01') && isNeighbourOpen(left, '10')) ||
@@ -642,8 +637,8 @@ export const sketch = async ({ wrap, context, ...props }: SketchProps) => {
 export const settings: SketchSettings = {
   mode: '2d',
   // dimensions: [640, 840],
-  dimensions: [1080, 1080],
-  // dimensions: [1040, 640],
+  // dimensions: [1080, 1080],
+  dimensions: [1040, 640],
   pixelRatio: window.devicePixelRatio,
   animate: true,
   duration: 10_000,

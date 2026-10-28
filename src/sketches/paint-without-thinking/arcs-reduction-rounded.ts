@@ -341,11 +341,7 @@ function reduce() {
         if (nx >= 0 && nx < config.res[0] && ny >= 0 && ny < config.res[1]) {
           const n = grid[xyToIndex(nx, ny)];
           const dir = `${dx * -1}${dy * -1}` as keyof Edge;
-          const color = config.edgeAwareReduction
-            ? edges[n.type][dir]
-              ? n.color
-              : bg
-            : n.color;
+          const color = config.edgeAwareReduction ? (edges[n.type][dir] ? n.color : bg) : n.color;
 
           return { ...n, color };
         }
@@ -363,9 +359,7 @@ function reduce() {
           colorCounts[n.color] = (colorCounts[n.color] || 0) + 1;
         }
       });
-      const sortedColors = Object.entries(colorCounts).sort(
-        (a, b) => b[1] - a[1],
-      );
+      const sortedColors = Object.entries(colorCounts).sort((a, b) => b[1] - a[1]);
       if (sortedColors.length > 0) {
         cell.color = sortedColors[0][0];
         if (cell.color === bg) {
@@ -392,12 +386,9 @@ function roundCorners() {
     });
 
     // Helper to check if neighbour exists and its edge is closed
-    const isNeighbourOpen = (
-      neighbour: GridCell | undefined,
-      edge: keyof Edge,
-    ) => !(neighbour && edges[neighbour.type][edge]);
-    const isCellOpen = (cell: GridCell, edge: keyof Edge) =>
-      !edges[cell.type][edge];
+    const isNeighbourOpen = (neighbour: GridCell | undefined, edge: keyof Edge) =>
+      !(neighbour && edges[neighbour.type][edge]);
+    const isCellOpen = (cell: GridCell, edge: keyof Edge) => !edges[cell.type][edge];
 
     // For each corner, round if:
     // - both adjacent edges are open (as before), OR
