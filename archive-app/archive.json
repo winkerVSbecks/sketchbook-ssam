@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-11T14:55:45.372Z",
+  "generatedAt": "2026-10-27T16:57:17.907Z",
   "sketches": [
     {
       "id": "sketches/42-loc",
@@ -781,6 +781,70 @@
         "publicId": "sketchbook/2025/chladni-basic",
         "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779061457/sketchbook/2025/chladni-basic.png",
         "version": 1779061457,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/chladni/hatch-ticks-a",
+      "name": "hatch-ticks-a",
+      "path": "src/sketches/chladni/hatch-ticks-a.ts",
+      "firstCommitDate": "2026-10-26T14:41:04-04:00",
+      "year": 2026,
+      "lastCommitSha": "87b65e41728f291c039777b70adcbc76bc5d6998",
+      "archivedAt": "2026-10-27T16:54:00.167Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/chladni-hatch-ticks-a",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1793120039/sketchbook/2026/chladni-hatch-ticks-a.png",
+        "version": 1793120039,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/chladni/hatch-ticks-b",
+      "name": "hatch-ticks-b",
+      "path": "src/sketches/chladni/hatch-ticks-b.ts",
+      "firstCommitDate": "2026-10-26T14:41:04-04:00",
+      "year": 2026,
+      "lastCommitSha": "87b65e41728f291c039777b70adcbc76bc5d6998",
+      "archivedAt": "2026-10-27T16:54:03.043Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/chladni-hatch-ticks-b",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1793120042/sketchbook/2026/chladni-hatch-ticks-b.png",
+        "version": 1793120042,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/chladni/hatch-ticks-c",
+      "name": "hatch-ticks-c",
+      "path": "src/sketches/chladni/hatch-ticks-c.ts",
+      "firstCommitDate": "2026-10-26T14:41:04-04:00",
+      "year": 2026,
+      "lastCommitSha": "87b65e41728f291c039777b70adcbc76bc5d6998",
+      "archivedAt": "2026-10-27T16:54:05.274Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/chladni-hatch-ticks-c",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1793120044/sketchbook/2026/chladni-hatch-ticks-c.png",
+        "version": 1793120044,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/chladni/hatch-ticks-d",
+      "name": "hatch-ticks-d",
+      "path": "src/sketches/chladni/hatch-ticks-d.ts",
+      "firstCommitDate": "2026-10-26T14:41:04-04:00",
+      "year": 2026,
+      "lastCommitSha": "87b65e41728f291c039777b70adcbc76bc5d6998",
+      "archivedAt": "2026-10-27T16:54:07.703Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/chladni-hatch-ticks-d",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1793120047/sketchbook/2026/chladni-hatch-ticks-d.png",
+        "version": 1793120047,
         "width": 1080,
         "height": 1080
       }
@@ -1677,6 +1741,150 @@
         "publicId": "sketchbook/2026/differential-growth",
         "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1791730263/sketchbook/2026/differential-growth.png",
         "version": 1791730263,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/differential-growth/differential-growth",
+      "name": "differential-growth",
+      "path": "src/sketches/differential-growth/differential-growth.ts",
+      "firstCommitDate": "2026-10-10T14:51:56-04:00",
+      "year": 2026,
+      "lastCommitSha": "550eba5e55cf8c9453a564d2176ad6d1ff36eb87",
+      "archivedAt": "2026-10-27T16:54:11.473Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/differential-growth-differential-growth",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1793120051/sketchbook/2026/differential-growth-differential-growth.png",
+        "version": 1793120051,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/differential-growth/jali",
+      "name": "jali",
+      "path": "src/sketches/differential-growth/jali.ts",
+      "firstCommitDate": "2026-10-11T15:26:45-04:00",
+      "year": 2026,
+      "lastCommitSha": "4bce98d44e7347a4db3a4063002f0bf1291c0de5",
+      "archivedAt": "2026-10-27T16:54:16.688Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/differential-growth-jali",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1793120056/sketchbook/2026/differential-growth-jali.png",
+        "version": 1793120056,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/differential-growth/khidki",
+      "name": "khidki",
+      "path": "src/sketches/differential-growth/khidki.ts",
+      "firstCommitDate": "2026-10-11T16:03:44-04:00",
+      "year": 2026,
+      "lastCommitSha": "e9570e76fdf6671742ec18a8050d759ecde08ee5",
+      "archivedAt": "2026-10-27T16:54:22.591Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/differential-growth-khidki",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1793120062/sketchbook/2026/differential-growth-khidki.png",
+        "version": 1793120062,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/differential-growth/khidki-grammar",
+      "name": "khidki-grammar",
+      "path": "src/sketches/differential-growth/khidki-grammar.ts",
+      "firstCommitDate": "2026-10-12T19:40:38-04:00",
+      "year": 2026,
+      "lastCommitSha": "e9570e76fdf6671742ec18a8050d759ecde08ee5",
+      "archivedAt": "2026-10-27T16:54:25.691Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/differential-growth-khidki-grammar",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1793120065/sketchbook/2026/differential-growth-khidki-grammar.png",
+        "version": 1793120065,
+        "width": 1080,
+        "height": 1350
+      }
+    },
+    {
+      "id": "sketches/differential-growth/khidki-grammar-bare",
+      "name": "khidki-grammar-bare",
+      "path": "src/sketches/differential-growth/khidki-grammar-bare.ts",
+      "firstCommitDate": "2026-10-12T19:54:11-04:00",
+      "year": 2026,
+      "lastCommitSha": "457dbb931cb562692371e8c835106ef9c2f5db51",
+      "archivedAt": "2026-10-27T16:54:28.438Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/differential-growth-khidki-grammar-bare",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1793120068/sketchbook/2026/differential-growth-khidki-grammar-bare.png",
+        "version": 1793120068,
+        "width": 1080,
+        "height": 1350
+      }
+    },
+    {
+      "id": "sketches/differential-growth/khidki-grills",
+      "name": "khidki-grills",
+      "path": "src/sketches/differential-growth/khidki-grills.ts",
+      "firstCommitDate": "2026-10-12T16:25:49-04:00",
+      "year": 2026,
+      "lastCommitSha": "977f4273b32d5df881c81935b378fe1bbe14d286",
+      "archivedAt": "2026-10-27T16:54:31.809Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/differential-growth-khidki-grills",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1793120070/sketchbook/2026/differential-growth-khidki-grills.png",
+        "version": 1793120070,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/differential-growth/nalee-whitespace",
+      "name": "nalee-whitespace",
+      "path": "src/sketches/differential-growth/nalee-whitespace.ts",
+      "firstCommitDate": "2026-10-10T14:51:56-04:00",
+      "year": 2026,
+      "lastCommitSha": "c62920ed910e9d9eed5779d7237f7284988c1b52",
+      "archivedAt": "2026-10-27T16:54:36.763Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/differential-growth-nalee-whitespace",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1793120076/sketchbook/2026/differential-growth-nalee-whitespace.png",
+        "version": 1793120076,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/differential-growth/one-line",
+      "name": "one-line",
+      "path": "src/sketches/differential-growth/one-line.ts",
+      "firstCommitDate": "2026-10-11T11:03:57-04:00",
+      "year": 2026,
+      "lastCommitSha": "5a713bcea9e68c4ce106eb980a71cf89b661bdec",
+      "archivedAt": "2026-10-27T16:54:40.410Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/differential-growth-one-line",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1793120079/sketchbook/2026/differential-growth-one-line.png",
+        "version": 1793120079,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/differential-growth/thick-nalee",
+      "name": "thick-nalee",
+      "path": "src/sketches/differential-growth/thick-nalee.ts",
+      "firstCommitDate": "2026-10-11T11:03:57-04:00",
+      "year": 2026,
+      "lastCommitSha": "5a713bcea9e68c4ce106eb980a71cf89b661bdec",
+      "archivedAt": "2026-10-27T16:55:20.860Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/differential-growth-thick-nalee",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1793120120/sketchbook/2026/differential-growth-thick-nalee.png",
+        "version": 1793120120,
         "width": 1080,
         "height": 1080
       }
@@ -3181,6 +3389,70 @@
         "publicId": "sketchbook/2023/map-clipped-hull",
         "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779061945/sketchbook/2023/map-clipped-hull.png",
         "version": 1779061945,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/map/heerich-city-a",
+      "name": "heerich-city-a",
+      "path": "src/sketches/map/heerich-city-a.ts",
+      "firstCommitDate": "2026-10-26T14:41:04-04:00",
+      "year": 2026,
+      "lastCommitSha": "aed80eb48373e4ca12dffbd9b68a15dc065315bb",
+      "archivedAt": "2026-10-27T16:55:28.757Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/map-heerich-city-a",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1793120128/sketchbook/2026/map-heerich-city-a.png",
+        "version": 1793120128,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/map/heerich-city-b",
+      "name": "heerich-city-b",
+      "path": "src/sketches/map/heerich-city-b.ts",
+      "firstCommitDate": "2026-10-26T14:41:04-04:00",
+      "year": 2026,
+      "lastCommitSha": "aed80eb48373e4ca12dffbd9b68a15dc065315bb",
+      "archivedAt": "2026-10-27T16:55:32.411Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/map-heerich-city-b",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1793120132/sketchbook/2026/map-heerich-city-b.png",
+        "version": 1793120132,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/map/heerich-city-c",
+      "name": "heerich-city-c",
+      "path": "src/sketches/map/heerich-city-c.ts",
+      "firstCommitDate": "2026-10-26T14:41:04-04:00",
+      "year": 2026,
+      "lastCommitSha": "aed80eb48373e4ca12dffbd9b68a15dc065315bb",
+      "archivedAt": "2026-10-27T16:55:36.872Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/map-heerich-city-c",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1793120136/sketchbook/2026/map-heerich-city-c.png",
+        "version": 1793120136,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/map/heerich-city-d",
+      "name": "heerich-city-d",
+      "path": "src/sketches/map/heerich-city-d.ts",
+      "firstCommitDate": "2026-10-26T14:41:04-04:00",
+      "year": 2026,
+      "lastCommitSha": "aed80eb48373e4ca12dffbd9b68a15dc065315bb",
+      "archivedAt": "2026-10-27T16:55:44.959Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/map-heerich-city-d",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1793120143/sketchbook/2026/map-heerich-city-d.png",
+        "version": 1793120143,
         "width": 1080,
         "height": 1080
       }
@@ -5186,6 +5458,70 @@
       }
     },
     {
+      "id": "sketches/rubber-band-stipple/verlet-band-a",
+      "name": "verlet-band-a",
+      "path": "src/sketches/rubber-band-stipple/verlet-band-a.ts",
+      "firstCommitDate": "2026-10-26T14:41:04-04:00",
+      "year": 2026,
+      "lastCommitSha": "d1ebfd3ff21881441c9ae1347c10bacf7ac1f8d9",
+      "archivedAt": "2026-10-27T16:55:49.279Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/rubber-band-stipple-verlet-band-a",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1793120148/sketchbook/2026/rubber-band-stipple-verlet-band-a.png",
+        "version": 1793120148,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/rubber-band-stipple/verlet-band-b",
+      "name": "verlet-band-b",
+      "path": "src/sketches/rubber-band-stipple/verlet-band-b.ts",
+      "firstCommitDate": "2026-10-26T14:41:04-04:00",
+      "year": 2026,
+      "lastCommitSha": "d1ebfd3ff21881441c9ae1347c10bacf7ac1f8d9",
+      "archivedAt": "2026-10-27T16:55:52.713Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/rubber-band-stipple-verlet-band-b",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1793120152/sketchbook/2026/rubber-band-stipple-verlet-band-b.png",
+        "version": 1793120152,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/rubber-band-stipple/verlet-band-c",
+      "name": "verlet-band-c",
+      "path": "src/sketches/rubber-band-stipple/verlet-band-c.ts",
+      "firstCommitDate": "2026-10-26T14:41:04-04:00",
+      "year": 2026,
+      "lastCommitSha": "d1ebfd3ff21881441c9ae1347c10bacf7ac1f8d9",
+      "archivedAt": "2026-10-27T16:55:58.663Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/rubber-band-stipple-verlet-band-c",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1793120157/sketchbook/2026/rubber-band-stipple-verlet-band-c.png",
+        "version": 1793120157,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/rubber-band-stipple/verlet-band-d",
+      "name": "verlet-band-d",
+      "path": "src/sketches/rubber-band-stipple/verlet-band-d.ts",
+      "firstCommitDate": "2026-10-26T14:41:04-04:00",
+      "year": 2026,
+      "lastCommitSha": "d1ebfd3ff21881441c9ae1347c10bacf7ac1f8d9",
+      "archivedAt": "2026-10-27T16:56:03.575Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/rubber-band-stipple-verlet-band-d",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1793120163/sketchbook/2026/rubber-band-stipple-verlet-band-d.png",
+        "version": 1793120163,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
       "id": "sketches/rubber-band-stipple/weaving-techniques",
       "name": "weaving-techniques",
       "path": "src/sketches/rubber-band-stipple/weaving-techniques.ts",
@@ -5247,6 +5583,54 @@
         "version": 1779062395,
         "width": 900,
         "height": 540
+      }
+    },
+    {
+      "id": "sketches/sdf-hatch/flow-field",
+      "name": "flow-field",
+      "path": "src/sketches/sdf-hatch/flow-field.ts",
+      "firstCommitDate": "2026-10-08T11:42:52Z",
+      "year": 2026,
+      "lastCommitSha": "c27248fc3ef4f4ddfd135133ca4d4f93c1555f42",
+      "archivedAt": "2026-10-27T16:56:13.085Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/sdf-hatch-flow-field",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1793120172/sketchbook/2026/sdf-hatch-flow-field.png",
+        "version": 1793120172,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/sdf-hatch/jali",
+      "name": "jali",
+      "path": "src/sketches/sdf-hatch/jali.ts",
+      "firstCommitDate": "2026-10-08T11:42:52Z",
+      "year": 2026,
+      "lastCommitSha": "c27248fc3ef4f4ddfd135133ca4d4f93c1555f42",
+      "archivedAt": "2026-10-27T16:56:23.615Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/sdf-hatch-jali",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1793120183/sketchbook/2026/sdf-hatch-jali.png",
+        "version": 1793120183,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/sdf-hatch/jali-volumetric",
+      "name": "jali-volumetric",
+      "path": "src/sketches/sdf-hatch/jali-volumetric.ts",
+      "firstCommitDate": "2026-10-12T16:42:14Z",
+      "year": 2026,
+      "lastCommitSha": "8ecca353195e354bfeecceba64a7c0e2d12060dd",
+      "archivedAt": "2026-10-27T16:56:42.664Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/sdf-hatch-jali-volumetric",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1793120202/sketchbook/2026/sdf-hatch-jali-volumetric.png",
+        "version": 1793120202,
+        "width": 1080,
+        "height": 1080
       }
     },
     {
@@ -5741,6 +6125,22 @@
         "publicId": "sketchbook/2024/tentacle-grass",
         "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1779062525/sketchbook/2024/tentacle-grass.png",
         "version": 1779062525,
+        "width": 1080,
+        "height": 1080
+      }
+    },
+    {
+      "id": "sketches/tentacle/octopus",
+      "name": "octopus",
+      "path": "src/sketches/tentacle/octopus.ts",
+      "firstCommitDate": "2026-10-12T16:39:42-04:00",
+      "year": 2026,
+      "lastCommitSha": "3a56f1c74e97f9d49051a68319dcd48051a71493",
+      "archivedAt": "2026-10-27T16:56:45.414Z",
+      "cloudinary": {
+        "publicId": "sketchbook/2026/tentacle-octopus",
+        "url": "https://res.cloudinary.com/dpym7j3nj/image/upload/v1793120205/sketchbook/2026/tentacle-octopus.png",
+        "version": 1793120205,
         "width": 1080,
         "height": 1080
       }
